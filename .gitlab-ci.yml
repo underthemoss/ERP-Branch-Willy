@@ -20,7 +20,9 @@ test:
   stage: build-check
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
-  script: npm install & npm run build
+  script: 
+    - npm install
+    - npm run build
 
 deploy-staging:
   extends: .build
