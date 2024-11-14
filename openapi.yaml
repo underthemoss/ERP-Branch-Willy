@@ -21,11 +21,6 @@ paths:
                     const: success
                   data:
                     type: object
-                    properties:
-                      status:
-                        type: string
-                    required:
-                      - status
                 required:
                   - status
                   - data

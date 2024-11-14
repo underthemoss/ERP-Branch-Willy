@@ -5,9 +5,9 @@ const readyzEndpoint = defaultEndpointsFactory.build({
   method: "get",
   description: "Readiness",
   input: z.object({}),
-  output: z.object({ status: z.string() }),
-  handler: async ({ input, logger, options: { user, bearerToken } }) => {
-    return { status: "OK" };
+  output: z.object({}),
+  handler: async () => {
+    return {};
   },
 });
 
