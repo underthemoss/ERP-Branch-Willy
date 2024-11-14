@@ -13,7 +13,7 @@ COPY . .
 # Installing dependencies
 RUN npm install
 
-# RUN cd app && npm install
+RUN cd app && npm install
 
 # Build
 RUN npm run build

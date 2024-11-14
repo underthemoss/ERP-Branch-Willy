@@ -1,6 +1,6 @@
 image: node:20-bullseye
 stages:
-  - build-check
+  - test
   - stage
   - prod
 
@@ -16,13 +16,13 @@ stages:
       --destination ${DESTINATION}
       --build-arg VERSION=$CI_PIPELINE_IID
 
-test:
-  stage: build-check
+docker-test:
+  extends: .build
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
-  script: 
-    - npm install
-    - npm run build
+  stage: test
+  variables:
+    DESTINATION: 696398453447.dkr.ecr.us-west-2.amazonaws.com/es-erp-stage:mr-${CI_COMMIT_REF_NAME}-${CI_PIPELINE_IID}
 
 deploy-staging:
   extends: .build

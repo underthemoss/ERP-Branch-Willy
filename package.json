@@ -6,8 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:api": "ts-node-dev src/index.ts",
+    "dev:app": "cd app && npm start",
     "build:api": "tsc --project tsconfig.json",
-    "build": "npm run build:api"
+    "build:app": "cd app && npm run build",
+    "build": "npm run build:api && npm run build:app",
+    "postbuild": "mkdir -p dist/src/public && cp -r app/build dist/src/public"
   },
   "author": "",
   "license": "ISC",
