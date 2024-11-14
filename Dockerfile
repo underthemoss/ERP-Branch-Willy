@@ -7,6 +7,12 @@ ENV PORT=5000
 # Setting up the work directory
 WORKDIR /es-erp
 
+RUN apt-get update && apt-get install -y \
+    curl \
+    libcurl4 \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copying all the files in our project
 COPY . .
 
