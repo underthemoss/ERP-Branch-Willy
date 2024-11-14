@@ -1,6 +1,6 @@
 image: node:20-bullseye
 stages:
-  - test
+  - build-check
   - stage
   - prod
 
@@ -17,10 +17,10 @@ stages:
       --build-arg VERSION=$CI_PIPELINE_IID
 
 test:
-  stage: test
+  stage: build-check
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
-  script: npm run build
+  script: npm install & npm run build
 
 deploy-staging:
   extends: .build
