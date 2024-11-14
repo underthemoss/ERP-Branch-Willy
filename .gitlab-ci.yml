@@ -1,0 +1,41 @@
+image: node:20-bullseye
+stages:
+  - build-check
+  - stage
+  - prod
+
+.build:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "{\"credHelpers\":{\"${ECR}\":\"ecr-login\"},\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"${DOCKER_HUB_BASE64}\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+      --context $CI_PROJECT_DIR
+      --dockerfile ${CI_PROJECT_DIR}/Dockerfile
+      --destination ${DESTINATION}
+      --build-arg VERSION=$CI_PIPELINE_IID
+
+test:
+  stage: build-check
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  script: 
+    - npm install
+    - npm run build
+
+deploy-staging:
+  extends: .build
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: stage
+  variables:
+    DESTINATION: 696398453447.dkr.ecr.us-west-2.amazonaws.com/es-erp-stage:v${CI_PIPELINE_IID}
+deploy-production:
+  extends: .build
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: prod
+  variables:
+    DESTINATION: 696398453447.dkr.ecr.us-west-2.amazonaws.com/es-erp-prod:v${CI_PIPELINE_IID}

@@ -1,0 +1,31 @@
+{
+  "name": "es-erp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:api": "ts-node-dev src/index.ts",
+    "build:api": "tsc --project tsconfig.json",
+    "build": "npm run build:api"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hey-api/openapi-ts": "^0.55.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-zod-api": "^20.21.0",
+    "mongodb-memory-server": "^10.1.2",
+    "mongoose": "^8.8.1",
+    "swagger-ui-express": "^5.0.1",
+    "znv": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/swagger-ui-express": "^4.1.7",
+    "ts-node-dev": "^2.0.0"
+  }
+}
