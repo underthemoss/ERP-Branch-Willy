@@ -1,7 +1,19 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DefaultPage } from "./pages/DefaultPage";
+import { client } from "./api/generated";
+const queryClient = new QueryClient();
 function App() {
-  return <div>
-    <h1>ES ERP</h1>
-  </div>;
+  client.setConfig({
+    baseUrl:
+      process.env.NODE_ENV === "production"
+        ? "/es-erp"
+        : "http://localhost:5000",
+  });
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DefaultPage />
+    </QueryClientProvider>
+  );
 }
 
 export default App;
