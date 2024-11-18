@@ -16,6 +16,7 @@ import { startup } from "./startup";
 startup().then(async () => {
   const config = createConfig({
     server: {
+      compression: true,
       listen: PORT,
       beforeRouting: async ({ app, logger, getChildLogger }) => {
         app.use(
