@@ -9,8 +9,9 @@
     "dev:app": "cd app && npm start",
     "build:api": "tsc --project tsconfig.json",
     "build:app": "cd app && npm run build",
-    "build": "npm run build:api && npm run build:app",
-    "postbuild": "mkdir -p dist/src/public && cp -r app/build dist/src/public"
+    "build": "npm run codegen && npm run build:api && npm run build:app",
+    "postbuild": "mkdir -p dist/src/public && cp -r app/build dist/src/public",
+    "codegen": "openapi-ts"
   },
   "author": "",
   "license": "ISC",

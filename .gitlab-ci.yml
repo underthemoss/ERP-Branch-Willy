@@ -29,6 +29,7 @@ unit-test:
   stage: test
   script:
     - npm install
+    - npm run codegen
     - npm run test
 
 deploy-staging:
