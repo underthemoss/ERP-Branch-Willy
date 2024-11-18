@@ -50,6 +50,60 @@ paths:
                     status: error
                     error:
                       message: Sample error message
+  /api/folders/command/create:
+    get:
+      operationId: GetApiFoldersCommandCreate
+      summary: Readiness
+      description: Readiness
+      security:
+        - APIKEY_1: []
+      responses:
+        "200":
+          description: GET /api/folders/command/create Positive response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: success
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: string
+                    required:
+                      - user
+                required:
+                  - status
+                  - data
+        "400":
+          description: GET /api/folders/command/create Negative response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: error
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                    required:
+                      - message
+                required:
+                  - status
+                  - error
+              examples:
+                example1:
+                  value:
+                    status: error
+                    error:
+                      message: Sample error message
 components:
   schemas: {}
   responses: {}
@@ -57,7 +111,11 @@ components:
   examples: {}
   requestBodies: {}
   headers: {}
-  securitySchemes: {}
+  securitySchemes:
+    APIKEY_1:
+      type: apiKey
+      in: header
+      name: Authorization
   links: {}
   callbacks: {}
 tags: []

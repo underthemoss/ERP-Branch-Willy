@@ -1,5 +1,6 @@
 import { Routing } from "express-zod-api";
 import { k8sRoutes } from "./k8s/k8s";
+import { foldersRoutes } from "./folders/folders";
 
 // import { usersRoutes } from "./users/users.routes";
 // import { itemsRoutes } from "./items/items.routes";
@@ -12,6 +13,7 @@ import { k8sRoutes } from "./k8s/k8s";
 const routing: Routing = {
   api: {
     ...k8sRoutes,
+    ...foldersRoutes,
     // v1: {
     //   //   ...usersRoutes,
     //   //   ...itemsRoutes,
