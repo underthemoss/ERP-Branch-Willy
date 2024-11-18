@@ -1,11 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { getApiReadyzOptions } from "../api/generated/@tanstack/react-query.gen";
+import { Outlet } from "react-router-dom";
+import { Box, Sheet } from "@mui/joy";
 
 export const DefaultPage = () => {
-  const { data } = useQuery({ ...getApiReadyzOptions({}) });
   return (
-    <div>
-      <h1>ES ERP - {data?.status}</h1>
-    </div>
+    <Box display={"flex"} flexDirection={"column"} style={{ height: "100%" }}>
+      <Box height={60} display={"flex"}>
+        <Sheet style={{ flex: 1 }} variant="soft">
+          Header
+        </Sheet>
+      </Box>
+      <Box flex={1} display={"flex"}>
+        <Box display={"flex"} width={220}>
+          <Sheet style={{ flex: 1 }} variant="soft">
+            Left nav
+          </Sheet>
+        </Box>
+        <Box>
+          <Outlet />
+        </Box>
+      </Box>
+    </Box>
   );
 };
