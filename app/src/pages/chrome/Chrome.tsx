@@ -11,7 +11,7 @@ export const Chrome = () => {
       const isProduction = process.env.NODE_ENV === "production";
       const bearerToken = `Bearer ${searchParams.get("jwt")}`;
       client.setConfig({
-        baseUrl: isProduction ? "/resource-planning" : "http://localhost:5000",
+        baseUrl: isProduction ? "/es-erp" : "http://localhost:5000",
         headers: {
           Authorization: bearerToken,
         },
