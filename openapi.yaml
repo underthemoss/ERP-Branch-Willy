@@ -50,16 +50,47 @@ paths:
                     status: error
                     error:
                       message: Sample error message
-  /api/folders/command/create:
-    get:
-      operationId: GetApiFoldersCommandCreate
-      summary: Readiness
-      description: Readiness
+  /api/folders/command:
+    post:
+      operationId: PostApiFoldersCommand
+      summary: Folder Commands
+      description: Folder Commands
+      requestBody:
+        description: POST /api/folders/command Request body
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                - oneOf:
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          const: create_folder
+                        name:
+                          type: string
+                      required:
+                        - type
+                        - name
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          const: rename_folder
+                        folderId:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                        - type
+                        - folderId
+                        - name
       security:
         - APIKEY_1: []
       responses:
         "200":
-          description: GET /api/folders/command/create Positive response
+          description: POST /api/folders/command Positive response
           content:
             application/json:
               schema:
@@ -71,15 +102,18 @@ paths:
                   data:
                     type: object
                     properties:
-                      user:
+                      name:
+                        type: string
+                      folder_id:
                         type: string
                     required:
-                      - user
+                      - name
+                      - folder_id
                 required:
                   - status
                   - data
         "400":
-          description: GET /api/folders/command/create Negative response
+          description: POST /api/folders/command Negative response
           content:
             application/json:
               schema:

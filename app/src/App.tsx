@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DefaultPage } from "./pages/DefaultPage";
+import { Chrome } from "./pages/chrome/Chrome";
 
 import { RouterProvider, createHashRouter } from "react-router-dom";
 import ErrorPage from "./pages/ErrorPage";
@@ -8,7 +8,7 @@ import { Folders } from "./pages/Folders";
 const router = createHashRouter([
   {
     path: "/",
-    element: <DefaultPage />,
+    element: <Chrome />,
     errorElement: <ErrorPage />,
     children: [
       {

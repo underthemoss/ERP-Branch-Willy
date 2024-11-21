@@ -7,3 +7,5 @@ stage.env
 .vscode
 
 /user-app/tmp/
+
+**/generated
