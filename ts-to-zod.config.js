@@ -1,7 +1,7 @@
 module.exports = [
   {
-    name: "folders",
-    input: "src/aggregates/folder.ts",
-    output: "src/aggregates/generated/folder.zod.ts",
+    name: "folder",
+    input: "src/models/folder.model.ts",
+    output: "src/models/generated/folder.model.zod.ts",
   },
 ];

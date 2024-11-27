@@ -3,6 +3,8 @@
   "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "ES2018",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "module": "commonjs",
     "lib": ["esnext", "dom"],
     "strict": true,

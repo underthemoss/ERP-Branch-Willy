@@ -78,14 +78,14 @@ paths:
                         type:
                           type: string
                           const: rename_folder
-                        folderId:
-                          type: string
                         name:
+                          type: string
+                        _id:
                           type: string
                       required:
                         - type
-                        - folderId
                         - name
+                        - _id
       security:
         - APIKEY_1: []
       responses:
@@ -102,13 +102,13 @@ paths:
                   data:
                     type: object
                     properties:
+                      _id:
+                        type: string
                       name:
                         type: string
-                      folder_id:
-                        type: string
                     required:
+                      - _id
                       - name
-                      - folder_id
                 required:
                   - status
                   - data

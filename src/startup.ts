@@ -1,34 +1,87 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 
 import mongoose from "mongoose";
-import { MONGO_CONNECTION_STRING } from "./env/env";
+import { MONGO_CONNECTION_STRING } from "./config/env";
+import { folderProjection } from "./projections/folder";
+
+import { KafkaContainer } from "@testcontainers/kafka";
+import { Kafka } from "kafkajs";
 // import { FolderEventStore } from "./event-store/FolderEventStore";
 
-async function startInMemoryMongoDB() {
-  if (MONGO_CONNECTION_STRING) {
-    await mongoose.connect(MONGO_CONNECTION_STRING, {
+const isLocalDev = !MONGO_CONNECTION_STRING;
+
+async function connectMongo() {
+  if (!isLocalDev) {
+    await mongoose.connect(MONGO_CONNECTION_STRING!, {
       dbName: "es-erp",
     });
     console.log("Connected to atlas MongoDB");
+    return async () => {};
   } else {
     console.log("💾 Starting in-memory MongoDB");
     const replset = await MongoMemoryReplSet.create({
-      instanceOpts: [],
+      instanceOpts: [
+        {
+          port: 63878,
+        },
+      ],
       replSet: { count: 1 },
-    }); // make the count configurabel in env
+    });
     const uri = replset.getUri();
 
     await mongoose.connect(uri, {
       dbName: "es-erp",
     });
-    console.log("Connected to in-memory MongoDB");
+
+    console.log(`Open Mongo Atlas Compass GUI mongodb-compass://${uri}`);
+
+    return async () => {
+      await mongoose.disconnect();
+      await replset.stop();
+      await replset.cleanup();
+      console.log("mongo shutdown");
+    };
   }
 }
 
+const connectKafka = async () => {
+  console.log("📪 Starting dev kafka");
+  const kafkaContainer = await new KafkaContainer(
+    "confluentinc/cp-kafka:7.5.0"
+  ).start();
+
+  const brokerAddress = `${kafkaContainer.getHost()}:${kafkaContainer.getMappedPort(
+    9093
+  )}`;
+
+  console.log("📪 dev kafka:" + brokerAddress);
+
+  console.log(`📪 dev kafka started ${brokerAddress}`);
+
+  return {
+    brokerAddress,
+    cleanup: async () => {
+      console.log("SIGTERM kafka");
+      await kafkaContainer.stop();
+    },
+  };
+};
+
 export const startup = async () => {
+  // return;
   console.time("startup");
-  await startInMemoryMongoDB();
+  const cleanupMongo = await connectMongo();
+  const { brokerAddress, cleanup: cleanupKafka } = await connectKafka();
+
+  // const cleanupStream = await folderProjection(brokerAddress);
 
   console.log("🚀 Start up complete");
   console.timeEnd("startup");
+
+  process.on("SIGTERM", async () => {
+    console.log("SIGTERM ");
+    // await cleanupStream();
+    await cleanupMongo();
+    await cleanupKafka();
+  });
 };

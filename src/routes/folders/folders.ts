@@ -1,26 +1,21 @@
 import { defaultEndpointsFactory } from "express-zod-api";
 import { authMiddleware } from "../../middleware/AuthMiddleware";
-import { ulid } from "ulid";
 import {
-  folderCommandSchema,
+  folderCommandsSchema,
   folderStateSchema,
-} from "./../../aggregates/generated/folder.zod";
-import { commandHandler } from "../../common/commandHandler";
-import { folderCommandProcessor } from "../../aggregates/folder";
+} from "../../models/generated/folder.model.zod";
+
+import { folderWriteModel } from "../../models/folder.model";
+
 const folderCommandsEndpoint = defaultEndpointsFactory
   .addMiddleware(authMiddleware)
   .build({
     method: "post",
     description: "Folder Commands",
-    input: folderCommandSchema,
+    input: folderCommandsSchema,
     output: folderStateSchema,
     handler: async ({ input, options }) => {
-      const folderCommandHandler = commandHandler(folderCommandProcessor, {
-        correlation_id: ulid(),
-        principal_id: options.user.user_id,
-        tenant_id: options.user.company_id,
-      });
-      return await folderCommandHandler.execute(input.folderId, input);
+      return await folderWriteModel.apply(input);
     },
   });
 

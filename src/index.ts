@@ -10,7 +10,7 @@ import cors from "cors";
 import fs from "fs";
 import { createClient } from "@hey-api/openapi-ts";
 import openapiConfig from "../openapi-ts.config";
-import { LEVEL, PORT } from "./env/env";
+import { LEVEL, PORT } from "./config/env";
 import { startup } from "./startup";
 
 startup().then(async () => {
@@ -66,6 +66,10 @@ startup().then(async () => {
     startupLogo: false,
   });
 
-  await createServer(config, Router);
+  const { httpServer } = await createServer(config, Router);
   console.log(`🚀 Listing on port ${PORT}`);
+
+  process.on("SIGTERM", async () => {
+    await httpServer.close();
+  });
 });

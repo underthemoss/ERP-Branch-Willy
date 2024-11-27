@@ -16,6 +16,7 @@ export const NewFolderMenuItem: React.FC<{ onComplete: () => void }> = ({
   const { mutateAsync: folderCommand } = useMutation({
     ...postApiFoldersCommandMutation(),
   });
+
   return (
     <>
       <MenuItem autoFocus={false} onClick={() => setOpen(!open)}>
