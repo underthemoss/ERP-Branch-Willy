@@ -71,7 +71,7 @@ export const startup = async () => {
   // return;
   console.time("startup");
   const cleanupMongo = await connectMongo();
-  const { brokerAddress, cleanup: cleanupKafka } = await connectKafka();
+  // const { brokerAddress, cleanup: cleanupKafka } = await connectKafka();
 
   // const cleanupStream = await folderProjection(brokerAddress);
 
@@ -82,6 +82,6 @@ export const startup = async () => {
     console.log("SIGTERM ");
     // await cleanupStream();
     await cleanupMongo();
-    await cleanupKafka();
+    // await cleanupKafka();
   });
 };
