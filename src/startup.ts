@@ -6,6 +6,8 @@ import { folderProjection } from "./projections/folder";
 
 import { KafkaContainer } from "@testcontainers/kafka";
 import { Kafka } from "kafkajs";
+import { agenda, startAgenda } from "./jobs/agenda";
+import { itemMaterializer } from "./models/items.model";
 // import { FolderEventStore } from "./event-store/FolderEventStore";
 
 const isLocalDev = !MONGO_CONNECTION_STRING;
@@ -16,7 +18,12 @@ async function connectMongo() {
       dbName: "es-erp",
     });
     console.log("Connected to atlas MongoDB");
-    return async () => {};
+    return {
+      connectionString: MONGO_CONNECTION_STRING,
+      cleanup: async () => {
+        await mongoose.disconnect();
+      },
+    };
   } else {
     console.log("💾 Starting in-memory MongoDB");
     const replset = await MongoMemoryReplSet.create({
@@ -33,13 +40,16 @@ async function connectMongo() {
       dbName: "es-erp",
     });
 
-    console.log(`Open Mongo Atlas Compass GUI mongodb-compass://${uri}`);
+    console.log(`Dev connection ${uri}`);
 
-    return async () => {
-      await mongoose.disconnect();
-      await replset.stop();
-      await replset.cleanup();
-      console.log("mongo shutdown");
+    return {
+      connectionString: uri,
+      cleanup: async () => {
+        await mongoose.disconnect();
+        await replset.stop();
+        await replset.cleanup();
+        console.log("mongo shutdown");
+      },
     };
   }
 }
@@ -70,18 +80,24 @@ const connectKafka = async () => {
 export const startup = async () => {
   // return;
   console.time("startup");
-  const cleanupMongo = await connectMongo();
+  const { cleanup: cleanupMongo, connectionString } = await connectMongo();
   // const { brokerAddress, cleanup: cleanupKafka } = await connectKafka();
 
   // const cleanupStream = await folderProjection(brokerAddress);
 
   console.log("🚀 Start up complete");
   console.timeEnd("startup");
-
-  process.on("SIGTERM", async () => {
+  await agenda.start();
+  await startAgenda();
+  await itemMaterializer();
+  async function graceful() {
     console.log("SIGTERM ");
     // await cleanupStream();
+    await agenda.drain();
     await cleanupMongo();
-    // await cleanupKafka();
-  });
+    process.exit(0);
+  }
+
+  process.on("SIGTERM", graceful);
+  process.on("SIGINT", graceful);
 };

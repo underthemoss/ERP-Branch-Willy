@@ -12,6 +12,8 @@ import { createClient } from "@hey-api/openapi-ts";
 import openapiConfig from "../openapi-ts.config";
 import { LEVEL, PORT } from "./config/env";
 import { startup } from "./startup";
+import { agenda } from "./jobs/agenda";
+const Agendash = require("agendash");
 
 startup().then(async () => {
   const config = createConfig({
@@ -59,6 +61,7 @@ startup().then(async () => {
             index: "index.html",
           })
         );
+        app.use("/dash", Agendash(agenda));
       },
     },
     cors: true,

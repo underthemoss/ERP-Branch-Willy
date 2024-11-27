@@ -2,24 +2,36 @@ import { ulid } from "ulid";
 import { createWriteModel } from "./shared/createWriteModel";
 
 export type FolderCommands =
-  | { type: "create_folder"; name: string }
-  | { type: "rename_folder"; name: string; _id: string };
+  | { type: "create_folder"; name: string; parent_id: string }
+  | { type: "rename_folder"; _id: string; name: string };
 
-export type FolderState = { _id: string; name: string };
+export type FolderState = {
+  _id: string;
+  folder_name: string;
+  created_by: string;
+  updated_by: string;
+  tenant_id: string;
+  parent_id: string;
+};
 
 export const folderWriteModel = createWriteModel<FolderState, FolderCommands>({
-  entityName: "Folder",
+  collectionName: "folders_write",
   commands: {
-    create_folder: async (command, model) => {
-      const folder = new model({
+    create_folder: async ({ command, create, ctx }) => {
+      return await create({
         _id: ulid(),
-        name: command.name,
-      } satisfies FolderState);
-      return await folder.save();
+        folder_name: command.name,
+        created_by: ctx.user_id,
+        tenant_id: ctx.company_id,
+        parent_id: command.parent_id,
+        updated_by: ctx.user_id,
+      });
     },
-    rename_folder: async (command, model) => {
-      await model.updateOne({ _id: command._id }, { name: command.name });
-      return (await model.findById(command._id))!;
+    rename_folder: async ({ command, update, ctx }) => {
+      return await update(command._id, {
+        folder_name: command.name,
+        updated_by: ctx.user_id,
+      });
     },
   },
 });

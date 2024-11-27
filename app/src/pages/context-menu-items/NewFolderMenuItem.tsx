@@ -33,6 +33,7 @@ export const NewFolderMenuItem: React.FC<{ onComplete: () => void }> = ({
               body: {
                 type: "create_folder",
                 name: d.folder_name,
+                parent_id: "",
               },
             });
             onComplete();

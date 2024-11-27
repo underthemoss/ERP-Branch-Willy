@@ -15,7 +15,7 @@ const folderCommandsEndpoint = defaultEndpointsFactory
     input: folderCommandsSchema,
     output: folderStateSchema,
     handler: async ({ input, options }) => {
-      return await folderWriteModel.apply(input);
+      return await folderWriteModel.context({ ...options.user }).apply(input);
     },
   });
 

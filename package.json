@@ -17,6 +17,8 @@
   "license": "ISC",
   "dependencies": {
     "@hey-api/openapi-ts": "^0.55.3",
+    "agenda": "^5.0.0",
+    "agendash": "^4.0.0",
     "compression": "^1.7.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
