@@ -11,7 +11,7 @@
     "build:app": "cd app && npm run build",
     "build": "npm run codegen && npm run build:api && npm run build:app",
     "postbuild": "mkdir -p dist/src/public && cp -r app/build dist/src/public",
-    "codegen": "openapi-ts && ts-to-zod --all"
+    "codegen": "npx prisma generate && openapi-ts && ts-to-zod --all"
   },
   "author": "",
   "license": "ISC",
