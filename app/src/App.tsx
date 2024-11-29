@@ -4,15 +4,20 @@ import { Chrome } from "./pages/chrome/Chrome";
 import { RouterProvider, createHashRouter } from "react-router-dom";
 import ErrorPage from "./pages/ErrorPage";
 import { Folders } from "./pages/Folders";
+import { DrawerProvider } from "./components/DrawerContext";
 
 const router = createHashRouter([
   {
     path: "/",
-    element: <Chrome />,
+    element: (
+      <DrawerProvider>
+        <Chrome />
+      </DrawerProvider>
+    ),
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "/",
+        path: "/:folder_id?",
         element: <Folders />,
       },
     ],

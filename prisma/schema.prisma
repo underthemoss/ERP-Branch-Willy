@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// generator zod {
+//   provider = "zod-prisma-types"
+// }
+
+// generator express {
+//   provider = "prisma-generator-express"
+// }
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Folder {
+  id         String     @id @default(cuid()) @map("_id")
+  tenant_id  String
+  name       String
+  parent_id  String? // For hierarchical relationships
+  parent     Folder?    @relation("FolderToFolder", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children   Folder[]   @relation("FolderToFolder")
+  documents  Document[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  created_by String
+  updated_by String
+
+  @@unique([parent_id, name])
+}
+
+model Document {
+  id         String   @id @default(cuid()) @map("_id")
+  tenant_id  String
+  name       String
+  folder_id  String?
+  folder     Folder?  @relation(fields: [folder_id], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by String
+  updated_by String
+  quote      Quote?
+  order      Order?
+}
+
+model Quote {
+  id          String   @id @default(cuid()) @map("_id")
+  tenant_id   String
+  document_id String   @unique
+  document    Document @relation(fields: [document_id], references: [id])
+  total_price Float
+  expiration  DateTime
+}
+
+model Order {
+  id               String   @id @default(cuid()) @map("_id")
+  tenant_id        String
+  document_id      String   @unique
+  document         Document @relation(fields: [document_id], references: [id])
+  order_date       DateTime
+  shipping_address String
+}

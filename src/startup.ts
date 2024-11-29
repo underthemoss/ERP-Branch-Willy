@@ -4,13 +4,14 @@ import mongoose from "mongoose";
 import { MONGO_CONNECTION_STRING } from "./config/env";
 import { folderProjection } from "./projections/folder";
 
+import { exec } from "child_process";
 import { KafkaContainer } from "@testcontainers/kafka";
 import { Kafka } from "kafkajs";
 import { agenda, startAgenda } from "./jobs/agenda";
 import { itemMaterializer } from "./models/items.model";
 // import { FolderEventStore } from "./event-store/FolderEventStore";
 
-const isLocalDev = !MONGO_CONNECTION_STRING;
+const isLocalDev = true; //!MONGO_CONNECTION_STRING;
 
 async function connectMongo() {
   if (!isLocalDev) {
@@ -41,6 +42,12 @@ async function connectMongo() {
     });
 
     console.log(`Dev connection ${uri}`);
+    await new Promise<void>((res) => {
+      exec("npx prisma db push", {}, (err, msg) => {
+        console.log(msg);
+        res();
+      });
+    });
 
     return {
       connectionString: uri,
@@ -89,7 +96,7 @@ export const startup = async () => {
   console.timeEnd("startup");
   await agenda.start();
   await startAgenda();
-  await itemMaterializer();
+  // await itemMaterializer();
   async function graceful() {
     console.log("SIGTERM ");
     // await cleanupStream();

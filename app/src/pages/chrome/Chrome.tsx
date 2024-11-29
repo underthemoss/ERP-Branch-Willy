@@ -1,8 +1,10 @@
 import { Outlet, useSearchParams } from "react-router-dom";
-import { Box, Sheet } from "@mui/joy";
+import { Box, Button, Sheet } from "@mui/joy";
 import { client } from "../../api/generated";
 import { useEffect } from "react";
 import { LeftNavigation } from "./LeftNav";
+import { Drawers, useDrawer } from "../../components/DrawerContext";
+import { CustomDrawer } from "../../components/CustomDrawer";
 
 export const Chrome = () => {
   const [searchParams] = useSearchParams();
@@ -36,6 +38,7 @@ export const Chrome = () => {
           <Outlet />
         </Box>
       </Box>
+      <Drawers />
     </Box>
   );
 };

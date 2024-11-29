@@ -1,6 +1,6 @@
 import { Routing } from "express-zod-api";
 import { k8sRoutes } from "./k8s/k8s";
-import { foldersRoutes } from "./folders/folders";
+import { foldersRoutes } from "./folders/folders.routes";
 
 // import { usersRoutes } from "./users/users.routes";
 // import { itemsRoutes } from "./items/items.routes";
