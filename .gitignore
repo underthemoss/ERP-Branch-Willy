@@ -9,3 +9,5 @@ stage.env
 /user-app/tmp/
 
 **/generated
+
+.DS_Store

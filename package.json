@@ -4,54 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest .",
-    "dev:api": "ts-node-dev src/index.ts",
-    "dev:app": "cd app && npm start",
-    "build:api": "tsc --project tsconfig.json",
-    "build:app": "cd app && npm run build",
-    "build": "npm run codegen && npm run build:api && npm run build:app",
-    "postbuild": "mkdir -p dist/src/public && cp -r app/build dist/src/public",
-    "codegen": "npx prisma generate && openapi-ts && ts-to-zod --all"
+    "test": "jest ."
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@hey-api/openapi-ts": "^0.55.3",
-    "@prisma/client": "^5.22.0",
-    "agenda": "^5.0.0",
-    "agendash": "^4.0.0",
-    "compression": "^1.7.5",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "express-zod-api": "^20.21.0",
-    "jsonwebtoken": "^9.0.2",
-    "jwks-rsa": "^3.1.0",
-    "kafkajs": "^2.2.4",
-    "mongodb-memory-server": "^10.1.2",
-    "mongoose": "^8.8.1",
-    "prisma": "^5.22.0",
-    "prisma-generator-express": "^1.16.6",
-    "prisma-zod-generator": "^0.8.13",
-    "promise-retry": "^2.0.1",
-    "reflect-metadata": "^0.2.2",
-    "swagger-ui-express": "^5.0.1",
-    "ts-to-zod": "^3.13.0",
-    "ulid": "^2.3.0",
-    "znv": "^0.4.0",
-    "zod": "^3.23.8",
-    "zod-prisma-types": "^3.1.8"
-  },
-  "devDependencies": {
-    "@testcontainers/kafka": "^10.14.0",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/jest": "^29.5.14",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/promise-retry": "^1.1.6",
-    "@types/swagger-ui-express": "^4.1.7",
-    "testcontainers": "^10.14.0",
-    "ts-jest": "^29.2.5",
-    "ts-node-dev": "^2.0.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
