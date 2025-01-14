@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Entity {
+  id              String           @id @map("_id")
+  name            String
+  entityTypeId    String
+  entityType      EntityType       @relation(fields: [entityTypeId], references: [id])
+  attributeValues AttributeValue[]
+
+  // Hierarchical relationships
+  parentId String? // Reference to the parent entity
+  parent   Entity?  @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Entity[] @relation("EntityHierarchy")
+}
+
+model EntityType {
+  id         String            @id @map("_id")
+  name       String            @unique
+  attributes EntityAttribute[]
+  Entity     Entity[]
+}
+
+enum EntityAttributeValueType {
+  string
+  number
+  date
+  boolean
+}
+
+model EntityAttribute {
+  id             String                   @id @map("_id")
+  name           String
+  type           EntityAttributeValueType
+  entityTypeId   String
+  entityType     EntityType               @relation(fields: [entityTypeId], references: [id])
+  AttributeValue AttributeValue[]
+}
+
+model AttributeValue {
+  id              String          @id @default(uuid()) @map("_id")
+  entityId        String
+  attributeId     String
+  stringValue     String?
+  numberValue     Float?
+  booleanValue    Boolean?
+  dateValue       DateTime?
+  entity          Entity          @relation(fields: [entityId], references: [id])
+  entityAttribute EntityAttribute @relation(fields: [attributeId], references: [id])
+}
