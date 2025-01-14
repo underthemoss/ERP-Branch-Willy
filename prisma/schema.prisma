@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/mongo/"
 }
 
 datasource db {
@@ -17,6 +12,7 @@ model Entity {
   id              String           @id @map("_id")
   name            String
   entityTypeId    String
+  tenantId        String
   entityType      EntityType       @relation(fields: [entityTypeId], references: [id])
   attributeValues AttributeValue[]
 
@@ -29,6 +25,7 @@ model Entity {
 model EntityType {
   id         String            @id @map("_id")
   name       String            @unique
+  tenantId   String
   attributes EntityAttribute[]
   Entity     Entity[]
 }
@@ -43,6 +40,7 @@ enum EntityAttributeValueType {
 model EntityAttribute {
   id             String                   @id @map("_id")
   name           String
+  tenantId       String
   type           EntityAttributeValueType
   entityTypeId   String
   entityType     EntityType               @relation(fields: [entityTypeId], references: [id])
@@ -53,6 +51,7 @@ model AttributeValue {
   id              String          @id @default(uuid()) @map("_id")
   entityId        String
   attributeId     String
+  tenantId        String
   stringValue     String?
   numberValue     Float?
   booleanValue    Boolean?

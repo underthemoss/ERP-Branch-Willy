@@ -1,29 +1,30 @@
 import { useAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Box, Button, Card, Sheet, Table, Typography } from "@mui/joy";
-import AddHomeIcon from "@mui/icons-material/AddHome";
-export default async function Home() {
+import { Box, Button, Table, Typography } from "@mui/joy";
+
+export default async function Page(props: {
+  params: Promise<{ item_id: string }>;
+}) {
   const { user } = await useAuth();
-  const spaces = await prisma.entity.findMany({
+  const entityTypes = await prisma.entityType.findMany({
     where: {
       tenantId: user.company_id,
-      entityTypeId: "space",
     },
   });
   return (
-    <Box>
-      <Box p={2} display={"flex"}>
+    <Box p={2}>
+      <Box>
         <Typography level="h1" fontWeight={500}>
-          Spaces
+          Settings
+        </Typography>
+      </Box>
+      <Box my={2} display={"flex"}>
+        <Typography level="h4" fontWeight={500}>
+          Content Types
         </Typography>
         <Box flex={1}></Box>
-        <Button variant="plain" size="sm" startDecorator={<AddHomeIcon />}>
-          New Space
-        </Button>
+        <Button variant="plain">New Content Type</Button>
       </Box>
-
-      {spaces.length}
-      <Box></Box>
       <Box>
         <Table>
           <thead>

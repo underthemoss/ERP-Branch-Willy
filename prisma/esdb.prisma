@@ -1,0 +1,106 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "./generated/esdb/"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ESDB_CONNECTION_STRING")
+  // schemas  = ["public"]
+}
+
+model User {
+  id         Int           @id @map("user_id")
+  username   String
+  first_name String?
+  last_name  String?
+  company_id Int?
+  company    Company?      @relation(fields: [company_id], references: [id])
+  branch_id  Int?
+  branch     Branch?       @relation(fields: [branch_id], references: [id])
+  groups     UserToGroup[]
+
+  @@map("users")
+}
+
+model Company {
+  id    Int    @id @map("company_id")
+  name  String
+  users User[]
+
+  @@map("companies")
+}
+
+model Branch {
+  id         Int    @id @map("market_id")
+  company_id Int
+  name       String
+  users      User[]
+
+  @@map("markets")
+}
+
+model UserToGroup {
+  id       Int   @id @map("organization_user_xref_id")
+  group_id Int   @map("organization_id")
+  group    Group @relation(fields: [group_id], references: [id])
+  user_id  Int
+  user     User  @relation(fields: [user_id], references: [id])
+
+  @@map("organization_user_xref")
+}
+
+model Group {
+  id         Int           @id @map("organization_id")
+  company_id Int
+  name       String
+  users      UserToGroup[]
+
+  @@map("organizations")
+}
+
+model Asset {
+  id                 Int             @id @map("asset_id")
+  custom_name        String
+  company_id         Int
+  description        String
+  category_id        Int?
+  category           Category?       @relation(fields: [category_id], references: [id])
+  photo_id           Int?
+  photo              Photo?          @relation(fields: [photo_id], references: [id])
+  equipment_class_id Int?
+  equipment_class    EquipmentClass? @relation(fields: [equipment_class_id], references: [id])
+
+  @@map("assets")
+}
+
+model EquipmentClass {
+  id               Int      @id @map("equipment_class_id")
+  name             String
+  primary_photo_id Int?
+  company_id       Int?
+  deleted          Boolean?
+  primary_photo    Photo?   @relation(fields: [primary_photo_id], references: [id])
+  Asset            Asset[]
+
+  @@map("equipment_classes")
+}
+
+model Photo {
+  id             Int              @id @map("photo_id")
+  filename       String
+  Asset          Asset[]
+  EquipmentClass EquipmentClass[]
+
+  @@map("photos")
+}
+
+model Category {
+  id                 Int     @id @map("category_id")
+  name               String
+  parent_category_id Int?
+  Asset              Asset[]
+
+  @@map("categories")
+}

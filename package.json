@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:mongo": "ts-node-dev mongo-dev-server.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma && prisma generate --schema=./prisma/esdb.prisma"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -15,6 +17,9 @@
     "@mui/joy": "^5.0.0-beta.51",
     "@mui/material": "^6.3.1",
     "@prisma/client": "^6.2.1",
+    "dataloader": "^2.2.3",
+    "jdenticon": "^3.3.0",
+    "jose": "^5.9.6",
     "next": "15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -26,7 +31,11 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.4",
+    "i": "^0.3.7",
+    "mongodb-memory-server": "^10.1.3",
+    "npm": "^11.0.0",
     "prisma": "^6.2.1",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5"
   }
 }

@@ -1,31 +1,60 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { Box, CssBaseline } from "@mui/joy";
+
+import SideNav from "./SideNav";
+import Breadcrumbs from "./Breadcrumbs";
+
 export const metadata: Metadata = {
   title: "ES-ERP",
-  description: "ES-ERP",
+  description: "Equipmentshare",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  searchParams,
+  breadcrumbs,
 }: Readonly<{
   children: React.ReactNode;
+  breadcrumbs: React.ReactNode;
+  searchParams: any;
 }>) {
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        />
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
       </head>
-      <body>{children}</body>
+      <body>
+        <Box
+          display="flex"
+          flex={1}
+          flexDirection={"column"}
+          height={"100%"}
+          maxHeight={"100%"}
+        >
+          <CssBaseline />
+
+          <Box flex={1} display={"flex"} overflow={"hidden"}>
+            <Box
+              display={"flex"}
+              width={240}
+              sx={{
+                backgroundColor: "#FBFCFE",
+                borderRight: 1,
+                borderColor: "#dfdfdf",
+              }}
+              overflow={"scroll"}
+            >
+              <SideNav />
+            </Box>
+            <Box flex={1} overflow={"scroll"}>
+              <Box>{breadcrumbs}</Box>
+              <Box>{children}</Box>
+            </Box>
+          </Box>
+        </Box>
+      </body>
     </html>
   );
 }
