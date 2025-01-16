@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { NextLink } from "@/ui/NextLink";
 import { MenuItemLink } from "./NewButton.client";
+import { ListItemDecorator } from "@mui/joy";
+import { EntityIcon, EntityTypeIcon } from "@/ui/EntityTypeIcons";
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await useAuth();
 
@@ -30,27 +32,43 @@ export default async function NewButton(props: { itemId: string }) {
     },
   });
 
-  const validEntityTypes = entityTypes.filter(
-    (et) =>
-      parentEntity?.entityType.validChildEntityTypeIds.some(
-        (a) => a === et.id
+  const lineage = (id: string | null): string[] => {
+    const entityType = entityTypes.find((et) => et.id === id);
+    if (!entityType) return [];
+    return [...lineage(entityType.parentId), entityType.id];
+  };
+
+  const types = entityTypes.map((et) => {
+    const parents = lineage(et.id);
+    const isValid =
+      parents.some((id) =>
+        parentEntity?.entityType.validChildEntityTypeIds.includes(id)
       ) ||
-      (parentEntity === null && et.id === "workspace")
-  );
+      (parentEntity?.parentId === undefined && parents.includes("workspace"));
+    return {
+      label: et.name,
+      id: et.id,
+      hidden: !isValid,
+      lineage: lineage(et.id),
+    };
+  });
 
   return (
     <Dropdown>
       <MenuButton startDecorator={<AddIcon />}>New</MenuButton>
       <Menu placement="bottom-end" sx={{ minWidth: 150 }}>
-        {validEntityTypes
-          .filter((et) => !et.abstract)
+        {types
+          .filter((t) => !t.hidden)
           .map((et) => {
             return (
               <MenuItemLink
                 key={et.id}
                 href={`/app/item/${parentEntity?.id || "null"}/new/${et.id}`}
               >
-                New {et.name}
+                <ListItemDecorator>
+                  <EntityTypeIcon entityTypeId={et.id} />
+                </ListItemDecorator>
+                New {et.label}
               </MenuItemLink>
             );
           })}

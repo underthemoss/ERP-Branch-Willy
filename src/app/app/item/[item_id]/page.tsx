@@ -6,7 +6,7 @@ import { NextLink } from "@/ui/NextLink";
 import { UserDetail } from "@/ui/UserDetail";
 import { AutoImage } from "@/ui/AutoImage";
 import { JsonObject } from "@prisma/client/runtime/library";
-import { EntityTypeIcons } from "@/ui/EntityTypeIcons";
+import { EntityIcon } from "@/ui/EntityTypeIcons";
 
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
@@ -54,7 +54,7 @@ export default async function Page(props: {
                   <td>
                     <Box display={"flex"} gap={1}>
                       {/* <Tooltip title={item.entityType.name}> */}
-                      <EntityTypeIcons entityId={item.id} />
+                      <EntityIcon entityId={item.id} />
                       {/* </Tooltip> */}
                       <NextLink href={`/app/item/${item.id}`}>
                         {(item.attributes as any).item_name}

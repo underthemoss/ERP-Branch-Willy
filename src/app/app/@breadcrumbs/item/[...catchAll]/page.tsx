@@ -5,7 +5,7 @@ import { Box, Breadcrumbs, IconButton, Link } from "@mui/joy";
 import { useAuth } from "@/lib/auth";
 import NewButton from "../../NewButton";
 import { JsonObject } from "@prisma/client/runtime/library";
-import { EntityTypeIcons } from "@/ui/EntityTypeIcons";
+import { EntityIcon } from "@/ui/EntityTypeIcons";
 
 async function humanizeSlug(slug: string) {
   const entityType = await prisma.entityType.findFirst({ where: { id: slug } });
@@ -65,7 +65,7 @@ export default async function HeaderBreadcrumbs(props: {
 
           {ancestors.map((s) => (
             <NextLink href={`/app/item/${s.id}`} key={s.id}>
-              <EntityTypeIcons entityId={s.id} />
+              <EntityIcon entityId={s.id} />
               <Box ml={1}>{s.name}</Box>
             </NextLink>
           ))}

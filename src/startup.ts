@@ -9,7 +9,12 @@ const upsertSystemEntityType = async (props: {
   description: string;
   parentId?: SystemEntityTypes;
   abstract: boolean;
-  attributes?: { id: string; name: string; type: EntityAttributeValueType }[];
+  attributes?: {
+    id: string;
+    name: string;
+    type: EntityAttributeValueType;
+    isRequired: boolean;
+  }[];
   validChildEntityTypeIds?: SystemEntityTypes[];
 }) => {
   const {
@@ -54,12 +59,14 @@ const upsertSystemEntityType = async (props: {
         tenantId: "SYSTEM",
         type: attr.type,
         entityTypeId: id,
+        isRequired: attr.isRequired,
       },
       update: {
         name: attr.name,
         tenantId: "SYSTEM",
         type: attr.type,
         entityTypeId: id,
+        isRequired: attr.isRequired,
       },
     });
   }
@@ -71,14 +78,21 @@ export const startup = async () => {
     name: "Base Item",
     description: "Base item",
     abstract: true,
-    attributes: [{ id: "item_name", type: "string", name: "Name" }],
+    attributes: [
+      { id: "item_name", type: "string", name: "Name", isRequired: true },
+    ],
   });
   await upsertSystemEntityType({
     id: "workspace",
     name: "Workspace",
     description: `A workspace is a dedicated area to organize and isolate your content and operations.`,
     attributes: [
-      { id: "workspace_description", name: "Description", type: "string" },
+      {
+        id: "workspace_description",
+        name: "Description",
+        type: "string",
+        isRequired: false,
+      },
     ],
     parentId: "base_item",
     abstract: false,
@@ -97,7 +111,7 @@ export const startup = async () => {
     id: "list_item",
     name: "List Item",
     description: `A list item stores a value within a list.`,
-    attributes: [{ id: "list_item_value", name: "Value", type: "string" }],
+    attributes: [],
     parentId: "base_item",
     abstract: false,
   });
@@ -123,8 +137,13 @@ export const startup = async () => {
     description: `A ticket is a task or issue within a project that tracks progress and resolution.`,
     parentId: "base_item",
     attributes: [
-      { id: "ticket_status", name: "Status", type: "string" },
-      { id: "ticket_description", name: "Description", type: "string" },
+      { id: "ticket_status", name: "Status", type: "string", isRequired: true },
+      {
+        id: "ticket_description",
+        name: "Description",
+        type: "string",
+        isRequired: false,
+      },
     ],
     abstract: false,
     validChildEntityTypeIds: [],
@@ -136,9 +155,24 @@ export const startup = async () => {
       "A line item represents an individual product or service listed within an order.",
     parentId: "base_item",
     attributes: [
-      { id: "line_item_product_name", name: "Product", type: "string" },
-      { id: "line_item_unit_quantity", name: "Quantity", type: "number" },
-      { id: "line_item_unit_cost", name: "Cost Per Unit", type: "number" },
+      {
+        id: "line_item_product_name",
+        name: "Product",
+        type: "string",
+        isRequired: true,
+      },
+      {
+        id: "line_item_unit_quantity",
+        name: "Quantity",
+        type: "number",
+        isRequired: true,
+      },
+      {
+        id: "line_item_unit_cost",
+        name: "Cost Per Unit",
+        type: "number",
+        isRequired: false,
+      },
     ],
     abstract: false,
   });

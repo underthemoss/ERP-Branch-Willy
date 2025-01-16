@@ -1,4 +1,4 @@
-import { Avatar, Tooltip } from "@mui/joy";
+import { Avatar, Box, Tooltip } from "@mui/joy";
 import { AutoImage } from "./AutoImage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -6,15 +6,15 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import HelpIcon from '@mui/icons-material/Help';
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
 import DataLoader from "dataloader";
-
-const getEntityContentTypeBatch = async (userIds: string[]) => {
+const getEntityContentTypeBatch = async (entityIds: string[]) => {
   const { user } = await useAuth();
   const results = await prisma.entity.findMany({
     where: {
-      id: { in: userIds },
+      id: { in: entityIds },
       tenantId: { in: ["SYSTEM", user.company_id] },
     },
     select: {
@@ -27,26 +27,30 @@ const getEntityContentTypeBatch = async (userIds: string[]) => {
       },
     },
   });
-  return userIds
+  return entityIds
     .map((id) => results.find((r) => r.id === id))
-    .map((d) => ({
-      title: d?.entityType.name,
-      id: d?.id,
-      entityTypeId: d?.entityType.id,
-    }));
+    .map((d) =>
+      d
+        ? {
+            title: d?.entityType.name,
+            id: d?.id,
+            entityTypeId: d?.entityType.id,
+          }
+        : null
+    );
 };
 
 const entityTypeLoader = new DataLoader<
   string,
-  Awaited<ReturnType<typeof getEntityContentTypeBatch>>[number]
+  Awaited<ReturnType<typeof getEntityContentTypeBatch>>[number] | Awaited<null>
 >((keys) => getEntityContentTypeBatch(keys as any), {
   batchScheduleFn: (res) => setTimeout(res, 10),
   maxBatchSize: 10000,
 });
 
-const Icon: React.FC<{
+export const Icon: React.FC<{
   entityTypeId: string | undefined;
-  entityId: string | undefined;
+  entityId?: string | undefined;
 }> = ({ entityTypeId, entityId }) => {
   if (entityTypeId === "workspace") {
     return (
@@ -75,13 +79,24 @@ const Icon: React.FC<{
   if (entityTypeId === "list_item") {
     return <FiberManualRecordIcon style={{ color: "black" }} />;
   }
-  return <>{entityTypeId}</>;
+  return <HelpIcon style={{ color: "black" }} />;
 };
 
-export const EntityTypeIcons: React.FC<{
+export const EntityTypeIcon: React.FC<{
+  entityTypeId: string;
+}> = async ({ entityTypeId }) => {
+  return (
+    <Tooltip title={entityTypeId}>
+      <Icon entityTypeId={entityTypeId} />
+    </Tooltip>
+  );
+};
+
+export const EntityIcon: React.FC<{
   entityId: string;
 }> = async ({ entityId }) => {
   const entity = await entityTypeLoader.load(entityId);
+  if (!entity) return <></>;
   return (
     <Tooltip title={entity.title}>
       <Icon entityId={entity.id} entityTypeId={entity.entityTypeId} />

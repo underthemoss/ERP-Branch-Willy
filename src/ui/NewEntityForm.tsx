@@ -58,10 +58,7 @@ export const NewEntityForm = async (props: {
     },
   });
 
-  const attributes = [
-    ...(await traverseUp(entityType.parentId)),
-    ...entityType.attributes,
-  ];
+  const attributes = await prisma.entityType.getAllAttributes(content_type_id);
 
   return (
     <Box m={2}>
@@ -100,8 +97,15 @@ export const NewEntityForm = async (props: {
             {attributes.map((attr, i) => {
               return (
                 <FormControl key={attr.id}>
-                  <FormLabel>{attr.name}</FormLabel>
-                  <Input name={attr.id} defaultValue={""} autoFocus={i === 0} />
+                  <FormLabel required={attr.isRequired}>{attr.name}</FormLabel>
+                  <Input
+                    required={attr.isRequired}
+                    autoComplete="off"
+                    type={attr.type}
+                    name={attr.id}
+                    defaultValue={""}
+                    autoFocus={i === 0}
+                  />
                 </FormControl>
               );
             })}

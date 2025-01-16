@@ -56,6 +56,7 @@ model EntityAttribute {
   id           String                   @id @map("_id")
   name         String
   tenantId     String
+  isRequired   Boolean
   type         EntityAttributeValueType
   attributes   Json?
   entityTypeId String

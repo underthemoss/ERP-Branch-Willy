@@ -15,75 +15,19 @@ export default async function Page(props: {
   };
   const entityTypes = await prisma.entityType.findMany({
     where: tenantWhereClause,
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
       parent: {
         where: tenantWhereClause,
-        include: {
-          parent: {
-            where: tenantWhereClause,
-            include: {
-              parent: {
-                where: tenantWhereClause,
-              },
-              attributes: {
-                where: tenantWhereClause,
-              },
-            },
-          },
-          attributes: {
-            where: tenantWhereClause,
-          },
+        select: {
+          id: true,
+          name: true,
         },
-      },
-      attributes: {
-        where: tenantWhereClause,
       },
     },
   });
-
-  const traverseInheritedAttributes = (
-    item: any,
-    start: any
-  ): React.ReactNode[] => {
-    if (!item) return [];
-    return [
-      ...traverseInheritedAttributes(item.parent, start),
-      ...item.attributes.map((a: any) => {
-        const isInhertedAttribute = start.id !== item.id;
-        return (
-          <Tooltip
-            key={a.id}
-            title={
-              <>
-                {isInhertedAttribute && (
-                  <Box>
-                    Inherited from:{" "}
-                    <NextLink href={`/app/settings/content-types/${item.id}`}>
-                      {item.name}
-                    </NextLink>
-                  </Box>
-                )}
-                <Box>Type: {a.type}</Box>
-                <Box>{a.tenantId !== "SYSTEM" && "Custom attribute"}</Box>
-              </>
-            }
-            variant="outlined"
-          >
-            <Chip
-              sx={{ mr: 1 }}
-              color={isInhertedAttribute ? "neutral" : "primary"}
-            >
-              {isInhertedAttribute && (
-                <KeyboardDoubleArrowUpIcon style={{ fontSize: 12 }} />
-              )}
-
-              {a.name}
-            </Chip>
-          </Tooltip>
-        );
-      }),
-    ];
-  };
 
   return (
     <>
@@ -91,20 +35,16 @@ export default async function Page(props: {
         <Typography level="h1" fontWeight={500}>
           Content Types
         </Typography>
-        <Box></Box>
+
         <Box flex={1}></Box>
-        <Link href="/app/settings/new-content-type">
-          <Button variant="plain">New Content Type</Button>
-        </Link>
       </Box>
       <Box mt={2}>
         <Table>
           <thead>
             <tr>
-              <th style={{ width: 150 }}>Name</th>
-              <th style={{ width: 150 }}>Parent</th>
+              <th style={{ width: 150 }}>Type</th>
+              <th style={{ width: 150 }}>Parent Type</th>
               <th>Description</th>
-              <th>Attributes</th>
             </tr>
           </thead>
           <tbody>
@@ -126,7 +66,6 @@ export default async function Page(props: {
                     )}
                   </td>
                   <td>{type.description}</td>
-                  <td>{traverseInheritedAttributes(type, type)}</td>
                 </tr>
               );
             })}
