@@ -11,7 +11,9 @@ export default function ClientAuth() {
 
   useEffect(() => {
     if (jwt) {
-      document.cookie = `jwt=${jwt}; path=/; max-age=3600; secure; samesite=strict`;
+      document.cookie = `jwt=${jwt}; path=/; max-age=${
+        24 * 60 * 60
+      }; secure; samesite=strict`;
       router.push("/");
     }
   }, [jwt]);

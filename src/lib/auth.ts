@@ -23,6 +23,7 @@ const extractTokenValue = (keySuffix: string, token: {}) => {
 
 export const getAuthUser = async () => {
   const token = (await cookies()).get("jwt")?.value || "";
+
   const { payload } = await jose.jwtVerify(token, JWKS);
   const user: User = {
     company_id: extractTokenValue("equipmentshare.com/es_company_id", payload),
@@ -41,7 +42,9 @@ export const getAuthUser = async () => {
 export const useAuth = async () => {
   const payload = await getAuthUser().catch((err) => {
     console.log(err);
-    redirect("/auth");
+
+    throw err;
+    // redirect("/auth");
   });
 
   return payload;
