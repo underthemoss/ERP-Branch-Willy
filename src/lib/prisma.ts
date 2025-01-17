@@ -1,3 +1,4 @@
+import _ from "lodash";
 import {
   PrismaClient,
   Prisma,
@@ -12,54 +13,43 @@ const extendedPrismaClient = () => {
   return prisma.$extends({
     model: {
       entityType: {
-        async getAllAttributes<T>(this: T, entityTypeId: string) {
+        async getAllAttributes<T>(this: T, entityTypeIds: string[]) {
           const { user } = await useAuth();
 
-          const recurseUp = async (
-            entityTypeId: string | null
-          ): Promise<
-            {
-              key: string;
-              label: string;
-              type: EntityAttributeValueType;
-              entityTypeId: string;
-              entityTypeName: string;
-              isRequired: boolean;
-            }[]
-          > => {
-            if (entityTypeId === null) return [];
+          const entityTypes = await prisma.entityType.findMany({
+            where: {
+              tenantId: { in: ["SYSTEM", user.company_id] },
+            },
+          });
+          const entityTypeKeyedById = _.keyBy(entityTypes, (d) => d.id);
 
-            const result = await prisma.entityType.findFirstOrThrow({
-              where: {
-                id: entityTypeId,
-                tenantId: { in: ["SYSTEM", user.company_id] },
-              },
-              select: {
-                parentId: true,
-                name: true,
-                id: true,
-                attributes: {
-                  select: {
-                    label: true,
-                    key: true,
-                    type: true,
-                    isRequired: true,
-                  },
-                },
-              },
-            });
-
+          const recurseUp = (
+            entityTypeId: string
+          ): {
+            key: string;
+            label: string;
+            isRequired: boolean;
+            type: EntityAttributeValueType;
+            entityTypeId: string;
+            entityTypeName: string;
+          }[] => {
+            if (entityTypeId === "") return [];
+            const parentEntityId = entityTypeId
+              .split("_")
+              .slice(0, -1)
+              .join("_");
+            const entityType = entityTypeKeyedById[entityTypeId];
             return [
-              ...(await recurseUp(result.parentId)),
-              ...result.attributes.map((attr) => ({
-                ...attr,
-                entityTypeId: result.id,
-                entityTypeName: result.name,
+              ...recurseUp(parentEntityId),
+              ...entityTypeKeyedById[entityTypeId].attributes.map((attrs) => ({
+                ...attrs,
+                entityTypeId: entityType.id,
+                entityTypeName: entityType.name,
               })),
             ];
           };
 
-          return await recurseUp(entityTypeId);
+          return entityTypeIds.flatMap((id) => recurseUp(id));
         },
         // async getAllowedChildContentTypes<T>(
         //   this: T,

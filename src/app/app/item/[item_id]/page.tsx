@@ -1,12 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
-import { Avatar, Box, Table, Tooltip, Typography } from "@mui/joy";
-import { SystemEntityTypes } from "@/lib/SystemTypes";
+import { Box, Table, Typography } from "@mui/joy";
 import { NextLink } from "@/ui/NextLink";
 import { UserDetail } from "@/ui/UserDetail";
-import { AutoImage } from "@/ui/AutoImage";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { EntityIcon } from "@/ui/EntityTypeIcons";
+import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
 
 export default async function Page(props: {
@@ -25,18 +22,18 @@ export default async function Page(props: {
           entityType: true,
         },
       },
+      entityType: {
+        select: {
+          icon: true,
+        },
+      },
     },
   });
 
-  const types = await prisma.entityType.findMany({
-    where: { tenantId: { in: ["SYSTEM", user.company_id] } },
-  });
+  const entityTypesInUse = _.uniq(parent.children.map((c) => c.entityType.id));
+  const columns = await prisma.entityType.getAllAttributes(entityTypesInUse);
 
-  const contentTypesLookup = _.keyBy(types, (t) => t.id);
-
-  const columns = Object.keys(
-    _.groupBy(parent.children, (c) => c.entityTypeId)
-  ).flatMap((id) => contentTypesLookup[id].attributes);
+  const groupedColumns = Object.entries(_.groupBy(columns, (c) => c.key));
 
   return (
     <Box>
@@ -52,7 +49,7 @@ export default async function Page(props: {
         <Table>
           <thead>
             <tr>
-              {columns.map((c, i) => {
+              {groupedColumns.map(([_, [c]], i) => {
                 return <th key={c.key}>{c.label}</th>;
               })}
               <th>Created by</th>
@@ -64,12 +61,14 @@ export default async function Page(props: {
             {parent.children.map((item) => {
               return (
                 <tr key={item.id}>
-                  {columns.map((c, i) => {
+                  {groupedColumns.map(([_, [c]], i) => {
                     if (i === 0) {
                       return (
                         <td key={c.key}>
                           <Box display={"flex"} gap={1}>
-                            <EntityIcon entityId={item.id} />
+                            <EntityTypeIcon
+                              entityTypeIcon={item.entityType.icon}
+                            />
                             <NextLink href={`/app/item/${item.id}`}>
                               {(item.attributes as any).item_title}
                             </NextLink>

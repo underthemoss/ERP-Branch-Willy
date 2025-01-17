@@ -10,7 +10,7 @@ import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { NextLink } from "@/ui/NextLink";
 import { MenuItemLink } from "./NewButton.client";
 import { ListItemDecorator } from "@mui/joy";
-import { EntityIcon, EntityTypeIcon } from "@/ui/EntityTypeIcons";
+import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
 
 const getAllowedChildContentTypes = async (
@@ -35,8 +35,6 @@ const getAllowedChildContentTypes = async (
     (ct) => ct.parentId
   );
 
-  console.log(entityTypeId);
-
   const getClosestParentWithTypeRestrictions = (
     contentTypeId: string | null
   ): string[] => {
@@ -50,57 +48,10 @@ const getAllowedChildContentTypes = async (
       : getClosestParentWithTypeRestrictions(parentId);
   };
 
-  console.log("asd", getClosestParentWithTypeRestrictions(entityTypeId));
   // return getClosestParentWithTypeRestrictions(entityTypeId);
   return getClosestParentWithTypeRestrictions(entityTypeId).flatMap((a) =>
-    contentTypes
-      .filter((ct) => ct.id.startsWith(a))
-      .map((c) => c.id)
+    contentTypes.filter((ct) => ct.id.startsWith(a)).map((c) => c.id)
   );
-
-  // const validContentTypes = getAncestors(entityTypeId).reduce(
-  //   (acc, contentTypeId) => {
-  //     const contentType = contentTypesKeyedById[contentTypeId];
-  //     return [
-  //       ...acc,
-  //       ...contentType.validChildEntityTypeIds,
-  //       ...contentType.validChildEntityTypeIds.flatMap(
-  //         getContentTypeDescendents
-  //       ),
-  //     ];
-  //   },
-  //   [] as string[]
-  // );
-
-  // return validContentTypes;
-  // const traverseTree = (
-  //   entityTypeId: string,
-  //   visited = new Set<string>()
-  // ): string[] => {
-  //   // If the current ID is already visited, stop recursion
-  //   if (visited.has(entityTypeId)) {
-  //     return [];
-  //   }
-
-  //   // Mark the current ID as visited
-  //   visited.add(entityTypeId);
-
-  //   // Retrieve valid child entity type IDs
-  //   const validEntityTypeIds =
-  //     result[entityTypeId]?.validChildEntityTypeIds || [];
-
-  //   // Recursively traverse the children
-  //   return [
-  //     ...new Set([
-  //       ...validEntityTypeIds,
-  //       ...validEntityTypeIds.flatMap((childId) =>
-  //         traverseTree(childId, visited)
-  //       ),
-  //     ]),
-  //   ];
-  // };
-
-  // return traverseTree(entityTypeId);
 };
 
 export default async function NewButton(props: { itemId: string }) {
@@ -119,23 +70,15 @@ export default async function NewButton(props: { itemId: string }) {
     },
   });
 
-  // const allowedTypeIds =
-
   const allowedTypeIds = await getAllowedChildContentTypes(
     parentEntity?.entityTypeId
   );
-  // console.log(await getAllowedChildContentTypes(parentEntity?.entityTypeId));
-  // console.log(
-  //   await prisma.entityType.getAllowedChildContentTypes(
-  //     parentEntity?.entityTypeId
-  //   )
-  // );
   return (
     <Dropdown>
       <MenuButton startDecorator={<AddIcon />}>New</MenuButton>
       <Menu placement="bottom-end" sx={{ minWidth: 150 }}>
         {entityTypes
-          // .filter((t) => !t.hidden)
+          .filter((t) => !t.abstract)
           .map((et) => {
             return (
               <MenuItemLink
@@ -144,7 +87,7 @@ export default async function NewButton(props: { itemId: string }) {
                 href={`/app/item/${parentEntity?.id || "null"}/new/${et.id}`}
               >
                 <ListItemDecorator>
-                  <EntityTypeIcon entityTypeId={et.id} />
+                  <EntityTypeIcon entityTypeIcon={et.icon} />
                 </ListItemDecorator>
                 New {et.name}
               </MenuItemLink>

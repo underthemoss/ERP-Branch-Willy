@@ -10,6 +10,10 @@ import HelpIcon from "@mui/icons-material/Help";
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
 import DataLoader from "dataloader";
+import { EntityTypeIcon as EntityTypeIconEnum } from "../../prisma/generated/mongo";
+import SettingsIcon from "@mui/icons-material/Settings";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+
 const getEntityContentTypeBatch = async (entityIds: string[]) => {
   const { user } = await useAuth();
   const results = await prisma.entity.findMany({
@@ -82,24 +86,64 @@ export const Icon: React.FC<{
   return <HelpIcon style={{ color: "black" }} />;
 };
 
-export const EntityTypeIcon: React.FC<{
-  entityTypeId: string;
-}> = async ({ entityTypeId }) => {
-  return (
-    <Tooltip title={entityTypeId}>
-      <Icon entityTypeId={entityTypeId} />
-    </Tooltip>
-  );
-};
+// export const EntityTypeIcon: React.FC<{
+//   entityTypeId: string;
+// }> = async ({ entityTypeId }) => {
+//   return (
+//     <Tooltip title={entityTypeId}>
+//       <Icon entityTypeId={entityTypeId} />
+//     </Tooltip>
+//   );
+// };
 
-export const EntityIcon: React.FC<{
-  entityId: string;
-}> = async ({ entityId }) => {
-  const entity = await entityTypeLoader.load(entityId);
-  if (!entity) return <></>;
-  return (
-    <Tooltip title={entity.title}>
-      <Icon entityId={entity.id} entityTypeId={entity.entityTypeId} />
-    </Tooltip>
-  );
+// export const EntityIcon: React.FC<{
+//   entityId: string;
+// }> = async ({ entityId }) => {
+//   const entity = await entityTypeLoader.load(entityId);
+//   if (!entity) return <></>;
+//   return (
+//     <Tooltip title={entity.title}>
+//       <Icon entityId={entity.id} entityTypeId={entity.entityTypeId} />
+//     </Tooltip>
+//   );
+// };
+
+export const EntityTypeIcon: React.FC<{
+  entityTypeIcon: EntityTypeIconEnum;
+  entityId?: string | undefined;
+}> = ({ entityTypeIcon, entityId }) => {
+  if (entityTypeIcon === "system") {
+    return <SettingsIcon style={{ color: "black" }} />;
+  }
+  if (entityTypeIcon === "workspace") {
+    return (
+      <Avatar style={{ height: 24, width: 24 }}>
+        <AutoImage size={24} value={entityId || ""}></AutoImage>
+      </Avatar>
+    );
+  }
+  if (entityTypeIcon === "folder") {
+    return <FolderOpenIcon style={{ color: "black" }} />;
+  }
+  if (entityTypeIcon === "document") {
+    return <InsertDriveFileIcon style={{ color: "black" }} />;
+  }
+
+  if (entityTypeIcon === "ticket") {
+    return <ReceiptLongIcon style={{ color: "black" }} />;
+  }
+
+  if (entityTypeIcon === "order") {
+    return <DescriptionIcon style={{ color: "black" }} />;
+  }
+  if (entityTypeIcon === "line_item") {
+    return <RadioButtonUncheckedIcon style={{ color: "black" }} />;
+  }
+  if (entityTypeIcon === "list") {
+    return <FormatListBulletedIcon style={{ color: "black" }} />;
+  }
+  if (entityTypeIcon === "list_item") {
+    return <FiberManualRecordIcon style={{ color: "black" }} />;
+  }
+  return <HelpIcon style={{ color: "black" }} />;
 };

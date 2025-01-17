@@ -14,10 +14,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AutoImage } from "@/ui/AutoImage";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
+import { SystemEntityTypes } from "@/lib/SystemTypes";
 export default async function SideNav() {
   const { user } = await useAuth();
   const workspaces = await prisma.entity.findMany({
-    where: { entityTypeId: "workspace", tenantId: user.company_id },
+    where: {
+      entityTypeId: "system_workspace" satisfies SystemEntityTypes,
+      tenantId: user.company_id,
+    },
     select: {
       attributes: true,
       id: true,

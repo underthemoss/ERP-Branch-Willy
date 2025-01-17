@@ -25,7 +25,7 @@ export default async function Page(props: {
   params: Promise<{ contentTypeId: string }>;
 }) {
   const { contentTypeId } = await props.params;
-  const attributes = await prisma.entityType.getAllAttributes(contentTypeId);
+  const attributes = await prisma.entityType.getAllAttributes([contentTypeId]);
   const { user } = await useAuth();
   const baseType = await prisma.entityType.findFirstOrThrow({
     where: { tenantId: { in: ["SYSTEM", user.company_id] }, id: contentTypeId },
@@ -63,9 +63,10 @@ export default async function Page(props: {
 
           const result = await prisma.entityType.create({
             data: {
-              id: `${contentTypeId}-${randomUUID()}`,
+              id: `${contentTypeId}_${randomUUID()}`,
               name: name,
               parentId: contentTypeId,
+              icon: "document",
               tenantId: user.company_id,
               description: description,
               abstract: false,

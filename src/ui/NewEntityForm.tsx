@@ -13,7 +13,7 @@ import {
 import { InputJsonValue } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
-import { EntityAttributeValueType } from "../../prisma/generated/mongo";
+
 
 export const NewEntityForm = async (props: {
   content_type_id: string;
@@ -30,7 +30,9 @@ export const NewEntityForm = async (props: {
     },
   });
 
-  const attributes = await prisma.entityType.getAllAttributes(content_type_id);
+  const attributes = await prisma.entityType.getAllAttributes([
+    content_type_id,
+  ]);
 
   return (
     <Box m={2}>

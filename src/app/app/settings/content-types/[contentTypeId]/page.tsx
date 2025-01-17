@@ -21,7 +21,8 @@ export default async function Page(props: {
       },
     },
   });
-  const attributes = await prisma.entityType.getAllAttributes(contentTypeId);
+  const attributes = await prisma.entityType.getAllAttributes([contentTypeId]);
+
   const childEntityTypes = await prisma.entityType.findMany({
     where: {
       tenantId: { in: ["SYSTEM", user.company_id] },

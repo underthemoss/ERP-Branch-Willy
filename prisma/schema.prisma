@@ -37,11 +37,24 @@ model EntityType {
   validChildEntityTypeIds String[]
   attributes              EntityAttribute[]
   Entity                  Entity[]
+  icon                    EntityTypeIcon
 
   // Hierarchical relationships
   parentId String? // Reference to the parent entity
   parent   EntityType?  @relation("EntityTypeHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children EntityType[] @relation("EntityTypeHierarchy")
+}
+
+enum EntityTypeIcon {
+  system
+  workspace
+  folder
+  document
+  ticket
+  order
+  line_item
+  list
+  list_item
 }
 
 enum EntityAttributeValueType {

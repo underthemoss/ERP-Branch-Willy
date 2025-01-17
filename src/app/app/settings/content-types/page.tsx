@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Box, Button, Chip, Table, Tooltip, Typography } from "@mui/joy";
 import Link from "next/link";
 import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
+import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
 }) {
@@ -19,6 +20,7 @@ export default async function Page(props: {
       id: true,
       name: true,
       description: true,
+      icon: true,
       parent: {
         where: tenantWhereClause,
         select: {
@@ -42,8 +44,8 @@ export default async function Page(props: {
         <Table>
           <thead>
             <tr>
-              <th style={{ width: 150 }}>Type</th>
-              <th style={{ width: 150 }}>Parent Type</th>
+              <th style={{ width: 250 }}>Type</th>
+              <th style={{ width: 250 }}>Parent Type</th>
               <th>Description</th>
             </tr>
           </thead>
@@ -53,7 +55,8 @@ export default async function Page(props: {
                 <tr key={type.id}>
                   <td>
                     <NextLink href={`/app/settings/content-types/${type.id}`}>
-                      {type.name}
+                      <EntityTypeIcon entityTypeIcon={type.icon} />
+                      <Box ml={1}>{type.name}</Box>
                     </NextLink>
                   </td>
                   <td>

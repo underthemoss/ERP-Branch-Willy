@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import { prisma } from "./lib/prisma";
 import { SystemEntityTypes } from "./lib/SystemTypes";
-import { EntityAttributeValueType } from "../prisma/generated/mongo";
+import {
+  EntityAttributeValueType,
+  EntityTypeIcon,
+} from "../prisma/generated/mongo";
 
 const upsertSystemEntityType = async (props: {
   id: SystemEntityTypes;
@@ -9,6 +12,7 @@ const upsertSystemEntityType = async (props: {
   description: string;
   parentId?: SystemEntityTypes;
   abstract: boolean;
+  icon: EntityTypeIcon;
   attributes?: {
     key: string;
     label: string;
@@ -24,6 +28,7 @@ const upsertSystemEntityType = async (props: {
     attributes = [],
     parentId,
     abstract,
+    icon,
     validChildEntityTypeIds = [],
   } = props;
 
@@ -34,6 +39,7 @@ const upsertSystemEntityType = async (props: {
     create: {
       id,
       name,
+      icon,
       tenantId: "SYSTEM",
       description,
       validChildEntityTypeIds,
@@ -91,6 +97,7 @@ export const startup = async () => {
     name: "System",
     description: "System",
     abstract: true,
+    icon: "system",
   });
 
   // await upsertSystemEntityType({
@@ -112,6 +119,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_folder",
     name: "Folder",
+    icon: "folder",
     description: `A folder is used to organize and structure content within a project, supporting nested hierarchies.`,
     parentId: "system",
     abstract: false,
@@ -129,6 +137,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_document",
     name: "Document",
+    icon: "document",
     description: `A document is a generic item that cannot contain further items.`,
     parentId: "system",
     abstract: false,
@@ -146,6 +155,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_workspace",
     name: "Workspace",
+    icon: "workspace",
     description: `A workspace is a dedicated area to organize and isolate your content and operations.`,
     attributes: [
       { key: "item_title", type: "string", label: "Title", isRequired: true },
@@ -168,6 +178,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_folder_list",
     name: "List",
+    icon: "list",
     description: `A list is a flexible container for storing and managing arbitrary values within a project.`,
     attributes: [],
     parentId: "system_folder",
@@ -177,6 +188,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_document_listitem",
     name: "List Item",
+    icon: "list_item",
     description: `A list item stores a value within a list.`,
     attributes: [],
     parentId: "system_document",
@@ -185,6 +197,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_folder_order",
     name: "Order",
+    icon: "order",
     description: `An order is a request or transaction within a project that tracks items, services, and their fulfillment.`,
     parentId: "system_folder",
     abstract: false,
@@ -197,6 +210,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_document_ticket",
     name: "Ticket",
+    icon: "ticket",
     description: `A ticket is a task or issue within a project that tracks progress and resolution.`,
     parentId: "system_document",
     attributes: [
@@ -219,6 +233,7 @@ export const startup = async () => {
   await upsertSystemEntityType({
     id: "system_document_lineitem",
     name: "Line Item",
+    icon: "line_item",
     description:
       "A line item represents an individual product or service listed within an order.",
     parentId: "system_document",
