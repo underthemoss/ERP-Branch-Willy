@@ -10,8 +10,8 @@ const upsertSystemEntityType = async (props: {
   parentId?: SystemEntityTypes;
   abstract: boolean;
   attributes?: {
-    id: string;
-    name: string;
+    key: string;
+    label: string;
     type: EntityAttributeValueType;
     isRequired: boolean;
   }[];
@@ -26,6 +26,7 @@ const upsertSystemEntityType = async (props: {
     abstract,
     validChildEntityTypeIds = [],
   } = props;
+
   await prisma.entityType.upsert({
     where: {
       id,
@@ -38,6 +39,12 @@ const upsertSystemEntityType = async (props: {
       validChildEntityTypeIds,
       parentId,
       abstract,
+      attributes: attributes.map((attr) => ({
+        key: attr.key,
+        label: attr.label,
+        type: attr.type,
+        isRequired: attr.isRequired,
+      })),
     },
     update: {
       name,
@@ -46,101 +53,162 @@ const upsertSystemEntityType = async (props: {
       parentId,
       validChildEntityTypeIds,
       abstract,
+      attributes: attributes.map((attr) => ({
+        key: attr.key,
+        label: attr.label,
+        type: attr.type,
+        isRequired: attr.isRequired,
+      })),
     },
   });
-  for (const attr of attributes) {
-    await prisma.entityAttribute.upsert({
-      where: {
-        id: attr.id,
-      },
-      create: {
-        id: attr.id,
-        name: attr.name,
-        tenantId: "SYSTEM",
-        type: attr.type,
-        entityTypeId: id,
-        isRequired: attr.isRequired,
-      },
-      update: {
-        name: attr.name,
-        tenantId: "SYSTEM",
-        type: attr.type,
-        entityTypeId: id,
-        isRequired: attr.isRequired,
-      },
-    });
-  }
+  // for (const attr of attributes) {
+  //   await prisma.entityAttribute.upsert({
+  //     where: {
+  //       id: attr.id,
+  //     },
+  //     create: {
+  //       id: attr.id,
+  //       name: attr.name,
+  //       tenantId: "SYSTEM",
+  //       type: attr.type,
+  //       entityTypeId: id,
+  //       isRequired: attr.isRequired,
+  //     },
+  //     update: {
+  //       name: attr.name,
+  //       tenantId: "SYSTEM",
+  //       type: attr.type,
+  //       entityTypeId: id,
+  //       isRequired: attr.isRequired,
+  //     },
+  //   });
+  // }
 };
 
 export const startup = async () => {
   await upsertSystemEntityType({
-    id: "base_item",
-    name: "Base Item",
-    description: "Base item",
+    id: "system",
+    name: "System",
+    description: "System",
     abstract: true,
+  });
+
+  // await upsertSystemEntityType({
+  //   id: "system-content_restriction",
+  //   name: "Content restriction",
+  //   description: "Used to restrict what content can be added to the parent",
+  //   parentId: "system",
+  //   abstract: true,
+  //   attributes: [
+  //     {
+  //       id: "content_restriction_allowed_type",
+  //       type: "string",
+  //       name: "Allowed type",
+  //       isRequired: true,
+  //     },
+  //   ],
+  // });
+
+  await upsertSystemEntityType({
+    id: "system_folder",
+    name: "Folder",
+    description: `A folder is used to organize and structure content within a project, supporting nested hierarchies.`,
+    parentId: "system",
+    abstract: false,
+    validChildEntityTypeIds: [
+      "system_folder",
+      "system_folder_order",
+      "system_folder_list",
+      "system_document_ticket",
+    ],
     attributes: [
-      { id: "item_name", type: "string", name: "Name", isRequired: true },
+      { key: "item_title", type: "string", label: "Title", isRequired: true },
     ],
   });
+
   await upsertSystemEntityType({
-    id: "workspace",
+    id: "system_document",
+    name: "Document",
+    description: `A document is a generic item that cannot contain further items.`,
+    parentId: "system",
+    abstract: false,
+    validChildEntityTypeIds: [
+      "system_folder",
+      "system_folder_order",
+      "system_folder_list",
+      "system_document_ticket",
+    ],
+    attributes: [
+      { key: "item_title", type: "string", label: "Title", isRequired: true },
+    ],
+  });
+
+  await upsertSystemEntityType({
+    id: "system_workspace",
     name: "Workspace",
     description: `A workspace is a dedicated area to organize and isolate your content and operations.`,
     attributes: [
+      { key: "item_title", type: "string", label: "Title", isRequired: true },
       {
-        id: "workspace_description",
-        name: "Description",
+        key: "workspace_description",
+        label: "Description",
         type: "string",
         isRequired: false,
       },
     ],
-    parentId: "base_item",
+    parentId: "system",
     abstract: false,
-    validChildEntityTypeIds: ["folder", "list", "order", "ticket"],
+    validChildEntityTypeIds: [
+      "system_folder",
+      "system_folder_list",
+      "system_folder_order",
+      "system_document_ticket",
+    ],
   });
   await upsertSystemEntityType({
-    id: "list",
+    id: "system_folder_list",
     name: "List",
     description: `A list is a flexible container for storing and managing arbitrary values within a project.`,
     attributes: [],
-    parentId: "base_item",
+    parentId: "system_folder",
     abstract: false,
-    validChildEntityTypeIds: ["list_item"],
+    validChildEntityTypeIds: ["system_document_listitem"],
   });
   await upsertSystemEntityType({
-    id: "list_item",
+    id: "system_document_listitem",
     name: "List Item",
     description: `A list item stores a value within a list.`,
     attributes: [],
-    parentId: "base_item",
+    parentId: "system_document",
     abstract: false,
   });
   await upsertSystemEntityType({
-    id: "folder",
-    name: "Folder",
-    description: `A folder is used to organize and structure content within a project, supporting nested hierarchies.`,
-    parentId: "base_item",
-    abstract: false,
-    validChildEntityTypeIds: ["folder", "order", "list", "ticket"],
-  });
-  await upsertSystemEntityType({
-    id: "order",
+    id: "system_folder_order",
     name: "Order",
     description: `An order is a request or transaction within a project that tracks items, services, and their fulfillment.`,
-    parentId: "base_item",
+    parentId: "system_folder",
     abstract: false,
-    validChildEntityTypeIds: ["folder", "order", "line_item", "ticket"],
+    validChildEntityTypeIds: [
+      "system_folder_order",
+      "system_document_lineitem",
+      "system_document_ticket",
+    ],
   });
   await upsertSystemEntityType({
-    id: "ticket",
+    id: "system_document_ticket",
     name: "Ticket",
     description: `A ticket is a task or issue within a project that tracks progress and resolution.`,
-    parentId: "base_item",
+    parentId: "system_document",
     attributes: [
-      { id: "ticket_status", name: "Status", type: "string", isRequired: true },
       {
-        id: "ticket_description",
-        name: "Description",
+        key: "ticket_status",
+        label: "Status",
+        type: "string",
+        isRequired: true,
+      },
+      {
+        key: "ticket_description",
+        label: "Description",
         type: "string",
         isRequired: false,
       },
@@ -149,33 +217,34 @@ export const startup = async () => {
     validChildEntityTypeIds: [],
   });
   await upsertSystemEntityType({
-    id: "line_item",
+    id: "system_document_lineitem",
     name: "Line Item",
     description:
       "A line item represents an individual product or service listed within an order.",
-    parentId: "base_item",
+    parentId: "system_document",
     attributes: [
       {
-        id: "line_item_product_name",
-        name: "Product",
+        key: "line_item_product_name",
+        label: "Product",
         type: "string",
         isRequired: true,
       },
       {
-        id: "line_item_unit_quantity",
-        name: "Quantity",
+        key: "line_item_unit_quantity",
+        label: "Quantity",
         type: "number",
         isRequired: true,
       },
       {
-        id: "line_item_unit_cost",
-        name: "Cost Per Unit",
+        key: "line_item_unit_cost",
+        label: "Cost Per Unit",
         type: "number",
         isRequired: false,
       },
     ],
     abstract: false,
   });
+
   await prisma.$runCommandRaw({
     createIndexes: "Entity",
     indexes: [

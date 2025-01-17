@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 export const MenuItemLink = (props: {
   children: React.ReactNode;
   href: string;
+  disabled?: boolean;
 }) => {
   const { push } = useRouter();
-  return <MenuItem onClick={() => push(props.href)}>{props.children}</MenuItem>;
+  return (
+    <MenuItem disabled={props.disabled} onClick={() => push(props.href)}>
+      {props.children}
+    </MenuItem>
+  );
 };

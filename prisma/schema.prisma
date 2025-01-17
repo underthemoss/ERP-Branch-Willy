@@ -52,16 +52,11 @@ enum EntityAttributeValueType {
   enum
 }
 
-model EntityAttribute {
-  id           String                   @id @map("_id")
-  name         String
-  tenantId     String
-  isRequired   Boolean
-  type         EntityAttributeValueType
-  attributes   Json?
-  entityTypeId String
-  entityType   EntityType               @relation(fields: [entityTypeId], references: [id])
-  // AttributeValue AttributeValue[]
+type EntityAttribute {
+  key        String
+  label      String
+  isRequired Boolean
+  type       EntityAttributeValueType
 }
 
 // model AttributeValue {

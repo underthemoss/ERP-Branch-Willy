@@ -47,7 +47,7 @@ export default async function SideNav() {
                           <AutoImage value={ws.id} />
                         </Avatar>
                       </ListItemDecorator>
-                      {(ws.attributes as any).item_name}
+                      {(ws.attributes as any).item_title}
                     </ListItemButton>
                   </ListItem>
                 </Link>

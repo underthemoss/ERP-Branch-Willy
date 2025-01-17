@@ -4,17 +4,18 @@ import { useState } from "react";
 import { EntityAttributeValueType } from "../../../../../../../prisma/generated/mongo";
 
 type AttributeType = {
-  id: string;
-  name: string;
+  key: string;
+  label: string;
   type: EntityAttributeValueType;
-  isInherited?: boolean;
+  entityTypeId: string;
+  entityTypeName: string;
   isRequired: boolean;
 };
 
 export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
-  const [attrs, setAttrs] = useState<Partial<AttributeType>[]>([
-    ...props.inheritedAttributes.map((a) => ({ ...a, isInherited: true })),
-  ]);
+  const [attrs, setAttrs] = useState<
+    Partial<AttributeType & { isInherited?: boolean }>[]
+  >([...props.inheritedAttributes.map((a) => ({ ...a, isInherited: true }))]);
 
   const addAttr = () => {
     setAttrs((attrs) => [
@@ -41,7 +42,7 @@ export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
             const fieldName = (name: string) =>
               attr.isInherited ? "" : `attributes[${index}].${name}`;
             return (
-              <tr key={`${i}_${attr.id}`}>
+              <tr key={`${i}_${attr.key}`}>
                 <td>{i + 1}</td>
                 <td>
                   <Input
@@ -49,7 +50,7 @@ export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
                     autoComplete="off"
                     name={fieldName("name")}
                     placeholder="Attribute name"
-                    defaultValue={attr.name}
+                    defaultValue={attr.label}
                     disabled={attr.isInherited}
                   />
                 </td>

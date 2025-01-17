@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   Box,
   Button,
+  Checkbox,
   FormControl,
   FormLabel,
   Grid,
@@ -15,7 +16,7 @@ import {
 } from "@mui/joy";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
-import { redirect, RedirectType } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Attributes } from "./Attributes";
 import { NextLinkBack } from "@/ui/NextLink";
 import { EntityAttributeValueType } from "../../../../../../../prisma/generated/mongo";
@@ -25,6 +26,20 @@ export default async function Page(props: {
 }) {
   const { contentTypeId } = await props.params;
   const attributes = await prisma.entityType.getAllAttributes(contentTypeId);
+  const { user } = await useAuth();
+  const baseType = await prisma.entityType.findFirstOrThrow({
+    where: { tenantId: { in: ["SYSTEM", user.company_id] }, id: contentTypeId },
+    select: {
+      name: true,
+      validChildEntityTypeIds: true,
+    },
+  });
+
+  const validContents = await prisma.entityType.findMany({
+    where: { id: { in: baseType.validChildEntityTypeIds } },
+  });
+
+  // await prisma.entityType.getChildEntityTypes(validContents);
 
   return (
     <Box pt={2}>
@@ -44,42 +59,32 @@ export default async function Page(props: {
             .reduce((acc, [key, value]) => {
               _.set(acc, key, value);
               return acc;
-            }, {} as { attributes: { name: string; type: string; isRequired: string }[] });
+            }, {} as { attributes?: { name: string; type: string; isRequired: string }[] });
 
-          console.log(formData);
-          console.log(attributes);
-          await prisma.entityType.create({
+          const result = await prisma.entityType.create({
             data: {
-              id: randomUUID(),
+              id: `${contentTypeId}-${randomUUID()}`,
               name: name,
               parentId: contentTypeId,
               tenantId: user.company_id,
               description: description,
               abstract: false,
-              ...(attributes.length > 0
-                ? {
-                    attributes: {
-                      createMany: {
-                        data: attributes.map((attr) => ({
-                          id: randomUUID(),
-                          isRequired: attr.isRequired === "on",
-                          name: attr.name.trim(),
-                          tenantId: user.company_id,
-                          type: attr.type as EntityAttributeValueType,
-                        })),
-                      },
-                    },
-                  }
-                : undefined),
+              attributes:
+                attributes?.map((attr) => ({
+                  key: randomUUID(),
+                  isRequired: attr.isRequired === "on",
+                  label: attr.name.trim(),
+                  type: attr.type as EntityAttributeValueType,
+                })) || [],
             },
           });
 
-          redirect("/app/settings/content-types");
+          redirect(`/app/settings/content-types/${result.id}`);
         }}
       >
         <Grid container spacing={2}>
           <Grid xs={12}>
-            <Typography level="h4">New Content Type</Typography>
+            <Typography level="h4">Create {baseType.name} Subtype</Typography>
           </Grid>
 
           <Grid xs={12}>

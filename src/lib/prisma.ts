@@ -19,16 +19,16 @@ const extendedPrismaClient = () => {
             entityTypeId: string | null
           ): Promise<
             {
-              id: string;
-              name: string;
+              key: string;
+              label: string;
               type: EntityAttributeValueType;
               entityTypeId: string;
               entityTypeName: string;
-              tenantId: string;
               isRequired: boolean;
             }[]
           > => {
             if (entityTypeId === null) return [];
+
             const result = await prisma.entityType.findFirstOrThrow({
               where: {
                 id: entityTypeId,
@@ -40,20 +40,15 @@ const extendedPrismaClient = () => {
                 id: true,
                 attributes: {
                   select: {
-                    name: true,
-                    id: true,
+                    label: true,
+                    key: true,
                     type: true,
-                    tenantId: true,
                     isRequired: true,
-                  },
-                  where: {
-                    tenantId: {
-                      in: ["SYSTEM", user.company_id],
-                    },
                   },
                 },
               },
             });
+
             return [
               ...(await recurseUp(result.parentId)),
               ...result.attributes.map((attr) => ({
@@ -66,19 +61,34 @@ const extendedPrismaClient = () => {
 
           return await recurseUp(entityTypeId);
         },
-        async getChildEntityTypes<T>(this: T, entityTypeId: string) {
-          const { user } = await useAuth();
-          await prisma.entityType.findMany({
-            where: {
-              tenantId: { in: ["SYSTEM", user.company_id] },
-              parentId: entityTypeId,
-            },
-            select: {
-              id: true,
-              name: true,
-            },
-          });
-        },
+        // async getAllowedChildContentTypes<T>(
+        //   this: T,
+        //   entityTypeId: string | undefined
+        // ) {
+        //   if (!entityTypeId) {
+        //     return [];
+        //   }
+        //   const { user } = await useAuth();
+        //   const traveseDown = async (contentTypeId: string) => {
+        //     const base = await prisma.entityType.findFirstOrThrow({
+        //       where: {
+        //         tenantId: { in: ["SYSTEM", user.company_id] },
+        //         id: contentTypeId,
+        //       },
+        //       select: {
+        //         id: true,
+        //         name: true,
+        //         children: {
+        //           select: {
+        //             id: true,
+        //             name: true,
+        //           },
+        //         },
+        //       },
+        //     });
+        //   };
+        //   return await traveseDown(entityTypeId);
+        // },
       },
     },
   });

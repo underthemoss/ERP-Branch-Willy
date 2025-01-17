@@ -6,7 +6,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import HelpIcon from '@mui/icons-material/Help';
+import HelpIcon from "@mui/icons-material/Help";
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
 import DataLoader from "dataloader";

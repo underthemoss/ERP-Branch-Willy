@@ -80,8 +80,8 @@ export default async function Page(props: {
           </thead>
           <tbody>
             {attributes.map((attr, i, arr) => (
-              <tr key={attr.id}>
-                <td>{attr.name}</td>
+              <tr key={attr.key}>
+                <td>{attr.label}</td>
                 <td>{attr.type === "string" ? "text" : attr.type}</td>
                 <td>
                   {attr.entityTypeId === contentTypeId ? (

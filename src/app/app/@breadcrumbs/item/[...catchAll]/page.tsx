@@ -22,15 +22,17 @@ const traverseUp = async (
   tenantId: string,
   id: string | null
 ): Promise<{ id: string; name: string; typeId: string }[]> => {
-  if (!id) return [];
+  if (!id || id === "null") return [];
+
   const entity = await prisma.entity.findFirstOrThrow({
     where: { id, tenantId },
     select: { attributes: true, parentId: true, id: true, entityTypeId: true },
   });
+
   return [
     ...(await traverseUp(tenantId, entity.parentId)),
     {
-      name: (entity.attributes as JsonObject).item_name as string,
+      name: (entity.attributes as JsonObject).item_title as string, //todo: item_title is not great here
       id: entity.id,
       typeId: entity.entityTypeId,
     },
@@ -42,11 +44,6 @@ export default async function HeaderBreadcrumbs(props: {
 }) {
   const { user } = await useAuth();
   const itemId = (await props.params).catchAll[2];
-  const entity = await prisma.entity.findFirstOrThrow({
-    where: { id: itemId, tenantId: user.company_id },
-  });
-  const segments = (await props.params).catchAll?.splice(3);
-
   const ancestors = await traverseUp(user.company_id, itemId);
 
   return (
@@ -58,10 +55,6 @@ export default async function HeaderBreadcrumbs(props: {
               <HomeIcon></HomeIcon>
             </IconButton>
           </NextLink>
-          {/* 
-          <NextLink href={`/app/item/${entity.id}`}>
-            {(entity.attributes as any)["item_name"]}
-          </NextLink> */}
 
           {ancestors.map((s) => (
             <NextLink href={`/app/item/${s.id}`} key={s.id}>

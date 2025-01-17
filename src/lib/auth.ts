@@ -41,7 +41,7 @@ export const getAuthUser = async () => {
 
 export const useAuth = async () => {
   const payload = await getAuthUser().catch((err) => {
-    console.log(err);
+    console.error(err);
 
     throw err;
     // redirect("/auth");

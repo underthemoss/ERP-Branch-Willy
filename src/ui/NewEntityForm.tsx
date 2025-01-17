@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
-import { NextLinkBack } from "@/ui/NextLink";
+import { NextLink, NextLinkBack } from "@/ui/NextLink";
 import {
   Box,
   Button,
@@ -15,31 +15,6 @@ import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { EntityAttributeValueType } from "../../prisma/generated/mongo";
 
-const traverseUp = async (
-  id: string | null
-): Promise<
-  {
-    name: string;
-    id: string;
-    entityTypeId: string;
-    tenantId: string;
-    type: EntityAttributeValueType;
-  }[]
-> => {
-  const { user } = await useAuth();
-  if (!id) return [];
-  const entityType = await prisma.entityType.findFirstOrThrow({
-    where: {
-      id,
-      tenantId: { in: ["SYSTEM", user.company_id] },
-    },
-    include: {
-      attributes: true,
-    },
-  });
-  return [...(await traverseUp(entityType.parentId)), ...entityType.attributes];
-};
-
 export const NewEntityForm = async (props: {
   content_type_id: string;
   parent_id?: string | undefined;
@@ -50,11 +25,8 @@ export const NewEntityForm = async (props: {
 
   const entityType = await prisma.entityType.findFirstOrThrow({
     where: {
+      tenantId: { in: [user.company_id, "SYSTEM"] },
       id: content_type_id,
-      tenantId: { in: ["SYSTEM", user.company_id] },
-    },
-    include: {
-      attributes: true,
     },
   });
 
@@ -79,7 +51,7 @@ export const NewEntityForm = async (props: {
               },
               parentId: parentId,
               tenantId: user.company_id,
-              entityTypeId: entityType.id,
+              entityTypeId: content_type_id,
               attributes: attributes as InputJsonValue,
             },
           });
@@ -92,17 +64,17 @@ export const NewEntityForm = async (props: {
         <Box mb={2}>
           <Typography level="body-md">{entityType.description}</Typography>
         </Box>
-        <Box width={500}>
+        <Box>
           <Box gap={1} display={"flex"} flexDirection={"column"}>
             {attributes.map((attr, i) => {
               return (
-                <FormControl key={attr.id}>
-                  <FormLabel required={attr.isRequired}>{attr.name}</FormLabel>
+                <FormControl key={attr.key}>
+                  <FormLabel required={attr.isRequired}>{attr.label}</FormLabel>
                   <Input
                     required={attr.isRequired}
                     autoComplete="off"
                     type={attr.type}
-                    name={attr.id}
+                    name={attr.key}
                     defaultValue={""}
                     autoFocus={i === 0}
                   />
@@ -116,6 +88,16 @@ export const NewEntityForm = async (props: {
               <Button variant="outlined">Cancel</Button>
             </NextLinkBack>
             <Button type="submit">Submit</Button>
+          </Box>
+          <Box mt={2} display={"flex"} gap={1}>
+            <Typography level="body-sm">
+              Need more fields?{" "}
+              <NextLink
+                href={`/app/settings/content-types/${content_type_id}/create-subtype`}
+              >
+                Create a subtype
+              </NextLink>
+            </Typography>
           </Box>
         </Box>
       </form>
