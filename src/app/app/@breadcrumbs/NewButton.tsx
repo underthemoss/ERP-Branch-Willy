@@ -17,7 +17,7 @@ const getAllowedChildContentTypes = async (
   entityTypeId: string | undefined
 ) => {
   if (!entityTypeId) {
-    return ["system_workspace" satisfies SystemEntityTypes];
+    return ["system_item_workspace" satisfies SystemEntityTypes];
   }
   const { user } = await useAuth();
   const contentTypes = await prisma.entityType.findMany({

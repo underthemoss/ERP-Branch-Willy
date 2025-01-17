@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
-import { Box, Table, Typography } from "@mui/joy";
+import { Box, Table, Tooltip, Typography } from "@mui/joy";
 import { NextLink } from "@/ui/NextLink";
 import { UserDetail } from "@/ui/UserDetail";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
@@ -33,8 +33,6 @@ export default async function Page(props: {
   const entityTypesInUse = _.uniq(parent.children.map((c) => c.entityType.id));
   const columns = await prisma.entityType.getAllAttributes(entityTypesInUse);
 
-  const groupedColumns = Object.entries(_.groupBy(columns, (c) => c.key));
-
   return (
     <Box>
       <Box p={2} display={"flex"}>
@@ -49,8 +47,17 @@ export default async function Page(props: {
         <Table>
           <thead>
             <tr>
-              {groupedColumns.map(([_, [c]], i) => {
-                return <th key={c.key}>{c.label}</th>;
+              {columns.map((c, i) => {
+                return (
+                  <th key={c.key}>
+                    <Tooltip
+                      placement="bottom-start"
+                      title={`${c.entityTypeName} - ${c.label}`}
+                    >
+                      <Box>{c.label}</Box>
+                    </Tooltip>
+                  </th>
+                );
               })}
               <th>Created by</th>
               <th>Created at</th>
@@ -61,7 +68,7 @@ export default async function Page(props: {
             {parent.children.map((item) => {
               return (
                 <tr key={item.id}>
-                  {groupedColumns.map(([_, [c]], i) => {
+                  {columns.map((c, i) => {
                     if (i === 0) {
                       return (
                         <td key={c.key}>

@@ -19,7 +19,7 @@ export default async function SideNav() {
   const { user } = await useAuth();
   const workspaces = await prisma.entity.findMany({
     where: {
-      entityTypeId: "system_workspace" satisfies SystemEntityTypes,
+      entityTypeId: "system_item_workspace" satisfies SystemEntityTypes,
       tenantId: user.company_id,
     },
     select: {

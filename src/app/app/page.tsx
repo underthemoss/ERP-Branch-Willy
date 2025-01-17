@@ -20,7 +20,7 @@ export default async function Home() {
   const spaces = await prisma.entity.findMany({
     where: {
       tenantId: user.company_id,
-      entityTypeId: "system_workspace" satisfies SystemEntityTypes,
+      entityTypeId: "system_item_workspace" satisfies SystemEntityTypes,
     },
   });
   return (

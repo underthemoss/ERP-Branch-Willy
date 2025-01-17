@@ -49,7 +49,10 @@ const extendedPrismaClient = () => {
             ];
           };
 
-          return entityTypeIds.flatMap((id) => recurseUp(id));
+          return _.uniqBy(
+            entityTypeIds.flatMap((id) => recurseUp(id)),
+            (d) => d.key
+          );
         },
         // async getAllowedChildContentTypes<T>(
         //   this: T,

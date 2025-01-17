@@ -62,7 +62,8 @@ enum EntityAttributeValueType {
   number
   date
   boolean
-  enum
+  select
+  multiselect
 }
 
 type EntityAttribute {
