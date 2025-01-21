@@ -21,7 +21,7 @@ export default async function Page(props: {
       },
     },
   });
-  const attributes = await prisma.entityType.getAllAttributes([contentTypeId]);
+  const columns = await prisma.entityType.getAllAttributes([contentTypeId]);
 
   const childEntityTypes = await prisma.entityType.findMany({
     where: {
@@ -80,20 +80,20 @@ export default async function Page(props: {
             </tr>
           </thead>
           <tbody>
-            {attributes.map((attr, i, arr) => (
-              <tr key={attr.key}>
+            {columns.map((attr, i, arr) => (
+              <tr key={attr.id}>
                 <td>{attr.label}</td>
-                <td>{attr.type === "string" ? "text" : attr.type}</td>
+                <td>{attr.type}</td>
                 <td>
-                  {attr.entityTypeId === contentTypeId ? (
-                    attr.entityTypeName
-                  ) : (
-                    <NextLink
-                      href={`/app/settings/content-types/${attr.entityTypeId}`}
-                    >
-                      {attr.entityTypeName}
-                    </NextLink>
-                  )}
+                  {attr.sourceEntityTypes.map((et) => {
+                    return et.id === contentTypeId ? (
+                      et.name
+                    ) : (
+                      <NextLink href={`/app/settings/content-types/${et.id}`}>
+                        {et.name}
+                      </NextLink>
+                    );
+                  })}
                 </td>
               </tr>
             ))}

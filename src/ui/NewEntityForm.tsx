@@ -1,6 +1,8 @@
+import { Attributes } from "@/app/app/settings/content-types/[contentTypeId]/create-subtype/Attributes";
 import { useAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
+
 import { NextLink, NextLinkBack } from "@/ui/NextLink";
 import {
   Box,
@@ -12,8 +14,12 @@ import {
 } from "@mui/joy";
 import { InputJsonValue } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
+import _ from "lodash";
 import { redirect } from "next/navigation";
-
+import {
+  EntityAttributeValueType,
+  EntityTypeColumn,
+} from "../../prisma/generated/mongo";
 
 export const NewEntityForm = async (props: {
   content_type_id: string;
@@ -42,22 +48,100 @@ export const NewEntityForm = async (props: {
           const { user } = await useAuth();
           const attributes = Object.fromEntries(formData.entries());
           const id = randomUUID();
-          const val = await prisma.entity.create({
-            data: {
-              id,
-              metadata: {
-                created_by: user.user_id,
-                updated_by: user.user_id,
-                created_at: new Date(),
-                updated_at: new Date(),
+          if (
+            content_type_id.startsWith(
+              "system_reference" satisfies SystemEntityTypes
+            )
+          ) {
+            const ref_id = attributes.reference_id.toString().trim();
+            const val = await prisma.entity.create({
+              data: {
+                id,
+                metadata: {
+                  created_by: user.user_id,
+                  updated_by: user.user_id,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                },
+                ref_to_id: ref_id,
+                parentId: parentId,
+                tenantId: user.company_id,
+                entityTypeId: content_type_id,
+                attributes: {},
               },
-              parentId: parentId,
-              tenantId: user.company_id,
-              entityTypeId: content_type_id,
-              attributes: attributes as InputJsonValue,
-            },
-          });
-          redirect(`/app/item/${val.parentId || val.id}`);
+            });
+
+            redirect(`/app/item/${val.parentId || val.id}`);
+          }
+          if (
+            content_type_id.startsWith(
+              "system_list" satisfies SystemEntityTypes
+            )
+          ) {
+            const newListTypeId = content_type_id + "_" + randomUUID();
+            const newListItemTypeId =
+              ("system_item" satisfies SystemEntityTypes) + "_" + randomUUID();
+            const newListType = await prisma.entityType.create({
+              data: {
+                abstract: true,
+                hidden: true,
+                icon: "list",
+                id: newListTypeId,
+                name: attributes.name.toString(),
+                tenantId: user.company_id,
+                validChildEntityTypeIds: [newListItemTypeId],
+                parentId: content_type_id,
+              },
+            });
+            await prisma.entityType.create({
+              data: {
+                abstract: false,
+                hidden: true,
+                icon: "list_item",
+                id: newListItemTypeId,
+                name: "Record",
+                tenantId: user.company_id,
+                validChildEntityTypeIds: [],
+                parentId: newListType.id,
+                columnIds: ["name"],
+              },
+            });
+            const val = await prisma.entity.create({
+              data: {
+                id,
+                metadata: {
+                  created_by: user.user_id,
+                  updated_by: user.user_id,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                },
+                parentId: parentId,
+                tenantId: user.company_id,
+                entityTypeId: newListType.id,
+                attributes: attributes as InputJsonValue,
+              },
+            });
+
+            redirect(`/app/item/${val.parentId || val.id}`);
+          } else {
+            const val = await prisma.entity.create({
+              data: {
+                id,
+                metadata: {
+                  created_by: user.user_id,
+                  updated_by: user.user_id,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                },
+                parentId: parentId,
+                tenantId: user.company_id,
+                entityTypeId: content_type_id,
+                attributes: attributes as InputJsonValue,
+              },
+            });
+
+            redirect(`/app/item/${val.parentId || val.id}`);
+          }
         }}
       >
         <Box mb={2}>
@@ -70,13 +154,13 @@ export const NewEntityForm = async (props: {
           <Box gap={1} display={"flex"} flexDirection={"column"}>
             {attributes.map((attr, i) => {
               return (
-                <FormControl key={attr.key}>
+                <FormControl key={attr.id}>
                   <FormLabel required={attr.isRequired}>{attr.label}</FormLabel>
                   <Input
                     required={attr.isRequired}
                     autoComplete="off"
                     type={attr.type}
-                    name={attr.key}
+                    name={attr.id}
                     defaultValue={""}
                     autoFocus={i === 0}
                   />
@@ -91,13 +175,22 @@ export const NewEntityForm = async (props: {
             </NextLinkBack>
             <Button type="submit">Submit</Button>
           </Box>
-          <Box mt={2} display={"flex"} gap={1}>
+          {/* <Box mt={2} display={"flex"} gap={1}>
             <Typography level="body-sm">
               Need more fields?{" "}
               <NextLink
                 href={`/app/settings/content-types/${content_type_id}/create-subtype`}
-              >
+              > 
                 Create a subtype
+              </NextLink>
+            </Typography>
+          </Box>{" "} */}
+          <Box mt={2} display={"flex"} gap={1}>
+            <Typography level="body-sm">
+              <NextLink
+                href={`/app/item/${parent_id}/add-column/${content_type_id}`}
+              >
+                Add new column
               </NextLink>
             </Typography>
           </Box>

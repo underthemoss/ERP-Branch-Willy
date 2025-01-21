@@ -14,7 +14,7 @@ export default function ClientAuth() {
       document.cookie = `jwt=${jwt}; path=/; max-age=${
         24 * 60 * 60
       }; secure; samesite=strict`;
-      router.push("/");
+      router.push("/app");
     }
   }, [jwt]);
 

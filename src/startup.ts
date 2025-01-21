@@ -13,21 +13,18 @@ const upsertSystemEntityType = async (props: {
   parentId?: SystemEntityTypes;
   abstract: boolean;
   icon: EntityTypeIcon;
-  attributes?: {
-    key: string;
-    label: string;
-    type: EntityAttributeValueType;
-    isRequired: boolean;
-  }[];
+  hidden?: boolean;
+  columnIds?: string[];
   validChildEntityTypeIds?: SystemEntityTypes[];
 }) => {
   const {
     id,
     name,
     description,
-    attributes = [],
+    columnIds = [],
     parentId,
     abstract,
+    hidden = false,
     icon,
     validChildEntityTypeIds = [],
   } = props;
@@ -45,12 +42,8 @@ const upsertSystemEntityType = async (props: {
       validChildEntityTypeIds,
       parentId,
       abstract,
-      attributes: attributes.map((attr) => ({
-        key: attr.key,
-        label: attr.label,
-        type: attr.type,
-        isRequired: attr.isRequired,
-      })),
+      columnIds,
+      hidden,
     },
     update: {
       name,
@@ -59,128 +52,139 @@ const upsertSystemEntityType = async (props: {
       parentId,
       validChildEntityTypeIds,
       abstract,
-      attributes: attributes.map((attr) => ({
-        key: attr.key,
-        label: attr.label,
-        type: attr.type,
-        isRequired: attr.isRequired,
-      })),
+      columnIds,
+      hidden,
     },
   });
-  // for (const attr of attributes) {
-  //   await prisma.entityAttribute.upsert({
-  //     where: {
-  //       id: attr.id,
-  //     },
-  //     create: {
-  //       id: attr.id,
-  //       name: attr.name,
-  //       tenantId: "SYSTEM",
-  //       type: attr.type,
-  //       entityTypeId: id,
-  //       isRequired: attr.isRequired,
-  //     },
-  //     update: {
-  //       name: attr.name,
-  //       tenantId: "SYSTEM",
-  //       type: attr.type,
-  //       entityTypeId: id,
-  //       isRequired: attr.isRequired,
-  //     },
-  //   });
-  // }
+  return id;
+};
+
+const createColumn = async (props: {
+  id: string;
+  isRequired: boolean;
+  label: string;
+  type: EntityAttributeValueType;
+}) => {
+  const { id, isRequired, label, type } = props;
+  await prisma.entityTypeColumn.upsert({
+    where: { id },
+    create: {
+      tenantId: "SYSTEM",
+      id,
+      isRequired,
+      label,
+      type,
+    },
+    update: {
+      isRequired,
+      label,
+      type,
+    },
+  });
+  return id;
 };
 
 export const startup = async () => {
+  const nameColumn = await createColumn({
+    id: "name",
+    label: "Title",
+    isRequired: true,
+    type: "single_line_of_text",
+  });
+
+  const descriptionColumn = await createColumn({
+    id: "description",
+    label: "Description",
+    isRequired: false,
+    type: "multiple_lines_of_text",
+  });
+
+  const referenceIdColumn = await createColumn({
+    id: "reference_id",
+    label: "Reference ID",
+    isRequired: true,
+    type: "single_line_of_text",
+  });
+
   await upsertSystemEntityType({
     id: "system",
     name: "System",
     description: "System",
     abstract: true,
     icon: "system",
+    hidden: true,
+  });
+
+  await upsertSystemEntityType({
+    id: "system_list",
+    name: "List",
+    icon: "list",
+    description: `A list is a flexible container for storing and managing arbitrary values within a project.`,
+    parentId: "system",
+    abstract: false,
+    columnIds: [nameColumn, descriptionColumn],
+    validChildEntityTypeIds: ["system_item"],
+  });
+
+  await upsertSystemEntityType({
+    id: "system_workspace",
+    name: "Workspace",
+    icon: "workspace",
+    description: `A workspace is a dedicated area to organize and isolate your content and operations.`,
+    columnIds: [nameColumn, descriptionColumn],
+    parentId: "system",
+    abstract: false,
+    validChildEntityTypeIds: [
+      "system_folder",
+      "system_list",
+      // "system_reference",
+    ],
+  });
+
+  await upsertSystemEntityType({
+    id: "system_folder",
+    name: "Folder",
+    icon: "folder",
+    description: `A folder is used to organize and structure content within a project, supporting nested hierarchies.`,
+    parentId: "system",
+    abstract: false,
+    validChildEntityTypeIds: ["system_list", "system_folder"],
+    columnIds: [nameColumn],
   });
 
   await upsertSystemEntityType({
     id: "system_item",
-    icon: "system",
-    name: "Item",
-    description: "Base item with title",
-    parentId: "system",
-    abstract: true,
-    attributes: [
-      { key: "item_title", type: "string", label: "Title", isRequired: true },
-    ],
-  });
-
-  await upsertSystemEntityType({
-    id: "system_item_folder",
-    name: "Folder",
-    icon: "folder",
-    description: `A folder is used to organize and structure content within a project, supporting nested hierarchies.`,
-    parentId: "system_item",
-    abstract: false,
-    validChildEntityTypeIds: [
-      "system_item_folder",
-      "system_item_folder_order",
-      "system_item_folder_list",
-      "system_item_document_ticket",
-    ],
-    attributes: [
-      { key: "item_title", type: "string", label: "Title", isRequired: true },
-    ],
-  });
-
-  await upsertSystemEntityType({
-    id: "system_item_document",
     name: "Document",
     icon: "document",
     description: `A document is a generic item that cannot contain further items.`,
-    parentId: "system_item",
+    parentId: "system",
     abstract: false,
-    validChildEntityTypeIds: [
-      "system_item_folder",
-      "system_item_folder_order",
-      "system_item_folder_list",
-      "system_item_document_ticket",
-    ],
-    attributes: [
-      { key: "item_title", type: "string", label: "Title", isRequired: true },
-    ],
+    validChildEntityTypeIds: [],
+    columnIds: [],
   });
 
   await upsertSystemEntityType({
-    id: "system_item_workspace",
-    name: "Workspace",
-    icon: "workspace",
-    description: `A workspace is a dedicated area to organize and isolate your content and operations.`,
-    attributes: [
-      { key: "item_title", type: "string", label: "Title", isRequired: true },
-      {
-        key: "workspace_description",
-        label: "Description",
-        type: "string",
-        isRequired: false,
-      },
-    ],
-    parentId: "system_item",
+    id: "system_item",
+    name: "Document",
+    icon: "document",
+    description: `A document is a generic item that cannot contain further items.`,
+    parentId: "system",
     abstract: false,
-    validChildEntityTypeIds: [
-      "system_item_folder",
-      "system_item_folder_list",
-      "system_item_folder_order",
-      "system_item_document_ticket",
-    ],
+    validChildEntityTypeIds: [],
+    columnIds: [],
   });
-  // await upsertSystemEntityType({
-  //   id: "system_item_folder_list",
-  //   name: "List",
-  //   icon: "list",
-  //   description: `A list is a flexible container for storing and managing arbitrary values within a project.`,
-  //   attributes: [],
-  //   parentId: "system_item_folder",
-  //   abstract: false,
-  //   validChildEntityTypeIds: ["system_item_document_listitem"],
-  // });
+
+  await upsertSystemEntityType({
+    id: "system_reference",
+    name: "Reference",
+    icon: "document",
+    description: `A reference is a pointer to another entity in the system.`,
+    parentId: "system",
+    abstract: false,
+    validChildEntityTypeIds: [],
+    columnIds: [referenceIdColumn],
+  });
+
   // await upsertSystemEntityType({
   //   id: "system_item_document_listitem",
   //   name: "List Item",

@@ -8,7 +8,6 @@ import { JsonObject } from "@prisma/client/runtime/library";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { EntityTypeIcon as EntityTypeIconEnum } from "../../../../../../prisma/generated/mongo";
 
-
 async function humanizeSlug(slug: string) {
   const entityType = await prisma.entityType.findFirst({ where: { id: slug } });
   return (
@@ -23,18 +22,26 @@ async function humanizeSlug(slug: string) {
 const traverseUp = async (
   tenantId: string,
   id: string | null
-): Promise<{ id: string; name: string; typeId: string, icon: EntityTypeIconEnum }[]> => {
+): Promise<
+  { id: string; name: string; typeId: string; icon: EntityTypeIconEnum }[]
+> => {
   if (!id || id === "null") return [];
 
   const entity = await prisma.entity.findFirstOrThrow({
     where: { id, tenantId },
-    select: { attributes: true, parentId: true, id: true, entityTypeId: true, entityType: { select: {icon: true}} },
+    select: {
+      attributes: true,
+      parentId: true,
+      id: true,
+      entityTypeId: true,
+      entityType: { select: { icon: true } },
+    },
   });
 
   return [
     ...(await traverseUp(tenantId, entity.parentId)),
     {
-      name: (entity.attributes as JsonObject).item_title as string, //todo: item_title is not great here
+      name: (entity.attributes as JsonObject).name as string, //todo: item_title is not great here
       id: entity.id,
       typeId: entity.entityTypeId,
       icon: entity.entityType.icon,

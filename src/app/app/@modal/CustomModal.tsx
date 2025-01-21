@@ -10,7 +10,6 @@ export const CustomModal = (props: { children: React.ReactNode }) => {
     <Modal
       open
       onClose={() => router.back()}
-      // onClose={}
       sx={{
         display: "flex",
         justifyContent: "center",

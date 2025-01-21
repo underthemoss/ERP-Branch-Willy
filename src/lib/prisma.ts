@@ -1,10 +1,13 @@
 import _ from "lodash";
-import {
-  PrismaClient,
-  Prisma,
-  EntityAttributeValueType,
-} from "../../prisma/generated/mongo";
+import { EntityTypeColumn, PrismaClient } from "../../prisma/generated/mongo";
 import { useAuth } from "./auth";
+import { SystemEntityTypes } from "./SystemTypes";
+
+const lineage = (entityTypeId: string): string[] => {
+  if (!entityTypeId) return [];
+  const parentEntityId = entityTypeId.split("_").slice(0, -1).join("_");
+  return [entityTypeId, ...lineage(parentEntityId)];
+};
 
 const extendedPrismaClient = () => {
   const prisma = new PrismaClient({
@@ -15,73 +18,43 @@ const extendedPrismaClient = () => {
       entityType: {
         async getAllAttributes<T>(this: T, entityTypeIds: string[]) {
           const { user } = await useAuth();
-
+          const allEntityTypeIds = _.uniq(entityTypeIds.flatMap(lineage));
           const entityTypes = await prisma.entityType.findMany({
             where: {
               tenantId: { in: ["SYSTEM", user.company_id] },
+              id: { in: allEntityTypeIds },
+            },
+            select: {
+              name: true,
+              id: true,
+              columnIds: true,
             },
           });
-          const entityTypeKeyedById = _.keyBy(entityTypes, (d) => d.id);
 
-          const recurseUp = (
-            entityTypeId: string
-          ): {
-            key: string;
-            label: string;
-            isRequired: boolean;
-            type: EntityAttributeValueType;
-            entityTypeId: string;
-            entityTypeName: string;
-          }[] => {
-            if (entityTypeId === "") return [];
-            const parentEntityId = entityTypeId
-              .split("_")
-              .slice(0, -1)
-              .join("_");
-            const entityType = entityTypeKeyedById[entityTypeId];
-            return [
-              ...recurseUp(parentEntityId),
-              ...entityTypeKeyedById[entityTypeId].attributes.map((attrs) => ({
-                ...attrs,
-                entityTypeId: entityType.id,
-                entityTypeName: entityType.name,
-              })),
-            ];
-          };
+          const columnIds = _.uniq(entityTypes.flatMap((et) => et.columnIds));
 
-          return _.uniqBy(
-            entityTypeIds.flatMap((id) => recurseUp(id)),
-            (d) => d.key
+          const columns = await prisma.entityTypeColumn.findMany({
+            where: {
+              tenantId: { in: ["SYSTEM", user.company_id] },
+              id: { in: columnIds },
+            },
+          });
+
+          const columnsWithSourceEntityType = columnIds
+            .map((c) => columns.find((col) => col.id === c)!)
+            .map((c) => ({
+              ...c,
+              sourceEntityTypes: entityTypes.filter((e) =>
+                e.columnIds.includes(c.id)
+              ),
+            }));
+
+          const [nameColumn, everthingElse] = _.partition(
+            columnsWithSourceEntityType,
+            (c) => c.id === "name"
           );
+          return [...nameColumn, ...everthingElse];
         },
-        // async getAllowedChildContentTypes<T>(
-        //   this: T,
-        //   entityTypeId: string | undefined
-        // ) {
-        //   if (!entityTypeId) {
-        //     return [];
-        //   }
-        //   const { user } = await useAuth();
-        //   const traveseDown = async (contentTypeId: string) => {
-        //     const base = await prisma.entityType.findFirstOrThrow({
-        //       where: {
-        //         tenantId: { in: ["SYSTEM", user.company_id] },
-        //         id: contentTypeId,
-        //       },
-        //       select: {
-        //         id: true,
-        //         name: true,
-        //         children: {
-        //           select: {
-        //             id: true,
-        //             name: true,
-        //           },
-        //         },
-        //       },
-        //     });
-        //   };
-        //   return await traveseDown(entityTypeId);
-        // },
       },
     },
   });

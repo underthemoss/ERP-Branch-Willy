@@ -15,16 +15,30 @@ import { prisma } from "@/lib/prisma";
 import { AutoImage } from "@/ui/AutoImage";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
+import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 export default async function SideNav() {
   const { user } = await useAuth();
-  const workspaces = await prisma.entity.findMany({
+  const entities = await prisma.entity.findMany({
     where: {
-      entityTypeId: "system_item_workspace" satisfies SystemEntityTypes,
+      OR: [
+        {
+          entityTypeId: {
+            startsWith: "system_workspace" satisfies SystemEntityTypes,
+          },
+        },
+        {
+          entityTypeId: {
+            startsWith: "system_list" satisfies SystemEntityTypes,
+          },
+        },
+      ],
       tenantId: user.company_id,
     },
     select: {
-      attributes: true,
       id: true,
+      attributes: true,
+      entityType: true,
+      entityTypeId: true,
     },
   });
   return (
@@ -37,21 +51,24 @@ export default async function SideNav() {
                 <ListItemDecorator>
                   <WorkspacesIcon />
                 </ListItemDecorator>
-                Workspaces
+                Home
               </ListItemButton>
             </Link>
 
             <List>
-              {workspaces.map((ws) => (
-                <Link href={`/app/item/${ws.id}`} key={ws.id}>
+              {entities.map((item) => (
+                <Link href={`/app/item/${item.id}`} key={item.id}>
                   <ListItem>
                     <ListItemButton>
                       <ListItemDecorator>
                         <Avatar size="sm">
-                          <AutoImage value={ws.id} />
+                          <EntityTypeIcon
+                            entityTypeIcon={item.entityType.icon}
+                            entityId={item.id}
+                          />
                         </Avatar>
                       </ListItemDecorator>
-                      {(ws.attributes as any).item_title}
+                      {(item.attributes as any).name}
                     </ListItemButton>
                   </ListItem>
                 </Link>

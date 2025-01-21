@@ -1,4 +1,4 @@
-import { Avatar, Box, Tooltip } from "@mui/joy";
+import { Avatar } from "@mui/joy";
 import { AutoImage } from "./AutoImage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";

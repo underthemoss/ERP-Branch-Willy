@@ -1,13 +1,8 @@
-import { Box, Typography } from "@mui/joy";
-
-// import { AutoImage } from "./AutoImage";
-// import { verifyUser } from "../auth/verifyUser";
 import DataLoader from "dataloader";
-// import { GenericEntityDetails } from "./GenericEntityDetails";
 import { esdb } from "@/lib/esdb";
 import { useAuth } from "@/lib/auth";
 import { GenericEntityDetails } from "./GenericEntityDetails";
-// import { GenericEntityDetails } from "./GenericEntityDetails";
+
 const getUserBatch = async (userIds: number[]) => {
   const results = await esdb.user.findMany({
     where: { id: { in: userIds } },

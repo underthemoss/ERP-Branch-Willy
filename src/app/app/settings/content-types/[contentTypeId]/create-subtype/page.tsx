@@ -26,6 +26,7 @@ export default async function Page(props: {
 }) {
   const { contentTypeId } = await props.params;
   const attributes = await prisma.entityType.getAllAttributes([contentTypeId]);
+
   const { user } = await useAuth();
   const baseType = await prisma.entityType.findFirstOrThrow({
     where: { tenantId: { in: ["SYSTEM", user.company_id] }, id: contentTypeId },
@@ -61,22 +62,37 @@ export default async function Page(props: {
               return acc;
             }, {} as { attributes?: { name: string; type: string; isRequired: string }[] });
 
+          const parent = await prisma.entityType.findFirstOrThrow({
+            where: { id: contentTypeId },
+            select: {
+              icon: true,
+            },
+          });
+          const data =
+            attributes?.map((attr) => {
+              return {
+                id: randomUUID(),
+                tenantId: user.company_id,
+                isRequired: attr.isRequired === "on",
+                label: attr.name.trim(),
+                type: attr.type as EntityAttributeValueType,
+              };
+            }) || [];
+          await prisma.entityTypeColumn.createMany({
+            data,
+          });
+
           const result = await prisma.entityType.create({
             data: {
               id: `${contentTypeId}_${randomUUID()}`,
               name: name,
               parentId: contentTypeId,
-              icon: "document",
+              icon: parent.icon || "document",
               tenantId: user.company_id,
               description: description,
               abstract: false,
-              attributes:
-                attributes?.map((attr) => ({
-                  key: randomUUID(),
-                  isRequired: attr.isRequired === "on",
-                  label: attr.name.trim(),
-                  type: attr.type as EntityAttributeValueType,
-                })) || [],
+              columnIds: data.map((d) => d.id),
+              hidden: false,
             },
           });
 

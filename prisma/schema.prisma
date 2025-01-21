@@ -8,6 +8,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EntityTypeIcon {
+  system
+  workspace
+  folder
+  document
+  ticket
+  order
+  line_item
+  list
+  list_item
+}
+
+enum EntityAttributeValueType {
+  single_line_of_text
+  multiple_lines_of_text
+  number
+  yes_no
+  person_or_group
+  date_and_time
+  choice
+  hyperlink
+  // calculated
+  currency
+  location
+  image
+  lookup
+  entity_type
+}
+
 type EntityMetadata {
   created_by String
   updated_by String
@@ -22,22 +51,32 @@ model Entity {
   entityType   EntityType     @relation(fields: [entityTypeId], references: [id])
   attributes   Json
   metadata     EntityMetadata
+
+  ref_to_id     String?
+  referenced_to Entity?  @relation("ReferencedEntity", fields: [ref_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referenced_by Entity[] @relation("ReferencedEntity")
+
   // Hierarchical relationships
-  parentId     String? // Reference to the parent entity
-  parent       Entity?        @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children     Entity[]       @relation("EntityHierarchy")
+  parentId String? // Reference to the parent entity
+  parent   Entity?  @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Entity[] @relation("EntityHierarchy")
+
+  entityId String?
 }
 
 model EntityType {
-  id                      String            @id @map("_id")
+  id                      String         @id @map("_id")
   name                    String
   description             String?
   tenantId                String
   abstract                Boolean
+  hidden                  Boolean
   validChildEntityTypeIds String[]
-  attributes              EntityAttribute[]
-  Entity                  Entity[]
+  entity                  Entity[]
   icon                    EntityTypeIcon
+
+  // columns
+  columnIds String[]
 
   // Hierarchical relationships
   parentId String? // Reference to the parent entity
@@ -45,43 +84,11 @@ model EntityType {
   children EntityType[] @relation("EntityTypeHierarchy")
 }
 
-enum EntityTypeIcon {
-  system
-  workspace
-  folder
-  document
-  ticket
-  order
-  line_item
-  list
-  list_item
+model EntityTypeColumn {
+  id                   String                   @id @map("_id")
+  label                String
+  isRequired           Boolean
+  type                 EntityAttributeValueType
+  lookupSourceEntityId String?
+  tenantId             String
 }
-
-enum EntityAttributeValueType {
-  string
-  number
-  date
-  boolean
-  select
-  multiselect
-}
-
-type EntityAttribute {
-  key        String
-  label      String
-  isRequired Boolean
-  type       EntityAttributeValueType
-}
-
-// model AttributeValue {
-//   id              String          @id @default(uuid()) @map("_id")
-//   entityId        String
-//   attributeId     String
-//   tenantId        String
-//   stringValue     String?
-//   numberValue     Float?
-//   booleanValue    Boolean?
-//   dateValue       DateTime?
-//   entity          Entity          @relation(fields: [entityId], references: [id])
-//   entityAttribute EntityAttribute @relation(fields: [attributeId], references: [id])
-// }

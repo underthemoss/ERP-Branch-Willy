@@ -20,7 +20,18 @@ export default async function Home() {
   const spaces = await prisma.entity.findMany({
     where: {
       tenantId: user.company_id,
-      entityTypeId: "system_item_workspace" satisfies SystemEntityTypes,
+      OR: [
+        {
+          entityTypeId: {
+            startsWith: "system_workspace" satisfies SystemEntityTypes,
+          },
+        },
+        {
+          entityTypeId: {
+            startsWith: "system_list" satisfies SystemEntityTypes,
+          },
+        },
+      ],
     },
   });
   return (
@@ -53,11 +64,11 @@ export default async function Home() {
                         <AutoImage value={ws.id}></AutoImage>
                       </Avatar>
                       <NextLink href={`/app/item/${ws.id}`}>
-                        {(ws.attributes as any).item_title}
+                        {(ws.attributes as any).name}
                       </NextLink>
                     </Box>
                   </td>
-                  <td>{(ws.attributes as any).workspace_description}</td>
+                  <td>{(ws.attributes as any).description}</td>
                   <td>
                     <UserDetail userId={ws.metadata.created_by} />
                   </td>

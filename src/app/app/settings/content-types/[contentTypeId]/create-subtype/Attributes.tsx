@@ -1,28 +1,43 @@
 "use client";
 import { Box, Button, Checkbox, Input, Option, Select, Table } from "@mui/joy";
 import { useState } from "react";
-import { EntityAttributeValueType } from "../../../../../../../prisma/generated/mongo";
+import {
+  EntityAttributeValueType,
+  EntityTypeColumn,
+} from "../../../../../../../prisma/generated/mongo";
 
-type AttributeType = {
-  key: string;
-  label: string;
-  type: EntityAttributeValueType;
-  entityTypeId: string;
-  entityTypeName: string;
-  isRequired: boolean;
+type AttributeType = EntityTypeColumn & {
+  sourceEntityTypes: { id: string; name: string }[];
 };
 
+type AttrState = Partial<AttributeType & { isInherited?: boolean }>;
+
 export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
-  const [attrs, setAttrs] = useState<
-    Partial<AttributeType & { isInherited?: boolean }>[]
-  >([...props.inheritedAttributes.map((a) => ({ ...a, isInherited: true }))]);
+  const [attrs, setAttrs] = useState<AttrState[]>([
+    ...props.inheritedAttributes.map((a) => ({ ...a, isInherited: true })),
+  ]);
 
   const addAttr = () => {
     setAttrs((attrs) => [
       ...attrs,
-      { id: "", name: "", type: "string" satisfies EntityAttributeValueType },
+      {
+        id: "",
+        name: "",
+        type: "single_line_of_text" satisfies EntityAttributeValueType,
+      },
     ]);
   };
+
+  const setAttrVal = <Key extends keyof AttrState>(
+    index: number,
+    key: Key,
+    value: AttrState[Key]
+  ) => {
+    setAttrs((attrs) =>
+      attrs.map((attr, i) => (index === i ? { ...attr, [key]: value } : attr))
+    );
+  };
+
   return (
     <>
       <Table variant="soft">
@@ -42,7 +57,7 @@ export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
             const fieldName = (name: string) =>
               attr.isInherited ? "" : `attributes[${index}].${name}`;
             return (
-              <tr key={`${i}_${attr.key}`}>
+              <tr key={`${i}_${attr.id}`}>
                 <td>{i + 1}</td>
                 <td>
                   <Input
@@ -55,20 +70,39 @@ export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
                   />
                 </td>
                 <td>
-                  <Select
-                    required
-                    disabled={attr.isInherited}
-                    name={fieldName("type")}
-                    defaultValue={attr.type}
-                  >
-                    {Object.values(EntityAttributeValueType).map((e) => {
-                      return (
-                        <Option key={e} value={e}>
-                          {e}
-                        </Option>
-                      );
-                    })}
-                  </Select>
+                  <Box display={"flex"}>
+                    <Box flex={1}>
+                      <Select
+                        required
+                        disabled={attr.isInherited}
+                        name={fieldName("type")}
+                        defaultValue={attr.type}
+                        onChange={(e, value) =>
+                          setAttrVal(
+                            i,
+                            "type",
+                            value as EntityAttributeValueType
+                          )
+                        }
+                      >
+                        {Object.values(EntityAttributeValueType).map((e) => {
+                          return (
+                            <Option key={e} value={e}>
+                              {e}
+                            </Option>
+                          );
+                        })}
+                      </Select>
+                    </Box>
+                    {attr.type === "lookup" && (
+                      <Input
+                        required
+                        autoComplete="off"
+                        name="lookupSourceEntityId"
+                        placeholder="Enter source id"
+                      />
+                    )}
+                  </Box>
                 </td>
                 <td>
                   <Checkbox
@@ -90,7 +124,7 @@ export const Attributes = (props: { inheritedAttributes: AttributeType[] }) => {
           }}
           variant="plain"
         >
-          Add row
+          Add column
         </Button>
       </Box>
     </>

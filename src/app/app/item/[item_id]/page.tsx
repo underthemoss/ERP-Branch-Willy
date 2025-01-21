@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { useAuth } from "@/lib/auth";
-import { Box, Table, Tooltip, Typography } from "@mui/joy";
+import { Box, Button, Table, Tooltip, Typography } from "@mui/joy";
 import { NextLink } from "@/ui/NextLink";
 import { UserDetail } from "@/ui/UserDetail";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
+import { SystemEntityTypes } from "@/lib/SystemTypes";
 
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
@@ -20,17 +21,31 @@ export default async function Page(props: {
       children: {
         include: {
           entityType: true,
+          referenced_to: {
+            include: {
+              entityType: true,
+            },
+          },
         },
       },
       entityType: {
         select: {
           icon: true,
+          validChildEntityTypeIds: true,
         },
       },
     },
   });
 
-  const entityTypesInUse = _.uniq(parent.children.map((c) => c.entityType.id));
+  const children = parent.children.map((d) => {
+    if (d.entityTypeId === ("system_reference" satisfies SystemEntityTypes)) {
+      return d.referenced_to!;
+    } else {
+      return d;
+    }
+  });
+
+  const entityTypesInUse = _.uniq(children.map((c) => c.entityType.id));
   const columns = await prisma.entityType.getAllAttributes(entityTypesInUse);
 
   return (
@@ -47,12 +62,13 @@ export default async function Page(props: {
         <Table>
           <thead>
             <tr>
+              <th style={{ width: 38 }}></th>
               {columns.map((c, i) => {
                 return (
-                  <th key={c.key}>
+                  <th key={c.id}>
                     <Tooltip
-                      placement="bottom-start"
-                      title={`${c.entityTypeName} - ${c.label}`}
+                      placement="top-start"
+                      title={`${c.id} - ${c.label}`}
                     >
                       <Box>{c.label}</Box>
                     </Tooltip>
@@ -61,31 +77,42 @@ export default async function Page(props: {
               })}
               <th>Created by</th>
               <th>Created at</th>
-              <th></th>
+              <th style={{ width: 100 }}>
+                {parent.entityType.validChildEntityTypeIds.length === 1 && (
+                  <NextLink
+                    href={`/app/item/${parent.id}/add-column/${parent.entityType.validChildEntityTypeIds[0]}`}
+                  >
+                    Add column
+                  </NextLink>
+                )}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {parent.children.map((item) => {
+            {children.map((item) => {
               return (
                 <tr key={item.id}>
+                  <td>
+                    <Box display={"flex"} gap={1}>
+                      <NextLink href={`/app/item/${item.id}`}>
+                        {/* {(item.attributes as any).name} */}
+                        <EntityTypeIcon entityTypeIcon={item.entityType.icon} />
+                      </NextLink>
+                    </Box>
+                  </td>
                   {columns.map((c, i) => {
-                    if (i === 0) {
+                    if (c.id === "name") {
                       return (
-                        <td key={c.key}>
+                        <td key={c.id}>
                           <Box display={"flex"} gap={1}>
-                            <EntityTypeIcon
-                              entityTypeIcon={item.entityType.icon}
-                            />
                             <NextLink href={`/app/item/${item.id}`}>
-                              {(item.attributes as any).item_title}
+                              {(item.attributes as any)[c.id]}
                             </NextLink>
                           </Box>
                         </td>
                       );
                     }
-                    return (
-                      <td key={c.key}>{(item.attributes as any)[c.key]}</td>
-                    );
+                    return <td key={c.id}>{(item.attributes as any)[c.id]}</td>;
                   })}
                   <td>
                     <UserDetail userId={item.metadata.created_by} nameOnly />
