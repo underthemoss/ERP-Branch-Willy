@@ -41,13 +41,23 @@ export const UserDetail = async (props: {
 
   if (id) {
     const user = await userLoader.load(Number(props.userId));
-    return (
-      <GenericEntityDetails
-        id={user.id}
-        label={`${user?.first_name} ${user?.last_name}`}
-        secondary={props.nameOnly ? "" : user?.username}
-      />
-    );
+    if (user) {
+      return (
+        <GenericEntityDetails
+          id={user.id}
+          label={`${user?.first_name} ${user?.last_name}`}
+          secondary={props.nameOnly ? "" : user?.username}
+        />
+      );
+    } else {
+      return (
+        <GenericEntityDetails
+          id={props.userId}
+          label={props.userId.toString()}
+          secondary={"Not found"}
+        />
+      );
+    }
   }
   return (
     <GenericEntityDetails

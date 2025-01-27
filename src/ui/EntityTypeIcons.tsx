@@ -7,50 +7,9 @@ import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import HelpIcon from "@mui/icons-material/Help";
-import { prisma } from "@/lib/prisma";
-import { useAuth } from "@/lib/auth";
-import DataLoader from "dataloader";
 import { EntityTypeIcon as EntityTypeIconEnum } from "../../prisma/generated/mongo";
 import SettingsIcon from "@mui/icons-material/Settings";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-
-const getEntityContentTypeBatch = async (entityIds: string[]) => {
-  const { user } = await useAuth();
-  const results = await prisma.entity.findMany({
-    where: {
-      id: { in: entityIds },
-      tenantId: { in: ["SYSTEM", user.company_id] },
-    },
-    select: {
-      id: true,
-      entityType: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  });
-  return entityIds
-    .map((id) => results.find((r) => r.id === id))
-    .map((d) =>
-      d
-        ? {
-            title: d?.entityType.name,
-            id: d?.id,
-            entityTypeId: d?.entityType.id,
-          }
-        : null
-    );
-};
-
-const entityTypeLoader = new DataLoader<
-  string,
-  Awaited<ReturnType<typeof getEntityContentTypeBatch>>[number] | Awaited<null>
->((keys) => getEntityContentTypeBatch(keys as any), {
-  batchScheduleFn: (res) => setTimeout(res, 10),
-  maxBatchSize: 10000,
-});
 
 export const Icon: React.FC<{
   entityTypeId: string | undefined;
@@ -85,28 +44,6 @@ export const Icon: React.FC<{
   }
   return <HelpIcon style={{ color: "black" }} />;
 };
-
-// export const EntityTypeIcon: React.FC<{
-//   entityTypeId: string;
-// }> = async ({ entityTypeId }) => {
-//   return (
-//     <Tooltip title={entityTypeId}>
-//       <Icon entityTypeId={entityTypeId} />
-//     </Tooltip>
-//   );
-// };
-
-// export const EntityIcon: React.FC<{
-//   entityId: string;
-// }> = async ({ entityId }) => {
-//   const entity = await entityTypeLoader.load(entityId);
-//   if (!entity) return <></>;
-//   return (
-//     <Tooltip title={entity.title}>
-//       <Icon entityId={entity.id} entityTypeId={entity.entityTypeId} />
-//     </Tooltip>
-//   );
-// };
 
 export const EntityTypeIcon: React.FC<{
   entityTypeIcon: EntityTypeIconEnum;

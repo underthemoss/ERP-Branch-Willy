@@ -20,75 +20,150 @@ enum EntityTypeIcon {
   list_item
 }
 
-enum EntityAttributeValueType {
-  single_line_of_text
-  multiple_lines_of_text
-  number
-  yes_no
-  person_or_group
-  date_and_time
-  choice
-  hyperlink
-  // calculated
-  currency
-  location
-  image
-  lookup
-  entity_type
-}
+// enum EntityAttributeValueType {
+//   single_line_of_text
+//   multiple_lines_of_text
+//   number
+//   yes_no
+//   person_or_group
+//   date_and_time
+//   choice
+//   hyperlink
+//   // calculated
+//   currency
+//   location
+//   image
+//   lookup
+//   entity_type
+// }
 
-type EntityMetadata {
+type Metadata {
   created_by String
   updated_by String
   created_at DateTime @default(now())
   updated_at DateTime
 }
 
-model Entity {
-  id           String         @id @map("_id")
-  entityTypeId String
-  tenantId     String
-  entityType   EntityType     @relation(fields: [entityTypeId], references: [id])
-  attributes   Json
-  metadata     EntityMetadata
+// model Entity {
+//   id           String         @id @map("_id")
+//   entityTypeId String
+//   tenantId     String
+//   entityType   EntityType     @relation(fields: [entityTypeId], references: [id])
+//   attributes   Json
+//   metadata     EntityMetadata
 
-  ref_to_id     String?
-  referenced_to Entity?  @relation("ReferencedEntity", fields: [ref_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  referenced_by Entity[] @relation("ReferencedEntity")
+//   ref_to_id     String?
+//   referenced_to Entity?  @relation("ReferencedEntity", fields: [ref_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   referenced_by Entity[] @relation("ReferencedEntity")
+
+//   // Hierarchical relationships
+//   parentId String? // Reference to the parent entity
+//   parent   Entity?  @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   children Entity[] @relation("EntityHierarchy")
+
+//   entityId String?
+// }
+
+// model EntityType {
+//   id                      String         @id @map("_id")
+//   name                    String
+//   description             String?
+//   tenantId                String
+//   abstract                Boolean
+//   hidden                  Boolean
+//   validChildEntityTypeIds String[]
+//   entity                  Entity[]
+//   icon                    EntityTypeIcon
+
+//   // columns
+//   columnIds String[]
+
+//   // Hierarchical relationships
+//   parentId String? // Reference to the parent entity
+//   parent   EntityType?  @relation("EntityTypeHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   children EntityType[] @relation("EntityTypeHierarchy")
+// }
+
+// model EntityTypeColumn {
+//   id                   String                   @id @map("_id")
+//   label                String
+//   isRequired           Boolean
+//   type                 EntityAttributeValueType
+//   lookupSourceEntityId String?
+//   tenantId             String
+// }
+
+enum ColumnType {
+  single_line_of_text
+  user
+  // multiple_lines_of_text
+  // number
+  integer
+  // yes_no
+  // person_or_group
+  date
+  // choice
+  // hyperlink
+  // calculated
+  // currency
+  // location
+  // image
+  lookup
+  img_url
+  // entity_type
+}
+
+type ColumnConfig {
+  id    String
+  width Int?
+}
+
+model Entity {
+  id            String         @id @default(uuid()) @map("_id")
+  type_id       String
+  type          EntityType     @relation(fields: [type_id], references: [id])
+  tenant_id     String
+  data          Json
+  hidden        Boolean?       @default(false)
+  sort_order    Float?
+  column_config ColumnConfig[]
 
   // Hierarchical relationships
-  parentId String? // Reference to the parent entity
-  parent   Entity?  @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children Entity[] @relation("EntityHierarchy")
-
-  entityId String?
+  parent_id String?
+  parent    Entity?  @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  Entity[] @relation("EntityHierarchy")
 }
 
 model EntityType {
-  id                      String         @id @map("_id")
-  name                    String
-  description             String?
-  tenantId                String
-  abstract                Boolean
-  hidden                  Boolean
-  validChildEntityTypeIds String[]
-  entity                  Entity[]
-  icon                    EntityTypeIcon
-
-  // columns
-  columnIds String[]
-
-  // Hierarchical relationships
-  parentId String? // Reference to the parent entity
-  parent   EntityType?  @relation("EntityTypeHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children EntityType[] @relation("EntityTypeHierarchy")
+  id                   String             @id @map("_id")
+  name                 String
+  entities             Entity[]
+  entity_type_columns  EntityTypeColumn[]
+  tenant_id            String
+  icon                 EntityTypeIcon
+  metadata             Metadata?
+  valid_child_type_ids String[]
 }
 
 model EntityTypeColumn {
-  id                   String                   @id @map("_id")
-  label                String
-  isRequired           Boolean
-  type                 EntityAttributeValueType
-  lookupSourceEntityId String?
-  tenantId             String
+  id             String     @id @default(uuid()) @map("_id")
+  entity_type_id String
+  entity_type    EntityType @relation(fields: [entity_type_id], references: [id])
+  column_id      String
+  column         Column     @relation(fields: [column_id], references: [id])
+  tenant_id      String
+  required       Boolean    @default(false)
+  metadata       Metadata?
+}
+
+model Column {
+  id             String             @id @map("_id")
+  label          String
+  type           ColumnType
+  tenant_id      String
+  metadata       Metadata?
+  readonly       Boolean            @default(false)
+  order_priority Int                @default(10)
+  data           Json
+  entity_types   EntityTypeColumn[]
 }

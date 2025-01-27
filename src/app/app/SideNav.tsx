@@ -16,29 +16,30 @@ import { AutoImage } from "@/ui/AutoImage";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
+import { Add } from "@mui/icons-material";
+
 export default async function SideNav() {
   const { user } = await useAuth();
   const entities = await prisma.entity.findMany({
     where: {
       OR: [
         {
-          entityTypeId: {
+          type_id: {
             startsWith: "system_workspace" satisfies SystemEntityTypes,
           },
         },
         {
-          entityTypeId: {
+          type_id: {
             startsWith: "system_list" satisfies SystemEntityTypes,
           },
         },
       ],
-      tenantId: user.company_id,
+      tenant_id: user.company_id,
     },
     select: {
       id: true,
-      attributes: true,
-      entityType: true,
-      entityTypeId: true,
+      data: true,
+      type: true,
     },
   });
   return (
@@ -63,12 +64,12 @@ export default async function SideNav() {
                       <ListItemDecorator>
                         <Avatar size="sm">
                           <EntityTypeIcon
-                            entityTypeIcon={item.entityType.icon}
+                            entityTypeIcon={item.type.icon}
                             entityId={item.id}
                           />
                         </Avatar>
                       </ListItemDecorator>
-                      {(item.attributes as any).name}
+                      {(item.data as any).name}
                     </ListItemButton>
                   </ListItem>
                 </Link>
@@ -80,6 +81,16 @@ export default async function SideNav() {
       <Box flex={1}></Box>
       <Box>
         <List>
+          <Link href="/app/item/null/new/system_workspace">
+            <ListItem>
+              <ListItemButton>
+                <ListItemDecorator>
+                  <Add />
+                </ListItemDecorator>
+                Add workspace
+              </ListItemButton>
+            </ListItem>
+          </Link>
           <Link href="/app/settings">
             <ListItem>
               <ListItemButton>

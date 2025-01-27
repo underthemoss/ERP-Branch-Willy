@@ -71,6 +71,11 @@ model Asset {
   photo              Photo?          @relation(fields: [photo_id], references: [id])
   equipment_class_id Int?
   equipment_class    EquipmentClass? @relation(fields: [equipment_class_id], references: [id])
+  custom_model       String?         @map("model")
+  equipment_model_id Int?
+  model              EquipmentModel? @relation(fields: [equipment_model_id], references: [id])
+  equipment_make_id  Int?
+  make               EquipmentMake?  @relation(fields: [equipment_make_id], references: [id])
 
   @@map("assets")
 }
@@ -103,4 +108,20 @@ model Category {
   Asset              Asset[]
 
   @@map("categories")
+}
+
+model EquipmentMake {
+  id     Int     @id @map("equipment_make_id")
+  name   String?
+  assets Asset[]
+
+  @@map("equipment_makes")
+}
+
+model EquipmentModel {
+  id     Int     @id @map("equipment_model_id")
+  name   String?
+  assets Asset[]
+
+  @@map("equipment_models")
 }

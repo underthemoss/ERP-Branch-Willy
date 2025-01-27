@@ -11,52 +11,28 @@ const lineage = (entityTypeId: string): string[] => {
 
 const extendedPrismaClient = () => {
   const prisma = new PrismaClient({
-    // log: ["query"],
+    //  log: ["query"]
   });
+
   return prisma.$extends({
-    model: {
-      entityType: {
-        async getAllAttributes<T>(this: T, entityTypeIds: string[]) {
-          const { user } = await useAuth();
-          const allEntityTypeIds = _.uniq(entityTypeIds.flatMap(lineage));
-          const entityTypes = await prisma.entityType.findMany({
-            where: {
-              tenantId: { in: ["SYSTEM", user.company_id] },
-              id: { in: allEntityTypeIds },
-            },
-            select: {
-              name: true,
-              id: true,
-              columnIds: true,
-            },
-          });
-
-          const columnIds = _.uniq(entityTypes.flatMap((et) => et.columnIds));
-
-          const columns = await prisma.entityTypeColumn.findMany({
-            where: {
-              tenantId: { in: ["SYSTEM", user.company_id] },
-              id: { in: columnIds },
-            },
-          });
-
-          const columnsWithSourceEntityType = columnIds
-            .map((c) => columns.find((col) => col.id === c)!)
-            .map((c) => ({
-              ...c,
-              sourceEntityTypes: entityTypes.filter((e) =>
-                e.columnIds.includes(c.id)
-              ),
-            }));
-
-          const [nameColumn, everthingElse] = _.partition(
-            columnsWithSourceEntityType,
-            (c) => c.id === "name"
-          );
-          return [...nameColumn, ...everthingElse];
-        },
-      },
+    query: {
+      // $allModels: {
+      //   $allOperations({ model, operation, args, query }) {
+      //     const start = Date.now(); // Start timing
+      //     return query(args).then((result) => {
+      //       const end = Date.now(); // End timing
+      //       console.log(
+      //         `
+      //         Query ${model}.${operation} took ${
+      //           end - start
+      //         }ms ${JSON.stringify(args, undefined, 2)}`
+      //       );
+      //       return result;
+      //     });
+      //   },
+      // },
     },
+    model: {},
   });
 };
 

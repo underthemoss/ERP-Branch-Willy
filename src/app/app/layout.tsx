@@ -29,14 +29,26 @@ export default async function RootLayout({
             backgroundColor: "#FBFCFE",
             borderRight: 1,
             borderColor: "#dfdfdf",
+
           }}
           overflow={"scroll"}
         >
           <SideNav />
         </Box>
-        <Box flex={1} overflow={"scroll"}>
+        <Box
+          flex={1}
+          // overflow={"scroll"}
+          sx={{
+            overflowY:'scroll',
+            overflowX: 'hidden'
+          }}
+          display={"flex"}
+          flexDirection={"column"}
+        >
           <Box>{breadcrumbs}</Box>
-          <Box>{children}</Box>
+          <Box display={"flex"} flex={1}>
+            {children}
+          </Box>
         </Box>
       </Box>
     </Box>

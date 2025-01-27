@@ -28,23 +28,23 @@ const traverseUp = async (
   if (!id || id === "null") return [];
 
   const entity = await prisma.entity.findFirstOrThrow({
-    where: { id, tenantId },
+    where: { id, tenant_id: tenantId },
     select: {
-      attributes: true,
-      parentId: true,
+      data: true,
+      parent_id: true,
       id: true,
-      entityTypeId: true,
-      entityType: { select: { icon: true } },
+      type_id: true,
+      type: { select: { icon: true } },
     },
   });
 
   return [
-    ...(await traverseUp(tenantId, entity.parentId)),
+    ...(await traverseUp(tenantId, entity.parent_id)),
     {
-      name: (entity.attributes as JsonObject).name as string, //todo: item_title is not great here
+      name: (entity.data as JsonObject).name as string, //todo: item_title is not great here
       id: entity.id,
-      typeId: entity.entityTypeId,
-      icon: entity.entityType.icon,
+      typeId: entity.type_id,
+      icon: entity.type.icon,
     },
   ];
 };

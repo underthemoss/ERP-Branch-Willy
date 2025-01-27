@@ -6,7 +6,7 @@ const globalForPrisma = global as unknown as { esdb: PrismaClient };
 export const esdb =
   globalForPrisma.esdb ||
   new PrismaClient({
-    log: ["query"], // Optional: Logs queries for debugging purposes
+    // log: ["query"], // Optional: Logs queries for debugging purposes
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.esdb = esdb;

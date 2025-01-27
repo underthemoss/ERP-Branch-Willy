@@ -1,5 +1,5 @@
-import { CustomModal } from "../../../../../CustomModal";
-import Child from "../../../../../../item/[item_id]/add-column/[content_type_id]/page";
+import { CustomModal } from "../../../../CustomModal";
+import Child from "../../../../../item/[item_id]/add-column/page";
 
 export default async function Page(props: any) {
   return (

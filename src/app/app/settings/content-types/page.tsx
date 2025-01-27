@@ -10,26 +10,18 @@ export default async function Page(props: {
 }) {
   const { user } = await useAuth();
   const tenantWhereClause = {
-    tenantId: {
+    tenant_id: {
       in: ["SYSTEM", user.company_id],
     },
-    hidden: false,
   };
   const entityTypes = await prisma.entityType.findMany({
     where: tenantWhereClause,
     select: {
       id: true,
       name: true,
-      description: true,
-      tenantId: true,
+
+      tenant_id: true,
       icon: true,
-      parent: {
-        where: tenantWhereClause,
-        select: {
-          id: true,
-          name: true,
-        },
-      },
     },
   });
 
@@ -62,7 +54,7 @@ export default async function Page(props: {
                 {entityTypes
                   .filter(
                     (t) =>
-                      t.tenantId ===
+                      t.tenant_id ===
                       (type === "System Types" ? "SYSTEM" : user.company_id)
                   )
                   .map((type) => {
@@ -76,16 +68,8 @@ export default async function Page(props: {
                             <Box ml={1}>{type.name}</Box>
                           </NextLink>
                         </td>
-                        <td>
-                          {type.parent && (
-                            <NextLink
-                              href={`/app/settings/content-types/${type.parent.id}`}
-                            >
-                              {type.parent.name}
-                            </NextLink>
-                          )}
-                        </td>
-                        <td>{type.description}</td>
+                        <td></td>
+                        <td></td>
                       </tr>
                     );
                   })}

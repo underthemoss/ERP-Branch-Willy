@@ -1,6 +1,7 @@
+
 import { cookies } from "next/headers";
 import * as jose from "jose";
-import { redirect } from "next/navigation";
+
 
 export type User = {
   company_id: string;
@@ -40,6 +41,18 @@ export const getAuthUser = async () => {
 };
 
 export const useAuth = async () => {
+  const payload = await getAuthUser().catch((err) => {
+    console.error(err);
+
+    throw err;
+    // redirect("/auth");
+  });
+
+  return payload;
+};
+
+
+export const getUser = async () => {
   const payload = await getAuthUser().catch((err) => {
     console.error(err);
 

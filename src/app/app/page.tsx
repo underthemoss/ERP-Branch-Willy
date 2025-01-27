@@ -19,15 +19,15 @@ export default async function Home() {
   const { user } = await useAuth();
   const spaces = await prisma.entity.findMany({
     where: {
-      tenantId: user.company_id,
+      tenant_id: user.company_id,
       OR: [
         {
-          entityTypeId: {
+          type_id: {
             startsWith: "system_workspace" satisfies SystemEntityTypes,
           },
         },
         {
-          entityTypeId: {
+          type_id: {
             startsWith: "system_list" satisfies SystemEntityTypes,
           },
         },
@@ -64,15 +64,19 @@ export default async function Home() {
                         <AutoImage value={ws.id}></AutoImage>
                       </Avatar>
                       <NextLink href={`/app/item/${ws.id}`}>
-                        {(ws.attributes as any).name}
+                        {(ws.data as any).name}
                       </NextLink>
                     </Box>
                   </td>
-                  <td>{(ws.attributes as any).description}</td>
+                  <td>{(ws.data as any).description}</td>
                   <td>
-                    <UserDetail userId={ws.metadata.created_by} />
+                    {/* {(ws.data as any)["created_by"] && (
+                      <UserDetail userId={(ws.data as any)["created_by"]} />
+                    )} */}
                   </td>
-                  <td>{ws.metadata.created_at.toDateString()}</td>
+                  <td>
+                    {/* {(ws.data as any)["created_at"]?.toDateString()} */}
+                    </td>
                   <td></td>
                 </tr>
               );
