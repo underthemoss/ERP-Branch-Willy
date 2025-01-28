@@ -66,9 +66,6 @@ export const NewEntityForm = async (props: {
                 created_at: new Date(),
                 updated_at: new Date(),
               },
-              column_config: [{
-                id: 'name',
-              }]
             },
           });
 

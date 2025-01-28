@@ -3,23 +3,25 @@ import { useEffect, useState } from "react";
 import { GenericPicker } from "./GenericPicker";
 import { bulkLoadItems, searchItems } from "./LookupPicker.actions";
 import DataLoader from "dataloader";
-import { Box, Card, Tooltip } from "@mui/joy";
+import { Box, Tooltip } from "@mui/joy";
 
 const itemLoader = new DataLoader<
   string,
   Awaited<ReturnType<typeof bulkLoadItems>>[number]
 >((keys) => bulkLoadItems(keys as string[]), {
-  batchScheduleFn: (res) => setTimeout(res, 100),
+  batchScheduleFn: (res) => setTimeout(res, 10),
   maxBatchSize: 1000,
 });
 
 const LookupPickerItem = (props: { id: string }) => {
   const [label, setLabel] = useState("");
-  const [data, setData] = useState<any>({});
+  const [data, setData] =
+    useState<Awaited<ReturnType<typeof bulkLoadItems>>[number]>();
   useEffect(() => {
     if (props.id) {
       itemLoader.load(props.id).then((d) => {
         if (d) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setLabel(`${(d.data as any).name}`);
           setData(d);
         }
@@ -41,8 +43,8 @@ const LookupPickerItem = (props: { id: string }) => {
 
 export const LookupPicker = (props: {
   parentId: string;
-  value: string;
-  onChange: (value: string) => Promise<void>;
+  value: string | null | undefined;
+  onChange: (value: string | null | undefined) => Promise<void>;
 }) => {
   return (
     <GenericPicker

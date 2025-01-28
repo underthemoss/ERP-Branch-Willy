@@ -1,5 +1,7 @@
+/* eslint-disable react/display-name */
 import { Box } from "@mui/joy";
 import _ from "lodash";
+import { useSearchParams } from "next/navigation";
 import { forwardRef, useEffect, useState } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
@@ -9,7 +11,7 @@ export const VirtualAsyncTable = <T,>(props: {
   rowHeight: number;
   headerHeight: number;
   footerHeight: number;
-
+  totalRows: number;
   resolveRows: (props: { take: number; skip: number }) => Promise<void>;
   renderRow: (item: T, index: number) => React.ReactNode;
   renderHeader: () => React.ReactNode;
@@ -21,9 +23,10 @@ export const VirtualAsyncTable = <T,>(props: {
     const take = stopIndex - startIndex + 1;
     await props.resolveRows({ skip, take });
   };
+
   const loadMoreItems = _.debounce(
     load,
-    10
+    0
     // { maxWait: 10_000 }
   );
 
@@ -33,23 +36,25 @@ export const VirtualAsyncTable = <T,>(props: {
         {({ height, width }) => {
           return (
             <InfiniteLoader
-              minimumBatchSize={50}
-              threshold={50}
+              minimumBatchSize={60}
+              threshold={60}
               isItemLoaded={(index) => !!props.items[index]}
               loadMoreItems={loadMoreItems}
-              itemCount={props.items.length}
+              itemCount={props.totalRows}
             >
               {({ onItemsRendered, ref }) => (
                 <FixedSizeList
                   ref={ref}
-                  overscanCount={25}
-                  itemCount={props.items.length}
+                  overscanCount={60}
+                  itemCount={props.totalRows}
                   itemSize={props.rowHeight}
                   height={height}
                   width={width}
                   onItemsRendered={onItemsRendered}
                   itemData={props.items}
-                  useIsScrolling
+                  initialScrollOffset={Number(
+                    localStorage.getItem("v-table-scrolloffset") || 0
+                  )}
                   innerElementType={forwardRef(
                     ({ children, style, ...rest }: any, ref: any) => (
                       <Box
@@ -95,7 +100,7 @@ export const VirtualAsyncTable = <T,>(props: {
                     )
                   )}
                 >
-                  {({ style, data, index, isScrolling }) => {
+                  {({ style, data, index }) => {
                     const item = data[index];
 
                     return (

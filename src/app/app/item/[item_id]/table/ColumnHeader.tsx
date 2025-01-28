@@ -1,12 +1,14 @@
 "use client";
-import { Box, CircularProgress } from "@mui/joy";
+import { Box, CircularProgress, Typography } from "@mui/joy";
 import { useEffect, useRef, useState } from "react";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import { ColumnType } from "../../../../../../prisma/generated/mongo";
 import PersonIcon from "@mui/icons-material/Person";
-
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import { NextLink } from "@/ui/NextLink";
-import { changeColumnWidth, moveHeader } from "../actions";
+import { updateResizeColumnWidth, updateMoveHeader } from "../actions";
+import { useItem } from "../ItemProvider";
 export const ColumnHeader = (props: {
   label: string;
   index: number;
@@ -15,6 +17,9 @@ export const ColumnHeader = (props: {
   objectId: string;
   lookupId?: string;
 }) => {
+  const { item, query } = useItem();
+  const column = item.columns[props.index];
+  const isOrderedColumn = query.sort_by === column.column_id;
   const ref = useRef<HTMLTableCellElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const minimumColWidth = 50;
@@ -31,7 +36,7 @@ export const ColumnHeader = (props: {
         const sourceColId = Number(e.dataTransfer.getData("text/plain"));
         const destinationId = props.index;
         setIsSaving(true);
-        await moveHeader(props.objectId, sourceColId, destinationId);
+        await updateMoveHeader(props.objectId, sourceColId, destinationId);
         setIsSaving(false);
       }}
       style={{
@@ -65,7 +70,37 @@ export const ColumnHeader = (props: {
           whiteSpace={"nowrap"}
           overflow={"hidden"}
         >
-          {props.label}
+          <NextLink
+            href={`/app/item/${item.id}?sort_by=${
+              column.column_id
+            }&sort_order=${
+              !isOrderedColumn
+                ? "asc"
+                : query.sort_order === "desc"
+                ? "asc"
+                : "desc"
+            }`}
+          >
+            <Typography
+              variant="plain"
+              level="title-md"
+              fontWeight={500}
+              display={"flex"}
+              // alignContent={"center"}
+              alignItems={"center"}
+              // alignSelf={'center'}
+            >
+              <Box>{props.label}</Box>
+              <Box mt={1} ml={1}>
+                {isOrderedColumn &&
+                  (query.sort_order === "asc" ? (
+                    <ArrowDropDownIcon fontSize="small" />
+                  ) : (
+                    <ArrowDropUpIcon fontSize="small" />
+                  ))}
+              </Box>
+            </Typography>
+          </NextLink>
         </Box>
         <Box flex={1}></Box>
         {isSaving && (
@@ -92,7 +127,7 @@ export const ColumnHeader = (props: {
           onDragEnd={async () => {
             if (ref.current) {
               const { width } = ref.current.getBoundingClientRect();
-              await changeColumnWidth(props.objectId, width);
+              await updateResizeColumnWidth(props.objectId, width);
             }
           }}
           onDragStart={(event) => {

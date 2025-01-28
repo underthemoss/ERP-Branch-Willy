@@ -1,101 +1,93 @@
 "use client";
-import { createContext, useContext, useState } from "react";
-import { getColumns, getItem, getChildren, getVisibleColumns } from "./actions";
-import _ from "lodash";
+import { ActionDispatch, createContext, useContext, useReducer } from "react";
+import { getItemWithChildColumns, getRows, Query, updateCell } from "./actions";
 
-type ItemType = Awaited<ReturnType<typeof getItem>>;
-type Columns = Awaited<ReturnType<typeof getColumns>>;
-type VisibleColumns = Awaited<ReturnType<typeof getVisibleColumns>>;
-type LoadedChildren = (
-  | Awaited<ReturnType<typeof getChildren>>[number]
-  | null
-)[];
+type Rows = Awaited<ReturnType<typeof getRows>>;
+type DeferredRows = (Rows[number] | null | undefined)[];
+type ParentItem = Awaited<ReturnType<typeof getItemWithChildColumns>> & {
+  rows: DeferredRows;
+};
 const ItemProviderContext = createContext<{
-  item: ItemType;
-  columns: Columns;
-  totalChildren: number;
-  visibleColumns: VisibleColumns;
-  resolveChildren: (props: {
-    item_id: string;
-    skip?: number;
-    take?: number;
-    order_by: string;
-  }) => Promise<void> | undefined;
-  children: LoadedChildren;
+  item: ParentItem;
+  dispatch: ActionDispatch<[action: Events]>;
+  query: Query;
 }>({
-  item: null as unknown as ItemType, // this is never really null
-  columns: null as unknown as Columns,
-  totalChildren: 0,
-  resolveChildren: async () => {},
-  children: [],
-  visibleColumns: [],
+  item: null as unknown as ParentItem,
+  dispatch: () => {},
+  query: null as unknown as Query,
 });
+
+type Events =
+  | {
+      type: "update_cell_value";
+      item_id: string;
+      column_index: number;
+      value: string | null;
+    }
+  | {
+      type: "hydrate_row";
+      row: DeferredRows[number];
+      index: number;
+    };
+
+const rowReducer = (
+  state: DeferredRows[number],
+  action: Events
+): DeferredRows[number] => {
+  if (!state) return state;
+  switch (action.type) {
+    case "update_cell_value":
+      if (action.item_id !== state.id) return state;
+      return {
+        ...state,
+        values: state.values.map((v, i) =>
+          i === action.column_index ? action.value : v
+        ),
+      };
+    default:
+      return { ...state };
+  }
+};
+
+const reducer = (state: ParentItem, action: Events) => {
+  switch (action.type) {
+    case "hydrate_row":
+      return {
+        ...state,
+        rows: state.rows.map((row, i) =>
+          i === action.index ? action.row : row
+        ),
+      };
+    case "update_cell_value":
+      return {
+        ...state,
+        rows: state.rows.map((r) => rowReducer(r, action)),
+      };
+    default:
+      return { ...state };
+  }
+};
 
 export const ItemProvider: React.FC<{
   children: React.ReactNode;
-  totalChildren: number;
-  item: ItemType;
-  columns: Columns;
-  initialChildren: LoadedChildren;
-  visibleColumns: VisibleColumns;
-}> = ({
-  children,
-  item,
-  columns,
-  totalChildren,
-  initialChildren,
-  visibleColumns,
-}) => {
-  const updateArray = <T,>(
-    original: T[],
-    replacements: T[],
-    start: number
-  ): T[] => [
-    ...original.slice(0, start),
-    ...replacements,
-    ...original.slice(start + replacements.length),
-  ];
-  const [loadedChildren, setLoadedChildren] = useState<LoadedChildren>(
-    updateArray(
-      Array.from({ length: totalChildren }).fill(null) as null[],
-      initialChildren,
-      0
-    )
-  );
+  item: ParentItem;
+  query: Query;
+}> = ({ children, item, query }) => {
+  // const [isPrending, startTransition] = useTransition();
+  const [optimisticcValue, dispatch] = useReducer(reducer, {
+    ...item,
+    rows: [
+      ...item.rows,
+      ...Array.from({ length: item.count - item.rows.length }).map(() => null),
+    ],
+  });
 
   return (
     <ItemProviderContext.Provider
       value={{
-        item,
-        columns,
-        totalChildren,
-        visibleColumns,
-        resolveChildren: async (props) => {
-          setLoadedChildren((loadedChildren) =>
-            updateArray(
-              loadedChildren,
-              Array.from({ length: props.take || 0 }).map(() => {
-                return {
-                  column_config: [],
-                  data: {},
-                  id: "",
-                  parent_id: "",
-                  tenant_id: "",
-                  type_id: "",
-                  hidden: false,
-                  sort_order: 0,
-                };
-              }),
-              props.skip || 0
-            )
-          );
-          const items = await getChildren(props);
-
-          setLoadedChildren((loadedChildren) =>
-            updateArray(loadedChildren, items, props.skip || 0)
-          );
-        },
-        children: loadedChildren,
+        item: optimisticcValue,
+        dispatch,
+        query,
       }}
     >
       {children}
@@ -104,25 +96,52 @@ export const ItemProvider: React.FC<{
 };
 
 export const useItem = () => {
-  const {
-    item,
-    columns,
-    totalChildren,
-    children: loadedChildren,
-    resolveChildren: getChildren,
-    visibleColumns,
-  } = useContext(ItemProviderContext);
-
-  // const displayColumns = visibleColumns.map((config) => ({
-  //   column: columns.find((col) => col.id === config.column_id)!,
-  //   ...config,
-  // }));
+  const { item, dispatch, query } = useContext(ItemProviderContext);
   return {
     item,
-    columns,
-    displayColumns: visibleColumns,
-    totalChildren,
-    resolveChildren: getChildren,
-    loadedChildren,
+    query,
+    loadMore: async (props: { skip: number; take: number }) => {
+      for (const row in Array.from({ length: props.take })) {
+        dispatch({
+          type: "hydrate_row",
+          row: { id: row, type_id: "", values: [] },
+          index: Number(row) + props.skip,
+        });
+      }
+      const moreRows = await getRows(
+        {
+          parent_id: item.id,
+          skip: props.skip,
+          take: props.take,
+          sort_by: query.sort_by,
+          sort_order: query.sort_order,
+        },
+        item.columns.map(({ column_id }) => column_id)
+      );
+      for (const row in moreRows) {
+        dispatch({
+          type: "hydrate_row",
+          row: moreRows[row],
+          index: Number(row) + props.skip,
+        });
+      }
+    },
+    updateItemValue: async (props: {
+      columnIndex: number;
+      item_id: string;
+      value: string | null;
+    }) => {
+      dispatch({
+        type: "update_cell_value",
+        column_index: props.columnIndex,
+        item_id: props.item_id,
+        value: props.value,
+      });
+      await updateCell(
+        props.item_id,
+        item.columns[props.columnIndex].column_id,
+        props.value
+      );
+    },
   };
 };

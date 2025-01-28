@@ -11,16 +11,14 @@ const upsertSystemEntity = async (props: {
   type: SystemEntityTypes;
   name: string;
   tenant: string;
-  column_config?: { id: string; width?: number }[];
 }) => {
-  const { id, type, name, tenant, column_config } = props;
+  const { id, type, name, tenant } = props;
   const update = {
     data: {
       name: name,
     },
     tenant_id: tenant,
     type_id: type,
-    column_config,
   };
   await prisma.entity.upsert({
     where: { id: id },

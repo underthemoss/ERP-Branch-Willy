@@ -6,24 +6,26 @@ import { Autocomplete, CircularProgress, List, ListItem } from "@mui/joy";
 import _ from "lodash";
 
 export const GenericPicker = (props: {
-  value: string | null;
+  value: string | null | undefined;
   itemRenderer: (id: string) => React.ReactElement;
   search: (term: string) => Promise<string[]>;
-  onChange: (value: string) => Promise<void>;
+  onChange: (value: string | undefined | null) => Promise<void>;
 }) => {
   const [options, setOptions] = React.useState<string[]>([]);
   const [term, setTerm] = React.useState("");
-  const [optimisticValue, setOptimisticValue] = React.useState(props.value);
+
+  const value = props.value;
   const [hasFocus, setHasFocus] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
-  const debounceSearch = React.useCallback(
-    _.debounce(async (searchTerm: string) => {
-      setIsLoading(true);
-      const ids = await props.search(searchTerm);
-      setOptions(ids);
-      setIsLoading(false);
-    }, 300),
-    []
+  const debounceSearch = React.useMemo(
+    () =>
+      _.debounce(async (searchTerm: string) => {
+        setIsLoading(true);
+        const ids = await props.search(searchTerm);
+        setOptions(ids);
+        setIsLoading(false);
+      }, 300),
+    [props]
   );
 
   return (
@@ -55,13 +57,14 @@ export const GenericPicker = (props: {
         setHasFocus(false);
       }}
       onChange={async (el, [val]) => {
-        if (val) {
-          setOptimisticValue(val);
-          setHasFocus(false);
-          await props.onChange(val);
-        } else {
-          setOptimisticValue(null);
-        }
+        await props.onChange(val);
+        // if (val) {
+        //   setOptimisticValue(val);
+        //   setHasFocus(false);
+        //   await props.onChange(val);
+        // } else {
+        //   setOptimisticValue(null);
+        // }
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
@@ -70,7 +73,7 @@ export const GenericPicker = (props: {
       placeholder={hasFocus ? "Search..." : ""}
       variant="plain"
       options={options}
-      value={hasFocus ? [] : optimisticValue ? [optimisticValue] : []}
+      value={hasFocus ? [] : value ? [value] : []}
       getOptionLabel={(option) => option}
       renderOption={(optionProps, id) => {
         const { key, ...rest } = optionProps as any;

@@ -113,20 +113,14 @@ enum ColumnType {
   // entity_type
 }
 
-type ColumnConfig {
-  id    String
-  width Int?
-}
-
 model Entity {
-  id            String         @id @default(uuid()) @map("_id")
-  type_id       String
-  type          EntityType     @relation(fields: [type_id], references: [id])
-  tenant_id     String
-  data          Json
-  hidden        Boolean?       @default(false)
-  sort_order    Float?
-  column_config ColumnConfig[]
+  id         String     @id @default(uuid()) @map("_id")
+  type_id    String
+  type       EntityType @relation(fields: [type_id], references: [id])
+  tenant_id  String
+  data       Json
+  hidden     Boolean?   @default(false)
+  sort_order Float?
 
   // Hierarchical relationships
   parent_id String?

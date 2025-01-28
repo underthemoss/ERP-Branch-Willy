@@ -15,56 +15,38 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
-
 import { VirtualAsyncTable } from "./VirtualAsyncTable";
 import { ColumnHeader } from "./ColumnHeader";
 import { MenuItemLink } from "@/ui/MenuItemLink";
-
 import { NextLink } from "@/ui/NextLink";
-
 import { CellRender } from "./CellRender";
-import {
-  addRow,
-  deleteItem,
-  toggleSelectedColumns,
-  updateCell,
-} from "../actions";
+import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
+import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 
 export const ItemTable = () => {
-  const {
-    item,
-    columns,
-    displayColumns,
-    totalChildren,
-    resolveChildren,
-    loadedChildren,
-  } = useItem();
+  const { item, loadMore, updateItemValue } = useItem();
 
-  const firstColumnWidth = 260;
-  const lastColumnWidth = 200;
-
+  const firstColumnWidth = 50;
+  const lastColumnWidth = 60;
+  const rowHeight = 50;
   return (
     <Box flex={1} display={"flex"} flexDirection={"column"}>
       <Box p={2} display={"flex"}>
         <Typography level="h1" fontWeight={500}>
-          {(item.data as any)?.name}
+          {item.name}
         </Typography>
         <Box flex={1}></Box>
       </Box>
 
       <Box flex={1} display={"flex"}>
         <VirtualAsyncTable
-          items={loadedChildren}
-          rowHeight={50}
+          items={item.rows}
+          totalRows={item.count}
+          rowHeight={rowHeight}
           headerHeight={60}
           footerHeight={40}
           resolveRows={async ({ skip, take }) => {
-            await resolveChildren({
-              item_id: item.id,
-              skip,
-              take,
-              order_by: "equipment_category",
-            });
+            loadMore({ skip, take });
           }}
           renderHeader={() => {
             return (
@@ -88,14 +70,14 @@ export const ItemTable = () => {
                     borderRight: "1px solid rgb(222, 222, 222)",
                   }}
                 ></Box>
-                {displayColumns.map((c, i) => {
+                {item.columns.map((c, i) => {
                   if (!c.column_type) return <>col not found</>;
                   return (
                     <ColumnHeader
                       key={c.id}
                       type={c.column_type.type}
                       index={i}
-                      label={c.name || c.column_type.label}
+                      label={c.column_type.label}
                       width={c.column_width || 120}
                       objectId={c.id}
                       lookupId={(c.column_type.data as any).lookup}
@@ -116,7 +98,7 @@ export const ItemTable = () => {
                       variant="plain"
                       startDecorator={<AddIcon />}
                     >
-                      Columns
+                      
                     </MenuButton>
 
                     <Menu placement="bottom-start" sx={{ minWidth: 150 }}>
@@ -125,9 +107,9 @@ export const ItemTable = () => {
                       </MenuItemLink>
 
                       <ListDivider />
-                      {columns.map((col) => {
-                        const isSelected = displayColumns.some(
-                          (c) => col.id === c.column_id
+                      {item.all_columns.map((col) => {
+                        const isSelected = item.columns.some(
+                          (c) => c.column_id === col.id
                         );
                         const columnId = col.id;
 
@@ -135,7 +117,10 @@ export const ItemTable = () => {
                           <MenuItem
                             key={col.id}
                             onClick={async () => {
-                              await toggleSelectedColumns(item.id, columnId);
+                              await updateToggleSelectedColumns(
+                                item.id,
+                                columnId
+                              );
                             }}
                           >
                             <ListItemDecorator>
@@ -151,8 +136,8 @@ export const ItemTable = () => {
               </Box>
             );
           }}
-          renderRow={(item, rowIndex) => {
-            if (!item) {
+          renderRow={(row, rowIndex) => {
+            if (!row) {
               return <Box>LOADING</Box>;
             }
             return (
@@ -168,36 +153,39 @@ export const ItemTable = () => {
                   alignContent={"center"}
                 >
                   <Box display={"flex"} justifySelf={"center"}>
-                    <NextLink href={`/app/item/${item.id}`}>
-                      {/* <EntityTypeIcon entityTypeIcon={item.type.icon} />  */}
-                      {rowIndex} {item.type_id}
+                    <NextLink href={`/app/item/${row.id}`}>
+                      <EntityTypeIcon entityTypeIcon={"document"} />
+                      {/* {rowIndex} */}
                       {/* {item.id} */}
                     </NextLink>
                   </Box>
                 </Box>
 
-                {displayColumns.map((c, colIndex) => {
-                  const value = (item.data as any)[c.column_id];
-
+                {item.columns.map((column, colIndex) => {
+                  const value = row.values[colIndex];
                   return (
                     <Box
-                      key={c.id}
-                      width={c.column_width || 120}
+                      key={column.id}
+                      width={column.column_width || 120}
                       alignContent={"center"}
                       //   display={"flex"}
                     >
-                      {c.column_type && (
+                      {column.column_type && (
                         <CellRender
-                          key={value}
-                          type={c.column_type.type}
+                          // key={value}
+                          type={column.column_type.type}
                           colIndex={colIndex}
                           rowIndex={rowIndex}
-                          totalColumns={displayColumns.length}
+                          totalColumns={item.columns.length}
                           value={value}
-                          columnData={c.column_type.data as any}
-                          readonly={c.column_type.readonly}
+                          columnData={column.column_type.data as any}
+                          readonly={column.column_type.readonly}
                           onBlur={async (value) => {
-                            await updateCell(item.id, c.column_id, value);
+                            await updateItemValue({
+                              columnIndex: colIndex,
+                              item_id: row.id,
+                              value: value || null,
+                            });
                           }}
                         ></CellRender>
                       )}
@@ -222,7 +210,7 @@ export const ItemTable = () => {
                       tabIndex={-1}
                       variant="plain"
                       onClick={async () => {
-                        await deleteItem(item.id);
+                        await deleteItem(row.id);
                       }}
                     >
                       <DeleteIcon color="action" />
@@ -253,7 +241,7 @@ export const ItemTable = () => {
                     </Box>
                     <Box flex={1}></Box>
                     <Box>
-                      <Box>Total: {totalChildren}</Box>
+                      <Box>Total: {item.count}</Box>
                     </Box>
                   </Box>
                 </Box>

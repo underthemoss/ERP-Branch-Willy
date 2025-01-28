@@ -1,46 +1,41 @@
 "use client";
-import {
-  Avatar,
-  Box,
-  CircularProgress,
-  Input,
-  Option,
-  Select,
-  Tooltip,
-} from "@mui/joy";
+import { Avatar, Box, CircularProgress, Input, Tooltip } from "@mui/joy";
 import { ColumnType } from "../../../../../../prisma/generated/mongo";
-import { UserDetail } from "@/ui/UserDetail";
 import { HTMLInputTypeAttribute, useState } from "react";
 import { LazyUserDetail } from "@/ui/LazyUserDetails";
-import { GenericPicker } from "@/ui/picker/GenericPicker";
 import { UserPicker } from "@/ui/picker/UserPicker";
 import { LookupPicker } from "@/ui/picker/LookupPicker";
+import { useItem } from "../ItemProvider";
 
 export const CellRender = (props: {
   type: ColumnType;
-  value: string;
-  readonly: boolean;  
-  onBlur: (value: string) => Promise<void>;
+  value: string | undefined | null;
+  readonly: boolean;
+  onBlur: (value: string | undefined | null) => Promise<void>;
   colIndex: number;
   rowIndex: number;
   totalColumns: number;
-  columnData: any;
+  columnData: { lookup: string };
 }) => {
+  const { updateItemValue, item } = useItem();
+  const item_id = item.rows[props.rowIndex]?.id;
   const tabIndex = props.readonly
     ? -1
     : props.colIndex + props.totalColumns * props.rowIndex + 1;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [optomisticValue, setOptomisticValue] = useState(props.value || "");
 
-  const commit = async (value: string) => {
-    const isDirty = value !== optomisticValue;
-    if (isDirty) {
-      setIsSaving(true);
-      setOptomisticValue(value.trim());
-      await props.onBlur(value.trim());
-      setIsSaving(false);
+  const commit = async (value: string | null | undefined) => {
+    setIsSaving(true);
+    // await props.onBlur(value?.trim());
+    if (item_id) {
+      await updateItemValue({
+        item_id: item_id,
+        columnIndex: props.colIndex,
+        value: value?.trim() || null,
+      });
     }
+    setIsSaving(false);
   };
 
   const handleName = (col: number, row: number) =>
@@ -93,7 +88,7 @@ export const CellRender = (props: {
     defaultValue,
   }: {
     type: HTMLInputTypeAttribute;
-    defaultValue: any;
+    defaultValue: string | undefined | null;
   }) => {
     return (
       <Input
@@ -141,7 +136,7 @@ export const CellRender = (props: {
           input: { style: {} },
         }}
         variant={isEditing ? "soft" : "plain"}
-        defaultValue={defaultValue}
+        defaultValue={defaultValue || undefined}
       />
     );
   };
@@ -158,6 +153,7 @@ export const CellRender = (props: {
       height={"100%"}
     >
       {props.type === "user" &&
+        props.value &&
         (props.readonly ? (
           <LazyUserDetail userId={props.value} />
         ) : (
@@ -180,16 +176,16 @@ export const CellRender = (props: {
       {isEditing && !props.readonly ? (
         <>
           {props.type === "single_line_of_text" && (
-            <SimpleEditInput type="text" defaultValue={optomisticValue} />
+            <SimpleEditInput type="text" defaultValue={props.value} />
           )}
           {props.type === "date" && (
-            <SimpleEditInput type="date" defaultValue={optomisticValue} />
+            <SimpleEditInput type="date" defaultValue={props.value} />
           )}
           {props.type === "integer" && (
-            <SimpleEditInput type="number" defaultValue={optomisticValue} />
+            <SimpleEditInput type="number" defaultValue={props.value} />
           )}
           {props.type === "img_url" && (
-            <SimpleEditInput type="text" defaultValue={optomisticValue} />
+            <SimpleEditInput type="text" defaultValue={props.value} />
           )}
         </>
       ) : (
@@ -199,19 +195,19 @@ export const CellRender = (props: {
           height={"100%"}
           onClick={() => setFocus(props.colIndex, props.rowIndex)}
         >
-          {props.type === "single_line_of_text" && optomisticValue}
-          {props.type === "img_url" && (
-            <Tooltip placement="right" title={<img src={optomisticValue} />}>
-              <Avatar sx={{ position: "unset" }} src={optomisticValue} />
+          {props.type === "single_line_of_text" && props.value}
+          {props.type === "img_url" && props.value && (
+            <Tooltip placement="right" title={<img src={props.value} />}>
+              <Avatar sx={{ position: "unset" }} src={props.value} />
             </Tooltip>
           )}
-          {props.type === "integer" && optomisticValue}
-          {/* {props.type === "user" && optomisticValue && (
-            <LazyUserDetail userId={optomisticValue} />
+          {props.type === "integer" && props.value}
+          {/* {props.type === "user" && props.value && (
+            <LazyUserDetail userId={props.value} />
           )} */}
           {props.type === "date" &&
-            (optomisticValue
-              ? new Date(optomisticValue).toLocaleString("en-US", {
+            (props.value
+              ? new Date(props.value).toLocaleString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",

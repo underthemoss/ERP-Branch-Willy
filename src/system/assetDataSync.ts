@@ -11,16 +11,14 @@ const upsertSystemEntity = async (props: {
   type: SystemEntityTypes;
   name: string;
   tenant: string;
-  column_config?: { id: string; width?: number }[];
 }) => {
-  const { id, type, name, tenant, column_config } = props;
+  const { id, type, name, tenant } = props;
   const update = {
     data: {
       name: name,
     },
     tenant_id: tenant,
     type_id: type,
-    column_config,
   };
   await prisma.entity.upsert({
     where: { id: id },
@@ -86,15 +84,6 @@ const assetDataSync = async () => {
     tenant: "1854",
     type: "system_workspace",
     name: "T3 Assets",
-    column_config: [
-      { id: photoColumn, width: 250 },
-      { id: "name", width: 250 },
-      { id: equipmentCategoryColumn, width: 250 },
-      { id: equipmentClassColumn, width: 250 },
-      { id: customModelColumn, width: 250 },
-      { id: modelColumn, width: 250 },
-      { id: makeColumn, width: 250 },
-    ],
   });
 
   const sync = async () => {
