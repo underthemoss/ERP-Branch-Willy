@@ -13,8 +13,13 @@ export const VirtualAsyncTable = <T,>(props: {
   footerHeight: number;
   totalRows: number;
   resolveRows: (props: { take: number; skip: number }) => Promise<void>;
-  renderRow: (item: T, index: number) => React.ReactNode;
-  renderHeader: () => React.ReactNode;
+  renderRow: (props: {
+    width: number;
+    item: T;
+    index: number;
+    rowHeight: number;
+  }) => React.ReactNode;
+  renderHeader: (props: { headerHeight: number }) => React.ReactNode;
   renderFooter: () => React.ReactNode;
   items: T[];
 }) => {
@@ -45,16 +50,15 @@ export const VirtualAsyncTable = <T,>(props: {
               {({ onItemsRendered, ref }) => (
                 <FixedSizeList
                   ref={ref}
-                  overscanCount={60}
+                  overscanCount={30}
                   itemCount={props.totalRows}
                   itemSize={props.rowHeight}
                   height={height}
                   width={width}
                   onItemsRendered={onItemsRendered}
                   itemData={props.items}
-                  initialScrollOffset={Number(
-                    localStorage.getItem("v-table-scrolloffset") || 0
-                  )}
+                  className="table-scroll-window"
+                  style={{}}
                   innerElementType={forwardRef(
                     ({ children, style, ...rest }: any, ref: any) => (
                       <Box
@@ -82,7 +86,9 @@ export const VirtualAsyncTable = <T,>(props: {
                             display: "flex",
                           }}
                         >
-                          {props.renderHeader()}
+                          {props.renderHeader({
+                            headerHeight: props.headerHeight,
+                          })}
                         </Box>
                         <Box
                           style={{
@@ -113,7 +119,12 @@ export const VirtualAsyncTable = <T,>(props: {
                         }}
                         display={"flex"}
                       >
-                        {item && props.renderRow(item, index)}
+                        {props.renderRow({
+                          item: item,
+                          index: index,
+                          width: width,
+                          rowHeight: props.rowHeight,
+                        })}
                       </Box>
                     );
                   }}

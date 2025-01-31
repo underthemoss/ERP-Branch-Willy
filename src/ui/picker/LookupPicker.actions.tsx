@@ -10,7 +10,7 @@ export const searchItems = async (parentId: string, term: string) => {
     where: {
       parent_id: parentId,
       tenant_id: user.company_id,
-      OR: [{ hidden: { isSet: false } }, { hidden: false }],
+      hidden: false,
     },
   });
   return items.map((u) => u.id.toString());

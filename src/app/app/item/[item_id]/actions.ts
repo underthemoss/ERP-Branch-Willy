@@ -121,7 +121,7 @@ export const getVisibleColumns = async (item_id: string) => {
       id: ext.id,
       column_id: data.column_id,
       name: data.name,
-      column_width: data.column_width,
+      column_width: data.column_width || 120,
       column_type: columnTypes.find((c) => c.id === data.column_id),
     };
   });
@@ -202,64 +202,40 @@ export const addRow = async (item_id: string) => {
   revalidatePath("/");
 };
 
-export const updateMoveHeader = async (
-  item_id: string,
-  draggedIndex: number,
-  targetIndex: number
-) => {
+export const updateColumnOrder = async (columnIds: string[]) => {
   console.time("moveHeader");
 
   const { user } = await getAuthUser();
-  const { parent_id } = await prisma.entity.findFirstOrThrow({
-    where: { tenant_id: user.company_id, id: item_id },
-    select: {
-      parent_id: true,
-    },
-  });
-  const items = await getVisibleColumns(parent_id!);
-
-  const draggedColumn = items[draggedIndex];
-  const columnsWithoutDragged = items.filter((i) => i !== draggedColumn);
-  const columnUpdates = [
-    ...columnsWithoutDragged.slice(0, targetIndex),
-    draggedColumn,
-    ...columnsWithoutDragged.slice(targetIndex),
-  ].map((c, i) => ({
-    q: { _id: c.id },
-    u: { $set: { sort_order: i } },
-  }));
 
   await prisma.$runCommandRaw({
     update: "Entity",
-    updates: columnUpdates,
+    updates: columnIds.map((id, i) => {
+      return {
+        q: { _id: id },
+        u: { $set: { sort_order: i } },
+      };
+    }),
   });
 
   console.timeEnd("moveHeader");
-  revalidatePath("/");
 };
 
-export const updateResizeColumnWidth = async (
-  objectId: string,
-
-  width: number
+export const updateColumnWidths = async (
+  columns: { id: string; width: number }[]
 ) => {
   const { user } = await getAuthUser();
   console.time("changeColumnWidth");
-  await prisma.entity.findFirstOrThrow({
-    where: { id: objectId, tenant_id: user.company_id },
-  });
-
   await prisma.$runCommandRaw({
     update: "Entity",
-    updates: [
-      {
-        q: { _id: objectId },
+    updates: columns.map(({ id, width }) => {
+      return {
+        q: { _id: id },
         u: { $set: { "data.column_width": width } },
-      },
-    ],
+      };
+    }),
   });
   console.timeEnd("changeColumnWidth");
-  revalidatePath("/");
+  // revalidatePath("/");
 };
 
 export const updateToggleSelectedColumns = async (

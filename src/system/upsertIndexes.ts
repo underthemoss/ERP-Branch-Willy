@@ -34,21 +34,21 @@ const upsertIndexes = async () => {
         name: "data_wildcard_index",
         collation: { locale: "en", strength: 2 },
       },
-      // {
-      //   key: { parent_id: 1 },
-      //   name: "parent_id_index",
-      //   collation: { locale: "en", strength: 2 },
-      // },
-      // {
-      //   key: { tenant_id: 1 },
-      //   name: "tenant_id_index",
-      //   collation: { locale: "en", strength: 2 },
-      // },
-      // {
-      //   key: { hidden: 1 },
-      //   name: "hidden_index",
-      //   collation: { locale: "en", strength: 2 },
-      // },
+      {
+        key: { parent_id: 1 },
+        name: "parent_id_index",
+        // collation: { locale: "en", strength: 2 },
+      },
+      {
+        key: { tenant_id: 1 },
+        name: "tenant_id_index",
+        // collation: { locale: "en", strength: 2 },
+      },
+      {
+        key: { hidden: 1 },
+        name: "hidden_index",
+        // collation: { locale: "en", strength: 2 },
+      },
       // {
       //   key: { type_id: 1 },
       //   name: "type_id_index",

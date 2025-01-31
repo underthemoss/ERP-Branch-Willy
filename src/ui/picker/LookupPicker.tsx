@@ -36,7 +36,9 @@ const LookupPickerItem = (props: { id: string }) => {
       enterDelay={500}
       title={<pre>{JSON.stringify(data, undefined, 2)}</pre>}
     >
-      <Box display={"flex"}>{label}</Box>
+      <Box display={"flex"} sx={{ cursor: "pointer" }}>
+        {label}
+      </Box>
     </Tooltip>
   );
 };

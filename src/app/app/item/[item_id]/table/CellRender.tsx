@@ -196,11 +196,13 @@ export const CellRender = (props: {
           onClick={() => setFocus(props.colIndex, props.rowIndex)}
         >
           {props.type === "single_line_of_text" && props.value}
-          {props.type === "img_url" && props.value && (
-            <Tooltip placement="right" title={<img src={props.value} />}>
-              <Avatar sx={{ position: "unset" }} src={props.value} />
-            </Tooltip>
-          )}
+          {props.type === "img_url" &&
+            props.value &&
+            props.value.startsWith("http") && (
+              <Tooltip placement="right" title={<img src={props.value} />}>
+                <Avatar sx={{ position: "unset" }} src={props.value} />
+              </Tooltip>
+            )}
           {props.type === "integer" && props.value}
           {/* {props.type === "user" && props.value && (
             <LazyUserDetail userId={props.value} />
