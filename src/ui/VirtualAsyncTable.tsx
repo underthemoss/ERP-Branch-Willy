@@ -13,14 +13,13 @@ export const VirtualAsyncTable = <T,>(props: {
   footerHeight: number;
   totalRows: number;
   resolveRows: (props: { take: number; skip: number }) => Promise<void>;
-  renderRow: (props: {
+  renderRow: React.FC<{
     width: number;
-    item: T;
     index: number;
     rowHeight: number;
-  }) => React.ReactNode;
-  renderHeader: (props: { headerHeight: number }) => React.ReactNode;
-  renderFooter: () => React.ReactNode;
+  }>;
+  renderHeader: React.FC<{ headerHeight: number }>;
+  renderFooter: React.FC<{}>;
   items: T[];
 }) => {
   const load = async (startIndex: number, stopIndex: number) => {
@@ -86,9 +85,9 @@ export const VirtualAsyncTable = <T,>(props: {
                             display: "flex",
                           }}
                         >
-                          {props.renderHeader({
-                            headerHeight: props.headerHeight,
-                          })}
+                          <props.renderHeader
+                            headerHeight={props.headerHeight}
+                          ></props.renderHeader>
                         </Box>
                         <Box
                           style={{
@@ -100,7 +99,7 @@ export const VirtualAsyncTable = <T,>(props: {
                             display: "flex",
                           }}
                         >
-                          {props.renderFooter()}
+                          <props.renderFooter />
                         </Box>
                       </Box>
                     )
@@ -119,12 +118,11 @@ export const VirtualAsyncTable = <T,>(props: {
                         }}
                         display={"flex"}
                       >
-                        {props.renderRow({
-                          item: item,
-                          index: index,
-                          width: width,
-                          rowHeight: props.rowHeight,
-                        })}
+                        <props.renderRow
+                          index={index}
+                          width={width}
+                          rowHeight={props.rowHeight}
+                        ></props.renderRow>
                       </Box>
                     );
                   }}

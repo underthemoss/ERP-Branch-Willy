@@ -15,7 +15,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { VirtualAsyncTable } from "./VirtualAsyncTable";
+import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 // import { minimumColWidth } from "./TableHeaderCell";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
@@ -26,19 +26,11 @@ import { TableHeader } from "./TableHeader";
 
 export const TableRow: React.FC<{
   width: number;
-  item:
-    | {
-        id: string;
-        type_id: string;
-        values: (string | null)[];
-      }
-    | null
-    | undefined;
   index: number;
   rowHeight: number;
-}> = ({ item: row, index: index, width, rowHeight }) => {
+}> = ({ index: index, width, rowHeight }) => {
   const { item, updateItemValue } = useItem();
-
+  const row = item.rows[index];
   if (!row) {
     return (
       <Box flex={1} width={width} sx={{ backgroundColor: "white" }}>

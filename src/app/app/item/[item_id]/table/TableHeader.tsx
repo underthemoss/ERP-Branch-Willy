@@ -17,7 +17,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { VirtualAsyncTable } from "./VirtualAsyncTable";
+import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 import { TableHeaderCell } from "./TableHeaderCell";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";

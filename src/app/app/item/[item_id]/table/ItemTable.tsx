@@ -16,7 +16,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { VirtualAsyncTable } from "./VirtualAsyncTable";
+import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
@@ -25,12 +25,11 @@ import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
+import { TableFooter } from "./TableFooter";
 
 export const ItemTable = () => {
-  const { item, loadMore, updateItemValue } = useItem();
+  const { item, loadMore } = useItem();
 
-  const firstColumnWidth = 0;
-  const lastColumnWidth = 60;
   const rowHeight = 50;
   return (
     <Box flex={1} display={"flex"} flexDirection={"column"}>
@@ -41,7 +40,6 @@ export const ItemTable = () => {
         <Box flex={1}></Box>
       </Box>
       <Box>
-        {" "}
         <Dropdown open={undefined}>
           <MenuButton
             size="sm"
@@ -89,47 +87,9 @@ export const ItemTable = () => {
             resolveRows={async ({ skip, take }) => {
               loadMore({ skip, take });
             }}
-            renderHeader={({ headerHeight }) => {
-              return <TableHeader headerHeight={headerHeight} />;
-            }}
-            renderRow={({ item: row, index: index, width, rowHeight }) => {
-              return (
-                <TableRow
-                  rowHeight={rowHeight}
-                  item={row}
-                  index={index}
-                  width={width}
-                />
-              );
-            }}
-            renderFooter={() => {
-              return (
-                <Box
-                  flex={1}
-                  display={"flex"}
-                  style={{ backgroundColor: "white", zIndex: 9999 }}
-                >
-                  <Box position={"sticky"} left={0}>
-                    <Box display={"flex"}>
-                      <Box>
-                        <Button
-                          variant="plain"
-                          onClick={async () => {
-                            await addRow(item.id);
-                          }}
-                        >
-                          New row
-                        </Button>
-                      </Box>
-                      <Box flex={1}></Box>
-                      <Box>
-                        <Box>Total: {item.count}</Box>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Box>
-              );
-            }}
+            renderHeader={TableHeader}
+            renderRow={TableRow}
+            renderFooter={TableFooter}
           />
         </Box>
       </Box>
