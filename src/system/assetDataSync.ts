@@ -166,7 +166,7 @@ const assetDataSync = async () => {
                     if (!value) return null;
                     try {
                       const wkbBuffer = Buffer.from(value, "hex");
-                      var geometry = wkx.Geometry.parse(wkbBuffer);
+                      const geometry = wkx.Geometry.parse(wkbBuffer);
                       return geometry.toGeoJSON();
                     } catch (err: any) {
                       console.log(err.message);

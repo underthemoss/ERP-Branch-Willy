@@ -2,7 +2,7 @@ FROM node:20-bullseye-slim AS base
 
 # Declaring envs
 ENV LEVEL=${LEVEL}
-ENV PORT=5000
+ENV PORT=3000
 
 # Setting up the work directory
 WORKDIR /es-erp
@@ -18,6 +18,7 @@ COPY . .
 
 # Installing dependencies
 RUN npm install --force
+RUN npm run prisma:generate
 
 
 
