@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "",
+  basePath: process.env.LEVEL === "dev" ? "" : "/es-erp/",
   assetPrefix: process.env.LEVEL === "dev" ? "" : "/es-erp/",
   experimental: {
     serverActions: {
