@@ -181,7 +181,7 @@ const assetDataSync = async () => {
         console.log("chunk");
       }
 
-      await new Promise((res) => setTimeout(res, 5 * 60_000));
+      await new Promise((res) => setTimeout(res, 60 * 60_000));
     }
   };
 
