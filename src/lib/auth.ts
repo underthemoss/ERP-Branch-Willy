@@ -1,7 +1,5 @@
-
 import { cookies } from "next/headers";
 import * as jose from "jose";
-
 
 export type User = {
   company_id: string;
@@ -15,7 +13,7 @@ const envPrefix = process.env.LEVEL === "prod" ? "" : "staging-";
 const JWKS = jose.createRemoteJWKSet(
   new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`)
 );
-const extractTokenValue = (keySuffix: string, token: {}) => {
+const extractTokenValue = (keySuffix: string, token: any) => {
   return Object.entries(token)
     .filter(([key]) => key.endsWith(keySuffix))
     .map(([, value]) => value)
@@ -39,18 +37,6 @@ export const getAuthUser = async () => {
 
   return { isAuth: true, user };
 };
-
-export const useAuth = async () => {
-  const payload = await getAuthUser().catch((err) => {
-    console.error(err);
-
-    throw err;
-    // redirect("/auth");
-  });
-
-  return payload;
-};
-
 
 export const getUser = async () => {
   const payload = await getAuthUser().catch((err) => {

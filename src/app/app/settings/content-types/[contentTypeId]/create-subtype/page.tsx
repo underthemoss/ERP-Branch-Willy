@@ -1,4 +1,4 @@
-// import { useAuth } from "@/lib/auth";
+// import { getUser } from "@/lib/auth";
 // import _ from "lodash";
 // import { prisma } from "@/lib/prisma";
 // import {
@@ -28,7 +28,7 @@ export default async function Page(props: {
   // const { contentTypeId } = await props.params;
   // const attributes = await prisma.entityType.getAllAttributes([contentTypeId]);
 
-  // const { user } = await useAuth();
+  // const { user } = await getUser();
   // const baseType = await prisma.entityType.findFirstOrThrow({
   //   where: { tenantId: { in: ["SYSTEM", user.company_id] }, id: contentTypeId },
   //   select: {
@@ -48,7 +48,7 @@ export default async function Page(props: {
   //     <form
   //       action={async (formData) => {
   //         "use server";
-  //         const { user } = await useAuth();
+  //         const { user } = await getUser();
   //         const entries = [...formData.entries()];
 
   //         const name = formData.get("name")?.toString() || "";

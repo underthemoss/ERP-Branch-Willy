@@ -1,4 +1,4 @@
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { NextLink } from "@/ui/NextLink";
 import { prisma } from "@/lib/prisma";
 import { Box, Button, Chip, Table, Tooltip, Typography } from "@mui/joy";
@@ -8,7 +8,7 @@ import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
 }) {
-  const { user } = await useAuth();
+  const { user } = await getUser();
   const tenantWhereClause = {
     tenant_id: {
       in: ["SYSTEM", user.company_id],

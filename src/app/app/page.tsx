@@ -1,4 +1,4 @@
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   Avatar,
@@ -16,7 +16,7 @@ import { NextLink } from "@/ui/NextLink";
 import { UserDetail } from "@/ui/UserDetail";
 import { AutoImage } from "@/ui/AutoImage";
 export default async function Home() {
-  const { user } = await useAuth();
+  const { user } = await getUser();
   const spaces = await prisma.entity.findMany({
     where: {
       tenant_id: user.company_id,

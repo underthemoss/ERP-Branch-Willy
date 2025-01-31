@@ -1,4 +1,4 @@
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextLink } from "@/ui/NextLink";
 import { Box, Table, Typography } from "@mui/joy";
@@ -8,7 +8,7 @@ export default async function Page(props: {
 }) {
   return null;
   // const { contentTypeId } = await props.params;
-  // const { user } = await useAuth();
+  // const { user } = await getUser();
   // const entityType = await prisma.entityType.findFirstOrThrow({
   //   where: { id: contentTypeId, tenantId: { in: ["SYSTEM", user.company_id] } },
   //   select: {

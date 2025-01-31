@@ -230,7 +230,10 @@ export const CellRender = (props: {
           {props.type === "img_url" &&
             props.value &&
             props.value.startsWith("http") && (
-              <Tooltip placement="right" title={<img src={props.value} />}>
+              <Tooltip
+                placement="right"
+                title={<img alt={props.type} src={props.value} />}
+              >
                 <Avatar sx={{ position: "unset" }} src={props.value} />
               </Tooltip>
             )}

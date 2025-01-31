@@ -1,11 +1,11 @@
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { NextLink } from "@/ui/NextLink";
 import { Box, Typography } from "@mui/joy";
 
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
 }) {
-  const { user } = await useAuth();
+  const { user } = await getUser();
 
   return (
     <>

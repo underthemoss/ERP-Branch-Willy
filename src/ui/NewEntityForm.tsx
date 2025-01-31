@@ -1,5 +1,5 @@
 import { Attributes } from "@/app/app/settings/content-types/[contentTypeId]/create-subtype/Attributes";
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 
@@ -24,7 +24,7 @@ export const NewEntityForm = async (props: {
 }) => {
   const { content_type_id, parent_id } = props;
   const parentId = parent_id === "null" ? undefined : parent_id;
-  const { user } = await useAuth();
+  const { user } = await getUser();
   const tenant_id = { in: [user.company_id, "SYSTEM"] };
 
   const entityType = await prisma.entityType.findFirstOrThrow({
@@ -49,7 +49,7 @@ export const NewEntityForm = async (props: {
       <form
         action={async (formData) => {
           "use server";
-          const { user } = await useAuth();
+          const { user } = await getUser();
           const attributes = Object.fromEntries(formData.entries());
           const id = randomUUID();
 

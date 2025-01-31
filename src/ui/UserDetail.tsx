@@ -1,6 +1,6 @@
 import DataLoader from "dataloader";
 import { esdb } from "@/lib/esdb";
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { GenericEntityDetails } from "./GenericEntityDetails";
 
 const getUserBatch = async (userIds: number[]) => {
@@ -36,7 +36,7 @@ export const UserDetail = async (props: {
 }) => {
   const {
     user: { user_id },
-  } = await useAuth();
+  } = await getUser();
   const id = Number(props.userId);
 
   if (id) {

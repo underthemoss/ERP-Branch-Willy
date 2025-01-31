@@ -11,7 +11,7 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ColumnType } from "../../../../../../prisma/generated/mongo";
 import { ColumnForm } from "./form";
@@ -27,7 +27,7 @@ export default async function Page(props: {
       action={async (formData) => {
         "use server";
         const { name, type, lookup } = Object.fromEntries(formData.entries());
-        const { user } = await useAuth();
+        const { user } = await getUser();
         const columnId = randomUUID();
         await prisma.column.create({
           data: {

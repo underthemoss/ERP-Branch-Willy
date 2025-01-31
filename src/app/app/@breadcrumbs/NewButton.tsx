@@ -4,7 +4,7 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import AddIcon from "@mui/icons-material/Add";
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { NextLink } from "@/ui/NextLink";
@@ -14,7 +14,7 @@ import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
 
 export default async function NewButton(props: { itemId: string }) {
-  const { user } = await useAuth();
+  const { user } = await getUser();
 
   const parentEntity = await prisma.entity.findFirst({
     where: { id: props.itemId, tenant_id: { in: ["SYSTEM", user.company_id] } },

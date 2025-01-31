@@ -1,4 +1,4 @@
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { UserDetail } from "@/ui/UserDetail";
 import {
   Avatar,
@@ -19,7 +19,7 @@ import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Add } from "@mui/icons-material";
 
 export default async function SideNav() {
-  const { user } = await useAuth();
+  const { user } = await getUser();
   const entities = await prisma.entity.findMany({
     where: {
       OR: [

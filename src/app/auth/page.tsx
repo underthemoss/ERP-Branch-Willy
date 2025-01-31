@@ -16,7 +16,7 @@ function ClientAuth() {
       }; secure; samesite=strict`;
       router.push("/app");
     }
-  }, [jwt]);
+  }, [jwt, router]);
 
   if (jwt) return <></>;
   return (

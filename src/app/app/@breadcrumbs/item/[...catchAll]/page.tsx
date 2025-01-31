@@ -2,7 +2,7 @@ import { NextLink } from "@/ui/NextLink";
 import { prisma } from "@/lib/prisma";
 import HomeIcon from "@mui/icons-material/Home";
 import { Box, Breadcrumbs, IconButton, Link } from "@mui/joy";
-import { useAuth } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import NewButton from "../../NewButton";
 import { JsonObject } from "@prisma/client/runtime/library";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
@@ -52,7 +52,7 @@ const traverseUp = async (
 export default async function HeaderBreadcrumbs(props: {
   params: Promise<{ catchAll: string[] }>;
 }) {
-  const { user } = await useAuth();
+  const { user } = await getUser();
   const itemId = (await props.params).catchAll[2];
   const ancestors = await traverseUp(user.company_id, itemId);
 
