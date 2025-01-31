@@ -110,6 +110,7 @@ enum ColumnType {
   // image
   lookup
   img_url
+  location
   // entity_type
 }
 

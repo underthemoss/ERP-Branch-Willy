@@ -5,7 +5,7 @@ import { searchUsers } from "./UserPicker.actions";
 
 export const UserPicker = (props: {
   value: string;
-  onChange: (value: string) => Promise<void>;
+  onChange: (value: string | undefined | null) => Promise<void>;
 }) => {
   return (
     <GenericPicker

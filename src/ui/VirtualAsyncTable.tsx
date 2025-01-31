@@ -18,8 +18,8 @@ export const VirtualAsyncTable = <T,>(props: {
     index: number;
     rowHeight: number;
   }>;
-  renderHeader: React.FC<{ headerHeight: number }>;
-  renderFooter: React.FC<{}>;
+  renderHeader: React.FC<{ headerHeight: number; width: number }>;
+  renderFooter: React.FC<{ width: number; height: number }>;
   items: T[];
 }) => {
   const load = async (startIndex: number, stopIndex: number) => {
@@ -72,7 +72,7 @@ export const VirtualAsyncTable = <T,>(props: {
                         }}
                         {...rest}
                       >
-                        {children}
+                        <Box>{children}</Box>
                         <Box
                           style={{
                             top: 0,
@@ -83,23 +83,26 @@ export const VirtualAsyncTable = <T,>(props: {
                             height: props.headerHeight,
                             position: "sticky",
                             display: "flex",
+                            borderBottom: "1px solid #e0e0e0",
                           }}
                         >
                           <props.renderHeader
                             headerHeight={props.headerHeight}
+                            width={width}
                           ></props.renderHeader>
                         </Box>
                         <Box
                           style={{
                             top: height - props.footerHeight,
                             left: 0,
-                            width: style.width,
                             height: props.footerHeight,
                             position: "sticky",
-                            display: "flex",
                           }}
                         >
-                          <props.renderFooter />
+                          <props.renderFooter
+                            width={width}
+                            height={props.footerHeight}
+                          />
                         </Box>
                       </Box>
                     )
@@ -115,6 +118,8 @@ export const VirtualAsyncTable = <T,>(props: {
                           top:
                             parseFloat(style.top?.toString() || "0") +
                             props.headerHeight,
+
+                          borderBottom: "1px solid #e0e0e0",
                         }}
                         display={"flex"}
                       >

@@ -5,7 +5,7 @@ import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { sourceSystemIdHash, tenantScopedSystemEntityId } from "./hashingUtils";
 import { upsertColumn } from "./upsertSystemTypes";
 import _ from "lodash";
-
+import wkx from "wkx";
 const upsertSystemEntity = async (props: {
   id: string;
   type: SystemEntityTypes;
@@ -78,6 +78,13 @@ const assetDataSync = async () => {
     type: "img_url",
     readonly: true,
   });
+  const locationColumn = await upsertColumn({
+    id: "location",
+    label: "Location",
+    order_priority: 0,
+    type: "location",
+    readonly: true,
+  });
 
   await upsertSystemEntity({
     id: assetWorkspaceId,
@@ -121,6 +128,9 @@ const assetDataSync = async () => {
               name: true,
             },
           },
+          status: {
+            where: { name: "location" },
+          },
         },
         take: 100_000,
       });
@@ -150,6 +160,20 @@ const assetDataSync = async () => {
                 [photoColumn]: asset.photo
                   ? `https://appcdn.equipmentshare.com/uploads/small/${asset.photo?.filename}`
                   : null,
+                [locationColumn]: asset.status
+                  .filter((s) => s.name === "location")
+                  .map(({ value }) => {
+                    if (!value) return null;
+                    try {
+                      const wkbBuffer = Buffer.from(value, "hex");
+                      var geometry = wkx.Geometry.parse(wkbBuffer);
+                      return geometry.toGeoJSON();
+                    } catch (err: any) {
+                      console.log(err.message);
+                      return null;
+                    }
+                  })
+                  .find((_) => true),
               },
             })),
           }),

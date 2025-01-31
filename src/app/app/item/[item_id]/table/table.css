@@ -1,14 +1,18 @@
 .react-resizable-handle-e {
-  background-color: #efefef;
   width: 0px !important;
   transform: rotate(0deg) !important;
   overflow: hidden;
   padding: 0px !important;
   border-left: 2px solid #efefef;
+  transition: all 0.2s ease;
 }
 
-.react-resizable-handle-e::after {
-  display: none !important;
+.react-resizable-handle-e:hover,
+.react-resizable-handle-e:active {
+  border-left: 4px solid #1976d2;
+  height: 60px !important;
+  margin-top: -30px !important;
+  margin-left: -2px !important;
 }
 
 .react-grid-placeholder {

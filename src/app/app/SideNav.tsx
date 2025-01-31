@@ -28,11 +28,6 @@ export default async function SideNav() {
             startsWith: "system_workspace" satisfies SystemEntityTypes,
           },
         },
-        {
-          type_id: {
-            startsWith: "system_list" satisfies SystemEntityTypes,
-          },
-        },
       ],
       tenant_id: user.company_id,
     },

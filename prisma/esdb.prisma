@@ -61,21 +61,22 @@ model Group {
 }
 
 model Asset {
-  id                 Int             @id @map("asset_id")
+  id                 Int                   @id @map("asset_id")
   custom_name        String
   company_id         Int
   description        String
   category_id        Int?
-  category           Category?       @relation(fields: [category_id], references: [id])
+  category           Category?             @relation(fields: [category_id], references: [id])
   photo_id           Int?
-  photo              Photo?          @relation(fields: [photo_id], references: [id])
+  photo              Photo?                @relation(fields: [photo_id], references: [id])
   equipment_class_id Int?
-  equipment_class    EquipmentClass? @relation(fields: [equipment_class_id], references: [id])
-  custom_model       String?         @map("model")
+  equipment_class    EquipmentClass?       @relation(fields: [equipment_class_id], references: [id])
+  custom_model       String?               @map("model")
   equipment_model_id Int?
-  model              EquipmentModel? @relation(fields: [equipment_model_id], references: [id])
+  model              EquipmentModel?       @relation(fields: [equipment_model_id], references: [id])
   equipment_make_id  Int?
-  make               EquipmentMake?  @relation(fields: [equipment_make_id], references: [id])
+  make               EquipmentMake?        @relation(fields: [equipment_make_id], references: [id])
+  status             AssetStatusKeyValue[]
 
   @@map("assets")
 }
@@ -124,4 +125,14 @@ model EquipmentModel {
   assets Asset[]
 
   @@map("equipment_models")
+}
+
+model AssetStatusKeyValue {
+  id       Int     @id @map("asset_status_key_value_id")
+  asset_id Int
+  name     String
+  value    String?
+  asset    Asset   @relation(fields: [asset_id], references: [id])
+
+  @@map("asset_status_key_values")
 }

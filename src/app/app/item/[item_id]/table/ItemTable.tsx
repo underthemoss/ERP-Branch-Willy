@@ -3,29 +3,24 @@ import "./table.css";
 import { useItem } from "../ItemProvider";
 import {
   Box,
-  Button,
+  Card,
   Dropdown,
   ListDivider,
   ListItemDecorator,
   Menu,
   MenuButton,
   MenuItem,
-  Tooltip,
   Typography,
 } from "@mui/joy";
 import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
-
 import { MenuItemLink } from "@/ui/MenuItemLink";
-import { NextLink } from "@/ui/NextLink";
-import { CellRender } from "./CellRender";
-import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
+import { updateToggleSelectedColumns } from "../actions";
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
 import { TableFooter } from "./TableFooter";
+import { Tiles } from "./Tiles";
 
 export const ItemTable = () => {
   const { item, loadMore } = useItem();
@@ -38,6 +33,9 @@ export const ItemTable = () => {
           {item.name}
         </Typography>
         <Box flex={1}></Box>
+      </Box>
+      <Box display={"flex"} height={300}>
+        <Tiles />
       </Box>
       <Box>
         <Dropdown open={undefined}>
@@ -76,22 +74,28 @@ export const ItemTable = () => {
           </Menu>
         </Dropdown>
       </Box>
-      <Box flex={1} display={"flex"}>
-        <Box flex={1} display={"flex"}>
+      <Box flex={1} display={"flex"} p={1}>
+        <Card
+          sx={{
+            flex: 1,
+            padding: 0,
+            backgroundColor: "white",
+            overflow: "hidden",
+          }}
+          variant="outlined"
+        >
           <VirtualAsyncTable
             items={item.rows}
             totalRows={item.count}
             rowHeight={rowHeight}
             headerHeight={60}
-            footerHeight={40}
-            resolveRows={async ({ skip, take }) => {
-              loadMore({ skip, take });
-            }}
+            footerHeight={60}
+            resolveRows={loadMore}
             renderHeader={TableHeader}
             renderRow={TableRow}
             renderFooter={TableFooter}
           />
-        </Box>
+        </Card>
       </Box>
     </Box>
   );

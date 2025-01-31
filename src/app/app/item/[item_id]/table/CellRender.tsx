@@ -1,11 +1,20 @@
 "use client";
-import { Avatar, Box, CircularProgress, Input, Tooltip } from "@mui/joy";
+import {
+  Avatar,
+  Box,
+  CircularProgress,
+  Input,
+  Link,
+  Tooltip,
+  Typography,
+} from "@mui/joy";
 import { ColumnType } from "../../../../../../prisma/generated/mongo";
 import { HTMLInputTypeAttribute, useState } from "react";
 import { LazyUserDetail } from "@/ui/LazyUserDetails";
 import { UserPicker } from "@/ui/picker/UserPicker";
 import { LookupPicker } from "@/ui/picker/LookupPicker";
 import { useItem } from "../ItemProvider";
+import { Point } from "wkx";
 
 export const CellRender = (props: {
   type: ColumnType;
@@ -147,7 +156,7 @@ export const CellRender = (props: {
       onKeyDown={(e) => handleKeyboardNavigation(e.code)}
       id={handleName(props.colIndex, props.rowIndex)}
       onDoubleClick={() => setIsEditing(!isEditing)}
-      style={{ padding: 0 }}
+      style={{ padding: 0, borderBottom: "1px solid #e0e0e0" }}
       flex={1}
       display={"flex"}
       height={"100%"}
@@ -173,6 +182,23 @@ export const CellRender = (props: {
           value={props.value}
         />
       )}
+      {props.type === "location" && (
+        <Box>
+          {(() => {
+            if (!props.value) return;
+            const point = props.value as unknown as any;
+            const [lng, lat] = point.coordinates;
+            const url = `https://www.google.com/maps/place/${lat},${lng}`;
+            return (
+              <Box>
+                <Link href={url} target="_blank">
+                  {lng}, {lat}
+                </Link>
+              </Box>
+            );
+          })()}
+        </Box>
+      )}
       {isEditing && !props.readonly ? (
         <>
           {props.type === "single_line_of_text" && (
@@ -193,9 +219,14 @@ export const CellRender = (props: {
           pl={1}
           flex={1}
           height={"100%"}
+          alignItems={"center"}
+          alignContent={"center"}
+          overflow={"hidden"}
           onClick={() => setFocus(props.colIndex, props.rowIndex)}
         >
-          {props.type === "single_line_of_text" && props.value}
+          <Typography noWrap>
+            {props.type === "single_line_of_text" && props.value}
+          </Typography>
           {props.type === "img_url" &&
             props.value &&
             props.value.startsWith("http") && (

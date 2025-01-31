@@ -36,7 +36,12 @@ const LookupPickerItem = (props: { id: string }) => {
       enterDelay={500}
       title={<pre>{JSON.stringify(data, undefined, 2)}</pre>}
     >
-      <Box display={"flex"} sx={{ cursor: "pointer" }}>
+      <Box
+        display={"flex"}
+        sx={{ cursor: "pointer" }}
+        alignContent={"center"}
+        alignItems={"center"}
+      >
         {label}
       </Box>
     </Tooltip>

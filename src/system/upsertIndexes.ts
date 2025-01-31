@@ -49,6 +49,12 @@ const upsertIndexes = async () => {
         name: "hidden_index",
         // collation: { locale: "en", strength: 2 },
       },
+      {
+        key: { "data.location": "2dsphere" },
+        name: "data_location_geo_index",
+
+        // collation: { locale: "en", strength: 2 },
+      },
       // {
       //   key: { type_id: 1 },
       //   name: "type_id_index",

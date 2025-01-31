@@ -1,31 +1,50 @@
-import { Box, Button } from "@mui/joy";
+import { Box, Button, Typography } from "@mui/joy";
 import { useItem } from "../ItemProvider";
 import { addRow } from "../actions"; // todo: not this
 
-export const TableFooter: React.FC<{}> = () => {
+export const TableFooter: React.FC<{ width: number; height: number }> = ({
+  height,
+  width,
+}) => {
   const { item } = useItem();
+  const actualWidth = Math.max(
+    item.columns.reduce((t, i) => t + i.column_width, 0),
+    width
+  );
   return (
     <Box
       flex={1}
       display={"flex"}
-      style={{ backgroundColor: "white", zIndex: 9999 }}
+      style={{
+        zIndex: 9999,
+        height,
+        width: actualWidth,
+        backgroundColor: "white",
+        borderTop: "1px solid #e0e0e0",
+      }}
     >
-      <Box position={"sticky"} left={0}>
-        <Box display={"flex"}>
-          <Box>
-            <Button
-              variant="plain"
-              onClick={async () => {
-                await addRow(item.id);
-              }}
-            >
-              New row
-            </Button>
-          </Box>
-          <Box flex={1}></Box>
-          <Box>
-            <Box>Total: {item.count}</Box>
-          </Box>
+      <Box
+        position={"sticky"}
+        left={0}
+        display={"flex"}
+        width={width}
+        alignItems={"center"}
+      >
+        <Box ml={1}>
+          <Button
+            variant="plain"
+            onClick={async () => {
+              await addRow(item.id);
+            }}
+          >
+            New row
+          </Button>
+        </Box>
+        <Box flex={1}></Box>
+        <Box mr={2}>
+          <Typography level="title-sm">
+            Total rows: {item.rows.length}{" "}
+          </Typography>
         </Box>
       </Box>
     </Box>

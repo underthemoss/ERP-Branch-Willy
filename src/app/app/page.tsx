@@ -26,11 +26,6 @@ export default async function Home() {
             startsWith: "system_workspace" satisfies SystemEntityTypes,
           },
         },
-        {
-          type_id: {
-            startsWith: "system_list" satisfies SystemEntityTypes,
-          },
-        },
       ],
     },
   });
@@ -76,7 +71,7 @@ export default async function Home() {
                   </td>
                   <td>
                     {/* {(ws.data as any)["created_at"]?.toDateString()} */}
-                    </td>
+                  </td>
                   <td></td>
                 </tr>
               );

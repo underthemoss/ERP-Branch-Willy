@@ -22,8 +22,8 @@ import { MenuItemLink } from "@/ui/MenuItemLink";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import _ from "lodash";
+import { deleteItem } from "../actions";
 // export const minimumColWidth = 120;
-
 
 const ColumnHeaderSortOptions: React.FC<{
   index: number;
@@ -112,20 +112,16 @@ const ColumnHeaderMoreOptions: React.FC<{
             </ListItemDecorator>
             Manage columns
           </MenuItem>
-          <MenuItem disabled={index === 0} onClick={() => {}}>
+          <MenuItem
+            disabled={index === 0}
+            onClick={() => {
+              deleteItem(column.id);
+            }}
+          >
             <ListItemDecorator>
               <ChevronLeftIcon />
             </ListItemDecorator>
-            Move column left
-          </MenuItem>
-          <MenuItem
-            disabled={index === item.columns.length - 1}
-            onClick={() => {}}
-          >
-            <ListItemDecorator>
-              <ChevronRightIcon />
-            </ListItemDecorator>
-            Move column right
+            Hide column
           </MenuItem>
         </Menu>
       </Dropdown>

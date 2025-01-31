@@ -2,9 +2,9 @@
 
 import { Box, Typography } from "@mui/joy";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
-export default function ClientAuth() {
+function ClientAuth() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const jwt = searchParams.get("jwt");
@@ -54,4 +54,10 @@ export default function ClientAuth() {
       </Typography>
     </Box>
   );
+}
+
+export default function Page() {
+  <Suspense>
+    <ClientAuth />
+  </Suspense>;
 }
