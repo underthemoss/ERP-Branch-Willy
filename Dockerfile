@@ -2,7 +2,7 @@ FROM node:20-bullseye-slim AS base
 
 # Declaring envs
 ENV LEVEL=${LEVEL}
-ENV PORT=3000
+ENV PORT=5000
 
 # Setting up the work directory
 WORKDIR /es-erp
@@ -27,7 +27,7 @@ RUN npm run build
 
 
 # Starting our application
-CMD [ "node", "./dist/src/index.js" ]
+CMD [ "npm", "run start -- -p 5000" ]
 
 # Exposing server port
-EXPOSE 3000
+EXPOSE 5000
