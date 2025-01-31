@@ -1,70 +1,164 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/mongo/"
 }
-
-// generator zod {
-//   provider = "zod-prisma-types"
-// }
-
-// generator express {
-//   provider = "prisma-generator-express"
-// }
 
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-model Folder {
-  id         String     @id @default(cuid()) @map("_id")
-  tenant_id  String
-  name       String
-  parent_id  String? // For hierarchical relationships
-  parent     Folder?    @relation("FolderToFolder", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children   Folder[]   @relation("FolderToFolder")
-  documents  Document[]
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
-  created_by String
-  updated_by String
-
-  @@unique([parent_id, name])
+enum EntityTypeIcon {
+  system
+  workspace
+  folder
+  document
+  ticket
+  order
+  line_item
+  list
+  list_item
 }
 
-model Document {
-  id         String   @id @default(cuid()) @map("_id")
-  tenant_id  String
-  name       String
-  folder_id  String?
-  folder     Folder?  @relation(fields: [folder_id], references: [id])
+// enum EntityAttributeValueType {
+//   single_line_of_text
+//   multiple_lines_of_text
+//   number
+//   yes_no
+//   person_or_group
+//   date_and_time
+//   choice
+//   hyperlink
+//   // calculated
+//   currency
+//   location
+//   image
+//   lookup
+//   entity_type
+// }
+
+type Metadata {
+  created_by String
+  updated_by String
   created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  created_by String
-  updated_by String
-  quote      Quote?
-  order      Order?
+  updated_at DateTime
 }
 
-model Quote {
-  id          String   @id @default(cuid()) @map("_id")
-  tenant_id   String
-  document_id String   @unique
-  document    Document @relation(fields: [document_id], references: [id])
-  total_price Float
-  expiration  DateTime
+// model Entity {
+//   id           String         @id @map("_id")
+//   entityTypeId String
+//   tenantId     String
+//   entityType   EntityType     @relation(fields: [entityTypeId], references: [id])
+//   attributes   Json
+//   metadata     EntityMetadata
+
+//   ref_to_id     String?
+//   referenced_to Entity?  @relation("ReferencedEntity", fields: [ref_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   referenced_by Entity[] @relation("ReferencedEntity")
+
+//   // Hierarchical relationships
+//   parentId String? // Reference to the parent entity
+//   parent   Entity?  @relation("EntityHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   children Entity[] @relation("EntityHierarchy")
+
+//   entityId String?
+// }
+
+// model EntityType {
+//   id                      String         @id @map("_id")
+//   name                    String
+//   description             String?
+//   tenantId                String
+//   abstract                Boolean
+//   hidden                  Boolean
+//   validChildEntityTypeIds String[]
+//   entity                  Entity[]
+//   icon                    EntityTypeIcon
+
+//   // columns
+//   columnIds String[]
+
+//   // Hierarchical relationships
+//   parentId String? // Reference to the parent entity
+//   parent   EntityType?  @relation("EntityTypeHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+//   children EntityType[] @relation("EntityTypeHierarchy")
+// }
+
+// model EntityTypeColumn {
+//   id                   String                   @id @map("_id")
+//   label                String
+//   isRequired           Boolean
+//   type                 EntityAttributeValueType
+//   lookupSourceEntityId String?
+//   tenantId             String
+// }
+
+enum ColumnType {
+  single_line_of_text
+  user
+  // multiple_lines_of_text
+  // number
+  integer
+  // yes_no
+  // person_or_group
+  date
+  // choice
+  // hyperlink
+  // calculated
+  // currency
+  // location
+  // image
+  lookup
+  img_url
+  location
+  // entity_type
 }
 
-model Order {
-  id               String   @id @default(cuid()) @map("_id")
-  tenant_id        String
-  document_id      String   @unique
-  document         Document @relation(fields: [document_id], references: [id])
-  order_date       DateTime
-  shipping_address String
+model Entity {
+  id         String     @id @default(uuid()) @map("_id")
+  type_id    String
+  type       EntityType @relation(fields: [type_id], references: [id])
+  tenant_id  String
+  data       Json
+  hidden     Boolean?   @default(false)
+  sort_order Float?
+
+  // Hierarchical relationships
+  parent_id String?
+  parent    Entity?  @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  Entity[] @relation("EntityHierarchy")
+}
+
+model EntityType {
+  id                   String             @id @map("_id")
+  name                 String
+  entities             Entity[]
+  entity_type_columns  EntityTypeColumn[]
+  tenant_id            String
+  icon                 EntityTypeIcon
+  metadata             Metadata?
+  valid_child_type_ids String[]
+}
+
+model EntityTypeColumn {
+  id             String     @id @default(uuid()) @map("_id")
+  entity_type_id String
+  entity_type    EntityType @relation(fields: [entity_type_id], references: [id])
+  column_id      String
+  column         Column     @relation(fields: [column_id], references: [id])
+  tenant_id      String
+  required       Boolean    @default(false)
+  metadata       Metadata?
+}
+
+model Column {
+  id             String             @id @map("_id")
+  label          String
+  type           ColumnType
+  tenant_id      String
+  metadata       Metadata?
+  readonly       Boolean            @default(false)
+  order_priority Int                @default(10)
+  data           Json
+  entity_types   EntityTypeColumn[]
 }

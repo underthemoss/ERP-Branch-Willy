@@ -17,16 +17,17 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 # Installing dependencies
-RUN npm install
+RUN npm install --force
+RUN npm run prisma:generate
 
-RUN cd app && npm install
+
 
 # Build
 RUN npm run build
 
 
 # Starting our application
-CMD [ "node", "./dist/src/index.js" ]
+CMD [ "npm", "run start -- -p 5000" ]
 
 # Exposing server port
 EXPOSE 5000
