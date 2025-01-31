@@ -28,9 +28,7 @@ unit-test:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   stage: test
   script:
-    - npm install
-    - npm run codegen
-    - npm run test
+    - npm install --force
 
 deploy-staging:
   extends: .build

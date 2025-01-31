@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 # Installing dependencies
-RUN npm install
+RUN npm install --force
 
-RUN cd app && npm install
+
 
 # Build
 RUN npm run build
@@ -29,4 +29,4 @@ RUN npm run build
 CMD [ "node", "./dist/src/index.js" ]
 
 # Exposing server port
-EXPOSE 5000
+EXPOSE 3000
