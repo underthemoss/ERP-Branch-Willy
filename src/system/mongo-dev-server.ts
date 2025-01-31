@@ -1,4 +1,4 @@
-const { MongoMemoryReplSet } = require("mongodb-memory-server");
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 
 const main = async () => {
   const replset = await MongoMemoryReplSet.create({
