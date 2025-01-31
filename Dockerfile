@@ -27,7 +27,7 @@ RUN npm run build
 
 
 # Starting our application
-CMD [ "npm", "run start -- -p 5000" ]
+CMD [ "npm run start -- -p 5000" ]
 
 # Exposing server port
 EXPOSE 5000
