@@ -23,7 +23,7 @@ export const Tiles = () => {
       isResizable: true,
       isDraggable: true,
       resizeHandles: ["se"],
-      url: "/resource-planning/tiles/map",
+      url: "/es-erp/tiles/map",
     },
     {
       i: "map2",
@@ -38,7 +38,7 @@ export const Tiles = () => {
       isResizable: true,
       isDraggable: true,
       resizeHandles: ["se"],
-      url: `/resource-planning/app/item/${item.id}/new/system_folder`,
+      url: `/es-erp/app/item/${item.id}/new/system_folder`,
     },
   ];
   return (

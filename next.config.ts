@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "/resource-planning",
+  basePath: "/es-erp",
 
   experimental: {
     serverActions: {
