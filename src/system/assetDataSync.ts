@@ -132,7 +132,7 @@ const assetDataSync = async () => {
             where: { name: "location" },
           },
         },
-        take: 100_000,
+        take: 10_000,
       });
       console.log("total assets", assets.length);
       const assetId = (id: number) => {
