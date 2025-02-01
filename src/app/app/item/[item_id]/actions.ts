@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-import { getAuthUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 import { Entity } from "../../../../../prisma/generated/mongo";
@@ -18,7 +18,7 @@ export type Query = {
 };
 
 export const getColumns = async () => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   const allColumns = await prisma.column.findMany({
     where: {
       tenant_id: { in: ["SYSTEM", user.company_id] },
@@ -31,7 +31,7 @@ export const getColumns = async () => {
 };
 
 export const getRows = async (query: Query, column_ids: string[]) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   const matchQuery = {
     parent_id: query.parent_id,
@@ -79,7 +79,7 @@ export const getRows = async (query: Query, column_ids: string[]) => {
 };
 
 export const getItemChildCount = async (query: Query) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   return await prisma.entity.count({
     where: {
       tenant_id: user.company_id,
@@ -90,7 +90,7 @@ export const getItemChildCount = async (query: Query) => {
 };
 
 export const getVisibleColumns = async (item_id: string) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   const visibleColumns = await prisma.entity.findMany({
     where: {
       tenant_id: user.company_id,
@@ -128,7 +128,7 @@ export const getVisibleColumns = async (item_id: string) => {
 };
 
 export const getItemWithChildColumns = async (query: Query) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   const [visibleColumns, parent] = await Promise.all([
     getVisibleColumns(query.parent_id),
@@ -162,7 +162,7 @@ export const updateCell = async (
   columnId: string,
   value: string | null | undefined
 ) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   const { data } = await prisma.entity.findFirstOrThrow({
     where: { id: item_id, tenant_id: user.company_id },
     select: {
@@ -185,7 +185,7 @@ export const updateCell = async (
 };
 
 export const addRow = async (item_id: string) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   await prisma.entity.create({
     data: {
       tenant_id: user.company_id,
@@ -205,7 +205,7 @@ export const addRow = async (item_id: string) => {
 export const updateColumnOrder = async (columnIds: string[]) => {
   console.time("moveHeader");
 
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   await prisma.$runCommandRaw({
     update: "Entity",
@@ -223,7 +223,7 @@ export const updateColumnOrder = async (columnIds: string[]) => {
 export const updateColumnWidths = async (
   columns: { id: string; width: number }[]
 ) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   console.time("changeColumnWidth");
   await prisma.$runCommandRaw({
     update: "Entity",
@@ -242,7 +242,7 @@ export const updateToggleSelectedColumns = async (
   item_id: string,
   column_id: string
 ) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
   const columns = await getVisibleColumns(item_id);
   const exists = columns.filter((c) => c.column_id === column_id);
   if (exists.length > 0) {
@@ -267,7 +267,7 @@ export const updateToggleSelectedColumns = async (
 };
 
 export const deleteItem = async (item_id: string): Promise<void> => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   await prisma.entity.delete({
     where: { id: item_id, tenant_id: user.company_id },

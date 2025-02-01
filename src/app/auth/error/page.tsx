@@ -1,24 +1,6 @@
-"use client";
-
 import { Box, Typography } from "@mui/joy";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
 
-function ClientAuth() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const jwt = searchParams.get("jwt");
-
-  useEffect(() => {
-    if (jwt) {
-      document.cookie = `jwt=${jwt}; path=/; max-age=${
-        24 * 60 * 60
-      }; secure; samesite=strict`;
-      router.push("/app");
-    }
-  }, [jwt, router]);
-
-  if (jwt) return <></>;
+export default function Page() {
   return (
     <Box
       sx={{
@@ -50,14 +32,8 @@ function ClientAuth() {
           maxWidth: 400,
         }}
       >
-        ...
+        Please try again or contact support.
       </Typography>
     </Box>
   );
-}
-
-export default function Page() {
-  <Suspense>
-    <ClientAuth />
-  </Suspense>;
 }

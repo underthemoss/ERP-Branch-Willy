@@ -1,10 +1,10 @@
 "use server";
 import DataLoader from "dataloader";
 import { esdb } from "@/lib/esdb";
-import { getAuthUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 export const getUserBatch = async (userIds: number[]) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   const results = await esdb.user.findMany({
     where: { id: { in: userIds }, company_id: Number(user.company_id) },

@@ -1,5 +1,7 @@
+"use server";
 import { cookies } from "next/headers";
 import * as jose from "jose";
+import { redirect } from "next/navigation";
 
 export type User = {
   company_id: string;
@@ -10,7 +12,7 @@ export type User = {
 };
 
 const envPrefix = process.env.LEVEL === "prod" ? "" : "staging-";
-const JWKS = jose.createRemoteJWKSet(
+export const JWKS = jose.createRemoteJWKSet(
   new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`)
 );
 const extractTokenValue = (keySuffix: string, token: any) => {
@@ -20,8 +22,8 @@ const extractTokenValue = (keySuffix: string, token: any) => {
     .find(() => true) as string;
 };
 
-export const getAuthUser = async () => {
-  const token = (await cookies()).get("jwt")?.value || "";
+const getAuthUser = async () => {
+  const token = (await cookies()).get("es-erp-jwt")?.value || "";
 
   const { payload } = await jose.jwtVerify(token, JWKS);
   const user: User = {
@@ -40,10 +42,7 @@ export const getAuthUser = async () => {
 
 export const getUser = async () => {
   const payload = await getAuthUser().catch((err) => {
-    console.error(err);
-
-    throw err;
-    // redirect("/auth");
+    redirect("/auth/error");
   });
 
   return payload;

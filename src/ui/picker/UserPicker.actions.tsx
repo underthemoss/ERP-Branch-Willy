@@ -1,10 +1,10 @@
 "use server";
 
-import { getAuthUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { esdb } from "@/lib/esdb";
 
 export const searchUsers = async (term: string) => {
-  const { user } = await getAuthUser();
+  const { user } = await getUser();
 
   if (!term) {
     return [user.user_id];
