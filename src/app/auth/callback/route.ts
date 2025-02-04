@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.nextUrl);
   const jwt = searchParams.get("token");
 
   if (!jwt) {
@@ -18,6 +18,7 @@ export async function GET(req: Request) {
     path: "/es-erp",
     maxAge: 86400, // 1 day
   });
-
-  return NextResponse.redirect(new URL("/es-erp/app", req.url));
+  const redirectUrl = req.nextUrl.clone();
+  redirectUrl.pathname = "/es-erp/app";
+  return NextResponse.redirect(redirectUrl);
 }
