@@ -138,6 +138,7 @@ model EntityType {
   icon                 EntityTypeIcon
   metadata             Metadata?
   valid_child_type_ids String[]
+  category             String?
 }
 
 model EntityTypeColumn {
@@ -160,5 +161,6 @@ model Column {
   readonly       Boolean            @default(false)
   order_priority Int                @default(10)
   data           Json
+  category       String?
   entity_types   EntityTypeColumn[]
 }

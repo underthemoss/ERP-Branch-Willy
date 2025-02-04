@@ -12,6 +12,10 @@ import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
+import {
+  ContentTypeCategories,
+  GlobalContentTypeId,
+} from "@/config/ContentTypesConfig";
 
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await getUser();
@@ -34,7 +38,11 @@ export default async function NewButton(props: { itemId: string }) {
           .filter((et) =>
             parentEntity
               ? parentEntity.type.valid_child_type_ids.includes(et.id)
-              : et.id === ("system_workspace" satisfies SystemEntityTypes)
+              : et.id === ("workspace" satisfies GlobalContentTypeId)
+          )
+          .filter(
+            ({ category }) =>
+              category !== ("hidden" satisfies ContentTypeCategories)
           )
           .map((et) => {
             return (

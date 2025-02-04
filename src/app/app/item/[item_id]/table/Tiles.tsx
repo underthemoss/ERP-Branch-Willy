@@ -25,21 +25,21 @@ export const Tiles = () => {
       resizeHandles: ["se"],
       url: "/es-erp/tiles/map",
     },
-    {
-      i: "map2",
-      x: 1,
-      y: 0,
-      w: 3,
-      h: 10,
-      maxH: 10,
-      maxW: 12,
-      minW: 1,
-      minH: 1,
-      isResizable: true,
-      isDraggable: true,
-      resizeHandles: ["se"],
-      url: `/es-erp/app/item/${item.id}/new/system_folder`,
-    },
+    // {
+    //   i: "map2",
+    //   x: 1,
+    //   y: 0,
+    //   w: 3,
+    //   h: 10,
+    //   maxH: 10,
+    //   maxW: 12,
+    //   minW: 1,
+    //   minH: 1,
+    //   isResizable: true,
+    //   isDraggable: true,
+    //   resizeHandles: ["se"],
+    //   url: `/es-erp/app/item/${item.id}/new/system_folder`,
+    // },
   ];
   return (
     <Box>
@@ -63,7 +63,7 @@ export const Tiles = () => {
               display={"flex"}
             >
               <Card sx={{ padding: 0, flex: 1, m: 1, overflow: "hidden" }}>
-                <Box>asd</Box>
+                <Box height={20}> </Box>
                 <iframe
                   style={{ width: "100%", height: "100%", border: "0px" }}
                   src={url}

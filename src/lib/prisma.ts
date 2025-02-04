@@ -1,7 +1,5 @@
 import _ from "lodash";
-import { EntityTypeColumn, PrismaClient } from "../../prisma/generated/mongo";
-import { getUser } from "./auth";
-import { SystemEntityTypes } from "./SystemTypes";
+import { PrismaClient } from "../../prisma/generated/mongo";
 
 const lineage = (entityTypeId: string): string[] => {
   if (!entityTypeId) return [];

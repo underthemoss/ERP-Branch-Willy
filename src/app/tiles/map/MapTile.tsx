@@ -9,7 +9,6 @@ import { scaleQuantile } from "d3-scale";
 import type { Color, PickingInfo, MapViewState } from "@deck.gl/core";
 import type { Feature, Polygon, MultiPolygon } from "geojson";
 
-
 export const inFlowColors: Color[] = [
   [255, 255, 204],
   [199, 233, 180],
@@ -34,13 +33,14 @@ const INITIAL_VIEW_STATE: MapViewState = {
   longitude: -100,
   latitude: 40.7,
   zoom: 3,
-  maxZoom: 15,
+  maxZoom: 20,
   pitch: 30,
   bearing: 30,
 };
 
 const MAP_STYLE =
-  "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json";
+  "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+// "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 type CountyProperties = {
   /** county name */

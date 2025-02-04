@@ -8,17 +8,6 @@ import { JsonObject } from "@prisma/client/runtime/library";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { EntityTypeIcon as EntityTypeIconEnum } from "../../../../../../prisma/generated/mongo";
 
-async function humanizeSlug(slug: string) {
-  const entityType = await prisma.entityType.findFirst({ where: { id: slug } });
-  return (
-    entityType?.name ||
-    slug
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  );
-}
-
 const traverseUp = async (
   tenantId: string,
   id: string | null
@@ -28,7 +17,7 @@ const traverseUp = async (
   if (!id || id === "null") return [];
 
   const entity = await prisma.entity.findFirstOrThrow({
-    where: { id, tenant_id: tenantId },
+    where: { id, tenant_id: { in: ["SYSTEM", tenantId] } },
     select: {
       data: true,
       parent_id: true,

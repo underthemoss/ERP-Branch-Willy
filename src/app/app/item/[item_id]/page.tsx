@@ -8,7 +8,6 @@ export default async function Page(props: {
   const { item_id } = await props.params;
   const { sort_by, sort_order } = await props.searchParams;
 
-  console.time("getall");
   const query: Query = {
     parent_id: item_id,
     skip: 0,
@@ -22,7 +21,6 @@ export default async function Page(props: {
     result.columns.map(({ column_id }) => column_id)
   );
 
-  console.timeEnd("getall");
   return (
     <ItemProvider key={Date.now()} query={query} item={{ ...result, rows }}>
       <ItemTable />

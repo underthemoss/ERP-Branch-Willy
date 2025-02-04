@@ -12,9 +12,7 @@ import ListItemButton from "@mui/joy/ListItemButton";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { AutoImage } from "@/ui/AutoImage";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
-import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Add } from "@mui/icons-material";
 
@@ -22,14 +20,8 @@ export default async function SideNav() {
   const { user } = await getUser();
   const entities = await prisma.entity.findMany({
     where: {
-      OR: [
-        {
-          type_id: {
-            startsWith: "system_workspace" satisfies SystemEntityTypes,
-          },
-        },
-      ],
-      tenant_id: user.company_id,
+      type_id: "workspace",
+      tenant_id: { in: ["SYSTEM", user.company_id] },
     },
     select: {
       id: true,
@@ -76,7 +68,7 @@ export default async function SideNav() {
       <Box flex={1}></Box>
       <Box>
         <List>
-          <Link href="/app/item/null/new/system_workspace">
+          <Link href="/app/item/null/new/workspace">
             <ListItem>
               <ListItemButton>
                 <ListItemDecorator>

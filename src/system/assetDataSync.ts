@@ -6,6 +6,9 @@ import { sourceSystemIdHash, tenantScopedSystemEntityId } from "./hashingUtils";
 import { upsertColumn } from "./upsertSystemTypes";
 import _ from "lodash";
 import wkx from "wkx";
+import { Entity } from "../../prisma/generated/mongo";
+import { SyncJob } from "./sync/SyncJob";
+
 const upsertSystemEntity = async (props: {
   id: string;
   type: SystemEntityTypes;
@@ -35,6 +38,8 @@ const assetDataSync = async () => {
     "1854",
     "assets-workspace"
   );
+
+  ///
 
   const equipmentCategoryColumn = await upsertColumn({
     id: "equipment_category",
@@ -93,10 +98,15 @@ const assetDataSync = async () => {
     name: "T3 Assets",
   });
 
-  const sync = async () => {
-    while (true) {
-      console.log("run");
-      const assets = await esdb.asset.findMany({
+  const assetId = (id: number) => {
+    return sourceSystemIdHash("esdb.public.assets", id.toString());
+  };
+
+  const assetJob = new SyncJob({
+    sourceBatchSize: 20_000,
+    sinkBatchSize: 5_000,
+    source: async (queryArgs) => {
+      return esdb.asset.findMany({
         where: { company_id: 1854 },
         select: {
           id: true,
@@ -132,59 +142,60 @@ const assetDataSync = async () => {
             where: { name: "location" },
           },
         },
-        take: 10_000,
+        ...queryArgs,
       });
-      console.log("total assets", assets.length);
-      const assetId = (id: number) => {
-        return sourceSystemIdHash("esdb.public.assets", id.toString());
-      };
-      const assetChucks = _.chunk(assets, 1000);
-      for (const assetChunk of assetChucks) {
-        await prisma.$transaction([
-          prisma.entity.deleteMany({
-            where: { id: { in: assetChunk.map((a) => assetId(a.id)) } },
-          }),
-          prisma.entity.createMany({
-            data: assetChunk.map((asset) => ({
-              id: assetId(asset.id),
-              tenant_id: asset.company_id.toString(),
-              type_id: "system_item" satisfies SystemEntityTypes,
-              parent_id: assetWorkspaceId,
-              data: {
-                name: asset.custom_name,
-                [equipmentClassColumn]: asset.equipment_class?.name,
-                [equipmentCategoryColumn]: asset.category?.name,
-                [makeColumn]: asset.make?.name,
-                [modelColumn]: asset.model?.name,
-                [customModelColumn]: asset.custom_model,
-                [photoColumn]: asset.photo
-                  ? `https://appcdn.equipmentshare.com/uploads/small/${asset.photo?.filename}`
-                  : null,
-                [locationColumn]: asset.status
-                  .filter((s) => s.name === "location")
-                  .map(({ value }) => {
-                    if (!value) return null;
-                    try {
-                      const wkbBuffer = Buffer.from(value, "hex");
-                      const geometry = wkx.Geometry.parse(wkbBuffer);
-                      return geometry.toGeoJSON();
-                    } catch (err: any) {
-                      console.log(err.message);
-                      return null;
-                    }
-                  })
-                  .find((_) => true),
-              },
-            })),
-          }),
-        ]);
-        console.log("chunk");
-      }
+    },
+    sink: async (batch) => {
+      console.log(batch.length);
+      // const db = (await esdb..connect()).db();
+      const updates = batch.map((asset) => ({
+        upsert: true,
+        q: { _id: assetId(asset.id) },
+        u: {
+          $set: {
+            _id: assetId(asset.id),
+            tenant_id: asset.company_id.toString(),
+            type_id: "system_item" satisfies SystemEntityTypes,
+            parent_id: assetWorkspaceId,
+            hidden: false,
+            sort_order: asset.id,
+            data: {
+              name: asset.custom_name,
+              [equipmentClassColumn]: asset.equipment_class?.name,
+              [equipmentCategoryColumn]: asset.category?.name,
+              [makeColumn]: asset.make?.name,
+              [modelColumn]: asset.model?.name,
+              [customModelColumn]: asset.custom_model,
+              [photoColumn]: asset.photo
+                ? `https://appcdn.equipmentshare.com/uploads/small/${asset.photo?.filename}`
+                : null,
+              [locationColumn]: asset.status
+                .filter((s) => s.name === "location")
+                .map(({ value }) => {
+                  if (!value) return null;
+                  try {
+                    const wkbBuffer = Buffer.from(value, "hex");
+                    const geometry = wkx.Geometry.parse(wkbBuffer);
+                    return geometry.toGeoJSON();
+                  } catch (err: any) {
+                    console.log(err.message);
+                    return null;
+                  }
+                })
+                .find((_) => true),
+            },
+          } satisfies Omit<Entity, "id"> & { _id: string },
+        },
+      }));
 
-      await new Promise((res) => setTimeout(res, 60 * 60_000));
-    }
-  };
+      await prisma.$runCommandRaw({
+        update: "Entity",
+        updates,
+      });
+      console.log("batch");
+    },
+  });
 
-  sync();
+  await assetJob.run();
 };
 assetDataSync();

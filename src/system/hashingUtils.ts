@@ -23,6 +23,7 @@ export const tenantScopedSystemEntityId = (
   return encodeString(`${tenantId}-${systemId}`);
 };
 
+// ensuring a deterministic mongo ID for an auto-incrementing id in external table
 export const sourceSystemIdHash = (source: string, id: string) => {
   return encodeString(`${source}-${id}`);
 };

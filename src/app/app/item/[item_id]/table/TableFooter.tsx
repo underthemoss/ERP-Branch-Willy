@@ -1,6 +1,10 @@
 import { Box, Button, Typography } from "@mui/joy";
 import { useItem } from "../ItemProvider";
-import { addRow } from "../actions"; // todo: not this
+import { addRecord, addRow } from "../actions"; // todo: not this
+import {
+  createContentTypeInstance,
+  createSystemContentTypeInstance,
+} from "@/services/ContentService";
 
 export const TableFooter: React.FC<{ width: number; height: number }> = ({
   height,
@@ -34,10 +38,10 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
           <Button
             variant="plain"
             onClick={async () => {
-              await addRow(item.id);
+              await addRecord(item.id);
             }}
           >
-            New row
+            New record
           </Button>
         </Box>
         <Box flex={1}></Box>

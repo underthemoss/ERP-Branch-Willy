@@ -7,6 +7,12 @@ import { prisma } from "@/lib/prisma";
 import { Entity } from "../../../../../prisma/generated/mongo";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { revalidatePath } from "next/cache";
+import { GlobalColumnIds } from "@/config/ColumnConfig";
+import {
+  ContentTypeData,
+  GlobalContentTypeId,
+} from "@/config/ContentTypesConfig";
+import { createSystemContentTypeInstance } from "@/services/ContentService";
 
 export type Query = {
   parent_id: string;
@@ -95,7 +101,7 @@ export const getVisibleColumns = async (item_id: string) => {
     where: {
       tenant_id: user.company_id,
       parent_id: item_id,
-      type_id: { in: ["system_parent_column" as SystemEntityTypes] },
+      type_id: { in: ["parent_column_config" satisfies GlobalContentTypeId] },
     },
     select: {
       data: true,
@@ -107,22 +113,26 @@ export const getVisibleColumns = async (item_id: string) => {
   });
   const columnTypes = await prisma.column.findMany({
     where: {
-      id: { in: visibleColumns.map(({ data }) => (data as any).column_id) },
+      id: {
+        in: visibleColumns.map(
+          ({ data }) =>
+            (data as ContentTypeData<"parent_column_config">)
+              .parent_column_config__column_id!
+        ),
+      },
       tenant_id: { in: ["SYSTEM", user.company_id] },
     },
   });
   return visibleColumns.map((ext) => {
-    const data = ext.data as {
-      column_id: string;
-      name: string;
-      column_width: number;
-    };
+    const data = ext.data as ContentTypeData<"parent_column_config">;
     return {
       id: ext.id,
-      column_id: data.column_id,
-      name: data.name,
-      column_width: data.column_width || 120,
-      column_type: columnTypes.find((c) => c.id === data.column_id),
+      column_id: data.parent_column_config__column_id!,
+      name: data.name!,
+      column_width: Number(data.parent_column_config__column_width) || 120,
+      column_type: columnTypes.find(
+        (c) => c.id === data.parent_column_config__column_id
+      ),
     };
   });
 };
@@ -134,7 +144,7 @@ export const getItemWithChildColumns = async (query: Query) => {
     getVisibleColumns(query.parent_id),
     prisma.entity.findFirstOrThrow({
       where: {
-        tenant_id: user.company_id,
+        tenant_id: { in: [user.company_id, "SYSTEM"] },
         id: query.parent_id,
         OR: [{ hidden: false }, { hidden: { isSet: false } }],
       },
@@ -202,6 +212,17 @@ export const addRow = async (item_id: string) => {
   revalidatePath("/");
 };
 
+export const addRecord = async (parentId: string) => {
+  await createSystemContentTypeInstance({
+    contentTypeId: "record",
+    attributes: {
+      name: "",
+    },
+    parentId: parentId,
+  });
+  revalidatePath("/");
+};
+
 export const updateColumnOrder = async (columnIds: string[]) => {
   console.time("moveHeader");
 
@@ -253,12 +274,13 @@ export const updateToggleSelectedColumns = async (
     await prisma.entity.create({
       data: {
         data: {
-          column_id,
-        },
+          parent_column_config__column_id: column_id,
+          parent_column_config__column_width: 300,
+        } satisfies ContentTypeData<"parent_column_config">,
         hidden: true,
         tenant_id: user.company_id,
         parent_id: item_id,
-        type_id: "system_parent_column" satisfies SystemEntityTypes,
+        type_id: "parent_column_config" satisfies GlobalContentTypeId,
       },
     });
   }

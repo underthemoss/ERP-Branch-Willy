@@ -1,30 +1,17 @@
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  Avatar,
-  Box,
-  Button,
-  Card,
-  Sheet,
-  Table,
-  Tooltip,
-  Typography,
-} from "@mui/joy";
-import AddHomeIcon from "@mui/icons-material/AddHome";
+import { Avatar, Box, Table, Typography } from "@mui/joy";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { NextLink } from "@/ui/NextLink";
-import { UserDetail } from "@/ui/UserDetail";
 import { AutoImage } from "@/ui/AutoImage";
 export default async function Home() {
   const { user } = await getUser();
   const spaces = await prisma.entity.findMany({
     where: {
-      tenant_id: user.company_id,
+      tenant_id: { in: [user.company_id, "SYSTEM"] },
       OR: [
         {
-          type_id: {
-            startsWith: "system_workspace" satisfies SystemEntityTypes,
-          },
+          type_id: "workspace",
         },
       ],
     },

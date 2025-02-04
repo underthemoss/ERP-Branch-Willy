@@ -1,7 +1,7 @@
 process.env.DATABASE_URL =
   "mongodb://127.0.0.1:63878/es-erp?replicaSet=testset";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
-const main = async () => {
+export const run = async () => {
   const replset = await MongoMemoryReplSet.create({
     instanceOpts: [
       {
@@ -13,5 +13,3 @@ const main = async () => {
   const uri = replset.getUri();
   console.log(`🚀 Mongodb running at ${uri}`);
 };
-
-main();

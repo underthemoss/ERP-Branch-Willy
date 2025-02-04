@@ -1,13 +1,16 @@
 export async function register() {
-  // ie - not running on the "edge"
+  // not running on the "edge" - never happens, this just surpresses a build time error
   if (process.env.NEXT_RUNTIME === "nodejs") {
     process.env.ESDB_CONNECTION_STRING = `postgresql://${process.env.ESDB_USER}:${process.env.ESDB_PASSWORD}@${process.env.ESDB_HOST}:${process.env.ESDB_PORT}/equipmentshare`;
 
-    await import("./system/mongo-dev-server");
-    await new Promise((res) => setTimeout(res, 5000));
-    await import("./system/upsertSystemTypes");
-    await import("./system/upsertIndexes");
-    await import("./system/assetDataSync");
+    await (await import("./system/mongo-dev-server")).run();
+
+    // running twice to ensure idempotency
+    await (await import("./system/updateSystem")).run();
+    await (await import("./system/updateSystem")).run();
+    // await import("./system/upsertSystemTypes");
+    // await import("./system/assetDataSync");
+    // await import("./system/upsertIndexes");
     // await import("./system/testWorkspace");
   }
 
