@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
     path: "/es-erp",
     maxAge: 86400, // 1 day
   });
-  const redirectUrl = req.nextUrl.clone();
-  redirectUrl.pathname = "/es-erp/app";
-  return NextResponse.redirect(redirectUrl);
+
+  const host = req.headers.get("host");
+
+  return NextResponse.redirect(
+    `http${host?.startsWith("localhost") ? "" : "s"}://${host}/es-erp/app`
+  );
 }
