@@ -2,6 +2,8 @@ import { Box, CssBaseline } from "@mui/joy";
 
 import SideNav from "./SideNav";
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
   breadcrumbs,
