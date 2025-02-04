@@ -5,7 +5,6 @@ import { randomUUID } from "crypto";
 import { getUser } from "@/lib/auth";
 import {
   ContentTypeData,
-  GLOBAL_CONTENT_TYPES,
   GlobalContentTypeEnum,
   GlobalContentTypeId,
 } from "@/config/ContentTypesConfig";

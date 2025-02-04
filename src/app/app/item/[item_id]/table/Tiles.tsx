@@ -44,7 +44,7 @@ export const Tiles = () => {
   return (
     <Box>
       <ReactGridLayout
-        compactType={"horizontal"}
+        compactType={"vertical"}
         rowHeight={30}
         maxRows={10}
         width={1000}
@@ -64,10 +64,10 @@ export const Tiles = () => {
             >
               <Card sx={{ padding: 0, flex: 1, m: 1, overflow: "hidden" }}>
                 <Box height={20}> </Box>
-                <iframe
+                {/* <iframe
                   style={{ width: "100%", height: "100%", border: "0px" }}
                   src={url}
-                ></iframe>
+                ></iframe> */}
               </Card>
             </Box>
           );

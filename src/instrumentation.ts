@@ -8,8 +8,11 @@ export async function register() {
     // running twice to ensure idempotency
     await (await import("./system/updateSystem")).run();
     await (await import("./system/updateSystem")).run();
-    // await import("./system/upsertSystemTypes");
-    // await import("./system/assetDataSync");
+
+    await (await import("./system/setupTenants")).run();
+
+    await (await import("./system/syncAssets")).run();
+
     // await import("./system/upsertIndexes");
     // await import("./system/testWorkspace");
   }

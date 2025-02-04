@@ -38,6 +38,7 @@ export const TableRow: React.FC<{
       </Box>
     );
   }
+  const firstColumnIndent = 50;
 
   return (
     <Box
@@ -47,35 +48,32 @@ export const TableRow: React.FC<{
       width={width}
       // borderBottom={"1px solid #e0e1e3"}
     >
-      {/* <Box
-        width={firstColumnWidth}
+      <Box
+        width={firstColumnIndent}
         position={"sticky"}
         left={0}
-        style={
-          {
-            // backgroundColor: "#fbfcfe",
-            // borderRight: "1px solid rgb(222, 222, 222)",
-          }
-        }
         alignContent={"center"}
       >
         <Box display={"flex"} justifySelf={"center"}>
           <NextLink href={`/app/item/${row.id}`}>
-            <EntityTypeIcon entityTypeIcon={"document"} />
-
+            <EntityTypeIcon entityTypeIcon={row.type_id as any} />
           </NextLink>
         </Box>
-      </Box> */}
+      </Box>
 
       {item.columns.map((column, colIndex, all) => {
         const value = row.values[colIndex];
-        const left = item.columns
-          .slice(0, colIndex)
-          .reduce((acc, { column_width }) => acc + column_width, 0);
+        const indent = colIndex === 0 ? firstColumnIndent : 0;
+        const left =
+          item.columns
+            .slice(0, colIndex)
+            .reduce((acc, { column_width }) => acc + column_width, 0) + indent;
+        const width = Math.max(column.column_width - indent, 0);
+
         return (
           <Box
             key={column.id}
-            width={column.column_width}
+            width={width}
             alignContent={"center"}
             className={`col-${colIndex} row-${index}`}
             sx={{

@@ -1,5 +1,8 @@
 import Sqids from "sqids";
-import crypto from "crypto";
+import crypto, { hash } from "crypto";
+
+import { v5 as uuid } from "uuid";
+
 const sqids = new Sqids();
 // Hash the string into a number
 function stringToNumberHash(input: string) {
@@ -26,4 +29,31 @@ export const tenantScopedSystemEntityId = (
 // ensuring a deterministic mongo ID for an auto-incrementing id in external table
 export const sourceSystemIdHash = (source: string, id: string) => {
   return encodeString(`${source}-${id}`);
+};
+
+export const deterministicId = (...args: (string | number)[]) => {
+  return crypto
+    .createHash("sha256")
+    .update(String(args.join("")))
+    .digest("hex");
+};
+
+export const tenantIds = (companyId: string | number) => {
+  const cid = companyId.toString();
+  return {
+    t3WorkspaceId: deterministicId("t3-workspace", cid),
+    t3WorkspaceNameColumnId: deterministicId("t3-workspace-name-column", cid),
+    userSheetId: deterministicId("t3-users-sheet", cid),
+    userSheetNameColumnId: deterministicId("t3-users-sheet-name-column", cid),
+    branchesSheetId: deterministicId("t3-branches-sheet", cid),
+    branchesSheeNameColumntId: deterministicId(
+      "t3-branches-sheet-name-column",
+      cid
+    ),
+    assetsSheetId: deterministicId("t3-assets-sheet", cid),
+    assetsSheetNameColumnId: deterministicId(
+      "t3-assets-sheet-name-column",
+      cid
+    ),
+  };
 };

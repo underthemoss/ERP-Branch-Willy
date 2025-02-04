@@ -79,6 +79,9 @@ export const EntityTypeIcon: React.FC<{
   if (entityTypeIcon === "list") {
     return <FormatListBulletedIcon style={{ color: "black" }} />;
   }
+  if (entityTypeIcon === "sheet") {
+    return <FormatListBulletedIcon style={{ color: "black" }} />;
+  }
   if (entityTypeIcon === "list_item") {
     return <FiberManualRecordIcon style={{ color: "black" }} />;
   }
