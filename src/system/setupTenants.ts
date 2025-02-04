@@ -51,6 +51,7 @@ const upsertItemColumn = (args: {
   parent_id: string;
   name: string;
   column: GlobalColumnIds;
+  width?: number;
 }) => {
   return {
     upsert: true,
@@ -66,7 +67,7 @@ const upsertItemColumn = (args: {
         data: {
           name: args.name,
           parent_column_config__column_id: args.column,
-          parent_column_config__column_width: 300,
+          parent_column_config__column_width: args.width || 300,
         } satisfies ContentTypeData<"parent_column_config">,
       } satisfies Omit<Entity, "id"> & { _id: string },
     },
@@ -131,7 +132,7 @@ export const run = async () => {
         userSheetId,
         branchesSheetId,
         userSheetNameColumnId,
-        assetsSheetNameColumnId,
+        assetsSheetColumn,
         branchesSheeNameColumntId,
       } = tenantIds(tenant_id);
 
@@ -157,6 +158,7 @@ export const run = async () => {
           parent_id: userSheetId,
           tenant_id,
         }),
+
         upsertSheet({
           id: assetsSheetId,
           tenant_id,
@@ -164,12 +166,68 @@ export const run = async () => {
           parent_id: t3WorkspaceId,
         }),
         upsertItemColumn({
+          column: "equipment_photo",
+          id: assetsSheetColumn("equipment_photo"),
+          name: "Photo",
+          parent_id: assetsSheetId,
+          tenant_id,
+          width: 120,
+        }),
+        upsertItemColumn({
           column: "name",
-          id: assetsSheetNameColumnId,
+          id: assetsSheetColumn("name"),
           name: "Name",
           parent_id: assetsSheetId,
           tenant_id,
+          width: 180,
         }),
+        upsertItemColumn({
+          column: "location",
+          id: assetsSheetColumn("location"),
+          name: "Location",
+          parent_id: assetsSheetId,
+          tenant_id,
+          width: 120,
+        }),
+        upsertItemColumn({
+          column: "equipment_make",
+          id: assetsSheetColumn("equipment_make"),
+          name: "Make",
+          parent_id: assetsSheetId,
+          tenant_id,
+          width: 180,
+        }),
+        upsertItemColumn({
+          column: "equipment_model",
+          id: assetsSheetColumn("equipment_model"),
+          name: "Model",
+          parent_id: assetsSheetId,
+          tenant_id,
+          width: 200,
+        }),
+        upsertItemColumn({
+          column: "equipment_category",
+          id: assetsSheetColumn("equipment_category"),
+          name: "Category",
+          parent_id: assetsSheetId,
+          tenant_id,
+        }),
+        upsertItemColumn({
+          column: "equipment_class",
+          id: assetsSheetColumn("equipment_class"),
+          name: "Class",
+          parent_id: assetsSheetId,
+          tenant_id,
+        }),
+        upsertItemColumn({
+          column: "equipment_custom_model",
+          id: assetsSheetColumn("equipment_custom_model"),
+          name: "Custom Model",
+          parent_id: assetsSheetId,
+          tenant_id,
+          width: 190,
+        }),
+
         upsertSheet({
           id: branchesSheetId,
           tenant_id,

@@ -6,8 +6,8 @@ export type ColumnTypeMap = {
   single_line_of_text: string | null;
   date: Date | null;
   user: string | null;
-  img_url: string;
-  location: [number, number];
+  img_url: string | null;
+  location: [number, number] | null;
   integer: number;
 };
 
@@ -107,7 +107,7 @@ export const GLOBAL_COLUMNS = [
 
   // ASSETS
   {
-    id: "equipment_make",
+    id: "equipment_category",
     category: "Asset Details",
     label: "Equipment Category",
     order_priority: 0,
@@ -126,6 +126,14 @@ export const GLOBAL_COLUMNS = [
     id: "equipment_custom_model",
     category: "Asset Details",
     label: "Equipment Custom Model",
+    order_priority: 0,
+    type: "single_line_of_text",
+    readonly: true,
+  },
+  {
+    id: "equipment_make",
+    category: "Asset Details",
+    label: "Equipment Make",
     order_priority: 0,
     type: "single_line_of_text",
     readonly: true,

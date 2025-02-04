@@ -108,15 +108,15 @@ export const TableRow: React.FC<{
         );
       })}
 
-      <Box></Box>
-      <Box
+      {/* <Box></Box> */}
+      {/* <Box
         position={"absolute"}
         alignContent={"center"}
         right={0}
         style={{ backgroundColor: "#fbfcfe" }}
       >
         <NextLink href={`/app/item/${row.id}`}>Go</NextLink>
-      </Box>
+      </Box> */}
       {/* <Box
         // width={lastColumnWidth}
         position={"absolute"}

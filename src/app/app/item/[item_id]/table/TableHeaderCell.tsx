@@ -362,7 +362,7 @@ export const TableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
           level="title-sm"
           fontSize={14}
         >
-          {column.column_type?.label}
+          {column.name || column.column_type?.label}
         </Typography>
       </Box>
       <Box flex={1} className="column-drag-handle"></Box>

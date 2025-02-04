@@ -20,7 +20,7 @@ export async function register() {
       console.log(err);
     }
 
-    // await import("./system/upsertIndexes");
+    await import("./system/upsertIndexes");
     // await import("./system/testWorkspace");
   }
 

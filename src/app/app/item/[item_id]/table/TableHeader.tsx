@@ -51,7 +51,7 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
         rowHeight={headerHeight}
         useCSSTransforms
         compactType={"horizontal"}
-        onDrop={(e, item) => console.log(e, item)}
+        // onDrop={(e, item) => console.log(e, item)}
         onLayoutChange={(newLayout) => {
           const newColumnOrderIds = _.sortBy(newLayout, (d) => d.x).map(
             (c) => c.i

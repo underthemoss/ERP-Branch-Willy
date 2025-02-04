@@ -96,47 +96,59 @@ export const run = async () => {
   console.time("sync assets");
   while (true) {
     const rows = await cursor.read(5_000);
-    console.log(rows);
+
     if (rows.length === 0) {
       break;
     }
 
-    const updates = rows.flatMap(({ id, custom_name, company_id, status }) => {
-      const tenant_id = company_id.toString();
-      const {
-        t3WorkspaceId,
-        t3WorkspaceNameColumnId,
-        assetsSheetId,
-        userSheetId,
-        branchesSheetId,
-        userSheetNameColumnId,
-        assetsSheetNameColumnId,
-        branchesSheeNameColumntId,
-      } = tenantIds(tenant_id);
+    const updates = rows.flatMap(
+      ({
+        id,
+        custom_name,
+        company_id,
+        status,
+        equipment_class_name,
+        make_name,
+        model_name,
+        model,
+        photo_filename,
+        category_name,
+      }) => {
+        const tenant_id = company_id.toString();
+        const { assetsSheetId } = tenantIds(tenant_id);
 
-      const _id = tenantIds(company_id).assetId(id);
+        const _id = tenantIds(company_id).assetId(id);
 
-      return [
-        {
-          upsert: true,
-          q: { _id: _id },
-          u: {
-            $set: {
-              _id: _id,
-              tenant_id: company_id.toString(),
-              type_id: "record" satisfies GlobalContentTypeId,
-              parent_id: assetsSheetId,
-              hidden: false,
-              sort_order: 0,
-              data: {
-                name: custom_name,
-                location: status?.[0]?.value ? status?.[0]?.value : undefined,
-              } satisfies GlobalColumnData,
-            } satisfies Omit<Entity, "id"> & { _id: string },
+        return [
+          {
+            upsert: true,
+            q: { _id: _id },
+            u: {
+              $set: {
+                _id: _id,
+                tenant_id: company_id.toString(),
+                type_id: "record" satisfies GlobalContentTypeId,
+                parent_id: assetsSheetId,
+                hidden: false,
+                sort_order: 0,
+                data: {
+                  name: custom_name,
+                  location: status?.[0]?.value ? status?.[0]?.value : undefined,
+                  equipment_category: category_name,
+                  equipment_class: equipment_class_name,
+                  equipment_make: make_name,
+                  equipment_custom_model: model,
+                  equipment_model: model_name,
+                  equipment_photo: photo_filename
+                    ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
+                    : null,
+                } satisfies GlobalColumnData,
+              } satisfies Omit<Entity, "id"> & { _id: string },
+            },
           },
-        },
-      ];
-    });
+        ];
+      }
+    );
 
     await prisma.$runCommandRaw({
       update: "Entity",
