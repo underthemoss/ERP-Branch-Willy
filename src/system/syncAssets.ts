@@ -118,7 +118,11 @@ export const run = async () => {
         const { assetsSheetId } = tenantIds(tenant_id);
 
         const _id = tenantIds(company_id).assetId(id);
-
+        const coordinates = status?.[0]?.value
+          ? status[0].value.filter(Boolean).length > 0
+            ? status?.[0]?.value
+            : null
+          : null;
         return [
           {
             upsert: true,
@@ -133,7 +137,7 @@ export const run = async () => {
                 sort_order: 0,
                 data: {
                   name: custom_name,
-                  location: status?.[0]?.value ? status?.[0]?.value : undefined,
+                  location: coordinates,
                   equipment_category: category_name,
                   equipment_class: equipment_class_name,
                   equipment_make: make_name,

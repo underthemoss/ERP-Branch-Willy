@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const upsertIndexes = async () => {
+export const run = async () => {
   const columnIndex = (key: string) => {
     return [
       {
@@ -58,5 +58,3 @@ const upsertIndexes = async () => {
     ],
   });
 };
-
-upsertIndexes();

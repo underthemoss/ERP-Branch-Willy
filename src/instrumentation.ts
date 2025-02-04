@@ -15,12 +15,20 @@ export async function register() {
       console.log(err);
     }
     try {
+      await (await import("./system/syncUsers")).run();
+    } catch (err) {
+      console.log(err);
+    }
+    try {
       await (await import("./system/syncAssets")).run();
     } catch (err) {
       console.log(err);
     }
-
-    await import("./system/upsertIndexes");
+    try {
+      await (await import("./system/upsertIndexes")).run();
+    } catch (err) {
+      console.log(err);
+    }
     // await import("./system/testWorkspace");
   }
 
