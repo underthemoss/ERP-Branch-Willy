@@ -9,9 +9,9 @@ export async function register() {
     await (await import("./system/updateSystem")).run();
     await (await import("./system/updateSystem")).run();
 
-    // await (await import("./system/setupTenants")).run();
+    await (await import("./system/setupTenants")).run();
 
-    // await (await import("./system/syncAssets")).run();
+    await (await import("./system/syncAssets")).run();
 
     // await import("./system/upsertIndexes");
     // await import("./system/testWorkspace");

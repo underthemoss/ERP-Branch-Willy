@@ -78,7 +78,7 @@ export const run = async () => {
   //   await client.connect();
   console.time("sync assets");
   while (true) {
-    const rows = await cursor.read(10_000);
+    const rows = await cursor.read(5_000);
     console.log(rows);
     if (rows.length === 0) {
       break;
