@@ -8,7 +8,7 @@ import Cursor from "pg-cursor";
 import SQL from "sql-template-strings";
 import { Entity } from "../../prisma/generated/mongo";
 import { tenantIds } from "./hashingUtils";
-import { GlobalColumnIds } from "@/config/ColumnConfig";
+import { GlobalColumnData, GlobalColumnIds } from "@/config/ColumnConfig";
 
 const { ESDB_HOST, ESDB_PORT, ESDB_USER, ESDB_PASSWORD } = process.env;
 
@@ -30,7 +30,24 @@ export const run = async () => {
   const client = await pool.connect();
 
   const cursor = client.query(
-    new Cursor<{ company_id: number; name: string }>(
+    new Cursor<{
+      id: number;
+      custom_name: string;
+      company_id: number;
+      model: string;
+      equipment_class_name: string | null;
+      category_name: string | null;
+      photo_filename: string | null;
+      make_name: string | null;
+      model_name: string | null;
+      status: {
+        asset_status_key_value_id: number;
+        asset_id: number;
+        name: string;
+        // the "value" is built as an array of two numbers [x, y]
+        value: [number, number];
+      }[];
+    }>(
       SQL`
     SELECT 
       a.asset_id AS id,
@@ -84,7 +101,7 @@ export const run = async () => {
       break;
     }
 
-    const updates = rows.flatMap(({ company_id, name }) => {
+    const updates = rows.flatMap(({ id, custom_name, company_id, status }) => {
       const tenant_id = company_id.toString();
       const {
         t3WorkspaceId,
@@ -97,13 +114,34 @@ export const run = async () => {
         branchesSheeNameColumntId,
       } = tenantIds(tenant_id);
 
-      return [];
+      const _id = tenantIds(company_id).assetId(id);
+
+      return [
+        {
+          upsert: true,
+          q: { _id: _id },
+          u: {
+            $set: {
+              _id: _id,
+              tenant_id: company_id.toString(),
+              type_id: "record" satisfies GlobalContentTypeId,
+              parent_id: assetsSheetId,
+              hidden: false,
+              sort_order: 0,
+              data: {
+                name: custom_name,
+                location: status?.[0]?.value ? status?.[0]?.value : undefined,
+              } satisfies GlobalColumnData,
+            } satisfies Omit<Entity, "id"> & { _id: string },
+          },
+        },
+      ];
     });
 
-    // await prisma.$runCommandRaw({
-    //   update: "Entity",
-    //   updates,
-    // });
+    await prisma.$runCommandRaw({
+      update: "Entity",
+      updates,
+    });
   }
   console.timeEnd("sync assets");
 };

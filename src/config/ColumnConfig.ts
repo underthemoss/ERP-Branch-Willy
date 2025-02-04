@@ -7,7 +7,7 @@ export type ColumnTypeMap = {
   date: Date | null;
   user: string | null;
   img_url: string;
-  location: string | null;
+  location: [number, number];
   integer: number;
 };
 

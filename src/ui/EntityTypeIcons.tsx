@@ -85,5 +85,8 @@ export const EntityTypeIcon: React.FC<{
   if (entityTypeIcon === "list_item") {
     return <FiberManualRecordIcon style={{ color: "black" }} />;
   }
+  if (entityTypeIcon === "record") {
+    return <FiberManualRecordIcon style={{ color: "black" }} />;
+  }
   return <HelpIcon style={{ color: "black" }} />;
 };

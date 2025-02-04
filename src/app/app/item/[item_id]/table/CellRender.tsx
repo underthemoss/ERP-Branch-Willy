@@ -186,8 +186,8 @@ export const CellRender = (props: {
         <Box>
           {(() => {
             if (!props.value) return;
-            const point = props.value as unknown as any;
-            const [lng, lat] = point.coordinates;
+            const point = props.value as unknown as [number, number];
+            const [lng, lat] = point;
             const url = `https://www.google.com/maps/place/${lat},${lng}`;
             return (
               <Box>
