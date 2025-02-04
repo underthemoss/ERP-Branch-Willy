@@ -9,6 +9,7 @@ import SQL from "sql-template-strings";
 import { Entity } from "../../prisma/generated/mongo";
 import { tenantIds } from "./hashingUtils";
 import { GlobalColumnIds } from "@/config/ColumnConfig";
+import _ from "lodash";
 
 const { ESDB_HOST, ESDB_PORT, ESDB_USER, ESDB_PASSWORD } = process.env;
 
@@ -264,10 +265,12 @@ export const run = async () => {
       ];
     });
 
-    await prisma.$runCommandRaw({
-      update: "Entity",
-      updates,
-    });
+    for (const update of _.chunk(updates, 1000)) {
+      await prisma.$runCommandRaw({
+        update: "Entity",
+        updates: update,
+      });
+    }
   }
   console.timeEnd("sync tenants");
 };
