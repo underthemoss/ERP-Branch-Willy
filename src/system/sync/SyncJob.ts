@@ -11,7 +11,7 @@ export class SyncJob<T extends { id: number }> {
         orderBy: { id: "asc" };
         cursor: { id: number } | undefined;
       }) => Promise<T[]>;
-      sink: (batch: T[]) => {};
+      sink: (batch: T[]) => void;
     }
   ) {}
 
