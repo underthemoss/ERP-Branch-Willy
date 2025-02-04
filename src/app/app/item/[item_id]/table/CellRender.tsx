@@ -207,6 +207,9 @@ export const CellRender = (props: {
           {props.type === "date" && (
             <SimpleEditInput type="date" defaultValue={props.value} />
           )}
+          {props.type === "email" && (
+            <SimpleEditInput type="email" defaultValue={props.value} />
+          )}
           {props.type === "integer" && (
             <SimpleEditInput type="number" defaultValue={props.value} />
           )}
@@ -226,6 +229,7 @@ export const CellRender = (props: {
         >
           <Typography noWrap>
             {props.type === "single_line_of_text" && props.value}
+            {props.type === "email" && props.value}
           </Typography>
           {props.type === "img_url" &&
             props.value &&

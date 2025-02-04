@@ -94,7 +94,7 @@ export const run = async () => {
     )
   );
   //   await client.connect();
-  console.time("sync assets");
+  console.time("sync users");
   while (true) {
     const rows = await cursor.read(5_000);
 
@@ -132,7 +132,7 @@ export const run = async () => {
                 sort_order: 0,
                 data: {
                   name: `${first_name} ${last_name}`,
-                  notes: username,
+                  email: username,
                 } satisfies GlobalColumnData,
               } satisfies Omit<Entity, "id"> & { _id: string },
             },
@@ -146,5 +146,5 @@ export const run = async () => {
       updates,
     });
   }
-  console.timeEnd("sync assets");
+  console.timeEnd("sync users");
 };

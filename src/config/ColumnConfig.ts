@@ -9,6 +9,7 @@ export type ColumnTypeMap = {
   img_url: string | null;
   location: [number, number] | null;
   integer: number;
+  email: string | null;
 };
 
 type ColumnConfig = {
@@ -34,6 +35,14 @@ export const GLOBAL_COLUMNS = [
     id: "notes",
     label: "Notes",
     type: "single_line_of_text",
+    order_priority: 0,
+    readonly: false,
+    category: "General",
+  },
+  {
+    id: "email",
+    label: "Email",
+    type: "email",
     order_priority: 0,
     readonly: false,
     category: "General",

@@ -46,7 +46,8 @@ export const tenantIds = (companyId: string | number) => {
     userSheetId: deterministicId("t3-users-sheet", cid),
     userId: (userId: number) =>
       deterministicId("public.assets", userId.toString(), cid),
-    userSheetNameColumnId: deterministicId("t3-users-sheet-name-column", cid),
+    userSheetNameColumn: (identitier: string) =>
+      deterministicId("t3-users-sheet-name-column", identitier, cid),
     branchesSheetId: deterministicId("t3-branches-sheet", cid),
     branchesSheeNameColumntId: deterministicId(
       "t3-branches-sheet-name-column",

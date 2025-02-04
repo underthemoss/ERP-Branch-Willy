@@ -131,12 +131,15 @@ export const run = async () => {
         assetsSheetId,
         userSheetId,
         branchesSheetId,
-        userSheetNameColumnId,
+        userSheetNameColumn,
         assetsSheetColumn,
         branchesSheeNameColumntId,
       } = tenantIds(tenant_id);
 
       return [
+        /**
+         * T3 Workspace
+         */
         upsertWorkspace({ id: t3WorkspaceId, name: "T3", tenant_id }),
         upsertItemColumn({
           column: "name",
@@ -145,6 +148,10 @@ export const run = async () => {
           parent_id: t3WorkspaceId,
           tenant_id,
         }),
+
+        /**
+         * Users Collection
+         */
         upsertSheet({
           id: userSheetId,
           tenant_id,
@@ -153,12 +160,22 @@ export const run = async () => {
         }),
         upsertItemColumn({
           column: "name",
-          id: userSheetNameColumnId,
+          id: userSheetNameColumn("name"),
           name: "Name",
           parent_id: userSheetId,
           tenant_id,
         }),
+        upsertItemColumn({
+          column: "email",
+          id: userSheetNameColumn("email"),
+          name: "Email",
+          parent_id: userSheetId,
+          tenant_id,
+        }),
 
+        /**
+         * Assets Collection
+         */
         upsertSheet({
           id: assetsSheetId,
           tenant_id,
@@ -228,6 +245,9 @@ export const run = async () => {
           width: 190,
         }),
 
+        /**
+         * Branch Collection
+         */
         upsertSheet({
           id: branchesSheetId,
           tenant_id,

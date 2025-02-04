@@ -112,6 +112,7 @@ enum ColumnType {
   lookup
   img_url
   location
+  email
   // entity_type
 }
 
