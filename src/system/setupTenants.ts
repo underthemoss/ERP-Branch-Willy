@@ -117,7 +117,7 @@ export const run = async () => {
 
   console.time("sync tenants");
   while (true) {
-    const rows = await cursor.read(2_000);
+    const rows = await cursor.read(3_000);
     console.log(rows.length);
     if (rows.length === 0) {
       break;
