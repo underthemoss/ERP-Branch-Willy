@@ -10,6 +10,7 @@ import {
   Menu,
   MenuButton,
   MenuItem,
+  Skeleton,
   Typography,
 } from "@mui/joy";
 import AddIcon from "@mui/icons-material/Add";
@@ -37,6 +38,7 @@ export const ItemTable = () => {
       <Box display={"flex"} height={300}>
         <Tiles />
       </Box>
+
       <Box>
         <Dropdown open={undefined}>
           <MenuButton

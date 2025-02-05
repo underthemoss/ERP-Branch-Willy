@@ -22,7 +22,7 @@ export const config = {
   database: "equipmentshare",
 } as ClientConfig;
 
-export const run = async () => {
+export const syncAssets = async (tenantId: string) => {
   const pool = new Pool({
     ...config,
   });
@@ -80,7 +80,7 @@ export const run = async () => {
       ON a.equipment_model_id = em.equipment_model_id
     LEFT JOIN asset_status_key_values askv 
       ON a.asset_id = askv.asset_id AND askv.name = 'location'
-
+    WHERE a.company_id = $1
     GROUP BY 
       a.asset_id, 
       ec.name, 
@@ -88,12 +88,12 @@ export const run = async () => {
       p.filename, 
       mk.name, 
       em.name
-        `.append(isLocalDev ? " LIMIT 50_000" : "").text,
-      []
+
+        `.text,
+      [tenantId]
     )
   );
-  //   await client.connect();
-  console.time("sync assets");
+
   while (true) {
     const rows = await cursor.read(5_000);
 
@@ -159,5 +159,4 @@ export const run = async () => {
       updates,
     });
   }
-  console.timeEnd("sync assets");
 };

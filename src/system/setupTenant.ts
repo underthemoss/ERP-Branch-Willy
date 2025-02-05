@@ -100,7 +100,7 @@ const upsertSheet = (args: {
   };
 };
 
-export const run = async () => {
+export const setupTenant = async (tenantId: string) => {
   const pool = new Pool({
     ...config,
   });
@@ -109,14 +109,11 @@ export const run = async () => {
 
   const cursor = client.query(
     new Cursor<{ company_id: number; name: string }>(
-      SQL`SELECT company_id, name FROM companies `.append(
-        isLocalDev ? " WHERE COMPANY_ID = 1854" : ""
-      ).text,
-      []
+      SQL`SELECT company_id, name FROM companies where company_id = $1`.text,
+      [tenantId]
     )
   );
 
-  console.time("sync tenants");
   while (true) {
     const rows = await cursor.read(3_000);
     console.log(rows.length);
@@ -272,5 +269,4 @@ export const run = async () => {
       });
     }
   }
-  console.timeEnd("sync tenants");
 };

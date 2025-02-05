@@ -22,7 +22,7 @@ export const config = {
   database: "equipmentshare",
 } as ClientConfig;
 
-export const run = async () => {
+export const syncUsers = async (tenantId: string) => {
   const pool = new Pool({
     ...config,
   });
@@ -79,6 +79,7 @@ export const run = async () => {
     LEFT JOIN markets b ON u.branch_id = b.market_id
     LEFT JOIN organization_user_xref uxg ON u.user_id = uxg.user_id
     LEFT JOIN organizations g ON uxg.organization_id = g.organization_id
+    WHERE u.company_id = $1
     GROUP BY
       u.user_id,
       u.username,
@@ -89,12 +90,12 @@ export const run = async () => {
       b.market_id,
       b.company_id,
       b.name 
-        `.append(isLocalDev ? " LIMIT 50_000" : "").text,
-      []
+        `.text,
+      [tenantId]
     )
   );
   //   await client.connect();
-  console.time("sync users");
+
   while (true) {
     const rows = await cursor.read(5_000);
 
@@ -146,5 +147,4 @@ export const run = async () => {
       updates,
     });
   }
-  console.timeEnd("sync users");
 };
