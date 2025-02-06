@@ -26,8 +26,8 @@ tenants.forEach((tenantId) => {
       console.log(msg);
       console.time(msg);
       await setupTenant(tenantId);
-      await syncAssets(tenantId);
       await syncUsers(tenantId);
+      await syncAssets(tenantId);
       console.timeEnd(msg);
     }
   );

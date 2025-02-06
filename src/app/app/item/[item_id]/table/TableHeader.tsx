@@ -35,11 +35,11 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
   const { item, updateColumnOrder, updateColumnWidths } = useItem();
 
   const actualWidth = Math.max(
-    item.columns.reduce((t, i) => t + i.column_width, 0),
+    item.column_config.reduce((t, i) => t + i.width, 0),
     width
   );
   const tableColumnMaxWidth = 600;
-  const tableMaxColumns = item.columns.length * tableColumnMaxWidth;
+  const tableMaxColumns = item.column_config.length * tableColumnMaxWidth;
   return (
     <Box sx={{ backgroundColor: "white", width: actualWidth }}>
       <GridLayout
@@ -53,17 +53,18 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
         compactType={"horizontal"}
         // onDrop={(e, item) => console.log(e, item)}
         onLayoutChange={(newLayout) => {
-          const newColumnOrderIds = _.sortBy(newLayout, (d) => d.x).map(
+          const newColumnOrderKeys = _.sortBy(newLayout, (d) => d.x).map(
             (c) => c.i
           );
-          const oldColumnOrderIds = item.columns.map((c) => c.id);
-          if (!_.isEqual(newColumnOrderIds, oldColumnOrderIds)) {
-            updateColumnOrder({ columnIds: newColumnOrderIds });
+          const oldColumnOrderKeys = item.column_config.map((c) => c.key);
+
+          if (!_.isEqual(newColumnOrderKeys, oldColumnOrderKeys)) {
+            updateColumnOrder({ columnKeys: newColumnOrderKeys });
           }
-          const newColumnWidths = _.sortBy(newLayout, (d) => d.x).map(
-            (c) => c.w
+          const newColumnWidths = _.sortBy(newLayout, (d) => d.x).map((c) =>
+            Math.min(c.w, tableColumnMaxWidth)
           );
-          const oldColumnWidths = item.columns.map((c) => c.column_width);
+          const oldColumnWidths = item.column_config.map((c) => c.width);
           if (!_.isEqual(newColumnWidths, oldColumnWidths)) {
             updateColumnWidths({ widths: newColumnWidths });
           }
@@ -72,16 +73,17 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
         margin={[0, 0]}
         draggableHandle=".column-drag-handle"
       >
-        {item.columns.map((c, index) => {
+        {item.column_config.map((c, index) => {
           return (
             <Box
-              key={c.id}
+              key={c.key}
               data-grid={{
                 x: index + 100,
                 y: 0,
-                w: c.column_width,
+                w: c.width,
                 h: 1,
                 static: false,
+                maxW: tableColumnMaxWidth,
                 isResizable: true,
                 isDraggable: true,
 

@@ -23,14 +23,15 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import _ from "lodash";
 import { deleteItem } from "../actions";
+import { DeleteForever } from "@mui/icons-material";
 // export const minimumColWidth = 120;
 
 const ColumnHeaderSortOptions: React.FC<{
   index: number;
 }> = ({ index }) => {
   const { item, query } = useItem();
-  const column = item.columns[index];
-  const isOrderedColumn = query.sort_by === column.column_id;
+  const column = item.column_config[index];
+  const isOrderedColumn = query.sort_by === column.key;
 
   if (isOrderedColumn) {
     const sortOrder = isOrderedColumn ? query.sort_order : null;
@@ -38,7 +39,7 @@ const ColumnHeaderSortOptions: React.FC<{
     return (
       <Box>
         <NextLink
-          href={`/app/item/${item.id}?sort_by=${column.column_id}&sort_order=${toggleOption}`}
+          href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=${toggleOption}`}
         >
           <IconButton size="sm" color="neutral" sx={{ opacity: 0.9 }}>
             {sortOrder === "desc" ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
@@ -50,7 +51,7 @@ const ColumnHeaderSortOptions: React.FC<{
   return (
     <Box className={isOrderedColumn ? "" : "sort-options"}>
       <NextLink
-        href={`/app/item/${item.id}?sort_by=${column.column_id}&sort_order=${
+        href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=${
           !isOrderedColumn
             ? "asc"
             : query.sort_order === "desc"
@@ -70,7 +71,7 @@ const ColumnHeaderMoreOptions: React.FC<{
   index: number;
 }> = ({ index }) => {
   const { item, query } = useItem();
-  const column = item.columns[index];
+  const column = item.column_config[index];
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Box className={!isOpen ? "hover-option" : ""}>
@@ -90,7 +91,7 @@ const ColumnHeaderMoreOptions: React.FC<{
         </MenuButton>
         <Menu placement="bottom-end" sx={{ width: 250 }}>
           <MenuItemLink
-            href={`/app/item/${item.id}?sort_by=${column.column_id}&sort_order=asc`}
+            href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=asc`}
           >
             <ListItemDecorator>
               <ArrowUpwardIcon />
@@ -98,7 +99,7 @@ const ColumnHeaderMoreOptions: React.FC<{
             Sort by ASC
           </MenuItemLink>
           <MenuItemLink
-            href={`/app/item/${item.id}?sort_by=${column.column_id}&sort_order=desc`}
+            href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=desc`}
           >
             <ListItemDecorator>
               <ArrowDownwardIcon />
@@ -113,13 +114,13 @@ const ColumnHeaderMoreOptions: React.FC<{
             Manage columns
           </MenuItem>
           <MenuItem
-            disabled={index === 0}
             onClick={() => {
-              deleteItem(column.id);
+              // deleteItem(column.key);
+              alert("not implemented");
             }}
           >
             <ListItemDecorator>
-              <ChevronLeftIcon />
+              <DeleteForever />
             </ListItemDecorator>
             Hide column
           </MenuItem>
@@ -129,191 +130,9 @@ const ColumnHeaderMoreOptions: React.FC<{
   );
 };
 
-// const ColumnHeaderResizeHandle: React.FC<{}> = ({}) => {
-//   return (
-//     <Box
-//       sx={{
-//         minWidth: "2px",
-//         width: "2px",
-//         zIndex: 999,
-//         height: "100%",
-//       }}
-//       alignItems={"center"}
-//       display={"flex"}
-//     >
-//       <Box
-//         width={1}
-//         flex={1}
-//         sx={{ backgroundColor: "rgba(0,0,0,0.1)", height: 20 }}
-//       ></Box>
-//     </Box>
-//   );
-// };
-
-// const ColumnHeaderDraggable: React.FC<{
-//   index: number;
-//   children: React.ReactNode;
-// }> = ({ index, children }) => {
-//   const { item, moveColumn } = useItem();
-
-//   const resetStyles = () => {
-//     item.columns.map((_, i) => {
-//       const el = getElementByIndex(i);
-//       el.style.outline = "";
-//       el.style.opacity = "";
-//       el.style.position = "relative";
-//       el.style.left = "0px";
-//       getElementsByColIndex(i).forEach((el) => {
-//         el.style.left = "0px";
-
-//         el.style.position = ``;
-//       });
-//     });
-//   };
-//   const getElementByIndex = (index: number) => {
-//     return document.querySelector(`.col-header-${index}`) as HTMLElement;
-//   };
-//   const getElementsByColIndex = (index: number) => {
-//     return document.querySelectorAll(
-//       `.col-${index}`
-//     ) as NodeListOf<HTMLElement>;
-//   };
-//   return (
-//     <Box
-//       display={"flex"}
-//       flex={1}
-//       alignContent={"center"}
-//       alignItems={"center"}
-//       overflow={"hidden"}
-//       textOverflow={"ellipsis"}
-//       sx={{
-//         backgroundColor: "white",
-//         overflow: "hidden",
-//         "& .hover-option": {
-//           width: 0,
-//           margin: 0,
-//           opacity: 0,
-//           transition: "all 0.2s ease",
-//         },
-//         "&:hover .hover-option": {
-//           opacity: 1,
-//           margin: 1,
-//           width: 30,
-//         },
-//         "& .sort-options": {
-//           width: 0,
-//           // margin: 0,
-//           opacity: 0,
-//           transition: "opacity 0.0s ease",
-//         },
-//         "&:hover .sort-options": {
-//           opacity: 1,
-//           margin: 1,
-//           width: 30,
-//         },
-//       }}
-//       draggable
-//       onDragStart={(e) => {
-//         draggingColumnIndex = index;
-//         e.dataTransfer.setData("text/plain", index.toString());
-//       }}
-//       // onDrop={() => {
-//       //   resetStyles();
-//       // }}
-//       onDragEnd={async (e) => {
-//         await moveColumn({
-//           destinationIndex: dropColumnIndex,
-//           draggedColumnIndex: draggingColumnIndex,
-//         });
-//         resetStyles();
-//       }}
-//       onDragEnter={(e) => {
-//         resetStyles();
-//         dropColumnIndex = index;
-//         item.columns.forEach((__, i) => {
-//           const columnIndex = getElementByIndex(i);
-//           if (draggingColumnIndex === i) {
-//             columnIndex.style.opacity = "0";
-//             const isLeft = draggingColumnIndex > index;
-//             if (isLeft) {
-//               const offset = _.range(draggingColumnIndex - 1, index - 1).reduce(
-//                 (acc, i) => acc + item.columns[i].column_width,
-//                 0
-//               );
-
-//               getElementsByColIndex(i).forEach((el) => {
-//                 el.style.position = "relative";
-//                 el.style.left = `${-offset}px`;
-//               });
-//             } else {
-//               const offset = _.range(index, draggingColumnIndex).reduce(
-//                 (acc, i) => acc + item.columns[i].column_width,
-//                 0
-//               );
-//               getElementsByColIndex(i).forEach((el) => {
-//                 el.style.position = "relative";
-//                 el.style.left = `${offset}px`;
-//               });
-//             }
-//           }
-//           if (i < draggingColumnIndex && i > index - 1) {
-//             columnIndex.style.position = "relative";
-//             columnIndex.style.left = `${item.columns[draggingColumnIndex].column_width}px`;
-//             getElementsByColIndex(i).forEach((el) => {
-//               el.style.position = "relative";
-//               el.style.left = `${item.columns[draggingColumnIndex].column_width}px`;
-//             });
-//           }
-//           if (i > draggingColumnIndex && i < index + 1) {
-//             columnIndex.style.position = "relative";
-//             columnIndex.style.left = `-${item.columns[draggingColumnIndex].column_width}px`;
-//             getElementsByColIndex(i).forEach((el) => {
-//               el.style.position = "relative";
-//               el.style.left = `-${item.columns[draggingColumnIndex].column_width}px`;
-//             });
-//           }
-//         });
-//         e.preventDefault();
-//       }}
-//       // onDragOver={(e) => {
-//       //   e.preventDefault(); // Required for onDrop to work
-//       //   e.dataTransfer.dropEffect = "none"; // Optional, improves UX
-//       // }}
-//     >
-//       {children}
-//     </Box>
-//   );
-// };
-
-// export const TableHeaderCell2: React.FC<{ index: number }> = ({ index }) => {
-//   const { item, query } = useItem();
-//   const column = item.columns[index];
-
-//   return (
-//     <ColumnHeaderContainer index={index}>
-//       {/* <ColumnHeaderDraggable index={index}> */}
-//       <Box width={16} minWidth={16}></Box>
-//       <Typography
-//         textOverflow={"ellipsis"}
-//         noWrap
-//         level="title-sm"
-//         fontSize={14}
-//       >
-//         {column.column_type?.label}
-//       </Typography>
-//       <Box width={16}></Box>
-//       {<ColumnHeaderSortOptions index={index} />}
-//       <Box flex={1}></Box>
-//       {<ColumnHeaderMoreOptions index={index} />}
-//       <ColumnHeaderResizeHandle />
-//       {/* </ColumnHeaderDraggable> */}
-//     </ColumnHeaderContainer>
-//   );
-// };
-
 export const TableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
   const { item, query } = useItem();
-  const column = item.columns[index];
+  const column = item.column_config[index];
   return (
     <Box
       flex={1}
@@ -362,7 +181,7 @@ export const TableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
           level="title-sm"
           fontSize={14}
         >
-          {column.name || column.column_type?.label}
+          {column.label}
         </Typography>
       </Box>
       <Box flex={1} className="column-drag-handle"></Box>

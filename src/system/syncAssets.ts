@@ -6,12 +6,111 @@ import { prisma } from "@/lib/prisma";
 
 import Cursor from "pg-cursor";
 import SQL from "sql-template-strings";
-import { Entity } from "../../prisma/generated/mongo";
+import { ColumnConfig, Entity } from "../../prisma/generated/mongo";
 import { tenantIds } from "./hashingUtils";
 import { GlobalColumnData, GlobalColumnIds } from "@/config/ColumnConfig";
 import { pool } from "@/lib/pool";
 
 export const syncAssets = async (tenantId: string) => {
+  const workspaceId = tenantId + "-" + "assets";
+  const columns: ColumnConfig[] = [
+    {
+      key: "id",
+      hidden: false,
+      label: "ID",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 150,
+      lookup: null,
+    },
+    {
+      key: "equipment_photo",
+      hidden: false,
+      label: "Photo",
+      readonly: true,
+      type: "img_url",
+      width: 70,
+      lookup: null,
+    },
+    {
+      key: "name",
+      hidden: false,
+      label: "Custom name",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 200,
+      lookup: null,
+    },
+    {
+      key: "location",
+      hidden: false,
+      label: "Location",
+      readonly: true,
+      type: "location",
+      width: 150,
+      lookup: null,
+    },
+    {
+      key: "equipment_category",
+      hidden: false,
+      label: "Category",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 120,
+      lookup: null,
+    },
+    {
+      key: "equipment_class",
+      hidden: false,
+      label: "Class",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 200,
+      lookup: null,
+    },
+    {
+      key: "equipment_make",
+      hidden: false,
+      label: "Make",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 200,
+      lookup: null,
+    },
+    {
+      key: "equipment_model",
+      hidden: false,
+      label: "Model",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 200,
+      lookup: null,
+    },
+    {
+      key: "equipment_custom_model",
+      hidden: false,
+      label: "Custom Model",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 200,
+      lookup: null,
+    },
+  ];
+
+  await prisma.entity.upsert({
+    where: { id: workspaceId },
+    create: {
+      id: workspaceId,
+      tenant_id: tenantId,
+      data: {
+        name: "Assets",
+      },
+      type_id: "workspace",
+      column_config: columns,
+    },
+
+    update: {},
+  });
   const client = await pool.connect();
   try {
     const cursor = client.query(
@@ -117,10 +216,12 @@ export const syncAssets = async (tenantId: string) => {
                   _id: _id,
                   tenant_id: company_id.toString(),
                   type_id: "record" satisfies GlobalContentTypeId,
-                  parent_id: assetsSheetId,
+                  parent_id: workspaceId,
                   hidden: false,
                   sort_order: 0,
+                  column_config: [],
                   data: {
+                    id: id,
                     name: custom_name,
                     location: coordinates,
                     equipment_category: category_name,
@@ -131,7 +232,7 @@ export const syncAssets = async (tenantId: string) => {
                     equipment_photo: photo_filename
                       ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
                       : null,
-                  } satisfies GlobalColumnData,
+                  },
                 } satisfies Omit<Entity, "id"> & { _id: string },
               },
             },

@@ -158,42 +158,6 @@ export const createContentTypeInstance = async (args: {
     },
   });
 
-  // default setup for new entities of known type
-  if (
-    [GlobalContentTypeEnum.workspace, GlobalContentTypeEnum.folder].includes(
-      createdEntity.type_id
-    )
-  ) {
-    await createEntityColumns({
-      columns: [
-        {
-          columnId: "name" satisfies GlobalColumnIds,
-          parentId: createdEntity.id,
-          width: 300,
-        },
-        {
-          columnId: "created_at" satisfies GlobalColumnIds,
-          parentId: createdEntity.id,
-          width: 300,
-        },
-        {
-          columnId: "created_by" satisfies GlobalColumnIds,
-          parentId: createdEntity.id,
-          width: 300,
-        },
-      ],
-    });
-  } else {
-    await createEntityColumns({
-      columns: [
-        {
-          columnId: "name" satisfies GlobalColumnIds,
-          parentId: createdEntity.id,
-          width: 300,
-        },
-      ],
-    });
-  }
   return createdEntity;
 };
 

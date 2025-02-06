@@ -18,7 +18,7 @@ export default async function Page(props: {
   const result = await getItemWithChildColumns(query);
   const rows = await getRows(
     query,
-    result.columns.map(({ column_id }) => column_id)
+    result.column_config.map(({ key }) => key)
   );
 
   return (

@@ -69,9 +69,9 @@ const reducer = (state: ParentItem, action: Events) => {
     case "update_column_widths":
       return {
         ...state,
-        columns: state.columns.map((c, i) => ({
+        column_config: state.column_config.map((c, i) => ({
           ...c,
-          column_width: action.widths[i],
+          width: action.widths[i],
         })),
       };
     case "hydrate_row":
@@ -88,12 +88,12 @@ const reducer = (state: ParentItem, action: Events) => {
       };
     case "update_column_order":
       const newOrder = action.column_ids.map(
-        (id) => state.columns.findIndex((c) => c.id === id)!
+        (id) => state.column_config.findIndex((c) => c.key === id)!
       );
 
       return {
         ...state,
-        columns: newOrder.map((i) => state.columns[i]),
+        column_config: newOrder.map((o) => state.column_config[o]),
         rows: state.rows.map((r) =>
           r ? { ...r, values: newOrder.map((i) => r.values[i]) } : r
         ),
@@ -151,7 +151,7 @@ export const useItem = () => {
           sort_by: query.sort_by,
           sort_order: query.sort_order,
         },
-        item.columns.map(({ column_id }) => column_id)
+        item.column_config.map(({ key }) => key)
       );
       for (const row in moreRows) {
         dispatch({
@@ -161,40 +161,35 @@ export const useItem = () => {
         });
       }
     },
-    updateItemValue: async (props: {
-      columnIndex: number;
+    updateRowValue: async (props: {
+      column_Key: string;
       item_id: string;
       value: string | null;
     }) => {
       dispatch({
         type: "update_cell_value",
-        column_index: props.columnIndex,
+        column_index: item.column_config.findIndex(
+          (c) => c.key === props.column_Key
+        ),
         item_id: props.item_id,
         value: props.value,
       });
-      await updateCell(
-        props.item_id,
-        item.columns[props.columnIndex].column_id,
-        props.value
-      );
+      await updateCell(props.item_id, props.column_Key, props.value);
     },
     updateColumnWidths: async (props: { widths: number[] }) => {
       dispatch({
         type: "update_column_widths",
         widths: props.widths,
       });
-      await updateColumnWidths(
-        item.columns.map((c, i) => ({ id: c.id, width: props.widths[i] }))
-      );
+      await updateColumnWidths(item.id, props.widths);
     },
 
-    updateColumnOrder: async (props: { columnIds: string[] }) => {
+    updateColumnOrder: async (props: { columnKeys: string[] }) => {
       dispatch({
         type: "update_column_order",
-        column_ids: props.columnIds,
+        column_ids: props.columnKeys,
       });
-      // const id = item.columns[props.destinationIndex].id;
-      await updateColumnOrder(props.columnIds);
+      await updateColumnOrder(item.id, props.columnKeys);
     },
     moveColumn: async (props: {
       draggedColumnIndex: number;

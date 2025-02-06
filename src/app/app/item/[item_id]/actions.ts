@@ -151,6 +151,7 @@ export const getItemWithChildColumns = async (query: Query) => {
       select: {
         data: true,
         type_id: true,
+        column_config: true,
       },
     }),
   ]);
@@ -162,6 +163,7 @@ export const getItemWithChildColumns = async (query: Query) => {
     name: (parent.data as any).name,
     columns: visibleColumns,
     type_id: parent.type_id,
+    column_config: parent.column_config,
   };
 };
 
@@ -169,7 +171,7 @@ export const getItemWithChildColumns = async (query: Query) => {
 
 export const updateCell = async (
   item_id: string,
-  columnId: string,
+  column_key: string,
   value: string | null | undefined
 ) => {
   const { user } = await getUser();
@@ -185,7 +187,7 @@ export const updateCell = async (
     data: {
       data: {
         ...(data as any),
-        [columnId]: value,
+        [column_key]: value,
         updated_by: user.user_id,
         updated_at: new Date(),
       },
@@ -223,40 +225,43 @@ export const addRecord = async (parentId: string) => {
   revalidatePath("/");
 };
 
-export const updateColumnOrder = async (columnIds: string[]) => {
+export const updateColumnOrder = async (
+  itemId: string,
+  columnIds: string[]
+) => {
   console.time("moveHeader");
 
   const { user } = await getUser();
+  const { column_config } = await prisma.entity.findFirstOrThrow({
+    where: { tenant_id: user.company_id, id: itemId },
+  });
 
-  await prisma.$runCommandRaw({
-    update: "Entity",
-    updates: columnIds.map((id, i) => {
-      return {
-        q: { _id: id },
-        u: { $set: { sort_order: i } },
-      };
-    }),
+  const newOrder = columnIds.map(
+    (id) => column_config.find((c) => c.key === id)!
+  );
+  await prisma.entity.update({
+    where: { tenant_id: user.company_id, id: itemId },
+    data: {
+      column_config: newOrder,
+    },
   });
 
   console.timeEnd("moveHeader");
 };
 
-export const updateColumnWidths = async (
-  columns: { id: string; width: number }[]
-) => {
+export const updateColumnWidths = async (itemId: string, widths: number[]) => {
   const { user } = await getUser();
-  console.time("changeColumnWidth");
-  await prisma.$runCommandRaw({
-    update: "Entity",
-    updates: columns.map(({ id, width }) => {
-      return {
-        q: { _id: id },
-        u: { $set: { "data.column_width": width } },
-      };
-    }),
+  const { column_config } = await prisma.entity.findFirstOrThrow({
+    where: { tenant_id: user.company_id, id: itemId },
   });
-  console.timeEnd("changeColumnWidth");
-  // revalidatePath("/");
+
+  const newOrder = column_config.map((c, i) => ({ ...c, width: widths[i] }));
+  await prisma.entity.update({
+    where: { tenant_id: user.company_id, id: itemId },
+    data: {
+      column_config: newOrder,
+    },
+  });
 };
 
 export const updateToggleSelectedColumns = async (

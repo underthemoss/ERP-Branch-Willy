@@ -8,7 +8,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/joy";
-import { ColumnType } from "../../../../../../prisma/generated/mongo";
+import {
+  ColumnType,
+  LookupConfig,
+} from "../../../../../../prisma/generated/mongo";
 import { HTMLInputTypeAttribute, useState } from "react";
 import { LazyUserDetail } from "@/ui/LazyUserDetails";
 import { UserPicker } from "@/ui/picker/UserPicker";
@@ -24,9 +27,9 @@ export const CellRender = (props: {
   colIndex: number;
   rowIndex: number;
   totalColumns: number;
-  columnData: { lookup: string };
+  columnLookupConfig: LookupConfig | null;
 }) => {
-  const { updateItemValue, item } = useItem();
+  const { updateRowValue, item } = useItem();
   const item_id = item.rows[props.rowIndex]?.id;
   const tabIndex = props.readonly
     ? -1
@@ -38,9 +41,9 @@ export const CellRender = (props: {
     setIsSaving(true);
     // await props.onBlur(value?.trim());
     if (item_id) {
-      await updateItemValue({
+      await updateRowValue({
         item_id: item_id,
-        columnIndex: props.colIndex,
+        column_Key: item.column_config[props.colIndex].key,
         value: value?.trim() || null,
       });
     }
@@ -173,12 +176,12 @@ export const CellRender = (props: {
             }}
           />
         ))}
-      {props.type === "lookup" && (
+      {props.type === "lookup" && props.columnLookupConfig?.id && (
         <LookupPicker
           onChange={async (val) => {
             await commit(val);
           }}
-          parentId={props.columnData.lookup}
+          parentId={props.columnLookupConfig?.id}
           value={props.value}
         />
       )}

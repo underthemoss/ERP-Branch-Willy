@@ -29,7 +29,7 @@ export const TableRow: React.FC<{
   index: number;
   rowHeight: number;
 }> = ({ index: index, width, rowHeight }) => {
-  const { item, updateItemValue } = useItem();
+  const { item } = useItem();
   const row = item.rows[index];
   if (!row) {
     return (
@@ -61,18 +61,19 @@ export const TableRow: React.FC<{
         </Box>
       </Box>
 
-      {item.columns.map((column, colIndex, all) => {
+      {item.column_config.map((column, colIndex, all) => {
         const value = row.values[colIndex];
+
         const indent = colIndex === 0 ? firstColumnIndent : 0;
         const left =
-          item.columns
+          item.column_config
             .slice(0, colIndex)
-            .reduce((acc, { column_width }) => acc + column_width, 0) + indent;
-        const width = Math.max(column.column_width - indent, 0);
+            .reduce((acc, { width }) => acc + width, 0) + indent;
+        const width = Math.max(column.width - indent, 0);
 
         return (
           <Box
-            key={column.id}
+            key={column.key}
             width={width}
             alignContent={"center"}
             className={`col-${colIndex} row-${index}`}
@@ -85,57 +86,28 @@ export const TableRow: React.FC<{
             }}
             //   display={"flex"}
           >
-            {column.column_type && (
+            {
               <CellRender
                 // key={value}
-                type={column.column_type.type}
+                type={column.type}
                 colIndex={colIndex}
                 rowIndex={index}
-                totalColumns={item.columns.length}
+                totalColumns={item.column_config.length}
                 value={value}
-                columnData={column.column_type.data as any}
-                readonly={column.column_type.readonly}
+                columnLookupConfig={item.column_config[colIndex].lookup} // todo: dont need this?
+                readonly={column.readonly}
                 onBlur={async (value) => {
-                  await updateItemValue({
-                    columnIndex: colIndex,
-                    item_id: row.id,
-                    value: value || null,
-                  });
+                  // await updateItemValue({
+                  //   columnIndex: colIndex,
+                  //   item_id: row.id,
+                  //   value: value || null,
+                  // });
                 }}
               ></CellRender>
-            )}
+            }
           </Box>
         );
       })}
-
-      {/* <Box></Box> */}
-      {/* <Box
-        position={"absolute"}
-        alignContent={"center"}
-        right={0}
-        style={{ backgroundColor: "#fbfcfe" }}
-      >
-        <NextLink href={`/app/item/${row.id}`}>Go</NextLink>
-      </Box> */}
-      {/* <Box
-        // width={lastColumnWidth}
-        position={"absolute"}
-        alignContent={"center"}
-        right={0}
-        style={{ backgroundColor: "#fbfcfe" }}
-      >
-        <Tooltip enterDelay={300} title="Delete" placement="bottom" arrow>
-          <Button
-            tabIndex={-1}
-            variant="plain"
-            onClick={async () => {
-              await deleteItem(row.id);
-            }}
-          >
-            <DeleteIcon color="action" />
-          </Button>
-        </Tooltip>
-      </Box> */}
     </Box>
   );
 };

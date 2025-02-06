@@ -116,6 +116,22 @@ enum ColumnType {
   // entity_type
 }
 
+type LookupConfig {
+  id                 String // entity of the parent id we are searching children of
+  selectMultiple     Boolean? @default(true)
+  display_column_ids String[]
+}
+
+type ColumnConfig {
+  key      String
+  type     ColumnType
+  label    String
+  width    Int           @default(300)
+  hidden   Boolean
+  readonly Boolean
+  lookup   LookupConfig?
+}
+
 model Entity {
   id         String     @id @default(uuid()) @map("_id")
   type_id    String
@@ -124,6 +140,8 @@ model Entity {
   data       Json
   hidden     Boolean?   @default(false)
   sort_order Float?
+
+  column_config ColumnConfig[]
 
   // Hierarchical relationships
   parent_id String?

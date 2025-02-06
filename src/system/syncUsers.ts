@@ -6,12 +6,57 @@ import { prisma } from "@/lib/prisma";
 
 import Cursor from "pg-cursor";
 import SQL from "sql-template-strings";
-import { Entity } from "../../prisma/generated/mongo";
+import { ColumnConfig, Entity } from "../../prisma/generated/mongo";
 import { tenantIds } from "./hashingUtils";
 import { GlobalColumnData, GlobalColumnIds } from "@/config/ColumnConfig";
 import { pool } from "@/lib/pool";
 
 export const syncUsers = async (tenantId: string) => {
+  const workspaceId = tenantId + "-" + "users";
+  const columns: ColumnConfig[] = [
+    {
+      key: "id",
+      hidden: false,
+      label: "ID",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 150,
+      lookup: null,
+    },
+    {
+      key: "name",
+      hidden: false,
+      label: "User",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 300,
+      lookup: null,
+    },
+    {
+      key: "email",
+      hidden: false,
+      label: "Email",
+      readonly: true,
+      type: "single_line_of_text",
+      width: 300,
+      lookup: null,
+    },
+  ];
+  await prisma.entity.upsert({
+    where: { id: workspaceId },
+    create: {
+      id: workspaceId,
+      tenant_id: tenantId,
+      data: {
+        name: "Users",
+      },
+      type_id: "workspace",
+      column_config: columns,
+    },
+
+    update: {},
+  });
+
   const client = await pool.connect();
   try {
     const cursor = client.query(
@@ -111,15 +156,18 @@ export const syncUsers = async (tenantId: string) => {
               u: {
                 $set: {
                   _id: _id,
-                  tenant_id: company_id.toString(),
+
+                  tenant_id: tenantId,
                   type_id: "record" satisfies GlobalContentTypeId,
-                  parent_id: userSheetId,
+                  parent_id: workspaceId,
                   hidden: false,
                   sort_order: 0,
+                  column_config: [],
                   data: {
+                    id: user_id,
                     name: `${first_name} ${last_name}`,
                     email: username,
-                  } satisfies GlobalColumnData,
+                  },
                 } satisfies Omit<Entity, "id"> & { _id: string },
               },
             },

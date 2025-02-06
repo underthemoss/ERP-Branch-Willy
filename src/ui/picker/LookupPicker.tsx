@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { GenericPicker } from "./GenericPicker";
 import { bulkLoadItems, searchItems } from "./LookupPicker.actions";
 import DataLoader from "dataloader";
-import { Box, Tooltip } from "@mui/joy";
+import { Avatar, Box, Divider, Tooltip } from "@mui/joy";
 
 const itemLoader = new DataLoader<
   string,
@@ -14,7 +14,6 @@ const itemLoader = new DataLoader<
 });
 
 const LookupPickerItem = (props: { id: string }) => {
-  const [label, setLabel] = useState("");
   const [data, setData] =
     useState<Awaited<ReturnType<typeof bulkLoadItems>>[number]>();
   useEffect(() => {
@@ -22,7 +21,7 @@ const LookupPickerItem = (props: { id: string }) => {
       itemLoader.load(props.id).then((d) => {
         if (d) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setLabel(`${(d.data as any).name}`);
+
           setData(d);
         }
       });
@@ -34,7 +33,8 @@ const LookupPickerItem = (props: { id: string }) => {
       placement="left"
       arrow
       enterDelay={500}
-      title={<pre>{JSON.stringify(data, undefined, 2)}</pre>}
+      title=""
+      // title={<pre>{JSON.stringify(data, undefined, 2)}</pre>}
     >
       <Box
         display={"flex"}
@@ -42,7 +42,24 @@ const LookupPickerItem = (props: { id: string }) => {
         alignContent={"center"}
         alignItems={"center"}
       >
-        {label}
+        {data?.parent?.column_config.map((col) => {
+          const value = ((data?.data as any) || {})[col.key];
+          return (
+            <Box
+              key={col.key}
+              flex={1}
+              sx={{
+                width: col.width,
+                borderBottom: "1px solid #e0e0e0",
+                height: 50,
+              }}
+            >
+              {col.type === "img_url" && <Avatar src={value} />}
+              {col.type === "integer" && value}
+              {col.type === "single_line_of_text" && value}
+            </Box>
+          );
+        })}
       </Box>
     </Tooltip>
   );

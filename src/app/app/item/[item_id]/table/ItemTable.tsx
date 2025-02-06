@@ -39,42 +39,39 @@ export const ItemTable = () => {
         <Tiles />
       </Box>
 
-      <Box>
-        <Dropdown open={undefined}>
-          <MenuButton
-            size="sm"
-            variant="plain"
-            startDecorator={<AddIcon />}
-          ></MenuButton>
+      <Box display={"flex"}>
+        <Box flex={1}></Box>
+        <Box>
+          <Dropdown open={undefined}>
+            <MenuButton
+              size="sm"
+              variant="plain"
+              startDecorator={<AddIcon />}
+            ></MenuButton>
 
-          <Menu placement="bottom-start" sx={{ minWidth: 150 }}>
-            <MenuItemLink href={`/app/item/${item.id}/add-column`}>
-              <>Create new column</>
-            </MenuItemLink>
-
-            <ListDivider />
-            {item.all_columns.map((col) => {
-              const isSelected = item.columns.some(
-                (c) => c.column_id === col.id
-              );
-              const columnId = col.id;
-
-              return (
-                <MenuItem
-                  key={col.id}
-                  onClick={async () => {
-                    await updateToggleSelectedColumns(item.id, columnId);
-                  }}
-                >
-                  <ListItemDecorator>
-                    {isSelected && <Check />}
-                  </ListItemDecorator>
-                  {col.label}
-                </MenuItem>
-              );
-            })}
-          </Menu>
-        </Dropdown>
+            <Menu placement="bottom-start" sx={{ minWidth: 150 }}>
+              {item.column_config.map((col) => {
+                return (
+                  <MenuItem
+                    key={col.key}
+                    onClick={async () => {
+                      // await updateToggleSelectedColumns(item.id, columnId);
+                    }}
+                  >
+                    <ListItemDecorator>
+                      {!col.hidden && <Check />}
+                    </ListItemDecorator>
+                    {col.label}
+                  </MenuItem>
+                );
+              })}{" "}
+              <ListDivider />
+              <MenuItemLink href={`/app/item/${item.id}/add-column`}>
+                <>Add new column</>
+              </MenuItemLink>{" "}
+            </Menu>
+          </Dropdown>{" "}
+        </Box>
       </Box>
       <Box flex={1} display={"flex"} p={1}>
         <Card
