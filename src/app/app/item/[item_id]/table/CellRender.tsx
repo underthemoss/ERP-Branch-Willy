@@ -181,6 +181,7 @@ export const CellRender = (props: {
           onChange={async (val) => {
             await commit(val);
           }}
+          columns={props.columnLookupConfig.display_column_ids}
           parentId={props.columnLookupConfig?.id}
           value={props.value}
         />

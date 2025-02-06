@@ -142,6 +142,7 @@ export const createContentTypeInstance = async (args: {
 
   const data: GlobalColumnData = {
     ...args.attributes,
+
     created_by: user.user_id,
     updated_by: user.user_id,
     created_at: new Date(),
@@ -154,6 +155,16 @@ export const createContentTypeInstance = async (args: {
       parent_id: args.parentId,
       tenant_id: user.company_id,
       type_id: args.contentTypeId,
+      column_config: [
+        {
+          type: "single_line_of_text",
+          hidden: false,
+          label: "Name",
+          key: "name",
+          readonly: false,
+          width: 300,
+        },
+      ],
       data: data,
     },
   });

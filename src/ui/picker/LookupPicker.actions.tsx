@@ -18,7 +18,7 @@ export const searchItems = async (parentId: string, term: string) => {
     },
   }));
 
-  console.log(searchFilters);
+
 
   const items = await prisma.entity.findRaw({
     filter: {

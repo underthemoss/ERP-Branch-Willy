@@ -302,3 +302,14 @@ export const deleteItem = async (item_id: string): Promise<void> => {
 
   revalidatePath("/");
 };
+
+export const getTreeNode = async (item_id: string | null) => {
+  const { user } = await getUser();
+  return await prisma.entity.findMany({
+    where: {
+      tenant_id: user.company_id,
+      ...(item_id ? { parent_id: item_id } : { parent_id: { isSet: false } }),
+    },
+    take: 50,
+  });
+};

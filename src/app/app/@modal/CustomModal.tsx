@@ -1,6 +1,6 @@
 "use client";
 
-import { Modal, ModalClose, Sheet } from "@mui/joy";
+import { Box, Modal, ModalClose, Sheet } from "@mui/joy";
 import { useRouter } from "next/navigation";
 
 export const CustomModal = (props: { children: React.ReactNode }) => {
@@ -38,8 +38,14 @@ export const CustomModal = (props: { children: React.ReactNode }) => {
           sx={{ m: 1 }}
           //   onClick={() => router.back()}
         />
-
-        {props.children}
+        <Box
+          sx={{
+            maxHeight: document.body.getBoundingClientRect().height - 140,
+            overflow: "scroll",
+          }}
+        >
+          {props.children}
+        </Box>
       </Sheet>
     </Modal>
   );

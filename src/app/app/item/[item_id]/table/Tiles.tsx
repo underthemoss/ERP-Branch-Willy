@@ -15,7 +15,7 @@ export const Tiles = () => {
       x: 0,
       y: 0,
       w: 3,
-      h: 10,
+      h: 4,
       maxH: 10,
       maxW: 12,
       minW: 1,
@@ -45,7 +45,7 @@ export const Tiles = () => {
     <Box>
       <ReactGridLayout
         compactType={"vertical"}
-        rowHeight={30}
+        rowHeight={16}
         maxRows={10}
         width={1000}
         cols={12}

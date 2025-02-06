@@ -35,7 +35,7 @@ export const ItemTable = () => {
         </Typography>
         <Box flex={1}></Box>
       </Box>
-      <Box display={"flex"} height={300}>
+      <Box display={"flex"} height={160}>
         <Tiles />
       </Box>
 

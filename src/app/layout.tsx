@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { CssBaseline } from "@mui/joy";
 import React from "react";
+import { Theme } from "./Theme";
 
 export const metadata: Metadata = {
   title: "ES-ERP",
@@ -20,8 +20,7 @@ export default async function RootLayout({
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </head>
       <body>
-        <CssBaseline />
-        {children}
+        <Theme>{children}</Theme>
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { ColumnType } from "../../../../../../prisma/generated/mongo";
 import { ColumnForm } from "./form";
 import { NextLinkBack } from "@/ui/NextLink";
+import ColumnTypes from "./ColumnTypeSelector";
 
 export default async function Page(props: {
   params: Promise<{ item_id: string; content_type_id: string }>;
@@ -15,7 +16,13 @@ export default async function Page(props: {
     <form
       action={async (formData) => {
         "use server";
-        const { name, type, lookup } = Object.fromEntries(formData.entries());
+        const { name, type, lookup, ...rest } = Object.fromEntries(
+          formData.entries()
+        );
+        const display_column_ids = Object.keys(rest)
+          .filter((o) => o.startsWith("lookup-display-col-"))
+          .map((o) => o.replace("lookup-display-col-", ""));
+
         const { user } = await getUser();
         const columnId = randomUUID();
         await prisma.entity.update({
@@ -31,6 +38,7 @@ export default async function Page(props: {
                 lookup: lookup?.toString()
                   ? {
                       id: lookup.toString(),
+                      display_column_ids: display_column_ids,
                     }
                   : null,
               },
@@ -46,13 +54,6 @@ export default async function Page(props: {
         </Box>
         <Box mt={2}>
           <ColumnForm />
-        </Box>
-        <Box display={"flex"} gap={1}>
-          <Box flex={1}></Box>
-          <NextLinkBack>
-            <Button variant="outlined">Cancel</Button>
-          </NextLinkBack>
-          <Button type="submit">Submit</Button>
         </Box>
       </Box>
     </form>
