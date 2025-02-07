@@ -23,6 +23,7 @@ import { CellRender } from "./CellRender";
 import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { TableHeader } from "./TableHeader";
+import { EntityCard, EntityCardToolTip } from "@/ui/entity-card/EntityCard";
 
 export const TableRow: React.FC<{
   width: number;
@@ -55,9 +56,11 @@ export const TableRow: React.FC<{
         alignContent={"center"}
       >
         <Box display={"flex"} justifySelf={"center"}>
-          <NextLink href={`/app/item/${row.id}`}>
-            <EntityTypeIcon entityTypeIcon={row.type_id as any} />
-          </NextLink>
+          <EntityCardToolTip item_id={row.id} placement="right">
+            <NextLink href={`/app/item/${row.id}`}>
+              <EntityTypeIcon entityTypeIcon={row.type_id as any} />
+            </NextLink>
+          </EntityCardToolTip>
         </Box>
       </Box>
 

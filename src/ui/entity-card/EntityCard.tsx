@@ -10,52 +10,73 @@ import _ from "lodash";
 import { AutoImage } from "../AutoImage";
 import { useRouter } from "next/navigation";
 import { Map, Marker } from "react-map-gl/maplibre";
-import { Box, Button, CardActions, CardOverflow } from "@mui/joy";
+import {
+  Box,
+  Button,
+  CardActions,
+  CardOverflow,
+  Skeleton,
+  Tooltip,
+} from "@mui/joy";
 import DeckGL from "@deck.gl/react";
 import { NextLink } from "../NextLink";
 import { DeleteForever } from "@mui/icons-material";
+import { getEntityCardData } from "./actions";
 
-export default function LookupPickerTooltipContents(props: {
-  title: string;
-  id: string;
-  data: { type: ColumnType; label: string; value: any }[] | undefined;
-}) {
-  const { push } = useRouter();
-  const [[imgCol], rest1] = _.partition(
-    props.data,
-    (d) => d.type === "img_url"
-  );
+export const EntityCard: React.FC<{
+  item_id: string;
+}> = ({ item_id }) => {
+  const [item, setData] = React.useState<Awaited<
+    ReturnType<typeof getEntityCardData>
+  > | null>();
 
-  const [[locationColumn], rest2] = _.partition(
-    rest1,
-    (d) => d.type === "location"
-  );
+  React.useEffect(() => {
+    getEntityCardData(item_id).then((d) => {
+      setData(d);
+    });
+  }, [item_id]);
+
+  if (!item) {
+    return <Box width={300} height={320}></Box>;
+  }
+
+  const imageKey = item?.parent?.column_config.find(
+    (c) => c.type === "img_url"
+  )?.key;
+
+  const locationKey = item?.parent?.column_config.find(
+    (c) => c.type === "location"
+  )?.key;
+
+  const image: string = imageKey ? (item?.data as any)[imageKey] : null;
+  const location: [number, number] = locationKey
+    ? (item?.data as any)[locationKey]
+    : null;
+
+  const title = (item?.data as any)["name"];
 
   return (
     <Card
       sx={{
         textAlign: "center",
         alignItems: "center",
-        width: 343,
+        // width: 343,
+        flex: 1,
         // to make the demo resizable
         overflow: "hidden",
 
         "--icon-size": "100px",
       }}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
     >
-      {locationColumn && locationColumn.value && (
+      {location && (
         <DeckGL
           initialViewState={{
-            longitude: locationColumn.value[0],
-            latitude: locationColumn.value[1],
+            longitude: location[0],
+            latitude: location[1],
             zoom: 13,
             maxZoom: 20,
             pitch: 30,
-            bearing: 30,
+            // bearing: 30,
           }}
           controller
           height={"100%"}
@@ -68,10 +89,10 @@ export default function LookupPickerTooltipContents(props: {
               "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
             }
           >
-            <Marker
+            {/* <Marker
               key={`marker`}
-              longitude={locationColumn.value[0]}
-              latitude={locationColumn.value[1]}
+              longitude={location[0]}
+              latitude={location[1]}
               anchor="bottom"
               onClick={(e) => {
                 // If we let the click event propagates to the map, it will immediately close the popup
@@ -81,7 +102,7 @@ export default function LookupPickerTooltipContents(props: {
               }}
             >
               <DeleteForever />
-            </Marker>
+            </Marker> */}
           </Map>
         </DeckGL>
       )}
@@ -100,25 +121,25 @@ export default function LookupPickerTooltipContents(props: {
             position: "relative",
           }}
         >
-          {imgCol?.value ? (
-            <img src={imgCol?.value} alt="" />
+          {image ? (
+            <img src={image} alt="" />
           ) : (
-            <AutoImage value={props.id} size={90} />
+            <AutoImage value={item?.id} size={90} />
           )}
         </AspectRatio>
       </CardOverflow>
       <Typography level="title-lg" sx={{ mt: "calc(var(--icon-size) / 2)" }}>
-        {props.title}
+        {title}
       </Typography>
       <CardContent sx={{ maxWidth: "40ch", pointerEvents: "none" }}>
-        {rest2?.map((d, i) => {
+        {item.parent?.column_config?.map((column_config, i) => {
           return (
             <Box key={i} display={"flex"} gap={1}>
               <Typography flex={1} level="title-md" textAlign={"right"}>
-                {d.label}:
+                {column_config.label}:
               </Typography>
               <Typography
-                flex={2}
+                flex={1}
                 level="body-md"
                 textOverflow={"ellipsis"}
                 noWrap
@@ -126,7 +147,7 @@ export default function LookupPickerTooltipContents(props: {
                 width={200}
                 textAlign={"left"}
               >
-                {d.value}
+                {(item.data as any)[column_config.key]}
               </Typography>
             </Box>
           );
@@ -140,7 +161,7 @@ export default function LookupPickerTooltipContents(props: {
           width: "clamp(min(100%, 160px), 50%, min(100%, 200px))",
         }}
       >
-        <NextLink href={`/app/item/${props.id}`}>
+        <NextLink href={`/app/item/${item.id}`}>
           <Button variant="solid" color="primary">
             Open
           </Button>
@@ -148,87 +169,40 @@ export default function LookupPickerTooltipContents(props: {
       </CardActions>
     </Card>
   );
+};
 
+export const EntityCardToolTip: React.FC<{
+  item_id: string;
+  children: React.ReactElement;
+  placement?:
+    | "bottom-end"
+    | "bottom-start"
+    | "bottom"
+    | "left-end"
+    | "left-start"
+    | "left"
+    | "right-end"
+    | "right-start"
+    | "right"
+    | "top-end"
+    | "top-start"
+    | "top";
+}> = ({ item_id, children, placement }) => {
   return (
-    <Card
-      variant="plain"
-      orientation="horizontal"
-      onMouseDown={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        push(`/app/item/${props.id}`);
-      }}
-      sx={{
-        width: 320,
-        "&:hover": {
-          boxShadow: "md",
-          borderColor: "neutral.outlinedHoverBorder",
-        },
-        overflow: "hidden",
-      }}
+    <Tooltip
+      arrow={true}
+      placement={placement}
+      variant="outlined"
+      title={<EntityCard item_id={item_id} />}
     >
-      {imgCol?.value ? (
-        <AspectRatio ratio="1" sx={{ width: 90 }}>
-          <img src={imgCol?.value} loading="lazy" alt="" />
-        </AspectRatio>
-      ) : (
-        <AutoImage value={props.id} />
-      )}
-
-      {locationColumn && locationColumn.value && (
-        <Box height={100} width={100} display={"flex"} overflow={"hidden"}>
-          <DeckGL
-            initialViewState={{
-              longitude: locationColumn.value[0],
-              latitude: locationColumn.value[1],
-              zoom: 3,
-              maxZoom: 20,
-              pitch: 30,
-              bearing: 30,
-            }}
-            controller
-            height={100}
-            width={100}
-          >
-            <Map
-              reuseMaps
-              mapStyle={
-                "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
-              }
-            />
-          </DeckGL>
-        </Box>
-      )}
-
-      <CardContent>
-        <Typography level="title-lg" id="card-description">
-          {props.title}
-        </Typography>
-
-        {/* {JSON.stringify(props.data)} */}
-        <Typography
-          level="body-sm"
-          aria-describedby="card-description"
-          sx={{ mb: 1 }}
-        >
-          <Link
-            overlay
-            underline="none"
-            href="#interactive-card"
-            sx={{ color: "text.tertiary" }}
-          >
-            California, USA
-          </Link>
-        </Typography>
-        {/* <Chip
-          variant="outlined"
-          color="primary"
-          size="sm"
-          sx={{ pointerEvents: "none" }}
-        >
-          Cool weather all day long
-        </Chip> */}
-      </CardContent>
-    </Card>
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        {children}
+      </div>
+    </Tooltip>
   );
-}
+};

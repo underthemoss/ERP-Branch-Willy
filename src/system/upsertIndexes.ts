@@ -32,6 +32,10 @@ export const run = async () => {
         name: "tenant_id_index",
       },
       {
+        key: { tenant_id: 1, _id: 1 },
+        name: "id_tenant_id_index",
+      },
+      {
         key: { hidden: 1 },
         name: "hidden_index",
       },

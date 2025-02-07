@@ -26,11 +26,11 @@ export async function register() {
     // } catch (err) {
     //   console.log(err);
     // }
-    // try {
-    //   await (await import("./system/upsertIndexes")).run();
-    // } catch (err) {
-    //   console.log(err);
-    // }
+    try {
+      await (await import("./system/upsertIndexes")).run();
+    } catch (err) {
+      console.log(err);
+    }
 
     // await import("./system/testWorkspace");
   }

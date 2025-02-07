@@ -5,6 +5,7 @@ import { bulkLoadItems, searchItems } from "./LookupPicker.actions";
 import DataLoader from "dataloader";
 import { Avatar, Box, Card, Divider, Tooltip } from "@mui/joy";
 import LookupPickerTooltipContents from "./LookupPickerTooltip";
+import { EntityCardToolTip } from "../entity-card/EntityCard";
 
 const itemLoader = new DataLoader<
   string,
@@ -29,38 +30,7 @@ const LookupPickerItem = (props: { id: string; columns: string[] }) => {
   }, [props.id]);
 
   return (
-    <Tooltip
-      placement="left"
-      variant="outlined"
-      enterDelay={500}
-      arrow
-      title={
-        <>
-          <LookupPickerTooltipContents
-            title={(data?.data as any)?.name}
-            id={props?.id}
-            data={data?.parent?.column_config.map((c) => {
-              const value = ((data?.data as any) || {})[c.key];
-              return { label: c.label, type: c.type, value };
-            })}
-          />
-          {/* {data?.parent?.column_config.map((col) => {
-            const value = ((data?.data as any) || {})[col.key];
-            return (
-              <Box key={col.key}>
-                <Box>{col.label}</Box>
-                <Box>
-                  {col.type === "img_url" && <Avatar src={value} />}
-                  {col.type === "integer" && value}
-                  {col.type === "single_line_of_text" && value}
-                </Box>
-              </Box>
-            );
-          })} */}
-        </>
-      }
-      // title={<pre>{JSON.stringify(data, undefined, 2)}</pre>}
-    >
+    <EntityCardToolTip item_id={props.id} placement="left">
       <Box
         display={"flex"}
         sx={{ cursor: "pointer" }}
@@ -91,7 +61,7 @@ const LookupPickerItem = (props: { id: string; columns: string[] }) => {
             );
           })}
       </Box>
-    </Tooltip>
+    </EntityCardToolTip>
   );
 };
 

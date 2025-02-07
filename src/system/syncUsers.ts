@@ -132,7 +132,6 @@ export const syncUsers = async (tenantId: string) => {
       if (rows.length === 0) {
         break;
       }
-
       const updates = rows.flatMap(
         ({
           user_id,
@@ -145,7 +144,6 @@ export const syncUsers = async (tenantId: string) => {
         }) => {
           if (!company_id) return [];
           const tenant_id = company_id.toString();
-          const { userSheetId, userId } = tenantIds(tenant_id);
 
           const _id = tenantIds(company_id).userId(user_id);
 
@@ -153,23 +151,30 @@ export const syncUsers = async (tenantId: string) => {
             {
               upsert: true,
               q: { _id: _id },
-              u: {
-                $set: {
-                  _id: _id,
-
-                  tenant_id: tenantId,
-                  type_id: "record" satisfies GlobalContentTypeId,
-                  parent_id: workspaceId,
-                  hidden: false,
-                  sort_order: 0,
-                  column_config: [],
-                  data: {
-                    id: user_id,
-                    name: `${first_name} ${last_name}`,
-                    email: username,
+              u: [
+                {
+                  $set: {
+                    _id: _id,
+                    tenant_id: tenant_id,
+                    type_id: "record" satisfies GlobalContentTypeId,
+                    parent_id: workspaceId,
+                    hidden: false,
+                    sort_order: 0,
+                    column_config: [],
+                    // Merge the existing data with the new data fields.
+                    data: {
+                      $mergeObjects: [
+                        "$data",
+                        {
+                          id: user_id,
+                          name: `${first_name} ${last_name}`,
+                          email: username,
+                        },
+                      ],
+                    },
                   },
-                } satisfies Omit<Entity, "id"> & { _id: string },
-              },
+                },
+              ],
             },
           ];
         }

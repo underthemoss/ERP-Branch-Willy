@@ -36,107 +36,109 @@ export const VirtualAsyncTable = <T,>(props: {
 
   return (
     <Box display={"flex"} flexDirection={"column"} flex={1}>
-      <AutoSizer>
-        {({ height, width }) => {
-          return (
-            <InfiniteLoader
-              minimumBatchSize={60}
-              threshold={60}
-              isItemLoaded={(index) => !!props.items[index]}
-              loadMoreItems={loadMoreItems}
-              itemCount={props.totalRows}
-            >
-              {({ onItemsRendered, ref }) => (
-                <FixedSizeList
-                  ref={ref}
-                  overscanCount={30}
-                  itemCount={props.totalRows}
-                  itemSize={props.rowHeight}
-                  height={height}
-                  width={width}
-                  onItemsRendered={onItemsRendered}
-                  itemData={props.items}
-                  className="table-scroll-window"
-                  style={{}}
-                  innerElementType={forwardRef(
-                    ({ children, style, ...rest }: any, ref: any) => (
-                      <Box
-                        ref={ref}
-                        style={{
-                          ...style,
-                          height: `${
-                            parseFloat(style.height) +
-                            props.headerHeight +
-                            props.footerHeight
-                          }px`,
-                        }}
-                        {...rest}
-                      >
-                        <Box>{children}</Box>
+      <div style={{ flex: "1 1 auto" }}>
+        <AutoSizer>
+          {({ height, width }) => {
+            return (
+              <InfiniteLoader
+                minimumBatchSize={60}
+                threshold={60}
+                isItemLoaded={(index) => !!props.items[index]}
+                loadMoreItems={loadMoreItems}
+                itemCount={props.totalRows}
+              >
+                {({ onItemsRendered, ref }) => (
+                  <FixedSizeList
+                    ref={ref}
+                    overscanCount={30}
+                    itemCount={props.totalRows}
+                    itemSize={props.rowHeight}
+                    height={height}
+                    width={width}
+                    onItemsRendered={onItemsRendered}
+                    itemData={props.items}
+                    className="table-scroll-window"
+                    style={{}}
+                    innerElementType={forwardRef(
+                      ({ children, style, ...rest }: any, ref: any) => (
+                        <Box
+                          ref={ref}
+                          style={{
+                            ...style,
+                            height: `${
+                              parseFloat(style.height) +
+                              props.headerHeight +
+                              props.footerHeight
+                            }px`,
+                          }}
+                          {...rest}
+                        >
+                          <Box>{children}</Box>
+                          <Box
+                            style={{
+                              top: 0,
+                              left: 0,
+                              // right: 0,
+                              width: style.width,
+                              // width: "100%",
+                              height: props.headerHeight,
+                              position: "sticky",
+                              display: "flex",
+                              borderBottom: "1px solid #e0e0e0",
+                            }}
+                          >
+                            <props.renderHeader
+                              headerHeight={props.headerHeight}
+                              width={width}
+                            ></props.renderHeader>
+                          </Box>
+                          <Box
+                            style={{
+                              top: height - props.footerHeight,
+                              left: 0,
+                              height: props.footerHeight,
+                              position: "sticky",
+                            }}
+                          >
+                            <props.renderFooter
+                              width={width}
+                              height={props.footerHeight}
+                            />
+                          </Box>
+                        </Box>
+                      )
+                    )}
+                  >
+                    {({ style, data, index }) => {
+                      const item = data[index];
+
+                      return (
                         <Box
                           style={{
-                            top: 0,
-                            left: 0,
-                            // right: 0,
-                            width: style.width,
-                            // width: "100%",
-                            height: props.headerHeight,
-                            position: "sticky",
-                            display: "flex",
+                            ...style,
+                            top:
+                              parseFloat(style.top?.toString() || "0") +
+                              props.headerHeight,
+
                             borderBottom: "1px solid #e0e0e0",
                           }}
+                          display={"flex"}
                         >
-                          <props.renderHeader
-                            headerHeight={props.headerHeight}
+                          <props.renderRow
+                            index={index}
                             width={width}
-                          ></props.renderHeader>
+                            rowHeight={props.rowHeight}
+                          ></props.renderRow>
                         </Box>
-                        <Box
-                          style={{
-                            top: height - props.footerHeight,
-                            left: 0,
-                            height: props.footerHeight,
-                            position: "sticky",
-                          }}
-                        >
-                          <props.renderFooter
-                            width={width}
-                            height={props.footerHeight}
-                          />
-                        </Box>
-                      </Box>
-                    )
-                  )}
-                >
-                  {({ style, data, index }) => {
-                    const item = data[index];
-
-                    return (
-                      <Box
-                        style={{
-                          ...style,
-                          top:
-                            parseFloat(style.top?.toString() || "0") +
-                            props.headerHeight,
-
-                          borderBottom: "1px solid #e0e0e0",
-                        }}
-                        display={"flex"}
-                      >
-                        <props.renderRow
-                          index={index}
-                          width={width}
-                          rowHeight={props.rowHeight}
-                        ></props.renderRow>
-                      </Box>
-                    );
-                  }}
-                </FixedSizeList>
-              )}
-            </InfiniteLoader>
-          );
-        }}
-      </AutoSizer>
+                      );
+                    }}
+                  </FixedSizeList>
+                )}
+              </InfiniteLoader>
+            );
+          }}
+        </AutoSizer>
+      </div>
     </Box>
   );
 };

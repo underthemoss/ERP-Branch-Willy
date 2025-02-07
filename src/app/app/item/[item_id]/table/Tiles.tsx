@@ -2,76 +2,178 @@
 
 import "../../../../../../node_modules/react-grid-layout/css/styles.css";
 import "../../../../../../node_modules/react-resizable/css/styles.css";
-import { Box, Card } from "@mui/joy";
+import {
+  Box,
+  BoxProps,
+  Card,
+  Dropdown,
+  ListDivider,
+  ListItemDecorator,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Switch,
+} from "@mui/joy";
 import ReactGridLayout, { Layout, WidthProvider } from "react-grid-layout";
 import { useItem } from "../ItemProvider";
+import { EntityCard } from "@/ui/entity-card/EntityCard";
+import { VirtualAsyncTable } from "@/ui/VirtualAsyncTable";
+import { TableHeader } from "./TableHeader";
+import { TableRow } from "./TableRow";
+import { TableFooter } from "./TableFooter";
+import React, { useState } from "react";
+import Check from "@mui/icons-material/Check";
+import AddIcon from "@mui/icons-material/Add";
+import { MenuItemLink } from "@/ui/MenuItemLink";
 
-export const Tiles = () => {
-  const { item } = useItem();
+export const Tiles: React.FC<{ width: number; height: number }> = ({
+  width,
+  height,
+}) => {
+  const { item, loadMore } = useItem();
+  const [editMode, setEditMode] = useState(false);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
 
-  const tiles: ({ url: string } & Layout)[] = [
+  const tileProps: BoxProps = editMode
+    ? {
+        display: "flex",
+        sx: {
+          userSelect: "none",
+          cursor: isResizing ? "move" : "grab",
+          "&  .react-grid-item": { pointerEvents: "none" },
+        },
+      }
+    : { display: "flex" };
+
+  const gap = 8;
+  const gridSize = 12;
+  const adjustedHeight = height - gap - gap * gridSize;
+  const rowIncrements = adjustedHeight / gridSize;
+
+  const layout: Layout[] = [
     {
-      i: "map",
+      w: 2,
+      h: 4,
       x: 0,
       y: 0,
-      w: 3,
-      h: 4,
-      maxH: 10,
+      i: "entity-card",
       maxW: 12,
-      minW: 1,
-      minH: 1,
-      isResizable: true,
-      isDraggable: true,
-      resizeHandles: ["se"],
-      url: "/es-erp/tiles/map",
+      maxH: 12,
+      moved: false,
+      static: false,
+      isBounded: true,
     },
-    // {
-    //   i: "map2",
-    //   x: 1,
-    //   y: 0,
-    //   w: 3,
-    //   h: 10,
-    //   maxH: 10,
-    //   maxW: 12,
-    //   minW: 1,
-    //   minH: 1,
-    //   isResizable: true,
-    //   isDraggable: true,
-    //   resizeHandles: ["se"],
-    //   url: `/es-erp/app/item/${item.id}/new/system_folder`,
-    // },
+    {
+      w: 12,
+      h: 8,
+      x: 0,
+      y: 4,
+      i: "table",
+      maxW: 12,
+      maxH: 12,
+      moved: false,
+      static: false,
+      isBounded: true,
+    },
+    {
+      w: 1,
+      h: 1,
+      x: 11,
+      y: 0,
+      i: "menu",
+      maxW: 12,
+      maxH: 12,
+      moved: false,
+      static: false,
+      isBounded: true,
+    },
   ];
+
   return (
     <Box>
+      <Box position={"absolute"} top={14} right={120} zIndex={9999}>
+        <Switch
+          checked={editMode}
+          onChange={(e) => setEditMode(e.target.checked)}
+        ></Switch>
+      </Box>
       <ReactGridLayout
+        isDraggable={editMode}
+        isResizable={editMode}
+        layout={layout}
         compactType={"vertical"}
-        rowHeight={16}
-        maxRows={10}
-        width={1000}
-        cols={12}
-        isResizable
-        containerPadding={[8, 8]}
-        margin={[0, 0]}
+        rowHeight={rowIncrements}
+        width={width}
+        cols={gridSize}
+        maxRows={gridSize}
+        onResizeStart={(_, __, { i }) => {
+          setIsResizing(i);
+        }}
+        onResizeStop={() => setIsResizing(null)}
+        onLayoutChange={(e) => {
+          console.log(e);
+        }}
+        margin={[gap, gap]}
       >
-        {tiles.map(({ url, ...t }) => {
-          return (
-            <Box
-              key={t.i}
-              data-grid={{
-                ...t,
+        <Box key={"entity-card"} {...tileProps}>
+          <EntityCard item_id={item.id} />
+        </Box>
+        <Box key={"table"} {...tileProps}>
+          {isResizing !== "table" && (
+            <Card
+              sx={{
+                flex: 1,
+                padding: 0,
+                backgroundColor: "white",
+                overflow: "hidden",
               }}
-              display={"flex"}
+              variant="outlined"
             >
-              <Card sx={{ padding: 0, flex: 1, m: 1, overflow: "hidden" }}>
-                <Box height={20}> </Box>
-                {/* <iframe
-                  style={{ width: "100%", height: "100%", border: "0px" }}
-                  src={url}
-                ></iframe> */}
-              </Card>
-            </Box>
-          );
-        })}
+              <VirtualAsyncTable
+                items={item.rows}
+                totalRows={item.count}
+                rowHeight={50}
+                headerHeight={60}
+                footerHeight={60}
+                resolveRows={loadMore}
+                renderHeader={TableHeader}
+                renderRow={TableRow}
+                renderFooter={TableFooter}
+              />
+            </Card>
+          )}
+        </Box>
+        <Box key={"menu"} {...tileProps}>
+          <Dropdown open={undefined}>
+            <MenuButton
+              size="sm"
+              variant="plain"
+              startDecorator={<AddIcon />}
+            ></MenuButton>
+
+            <Menu placement="bottom-start" sx={{ minWidth: 150 }}>
+              {item.column_config.map((col) => {
+                return (
+                  <MenuItem
+                    key={col.key}
+                    onClick={async () => {
+                      // await updateToggleSelectedColumns(item.id, columnId);
+                    }}
+                  >
+                    <ListItemDecorator>
+                      {!col.hidden && <Check />}
+                    </ListItemDecorator>
+                    {col.label}
+                  </MenuItem>
+                );
+              })}{" "}
+              <ListDivider />
+              <MenuItemLink href={`/app/item/${item.id}/add-column`}>
+                <>Add new column</>
+              </MenuItemLink>{" "}
+            </Menu>
+          </Dropdown>
+        </Box>
       </ReactGridLayout>
     </Box>
   );
