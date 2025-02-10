@@ -27,7 +27,7 @@ const Options: React.FC<{
     if (expanded) {
       getTreeNode(id).then(setChildren);
     }
-  }, [expanded]);
+  }, [expanded, id]);
 
   return [
     !isRoot && (
