@@ -113,6 +113,8 @@ enum ColumnType {
   img_url
   location
   email
+  rollup
+  total_children
   // entity_type
 }
 

@@ -22,7 +22,7 @@ import { TableHeaderCell } from "./TableHeaderCell";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
 import { CellRender } from "./CellRender";
-import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
+
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Fragment, useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout";

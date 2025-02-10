@@ -95,53 +95,11 @@ export const getItemChildCount = async (query: Query) => {
   });
 };
 
-export const getVisibleColumns = async (item_id: string) => {
-  const { user } = await getUser();
-  const visibleColumns = await prisma.entity.findMany({
-    where: {
-      tenant_id: user.company_id,
-      parent_id: item_id,
-      type_id: { in: ["parent_column_config" satisfies GlobalContentTypeId] },
-    },
-    select: {
-      data: true,
-      id: true,
-    },
-    orderBy: {
-      sort_order: "asc",
-    },
-  });
-  const columnTypes = await prisma.column.findMany({
-    where: {
-      id: {
-        in: visibleColumns.map(
-          ({ data }) =>
-            (data as ContentTypeData<"parent_column_config">)
-              .parent_column_config__column_id!
-        ),
-      },
-      tenant_id: { in: ["SYSTEM", user.company_id] },
-    },
-  });
-  return visibleColumns.map((ext) => {
-    const data = ext.data as ContentTypeData<"parent_column_config">;
-    return {
-      id: ext.id,
-      column_id: data.parent_column_config__column_id!,
-      name: data.name!,
-      column_width: Number(data.parent_column_config__column_width) || 120,
-      column_type: columnTypes.find(
-        (c) => c.id === data.parent_column_config__column_id
-      ),
-    };
-  });
-};
-
 export const getItemWithChildColumns = async (query: Query) => {
   const { user } = await getUser();
 
-  const [visibleColumns, parent] = await Promise.all([
-    getVisibleColumns(query.parent_id),
+  const [item] = await Promise.all([
+    // getVisibleColumns(query.parent_id),
     prisma.entity.findFirstOrThrow({
       where: {
         tenant_id: { in: [user.company_id, "SYSTEM"] },
@@ -152,6 +110,7 @@ export const getItemWithChildColumns = async (query: Query) => {
         data: true,
         type_id: true,
         column_config: true,
+        parent: true,
       },
     }),
   ]);
@@ -160,10 +119,12 @@ export const getItemWithChildColumns = async (query: Query) => {
     id: query.parent_id,
     count: await getItemChildCount(query),
     all_columns: await getColumns(),
-    name: (parent.data as any).name,
-    columns: visibleColumns,
-    type_id: parent.type_id,
-    column_config: parent.column_config,
+    name: (item.data as any).name,
+    data: item.data,
+    parent: item.parent,
+    // columns: visibleColumns,
+    type_id: item.type_id,
+    column_config: item.column_config,
   };
 };
 
@@ -262,35 +223,6 @@ export const updateColumnWidths = async (itemId: string, widths: number[]) => {
       column_config: newOrder,
     },
   });
-};
-
-export const updateToggleSelectedColumns = async (
-  item_id: string,
-  column_id: string
-) => {
-  const { user } = await getUser();
-  const columns = await getVisibleColumns(item_id);
-  const exists = columns.filter((c) => c.column_id === column_id);
-  if (exists.length > 0) {
-    await prisma.entity.deleteMany({
-      where: { id: { in: exists.map((c) => c.id) } },
-    });
-  } else {
-    await prisma.entity.create({
-      data: {
-        data: {
-          parent_column_config__column_id: column_id,
-          parent_column_config__column_width: 300,
-        } satisfies ContentTypeData<"parent_column_config">,
-        hidden: true,
-        tenant_id: user.company_id,
-        parent_id: item_id,
-        type_id: "parent_column_config" satisfies GlobalContentTypeId,
-      },
-    });
-  }
-
-  revalidatePath("/");
 };
 
 export const deleteItem = async (item_id: string): Promise<void> => {

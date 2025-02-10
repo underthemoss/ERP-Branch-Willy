@@ -17,7 +17,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 import { MenuItemLink } from "@/ui/MenuItemLink";
-import { updateToggleSelectedColumns } from "../actions";
+
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
 import { TableFooter } from "./TableFooter";

@@ -16,6 +16,7 @@ import {
   Input,
   Typography,
 } from "@mui/joy";
+import { randomUUID } from "crypto";
 
 import _ from "lodash";
 import { redirect } from "next/navigation";
@@ -44,6 +45,23 @@ export const NewEntityForm = async (props: {
             attributes,
             contentTypeId: content_type_id,
             parentId: parentId,
+          });
+
+          await prisma.entity.update({
+            where: { id: val.id },
+            data: {
+              column_config: {
+                push: [
+                  {
+                    hidden: false,
+                    key: randomUUID(),
+                    label: "Children",
+                    readonly: true,
+                    type: "total_children",
+                  },
+                ],
+              },
+            },
           });
 
           redirect(`/app/item/${val.parent_id || val.id}`);

@@ -1,3 +1,5 @@
+
+// todo: setting this for dev, will need removed
 process.env.DATABASE_URL =
   "mongodb://127.0.0.1:63878/es-erp?replicaSet=testset";
 import { MongoMemoryReplSet } from "mongodb-memory-server";

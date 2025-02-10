@@ -181,7 +181,7 @@ const columnTypes: ColumnTypeDef[] = [
   {
     id: "formula",
     title: "Formula",
-    description: "Perform basic math on sibling columns.",
+    description: "Perform basic math on columns.",
     svg: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -320,6 +320,36 @@ const columnTypes: ColumnTypeDef[] = [
     ),
   },
   {
+    id: "currency",
+    title: "Currency",
+    description: "A currency field.",
+    svg: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.5"
+      >
+        {/* White background */}
+
+        {/* Dollar sign representing currency */}
+        <text
+          x="12.5"
+          y="18"
+          textAnchor="middle"
+          fontFamily="Arial"
+          fontSize="16"
+          fill="currentColor"
+        >
+          $
+        </text>
+      </svg>
+    ),
+  },
+  {
     id: "date_and_time",
     title: "Date and Time",
     description: "A column type for selecting both date and time.",
@@ -365,6 +395,59 @@ const columnTypes: ColumnTypeDef[] = [
           // stroke="currentColor"
           strokeWidth="1.5"
         />
+      </svg>
+    ),
+  },
+  {
+    id: "total_children",
+    title: "Total Children",
+    description: "The total number of immediate child items.",
+    svg: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
+        {/* Parent circle */}
+        <circle cx="12" cy="8" r="3" stroke="currentColor" fill="none" />
+        {/* Two child circles */}
+        <circle cx="8" cy="16" r="2" stroke="currentColor" fill="none" />
+        <circle cx="16" cy="16" r="2" stroke="currentColor" fill="none" />
+        {/* Connecting lines */}
+        <line x1="12" y1="11" x2="8" y2="14" stroke="currentColor" />
+        <line x1="12" y1="11" x2="16" y2="14" stroke="currentColor" />
+      </svg>
+    ),
+  },
+  // New "total_descendants" column type:
+  {
+    id: "total_descendants",
+    title: "Total Descendants",
+    description: "The total number of all descendant items.",
+    svg: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      >
+        {/* Parent circle */}
+        <circle cx="12" cy="5" r="2" stroke="currentColor" fill="none" />
+        {/* Three descendant circles */}
+        <circle cx="8" cy="17" r="2" stroke="currentColor" fill="none" />
+        <circle cx="12" cy="17" r="2" stroke="currentColor" fill="none" />
+        <circle cx="16" cy="17" r="2" stroke="currentColor" fill="none" />
+        {/* Connecting lines */}
+        <line x1="12" y1="7" x2="8" y2="15" stroke="currentColor" />
+        <line x1="12" y1="7" x2="12" y2="15" stroke="currentColor" />
+        <line x1="12" y1="7" x2="16" y2="15" stroke="currentColor" />
       </svg>
     ),
   },

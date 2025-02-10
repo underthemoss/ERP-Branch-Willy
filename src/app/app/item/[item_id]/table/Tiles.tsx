@@ -21,7 +21,7 @@ import { VirtualAsyncTable } from "@/ui/VirtualAsyncTable";
 import { TableHeader } from "./TableHeader";
 import { TableRow } from "./TableRow";
 import { TableFooter } from "./TableFooter";
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import Check from "@mui/icons-material/Check";
 import AddIcon from "@mui/icons-material/Add";
 import { MenuItemLink } from "@/ui/MenuItemLink";
@@ -50,45 +50,6 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
   const adjustedHeight = height - gap - gap * gridSize;
   const rowIncrements = adjustedHeight / gridSize;
 
-  const layout: Layout[] = [
-    {
-      w: 2,
-      h: 4,
-      x: 0,
-      y: 0,
-      i: "entity-card",
-      maxW: 12,
-      maxH: 12,
-      moved: false,
-      static: false,
-      isBounded: true,
-    },
-    {
-      w: 12,
-      h: 8,
-      x: 0,
-      y: 4,
-      i: "table",
-      maxW: 12,
-      maxH: 12,
-      moved: false,
-      static: false,
-      isBounded: true,
-    },
-    {
-      w: 1,
-      h: 1,
-      x: 11,
-      y: 0,
-      i: "menu",
-      maxW: 12,
-      maxH: 12,
-      moved: false,
-      static: false,
-      isBounded: true,
-    },
-  ];
-
   return (
     <Box>
       <Box position={"absolute"} top={14} right={120} zIndex={9999}>
@@ -100,7 +61,6 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
       <ReactGridLayout
         isDraggable={editMode}
         isResizable={editMode}
-        layout={layout}
         compactType={"vertical"}
         rowHeight={rowIncrements}
         width={width}
@@ -115,10 +75,40 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
         }}
         margin={[gap, gap]}
       >
-        <Box key={"entity-card"} {...tileProps}>
+        <Box
+          key="entity-card"
+          data-grid={{
+            w: 2,
+            h: 4,
+            x: 0,
+            y: 0,
+            i: "entity-card",
+            maxW: 12,
+            maxH: 12,
+            moved: false,
+            static: false,
+            isBounded: true,
+          }}
+          {...tileProps}
+        >
           <EntityCard item_id={item.id} />
         </Box>
-        <Box key={"table"} {...tileProps}>
+        <Box
+          key="table"
+          data-grid={{
+            w: 12,
+            h: 8,
+            x: 0,
+            y: 4,
+            i: "table",
+            maxW: 12,
+            maxH: 12,
+            moved: false,
+            static: false,
+            isBounded: true,
+          }}
+          {...tileProps}
+        >
           {isResizing !== "table" && (
             <Card
               sx={{
@@ -143,7 +133,22 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
             </Card>
           )}
         </Box>
-        <Box key={"menu"} {...tileProps}>
+        <Box
+          key={"menu"}
+          data-grid={{
+            w: 1,
+            h: 1,
+            x: 11,
+            y: 0,
+            i: "menu",
+            maxW: 12,
+            maxH: 12,
+            moved: false,
+            static: false,
+            isBounded: true,
+          }}
+          {...tileProps}
+        >
           <Dropdown open={undefined}>
             <MenuButton
               size="sm"
@@ -174,6 +179,31 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
             </Menu>
           </Dropdown>
         </Box>
+        {item.parent?.column_config
+          .filter(({ type, key }) => type === "total_children")
+          .map(({ key }) => {
+            console.log(key);
+            return (
+              <Box
+                key={key}
+                data-grid={{
+                  w: 1,
+                  h: 1,
+                  x: 4,
+                  y: 0,
+
+                  maxW: 12,
+                  maxH: 12,
+                  moved: false,
+                  static: false,
+                  isBounded: true,
+                }}
+                {...tileProps}
+              >
+                Total: {(item.data as any)[key]}
+              </Box>
+            );
+          })}
       </ReactGridLayout>
     </Box>
   );

@@ -161,16 +161,10 @@ export const syncUsers = async (tenantId: string) => {
                     hidden: false,
                     sort_order: 0,
                     column_config: [],
-                    // Merge the existing data with the new data fields.
                     data: {
-                      $mergeObjects: [
-                        "$data",
-                        {
-                          id: user_id,
-                          name: `${first_name} ${last_name}`,
-                          email: username,
-                        },
-                      ],
+                      id: user_id,
+                      name: `${first_name} ${last_name}`,
+                      email: username,
                     },
                   },
                 },

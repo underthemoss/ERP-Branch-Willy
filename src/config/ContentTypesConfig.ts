@@ -7,10 +7,9 @@ export const GlobalContentTypeEnum = {
   workspace: "workspace",
   folder: "folder",
   sheet: "sheet",
-  parent_column_config: "parent_column_config",
   record: "record",
-  order: "order",
-  line_item: "line_item",
+  // order: "order",
+  // line_item: "line_item",
 };
 
 export type GlobalContentTypeId = keyof typeof GlobalContentTypeEnum;
@@ -56,7 +55,7 @@ export const GLOBAL_CONTENT_TYPES = [
       "updated_by",
     ],
     required: ["name"],
-    valid_child_types: ["folder", "sheet", "parent_column_config", "order"],
+    valid_child_types: ["folder", "sheet"],
   },
   {
     id: "folder",
@@ -64,7 +63,7 @@ export const GLOBAL_CONTENT_TYPES = [
     name: "Folder",
     category: "General",
     columns: ["name", "created_at", "created_by", "updated_at", "updated_by"],
-    valid_child_types: ["folder", "sheet", "parent_column_config", "order"],
+    valid_child_types: ["folder", "sheet"],
     required: ["name"],
   },
   {
@@ -76,43 +75,30 @@ export const GLOBAL_CONTENT_TYPES = [
     valid_child_types: ["record"],
     required: ["name"],
   },
-  {
-    id: "order",
-    icon: "order",
-    name: "Order",
-    category: "General",
-    columns: ["name", "created_at", "created_by", "updated_at", "updated_by"],
-    valid_child_types: ["line_item"],
-    required: ["name"],
-  },
-  {
-    id: "line_item",
-    icon: "line_item",
-    name: "Line Item",
-    category: "General",
-    columns: [
-      "line_item__quantity",
-      "created_at",
-      "created_by",
-      "updated_at",
-      "updated_by",
-    ],
-    valid_child_types: [],
-    required: ["name"],
-  },
-  {
-    id: "parent_column_config",
-    icon: "system",
-    name: "parent_column_config",
-    category: "hidden",
-    columns: [
-      "name",
-      "parent_column_config__column_id",
-      "parent_column_config__column_width",
-    ],
-    valid_child_types: [],
-    required: ["name"],
-  },
+  // {
+  //   id: "order",
+  //   icon: "order",
+  //   name: "Order",
+  //   category: "General",
+  //   columns: ["name", "created_at", "created_by", "updated_at", "updated_by"],
+  //   valid_child_types: ["line_item"],
+  //   required: ["name"],
+  // },
+  // {
+  //   id: "line_item",
+  //   icon: "line_item",
+  //   name: "Line Item",
+  //   category: "General",
+  //   columns: [
+  //     "line_item__quantity",
+  //     "created_at",
+  //     "created_by",
+  //     "updated_at",
+  //     "updated_by",
+  //   ],
+  //   valid_child_types: [],
+  //   required: ["name"],
+  // },
 ] as const satisfies ContentTypeDefinition[];
 
 export type GlobalContentType = (typeof GLOBAL_CONTENT_TYPES)[number];

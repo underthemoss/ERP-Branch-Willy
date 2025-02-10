@@ -60,7 +60,8 @@ export const EntityCard: React.FC<{
       sx={{
         textAlign: "center",
         alignItems: "center",
-        // width: 343,
+        // minWidth: 320,
+
         flex: 1,
         // to make the demo resizable
         overflow: "hidden",
@@ -131,20 +132,33 @@ export const EntityCard: React.FC<{
       <Typography level="title-lg" sx={{ mt: "calc(var(--icon-size) / 2)" }}>
         {title}
       </Typography>
-      <CardContent sx={{ maxWidth: "40ch", pointerEvents: "none" }}>
+
+      <CardContent
+        sx={{ pointerEvents: "none", display: "flex", flex: 1, width: "100%" }}
+      >
         {item.parent?.column_config?.map((column_config, i) => {
           return (
-            <Box key={i} display={"flex"} gap={1}>
-              <Typography flex={1} level="title-md" textAlign={"right"}>
-                {column_config.label}:
-              </Typography>
+            <Box key={i} display={"flex"} flex={1} gap={1}>
               <Typography
                 flex={1}
+                level="title-md"
+                textAlign={"right"}
+                textOverflow={"ellipsis"}
+                noWrap
+                overflow={"hidden"}
+              >
+                {column_config.label}
+              </Typography>
+              <Typography level="title-md" ml={-1}>
+                :
+              </Typography>
+              <Typography
+                flex={2}
                 level="body-md"
                 textOverflow={"ellipsis"}
                 noWrap
                 overflow={"hidden"}
-                width={200}
+                // width={200}
                 textAlign={"left"}
               >
                 {(item.data as any)[column_config.key]}
@@ -193,7 +207,11 @@ export const EntityCardToolTip: React.FC<{
       arrow={true}
       placement={placement}
       variant="outlined"
-      title={<EntityCard item_id={item_id} />}
+      title={
+        <div style={{ width: 320 }}>
+          <EntityCard item_id={item_id} />
+        </div>
+      }
     >
       <div
         onMouseDown={(e) => {

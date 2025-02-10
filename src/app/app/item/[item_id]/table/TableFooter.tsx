@@ -12,7 +12,7 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
 }) => {
   const { item } = useItem();
   const actualWidth = Math.max(
-    item.columns.reduce((t, i) => t + i.column_width, 0),
+    item.column_config.reduce((t, i) => t + i.width, 0),
     width
   );
   return (
@@ -40,6 +40,7 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
             onClick={async () => {
               await addRecord(item.id);
             }}
+            // disabled
           >
             New record
           </Button>

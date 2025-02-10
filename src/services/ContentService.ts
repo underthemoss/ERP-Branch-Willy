@@ -171,21 +171,3 @@ export const createContentTypeInstance = async (args: {
 
   return createdEntity;
 };
-
-export const createEntityColumns = async (args: {
-  columns: { columnId: string; width: number; parentId?: string }[];
-}) => {
-  const { user } = await getUser();
-  await prisma.entity.createMany({
-    data: args.columns.map((d) => ({
-      data: {
-        parent_column_config__column_id: d.columnId,
-        parent_column_config__column_width: d.width,
-      } satisfies ContentTypeData<"parent_column_config">,
-      hidden: true,
-      tenant_id: user.company_id,
-      parent_id: d.parentId,
-      type_id: "parent_column_config" satisfies GlobalContentTypeId,
-    })),
-  });
-};

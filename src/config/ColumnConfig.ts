@@ -164,22 +164,6 @@ export const GLOBAL_COLUMNS = [
     readonly: true,
   },
   {
-    id: "parent_column_config__column_id",
-    category: "hidden",
-    label: "parent_column_config__column_id",
-    order_priority: 0,
-    type: "single_line_of_text",
-    readonly: false,
-  },
-  {
-    id: "parent_column_config__column_width",
-    category: "hidden",
-    label: "parent_column_config__column_width",
-    order_priority: 0,
-    type: "integer",
-    readonly: false,
-  },
-  {
     id: "line_item__quantity",
     category: "General",
     label: "Quantity",

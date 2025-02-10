@@ -20,7 +20,7 @@ import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
 import { CellRender } from "./CellRender";
-import { addRow, deleteItem, updateToggleSelectedColumns } from "../actions";
+
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { TableHeader } from "./TableHeader";
 import { EntityCard, EntityCardToolTip } from "@/ui/entity-card/EntityCard";

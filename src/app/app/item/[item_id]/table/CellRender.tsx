@@ -203,6 +203,12 @@ export const CellRender = (props: {
           })()}
         </Box>
       )}
+
+      {props.type === "total_children" && (
+        <Box pl={1} alignContent={"center"} overflow={"hidden"}>
+          <Typography noWrap>{(props.value || 0).toString()}</Typography>
+        </Box>
+      )}
       {isEditing && !props.readonly ? (
         <>
           {props.type === "single_line_of_text" && (

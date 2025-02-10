@@ -95,6 +95,15 @@ export const syncAssets = async (tenantId: string) => {
       width: 200,
       lookup: null,
     },
+    {
+      key: "total_children",
+      hidden: false,
+      label: "Children",
+      readonly: true,
+      type: "total_children",
+      width: 200,
+      lookup: null,
+    },
   ];
 
   await prisma.entity.upsert({
@@ -211,30 +220,32 @@ export const syncAssets = async (tenantId: string) => {
             {
               upsert: true,
               q: { _id: _id },
-              u: {
-                $set: {
-                  _id: _id,
-                  tenant_id: company_id.toString(),
-                  type_id: "record" satisfies GlobalContentTypeId,
-                  parent_id: workspaceId,
-                  hidden: false,
-                  sort_order: 0,
-                  column_config: [],
-                  data: {
-                    id: id,
-                    name: custom_name,
-                    location: coordinates,
-                    equipment_category: category_name,
-                    equipment_class: equipment_class_name,
-                    equipment_make: make_name,
-                    equipment_custom_model: model,
-                    equipment_model: model_name,
-                    equipment_photo: photo_filename
-                      ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
-                      : null,
-                  },
-                } satisfies Omit<Entity, "id"> & { _id: string },
-              },
+              u: [
+                {
+                  $set: {
+                    _id: _id,
+                    tenant_id: company_id.toString(),
+                    type_id: "record" satisfies GlobalContentTypeId,
+                    parent_id: workspaceId,
+                    hidden: false,
+                    sort_order: 0,
+                    column_config: [],
+                    data: {
+                      id: id,
+                      name: custom_name,
+                      location: coordinates,
+                      equipment_category: category_name,
+                      equipment_class: equipment_class_name,
+                      equipment_make: make_name,
+                      equipment_custom_model: model,
+                      equipment_model: model_name,
+                      equipment_photo: photo_filename
+                        ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
+                        : null,
+                    },
+                  } satisfies Omit<Entity, "id"> & { _id: string },
+                },
+              ],
             },
           ];
         }

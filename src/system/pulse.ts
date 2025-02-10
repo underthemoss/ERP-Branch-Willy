@@ -4,17 +4,19 @@ import Pulse from "@pulsecron/pulse";
 import { setupTenant } from "./setupTenant";
 import { syncAssets } from "./syncAssets";
 import { syncUsers } from "./syncUsers";
+import { Entity } from "../../prisma/generated/mongo";
+import { mongodbClient } from "./changeStreams";
 const mongoConnectionString = process.env.DATABASE_URL || "";
 
-const pulse = new Pulse({
+export const pulse = new Pulse({
   db: { address: mongoConnectionString },
   defaultConcurrency: 4,
-  maxConcurrency: 4,
+  maxConcurrency: 200,
   processEvery: "10 seconds",
   resumeOnRestart: true,
 });
 
-const tenants = ["1854", "420"];
+const tenants = ["420", "1854"];
 
 const tenantSyncJobName = (tenant: string) => `tenant-sync-${tenant}`;
 
@@ -37,7 +39,7 @@ export const run = async () => {
   await pulse.start();
 
   for (const tenant of tenants) {
-    await pulse.every("5 minutes", tenantSyncJobName(tenant), {
+    await pulse.every("30 minutes", tenantSyncJobName(tenant), {
       tenantId: tenant,
     });
   }

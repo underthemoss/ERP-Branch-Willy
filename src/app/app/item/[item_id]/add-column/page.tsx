@@ -12,6 +12,10 @@ export default async function Page(props: {
   params: Promise<{ item_id: string; content_type_id: string }>;
 }) {
   const { item_id } = await props.params;
+  const { user } = await getUser();
+  const item = await prisma.entity.findFirstOrThrow({
+    where: { id: item_id, tenant_id: user.company_id },
+  });
   return (
     <form
       action={async (formData) => {
@@ -53,7 +57,7 @@ export default async function Page(props: {
           <Typography level="h1">Add column</Typography>
         </Box>
         <Box mt={2}>
-          <ColumnForm />
+          <ColumnForm item={item} />
         </Box>
       </Box>
     </form>
