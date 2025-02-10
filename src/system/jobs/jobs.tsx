@@ -31,7 +31,7 @@ pulse.define<{ item_id: string }>(
 
     // resolve aggregations
 
-    let mutations: [string, any][] = [];
+    const mutations: [string, any][] = [];
 
     const totalChildrenCols = parent?.column_config.filter(
       (c) => c.type === "total_children"
