@@ -1,5 +1,5 @@
 "use client";
-import "./table.css";
+import "./QueryTable.css";
 import { ItemProviderClient, useItem } from "../ItemProvider";
 import {
   Box,
@@ -18,13 +18,13 @@ import Check from "@mui/icons-material/Check";
 import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 
-import { TableHeader } from "./TableHeader";
-import { TableRow } from "./TableRow";
-import { TableFooter } from "./TableFooter";
-import { Tiles } from "./Tiles";
+import { QueryTableHeader } from "./QueryTableHeader";
+import { QueryTableRow } from "./QueryTableRow";
+import { QueryTableFooter } from "./QueryTableFooter";
+
 import AutoSizer from "react-virtualized-auto-sizer";
 import { Query } from "../actions";
-import { TableProvider, useTable } from "./TableProvider";
+import { QueryTableProvider, useTable } from "./QueryTableProvider";
 
 const QueryTableRenderer = () => {
   const { query, rows } = useTable();
@@ -41,9 +41,9 @@ const QueryTableRenderer = () => {
               headerHeight={60}
               footerHeight={60}
               resolveRows={async () => {}}
-              renderHeader={TableHeader}
-              renderRow={TableRow}
-              renderFooter={TableFooter}
+              renderHeader={QueryTableHeader}
+              renderRow={QueryTableRow}
+              renderFooter={QueryTableFooter}
             />
             <Box pt={3} width={3}>
               <Box ml={-5}>
@@ -87,8 +87,8 @@ const QueryTableRenderer = () => {
 
 export const QueryTable: React.FC<{ query: Query }> = ({ query }) => {
   return (
-    <TableProvider key={Date.now()} query={query}>
+    <QueryTableProvider key={Date.now()} query={query}>
       <QueryTableRenderer />
-    </TableProvider>
+    </QueryTableProvider>
   );
 };

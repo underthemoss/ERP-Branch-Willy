@@ -18,9 +18,9 @@ import { UserPicker } from "@/ui/picker/UserPicker";
 import { LookupPicker } from "@/ui/picker/LookupPicker";
 import { useItem } from "../ItemProvider";
 import { Point } from "wkx";
-import { useTable } from "./TableProvider";
+import { useTable } from "./QueryTableProvider";
 
-export const CellRender = (props: {
+export const QueryTableRowCellRender = (props: {
   type: ColumnType;
   value: string | undefined | null;
   readonly: boolean;

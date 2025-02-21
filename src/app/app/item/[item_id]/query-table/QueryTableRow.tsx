@@ -19,15 +19,15 @@ import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 // import { minimumColWidth } from "./TableHeaderCell";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
-import { CellRender } from "./CellRender";
+import { QueryTableRowCellRender } from "./QueryTableRowCellRender";
 
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import { TableHeader } from "./TableHeader";
+import { QueryTableHeader } from "./QueryTableHeader";
 import { EntityCard, EntityCardToolTip } from "@/ui/entity-card/EntityCard";
 import { ContentTypeComponent } from "@/ui/Icons";
-import { useTable } from "./TableProvider";
+import { useTable } from "./QueryTableProvider";
 
-export const TableRow: React.FC<{
+export const QueryTableRow: React.FC<{
   width: number;
   index: number;
   rowHeight: number;
@@ -99,7 +99,7 @@ export const TableRow: React.FC<{
             //   display={"flex"}
           >
             {
-              <CellRender
+              <QueryTableRowCellRender
                 // key={value}
                 type={column.type}
                 colIndex={colIndex}
@@ -116,7 +116,7 @@ export const TableRow: React.FC<{
                   //   value: value || null,
                   // });
                 }}
-              ></CellRender>
+              ></QueryTableRowCellRender>
             }
           </Box>
         );

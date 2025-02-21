@@ -4,7 +4,7 @@ import { Autocomplete, CircularProgress, List, ListItem } from "@mui/joy";
 // import { LazyUserDetail } from "../LazyUserDetails";
 // import { searchUsers } from "./Picker.actions";
 import _ from "lodash";
-import { CellRender } from "@/app/app/item/[item_id]/table/CellRender";
+import { QueryTableRowCellRender } from "@/app/app/item/[item_id]/query-table/QueryTableRowCellRender";
 
 export const GenericPicker = (props: {
   value: string | null | undefined;

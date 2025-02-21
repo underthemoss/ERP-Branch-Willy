@@ -1,7 +1,7 @@
 "use client";
 import { getItemWithChildColumns, getRows, Query } from "./actions";
 import { ItemProvider, ItemProviderClient, useItem } from "./ItemProvider";
-import { QueryTable } from "./table/QueryTable";
+import { QueryTable } from "./query-table/QueryTable";
 import { Entity } from "../../../../../prisma/generated/mongo";
 import { Box, Tab, TabList, TabPanel, Tabs } from "@mui/joy";
 import { EntityCard } from "@/ui/entity-card/EntityCard";

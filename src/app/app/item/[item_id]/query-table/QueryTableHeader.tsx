@@ -18,31 +18,23 @@ import AddIcon from "@mui/icons-material/Add";
 import Check from "@mui/icons-material/Check";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
-import { TableHeaderCell } from "./TableHeaderCell";
+import { QueryTableHeaderCell } from "./QueryTableHeaderCell";
 import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
-import { CellRender } from "./CellRender";
+import { QueryTableRowCellRender } from "./QueryTableRowCellRender";
 
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Fragment, useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout";
 import _ from "lodash";
 import { ContentTypeAttributeType } from "../../../../../../prisma/generated/mongo";
-import { useTable } from "./TableProvider";
+import { useTable } from "./QueryTableProvider";
 
-export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
-  headerHeight,
-  width,
-}) => {
+export const QueryTableHeader: React.FC<{
+  headerHeight: number;
+  width: number;
+}> = ({ headerHeight, width }) => {
   const { columns } = useTable();
-
-  console.log(columns);
-  // console.log(
-  //   contentType?.validChildContentTypes.reduce(
-  //     (acc, cur) => [...acc, ...cur.],
-  //     [] as { key: string; label: string; type: ContentTypeAttributeType }[]
-  //   )
-  // );
 
   const actualWidth = Math.max(width);
   const tableColumnMaxWidth = 600;
@@ -98,7 +90,7 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
               }}
               display={"flex"}
             >
-              <TableHeaderCell index={index} />
+              <QueryTableHeaderCell index={index} />
             </Box>
           );
         })}

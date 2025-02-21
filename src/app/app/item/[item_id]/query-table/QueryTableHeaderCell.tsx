@@ -25,7 +25,7 @@ import _ from "lodash";
 import { deleteItem } from "../actions";
 import { DeleteForever } from "@mui/icons-material";
 import { usePathname } from "next/navigation";
-import { useTable } from "./TableProvider";
+import { useTable } from "./QueryTableProvider";
 // export const minimumColWidth = 120;
 
 const ColumnHeaderSortOptions: React.FC<{
@@ -129,7 +129,7 @@ const ColumnHeaderMoreOptions: React.FC<{
   );
 };
 
-export const TableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
+export const QueryTableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
   const { columns } = useTable();
   const column = columns[index];
   return (

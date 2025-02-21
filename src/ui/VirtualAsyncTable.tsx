@@ -1,8 +1,7 @@
 /* eslint-disable react/display-name */
 import { Box } from "@mui/joy";
 import _ from "lodash";
-import { useSearchParams } from "next/navigation";
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import InfiniteLoader from "react-window-infinite-loader";

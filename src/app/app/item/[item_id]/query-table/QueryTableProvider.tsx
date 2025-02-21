@@ -1,17 +1,14 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { getContentTypeIdsInUse, getRows, Query } from "../actions";
-import {
-  ContentTypeDefinition,
-  getContentTypes,
-} from "@/services/ContentTypeRepository";
+import { getContentTypes } from "@/services/ContentTypeRepository";
 import _ from "lodash";
 import { ContentTypeAttribute } from "../../../../../../prisma/generated/mongo";
 
 type ContentTypes = Awaited<ReturnType<typeof getContentTypes>>;
 type Row = Awaited<ReturnType<typeof getRows>>[number];
 
-const ItemProviderContext = createContext<{
+const QueryTableProviderContext = createContext<{
   contentTypes: ContentTypes;
   query: Query;
   columns: ContentTypeAttribute[];
@@ -23,7 +20,7 @@ const ItemProviderContext = createContext<{
   rows: [] as Row[],
 });
 
-export const TableProvider: React.FC<{
+export const QueryTableProvider: React.FC<{
   children: React.ReactNode;
   query: Query;
 }> = ({ children, query }) => {
@@ -58,17 +55,18 @@ export const TableProvider: React.FC<{
   }, []);
 
   return (
-    <ItemProviderContext.Provider
+    <QueryTableProviderContext.Provider
       value={{ query, contentTypes, columns, rows }}
     >
       {children}
-    </ItemProviderContext.Provider>
+    </QueryTableProviderContext.Provider>
   );
 };
 
 export const useTable = () => {
-  const { query, contentTypes, columns, rows } =
-    useContext(ItemProviderContext);
+  const { query, contentTypes, columns, rows } = useContext(
+    QueryTableProviderContext
+  );
 
   return {
     query,

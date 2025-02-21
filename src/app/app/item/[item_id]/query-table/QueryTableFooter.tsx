@@ -1,7 +1,7 @@
 import { Box, Button, Typography } from "@mui/joy";
 import { useItem } from "../ItemProvider";
 
-export const TableFooter: React.FC<{ width: number; height: number }> = ({
+export const QueryTableFooter: React.FC<{ width: number; height: number }> = ({
   height,
   width,
 }) => {
