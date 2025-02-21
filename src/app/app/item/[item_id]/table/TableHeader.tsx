@@ -27,19 +27,26 @@ import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Fragment, useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout";
 import _ from "lodash";
+import { ContentTypeAttributeType } from "../../../../../../prisma/generated/mongo";
+import { useTable } from "./TableProvider";
 
 export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
   headerHeight,
   width,
 }) => {
-  const { item, updateColumnOrder, updateColumnWidths } = useItem();
+  const { columns } = useTable();
 
-  const actualWidth = Math.max(
-    item.column_config.reduce((t, i) => t + i.width, 0),
-    width
-  );
+  console.log(columns);
+  // console.log(
+  //   contentType?.validChildContentTypes.reduce(
+  //     (acc, cur) => [...acc, ...cur.],
+  //     [] as { key: string; label: string; type: ContentTypeAttributeType }[]
+  //   )
+  // );
+
+  const actualWidth = Math.max(width);
   const tableColumnMaxWidth = 600;
-  const tableMaxColumns = item.column_config.length * tableColumnMaxWidth;
+  const tableMaxColumns = columns.length * tableColumnMaxWidth;
   return (
     <Box sx={{ backgroundColor: "white", width: actualWidth }}>
       <GridLayout
@@ -53,34 +60,34 @@ export const TableHeader: React.FC<{ headerHeight: number; width: number }> = ({
         compactType={"horizontal"}
         // onDrop={(e, item) => console.log(e, item)}
         onLayoutChange={(newLayout) => {
-          const newColumnOrderKeys = _.sortBy(newLayout, (d) => d.x).map(
-            (c) => c.i
-          );
-          const oldColumnOrderKeys = item.column_config.map((c) => c.key);
-
-          if (!_.isEqual(newColumnOrderKeys, oldColumnOrderKeys)) {
-            updateColumnOrder({ columnKeys: newColumnOrderKeys });
-          }
-          const newColumnWidths = _.sortBy(newLayout, (d) => d.x).map((c) =>
-            Math.min(c.w, tableColumnMaxWidth)
-          );
-          const oldColumnWidths = item.column_config.map((c) => c.width);
-          if (!_.isEqual(newColumnWidths, oldColumnWidths)) {
-            updateColumnWidths({ widths: newColumnWidths });
-          }
+          // const newColumnOrderKeys = _.sortBy(newLayout, (d) => d.x).map(
+          //   (c) => c.i
+          // );
+          // const oldColumnOrderKeys = item.column_config.map((c) => c.key);
+          // if (!_.isEqual(newColumnOrderKeys, oldColumnOrderKeys)) {
+          //   updateColumnOrder({ columnKeys: newColumnOrderKeys });
+          // }
+          // const newColumnWidths = _.sortBy(newLayout, (d) => d.x).map((c) =>
+          //   Math.min(c.w, tableColumnMaxWidth)
+          // );
+          // const oldColumnWidths = item.column_config.map((c) => c.width);
+          // if (!_.isEqual(newColumnWidths, oldColumnWidths)) {
+          //   updateColumnWidths({ widths: newColumnWidths });
+          // }
         }}
         containerPadding={[0, 0]}
         margin={[0, 0]}
         draggableHandle=".column-drag-handle"
       >
-        {item.column_config.map((c, index) => {
+        {columns.map((column, index) => {
+          // const isLastColumn = item.column_config.length === index + 1;
           return (
             <Box
-              key={c.key}
+              key={column.key}
               data-grid={{
                 x: index + 100,
                 y: 0,
-                w: c.width,
+                w: 200,
                 h: 1,
                 static: false,
                 maxW: tableColumnMaxWidth,

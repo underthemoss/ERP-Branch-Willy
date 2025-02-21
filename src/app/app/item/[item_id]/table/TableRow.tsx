@@ -24,14 +24,18 @@ import { CellRender } from "./CellRender";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { TableHeader } from "./TableHeader";
 import { EntityCard, EntityCardToolTip } from "@/ui/entity-card/EntityCard";
+import { ContentTypeComponent } from "@/ui/Icons";
+import { useTable } from "./TableProvider";
 
 export const TableRow: React.FC<{
   width: number;
   index: number;
   rowHeight: number;
 }> = ({ index: index, width, rowHeight }) => {
-  const { item } = useItem();
-  const row = item.rows[index];
+  const { columns, rows, contentTypes } = useTable();
+  const row = rows[index];
+
+  const contentType = contentTypes.find((ct) => ct.id === row?.type_id);
   if (!row) {
     return (
       <Box flex={1} width={width} sx={{ backgroundColor: "white" }}>
@@ -39,7 +43,7 @@ export const TableRow: React.FC<{
       </Box>
     );
   }
-  const firstColumnIndent = 50;
+  const firstColumnIndent = 44;
 
   return (
     <Box
@@ -58,22 +62,27 @@ export const TableRow: React.FC<{
         <Box display={"flex"} justifySelf={"center"}>
           <EntityCardToolTip item_id={row.id} placement="right">
             <NextLink href={`/app/item/${row.id}`}>
-              <EntityTypeIcon entityTypeIcon={row.type_id as any} />
+              {contentType && (
+                <ContentTypeComponent
+                  color={contentType?.color}
+                  icon={contentType?.icon}
+                  label={""}
+                />
+              )}
             </NextLink>
           </EntityCardToolTip>
         </Box>
       </Box>
 
-      {item.column_config.map((column, colIndex, all) => {
+      {columns.map((column, colIndex, all) => {
         const value = row.values[colIndex];
-
+        const isFirstColumn = colIndex === 0;
         const indent = colIndex === 0 ? firstColumnIndent : 0;
-        const left =
-          item.column_config
-            .slice(0, colIndex)
-            .reduce((acc, { width }) => acc + width, 0) + indent;
-        const width = Math.max(column.width - indent, 0);
 
+        const width = isFirstColumn ? 200 - indent : 200;
+        const left = indent + width * colIndex;
+
+        // const width = Math.max(column.width - indent, 0);
         return (
           <Box
             key={column.key}
@@ -95,10 +104,11 @@ export const TableRow: React.FC<{
                 type={column.type}
                 colIndex={colIndex}
                 rowIndex={index}
-                totalColumns={item.column_config.length}
+                totalColumns={columns.length}
                 value={value}
-                columnLookupConfig={item.column_config[colIndex].lookup} // todo: dont need this?
-                readonly={column.readonly}
+                // columnLookupConfig={item.column_config[colIndex].lookup} // todo: dont need this?
+                columnLookupConfig={null} // todo: dont need this?
+                readonly={false}
                 onBlur={async (value) => {
                   // await updateItemValue({
                   //   columnIndex: colIndex,

@@ -1,5 +1,12 @@
 "use client";
-import { ActionDispatch, createContext, useContext, useReducer } from "react";
+import {
+  ActionDispatch,
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 import {
   getItemWithChildColumns,
   getRows,
@@ -8,20 +15,33 @@ import {
   updateColumnOrder,
   updateColumnWidths,
 } from "./actions";
+import {
+  ContentTypeDefinition,
+  getContentTypes,
+} from "@/services/ContentTypeRepository";
+import _ from "lodash";
+import {
+  ContentTypeAttribute,
+  ContentTypeAttributeType,
+} from "../../../../../prisma/generated/mongo";
 
 type Rows = Awaited<ReturnType<typeof getRows>>;
 type DeferredRows = (Rows[number] | null | undefined)[];
 type ParentItem = Awaited<ReturnType<typeof getItemWithChildColumns>> & {
   rows: DeferredRows;
 };
+type ContentTypes = Awaited<ReturnType<typeof getContentTypes>>;
+
 const ItemProviderContext = createContext<{
   item: ParentItem;
+  contentTypes: ContentTypes;
   dispatch: ActionDispatch<[action: Events]>;
   query: Query;
 }>({
   item: null as unknown as ParentItem,
   dispatch: () => {},
   query: null as unknown as Query,
+  contentTypes: [] as ContentTypes,
 });
 
 type Events =
@@ -103,11 +123,47 @@ const reducer = (state: ParentItem, action: Events) => {
   }
 };
 
+export const ItemProviderClient: React.FC<{
+  children: React.ReactNode;
+  query: Query;
+}> = ({ children, query }) => {
+  const [item, setItem] = useState<ParentItem>();
+  const [contentTypes, setContentTypes] = useState<ContentTypes>([]);
+  const [columns, setColumns] = useState<ContentTypeDefinition[]>([]);
+  useEffect(() => {
+    (async () => {
+      const contentTypes = await getContentTypes();
+      const attributeKeys = contentTypes.reduce(
+        (acc, cur) => [
+          ...new Set([...acc, ...cur.attributes.map((attr) => attr.key)]),
+        ],
+        [] as string[]
+      );
+      const result = await getItemWithChildColumns(query);
+      const rows = await getRows(query, attributeKeys);
+
+      setContentTypes(contentTypes);
+      setItem({ ...result, rows });
+      setColumns([]);
+    })();
+  }, []);
+  if (!item) {
+    return null;
+  }
+
+  return (
+    <ItemProvider item={item} query={query} contentTypes={contentTypes}>
+      {children}
+    </ItemProvider>
+  );
+};
+
 export const ItemProvider: React.FC<{
   children: React.ReactNode;
   item: ParentItem;
   query: Query;
-}> = ({ children, item, query }) => {
+  contentTypes: ContentTypes;
+}> = ({ children, item, query, contentTypes }) => {
   // const [isPrending, startTransition] = useTransition();
   const [optimisticcValue, dispatch] = useReducer(reducer, {
     ...item,
@@ -123,6 +179,7 @@ export const ItemProvider: React.FC<{
         item: optimisticcValue,
         dispatch,
         query,
+        contentTypes,
       }}
     >
       {children}
@@ -131,35 +188,44 @@ export const ItemProvider: React.FC<{
 };
 
 export const useItem = () => {
-  const { item, dispatch, query } = useContext(ItemProviderContext);
+  const { item, dispatch, query, contentTypes } =
+    useContext(ItemProviderContext);
+  // console.log({ item });
+  const contentType = contentTypes.find((ct) => ct.id === item.type_id);
+  // console.log({ contentType, item });
   return {
     item,
     query,
+    contentTypes: contentTypes,
+    contentType: contentType,
+    columns: {},
+
     loadMore: async (props: { skip: number; take: number }) => {
-      for (const row in Array.from({ length: props.take })) {
-        dispatch({
-          type: "hydrate_row",
-          row: { id: row, type_id: "", values: [] },
-          index: Number(row) + props.skip,
-        });
-      }
-      const moreRows = await getRows(
-        {
-          parent_id: item.id,
-          skip: props.skip,
-          take: props.take,
-          sort_by: query.sort_by,
-          sort_order: query.sort_order,
-        },
-        item.column_config.map(({ key }) => key)
-      );
-      for (const row in moreRows) {
-        dispatch({
-          type: "hydrate_row",
-          row: moreRows[row],
-          index: Number(row) + props.skip,
-        });
-      }
+      // for (const row in Array.from({ length: props.take })) {
+      //   dispatch({
+      //     type: "hydrate_row",
+      //     row: { id: row, type_id: "", values: [] },
+      //     index: Number(row) + props.skip,
+      //   });
+      // }
+
+      // const moreRows = await getRows(
+      //   {
+      //     ...query,
+      //     skip: props.skip,
+      //     take: props.take,
+      //     // sort_by: query.sort_by,
+      //     // sort_order: query.sort_order,
+      //   },
+      //   item.column_config.map(({ key }) => key)
+      // );
+      // for (const row in moreRows) {
+      //   dispatch({
+      //     type: "hydrate_row",
+      //     row: moreRows[row],
+      //     index: Number(row) + props.skip,
+      //   });
+      // }
     },
     updateRowValue: async (props: {
       column_Key: string;
@@ -181,7 +247,7 @@ export const useItem = () => {
         type: "update_column_widths",
         widths: props.widths,
       });
-      await updateColumnWidths(item.id, props.widths);
+      // await updateColumnWidths(item.id, props.widths);
     },
 
     updateColumnOrder: async (props: { columnKeys: string[] }) => {
@@ -189,7 +255,7 @@ export const useItem = () => {
         type: "update_column_order",
         column_ids: props.columnKeys,
       });
-      await updateColumnOrder(item.id, props.columnKeys);
+      // await updateColumnOrder(item.id, props.columnKeys);
     },
     moveColumn: async (props: {
       draggedColumnIndex: number;

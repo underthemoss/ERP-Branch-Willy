@@ -15,20 +15,25 @@ import { prisma } from "@/lib/prisma";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Add } from "@mui/icons-material";
+import { ContentTypeComponent } from "@/ui/Icons";
+import { getContentTypes } from "@/services/ContentTypeRepository";
+import NewButton from "./@breadcrumbs/NewButton";
 
 export default async function SideNav() {
   const { user } = await getUser();
   const entities = await prisma.entity.findMany({
     where: {
-      type_id: "workspace",
-      tenant_id: { in: ["SYSTEM", user.company_id] },
+      tenant_id: user.company_id,
+      parent_id: { isSet: false },
     },
     select: {
       id: true,
       data: true,
-      type: true,
+      type_id: true,
     },
   });
+  const contentTypes = await getContentTypes();
+
   return (
     <Box display={"flex"} flexDirection={"column"} flex={1}>
       <Box>
@@ -44,23 +49,30 @@ export default async function SideNav() {
             </Link>
 
             <List>
-              {entities.map((item) => (
-                <Link href={`/app/item/${item.id}`} key={item.id}>
-                  <ListItem>
-                    <ListItemButton>
-                      <ListItemDecorator>
-                        <Avatar size="sm">
-                          <EntityTypeIcon
-                            entityTypeIcon={item.type.icon}
-                            entityId={item.id}
+              {entities.map((item) => {
+                const ct = contentTypes.find((ct) => ct.id === item.type_id);
+
+                if (!ct) return null;
+                return (
+                  <Link href={`/app/item/${item.id}`} key={item.id}>
+                    <ListItem>
+                      <ListItemButton>
+                        <Box>
+                          <ContentTypeComponent
+                            color={ct.color}
+                            icon={ct.icon}
+                            label={
+                              (item.data as any)[
+                                ct.allAttributes.find(() => true)?.key || ""
+                              ]
+                            }
                           />
-                        </Avatar>
-                      </ListItemDecorator>
-                      {(item.data as any).name}
-                    </ListItemButton>
-                  </ListItem>
-                </Link>
-              ))}
+                        </Box>
+                      </ListItemButton>
+                    </ListItem>
+                  </Link>
+                );
+              })}
             </List>
           </ListItem>
         </List>
@@ -68,7 +80,8 @@ export default async function SideNav() {
       <Box flex={1}></Box>
       <Box>
         <List>
-          <Link href="/app/item/null/new/workspace">
+          <NewButton itemId="" />
+          {/* <Link href="/app/item/null/new/workspace">
             <ListItem>
               <ListItemButton>
                 <ListItemDecorator>
@@ -77,7 +90,7 @@ export default async function SideNav() {
                 Add workspace
               </ListItemButton>
             </ListItem>
-          </Link>
+          </Link> */}
           <Link href="/app/settings">
             <ListItem>
               <ListItemButton>

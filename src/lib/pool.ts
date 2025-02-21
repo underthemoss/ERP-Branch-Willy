@@ -2,7 +2,7 @@ import { Pool, ClientConfig } from "pg";
 
 const { ESDB_HOST, ESDB_PORT, ESDB_USER, ESDB_PASSWORD } = process.env;
 
-export const config = {
+export const pgConfig = {
   host: ESDB_HOST!,
   port: Number(ESDB_PORT!),
   user: ESDB_USER!,
@@ -11,5 +11,5 @@ export const config = {
 } as ClientConfig;
 
 export const pool = new Pool({
-  ...config,
+  ...pgConfig,
 });

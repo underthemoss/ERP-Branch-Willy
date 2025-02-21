@@ -1,6 +1,5 @@
-import { getItemWithChildColumns, getRows, Query } from "./actions";
-import { ItemProvider } from "./ItemProvider";
-import { ItemTable } from "./table/ItemTable";
+import { Query } from "./actions";
+import { QueryTable } from "./table/QueryTable";
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
   searchParams: Promise<{ sort_by: string; sort_order: string }>;
@@ -9,21 +8,14 @@ export default async function Page(props: {
   const { sort_by, sort_order } = await props.searchParams;
 
   const query: Query = {
-    parent_id: item_id,
     skip: 0,
     take: 60,
     sort_by: sort_by || "created_at",
     sort_order: sort_order === "desc" ? "desc" : "asc",
+    filters: {
+      parent_id: item_id,
+    },
   };
-  const result = await getItemWithChildColumns(query);
-  const rows = await getRows(
-    query,
-    result.column_config.map(({ key }) => key)
-  );
 
-  return (
-    <ItemProvider key={Date.now()} query={query} item={{ ...result, rows }}>
-      <ItemTable />
-    </ItemProvider>
-  );
+  return <QueryTable query={query} />;
 }

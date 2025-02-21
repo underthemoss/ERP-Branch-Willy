@@ -25,6 +25,7 @@ import React, { Fragment, useState } from "react";
 import Check from "@mui/icons-material/Check";
 import AddIcon from "@mui/icons-material/Add";
 import { MenuItemLink } from "@/ui/MenuItemLink";
+import { usePathname } from "next/navigation";
 
 export const Tiles: React.FC<{ width: number; height: number }> = ({
   width,
@@ -33,7 +34,7 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
   const { item, loadMore } = useItem();
   const [editMode, setEditMode] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
-
+  const path = usePathname();
   const tileProps: BoxProps = editMode
     ? {
         display: "flex",
@@ -91,7 +92,7 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
           }}
           {...tileProps}
         >
-          <EntityCard item_id={item.id} />
+          {/* <EntityCard item_id={item.id} /> */}
         </Box>
         <Box
           key="table"
@@ -173,16 +174,15 @@ export const Tiles: React.FC<{ width: number; height: number }> = ({
                 );
               })}{" "}
               <ListDivider />
-              <MenuItemLink href={`/app/item/${item.id}/add-column`}>
+              {/* <MenuItemLink href={`/app/item/${item.id}/add-column`}>
                 <>Add new column</>
-              </MenuItemLink>{" "}
+              </MenuItemLink>{" "} */}
             </Menu>
           </Dropdown>
         </Box>
         {item.parent?.column_config
           .filter(({ type, key }) => type === "total_children")
           .map(({ key }) => {
-            console.log(key);
             return (
               <Box
                 key={key}

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { getItemWithChildColumns, getRows, Query } from "../actions";
 import { ItemProvider } from "../ItemProvider";
-import { ItemTable } from "./ItemTable";
+import { QueryTable } from "./QueryTable";
 
 export const TableContainer: React.FC<{
   query: Query;

@@ -135,20 +135,66 @@ type ColumnConfig {
 }
 
 model Entity {
-  id         String     @id @default(uuid()) @map("_id")
+  id         String      @id @default(uuid()) @map("_id")
   type_id    String
-  type       EntityType @relation(fields: [type_id], references: [id])
+  type       ContentType @relation(fields: [type_id], references: [id])
   tenant_id  String
   data       Json
-  hidden     Boolean?   @default(false)
+  hidden     Boolean?    @default(false)
   sort_order Float?
 
   column_config ColumnConfig[]
 
   // Hierarchical relationships
+  parent_id    String?
+  parent       Entity?     @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children     Entity[]    @relation("EntityHierarchy")
+  EntityType   EntityType? @relation(fields: [entityTypeId], references: [id])
+  entityTypeId String?
+}
+
+// type ContentTypeConfigField {
+//   id String
+//   name String
+// }
+
+// model ContentTypeConfig {
+//   id        String                   @id @map("_id")
+//   tenant_id String
+//   fields    ContentTypeConfigField[]
+// }
+
+enum ContentTypeAttributeType {
+  single_line_of_text
+  integer
+  date
+  lookup
+  img_url
+  location
+  email
+}
+
+type ContentTypeAttribute {
+  key   String
+  label String
+  type  ContentTypeAttributeType
+}
+
+model ContentType {
+  id                          String                 @id @map("_id")
+  tenant_id                   String
+  label                       String
+  attributes                  ContentTypeAttribute[]
+  color                       String
+  icon                        String
+  allowed_child_content_types String[]
+  abstract                    Boolean?               @default(false)
+
   parent_id String?
-  parent    Entity?  @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children  Entity[] @relation("EntityHierarchy")
+  parent    ContentType?  @relation("ContentTypeyHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  ContentType[] @relation("ContentTypeyHierarchy")
+
+  Entity Entity[]
 }
 
 model EntityType {

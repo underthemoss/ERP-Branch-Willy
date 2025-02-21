@@ -15,11 +15,12 @@ import {
 import { createSystemContentTypeInstance } from "@/services/ContentService";
 
 export type Query = {
-  parent_id: string;
+  // parent_id?: string;
   // cursor?: string;
   take: number;
   skip: number;
   sort_by: string;
+  filters?: { [key: string]: string | number };
   sort_order: "asc" | "desc";
 };
 
@@ -40,9 +41,10 @@ export const getRows = async (query: Query, column_ids: string[]) => {
   const { user } = await getUser();
 
   const matchQuery = {
-    parent_id: query.parent_id,
+    // parent_id: query.parent_id,
     tenant_id: user.company_id,
     hidden: false,
+    ...(query.filters || {}),
   };
 
   const sort = query.sort_by
@@ -86,14 +88,34 @@ export const getRows = async (query: Query, column_ids: string[]) => {
 
 export const getItemChildCount = async (query: Query) => {
   const { user } = await getUser();
-  return await prisma.entity.count({
-    where: {
+  const result = await prisma.$runCommandRaw({
+    count: "Entity",
+    query: {
       tenant_id: user.company_id,
-      parent_id: query.parent_id,
-      OR: [{ hidden: false }, { hidden: { isSet: false } }],
+      // parent_id: query.parent_id,
+      hidden: false,
+      ...query.filters,
     },
   });
+
+  const count = result.n; // The count result
+  return Number(count);
 };
+
+export const getContentTypeIdsInUse = async (query: Query) => {
+  const content_ids = (await prisma.entity.aggregateRaw({
+    pipeline: [
+      { $match: { ...query.filters } },
+      { $group: { _id: "$type_id", count: { $sum: 1 } } },
+      { $project: { type_id: "$_id", count: 1, _id: 0 } },
+    ],
+  })) as unknown as { type_id: string; count: number }[];
+  return content_ids;
+};
+
+// export const getRows = async () => {
+//   return [];
+// };
 
 export const getItemWithChildColumns = async (query: Query) => {
   const { user } = await getUser();
@@ -103,7 +125,7 @@ export const getItemWithChildColumns = async (query: Query) => {
     prisma.entity.findFirstOrThrow({
       where: {
         tenant_id: { in: [user.company_id, "SYSTEM"] },
-        id: query.parent_id,
+        // id: query.parent_id,
         OR: [{ hidden: false }, { hidden: { isSet: false } }],
       },
       select: {
@@ -116,7 +138,7 @@ export const getItemWithChildColumns = async (query: Query) => {
   ]);
 
   return {
-    id: query.parent_id,
+    // id: query.parent_id,
     count: await getItemChildCount(query),
     all_columns: await getColumns(),
     name: (item.data as any).name,

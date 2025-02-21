@@ -24,22 +24,24 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import _ from "lodash";
 import { deleteItem } from "../actions";
 import { DeleteForever } from "@mui/icons-material";
+import { usePathname } from "next/navigation";
+import { useTable } from "./TableProvider";
 // export const minimumColWidth = 120;
 
 const ColumnHeaderSortOptions: React.FC<{
   index: number;
 }> = ({ index }) => {
-  const { item, query } = useItem();
-  const column = item.column_config[index];
+  const { columns, query } = useTable();
+  const column = columns[index];
   const isOrderedColumn = query.sort_by === column.key;
-
+  const path = usePathname();
   if (isOrderedColumn) {
     const sortOrder = isOrderedColumn ? query.sort_order : null;
     const toggleOption = sortOrder === "asc" ? "desc" : "asc";
     return (
       <Box>
         <NextLink
-          href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=${toggleOption}`}
+          href={`${path}?sort_by=${column.key}&sort_order=${toggleOption}`}
         >
           <IconButton size="sm" color="neutral" sx={{ opacity: 0.9 }}>
             {sortOrder === "desc" ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
@@ -51,7 +53,7 @@ const ColumnHeaderSortOptions: React.FC<{
   return (
     <Box className={isOrderedColumn ? "" : "sort-options"}>
       <NextLink
-        href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=${
+        href={`${path}?sort_by=${column.key}&sort_order=${
           !isOrderedColumn
             ? "asc"
             : query.sort_order === "desc"
@@ -70,9 +72,10 @@ const ColumnHeaderSortOptions: React.FC<{
 const ColumnHeaderMoreOptions: React.FC<{
   index: number;
 }> = ({ index }) => {
-  const { item, query } = useItem();
-  const column = item.column_config[index];
+  const { columns } = useTable();
+  const column = columns[index];
   const [isOpen, setIsOpen] = useState(false);
+  const path = usePathname();
   return (
     <Box className={!isOpen ? "hover-option" : ""}>
       <Dropdown onOpenChange={(_, v) => setIsOpen(v)}>
@@ -90,17 +93,13 @@ const ColumnHeaderMoreOptions: React.FC<{
           <MoreVertIcon />
         </MenuButton>
         <Menu placement="bottom-end" sx={{ width: 250 }}>
-          <MenuItemLink
-            href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=asc`}
-          >
+          <MenuItemLink href={`${path}?sort_by=${column.key}&sort_order=asc`}>
             <ListItemDecorator>
               <ArrowUpwardIcon />
             </ListItemDecorator>
             Sort by ASC
           </MenuItemLink>
-          <MenuItemLink
-            href={`/app/item/${item.id}?sort_by=${column.key}&sort_order=desc`}
-          >
+          <MenuItemLink href={`${path}?sort_by=${column.key}&sort_order=desc`}>
             <ListItemDecorator>
               <ArrowDownwardIcon />
             </ListItemDecorator>
@@ -131,8 +130,8 @@ const ColumnHeaderMoreOptions: React.FC<{
 };
 
 export const TableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
-  const { item, query } = useItem();
-  const column = item.column_config[index];
+  const { columns } = useTable();
+  const column = columns[index];
   return (
     <Box
       flex={1}

@@ -18,6 +18,7 @@ import { UserPicker } from "@/ui/picker/UserPicker";
 import { LookupPicker } from "@/ui/picker/LookupPicker";
 import { useItem } from "../ItemProvider";
 import { Point } from "wkx";
+import { useTable } from "./TableProvider";
 
 export const CellRender = (props: {
   type: ColumnType;
@@ -29,8 +30,8 @@ export const CellRender = (props: {
   totalColumns: number;
   columnLookupConfig: LookupConfig | null;
 }) => {
-  const { updateRowValue, item } = useItem();
-  const item_id = item.rows[props.rowIndex]?.id;
+  const { rows } = useTable();
+  const item_id = rows[props.rowIndex]?.id;
   const tabIndex = props.readonly
     ? -1
     : props.colIndex + props.totalColumns * props.rowIndex + 1;
@@ -41,11 +42,11 @@ export const CellRender = (props: {
     setIsSaving(true);
     // await props.onBlur(value?.trim());
     if (item_id) {
-      await updateRowValue({
-        item_id: item_id,
-        column_Key: item.column_config[props.colIndex].key,
-        value: value?.trim() || null,
-      });
+      // await updateRowValue({
+      //   item_id: item_id,
+      //   column_Key: item.column_config[props.colIndex].key,
+      //   value: value?.trim() || null,
+      // });
     }
     setIsSaving(false);
   };

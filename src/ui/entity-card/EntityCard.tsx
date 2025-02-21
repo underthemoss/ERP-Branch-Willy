@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react";
 import AspectRatio from "@mui/joy/AspectRatio";
 import Link from "@mui/joy/Link";
@@ -25,7 +26,8 @@ import { getEntityCardData } from "./actions";
 
 export const EntityCard: React.FC<{
   item_id: string;
-}> = ({ item_id }) => {
+  show_cta?: boolean;
+}> = ({ item_id, show_cta = true }) => {
   const [item, setData] = React.useState<Awaited<
     ReturnType<typeof getEntityCardData>
   > | null>();
@@ -137,6 +139,9 @@ export const EntityCard: React.FC<{
         sx={{ pointerEvents: "none", display: "flex", flex: 1, width: "100%" }}
       >
         {item.parent?.column_config?.map((column_config, i) => {
+          if (column_config.type === "img_url") {
+            return null;
+          }
           return (
             <Box key={i} display={"flex"} flex={1} gap={1}>
               <Typography
@@ -167,20 +172,26 @@ export const EntityCard: React.FC<{
           );
         })}
       </CardContent>
-      <CardActions
-        orientation="vertical"
-        buttonFlex={1}
-        sx={{
-          "--Button-radius": "40px",
-          width: "clamp(min(100%, 160px), 50%, min(100%, 200px))",
-        }}
-      >
-        <NextLink href={`/app/item/${item.id}`}>
-          <Button variant="solid" color="primary">
-            Open
-          </Button>
-        </NextLink>
-      </CardActions>
+      {show_cta && (
+        <CardActions
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          orientation="vertical"
+          buttonFlex={1}
+          sx={{
+            "--Button-radius": "40px",
+            width: "clamp(min(100%, 160px), 50%, min(100%, 200px))",
+          }}
+        >
+          <NextLink href={`/app/item/${item.id}`}>
+            <Button variant="solid" color="primary">
+              Open
+            </Button>
+          </NextLink>
+        </CardActions>
+      )}
     </Card>
   );
 };

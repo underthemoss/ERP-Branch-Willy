@@ -6,6 +6,7 @@ import {
   createContentTypeInstance,
   getContentType,
 } from "@/services/ContentService";
+import { getContentTypes } from "@/services/ContentTypeRepository";
 
 import { NextLinkBack } from "@/ui/NextLink";
 import {
@@ -20,6 +21,7 @@ import { randomUUID } from "crypto";
 
 import _ from "lodash";
 import { redirect } from "next/navigation";
+import { ulid } from "ulid";
 
 export const NewEntityForm = async (props: {
   content_type_id: string;
@@ -29,11 +31,9 @@ export const NewEntityForm = async (props: {
   const parentId = parent_id === "null" ? undefined : parent_id;
   const { user } = await getUser();
 
-  const entityType = await getContentType({
-    contentTypeId: content_type_id,
-    tenantId: user.company_id,
-  });
-
+  const contentTypes = await getContentTypes();
+  const contentType = contentTypes.find((ct) => ct.id === content_type_id);
+  // console.log(contentType);
   return (
     <Box m={2}>
       <form
@@ -41,53 +41,45 @@ export const NewEntityForm = async (props: {
           "use server";
           const { user } = await getUser();
           const attributes = Object.fromEntries(formData.entries());
-          const val = await createContentTypeInstance({
-            attributes,
-            contentTypeId: content_type_id,
-            parentId: parentId,
-          });
+          // console.log(attributes);
+          // const val = await createContentTypeInstance({
+          //   attributes,
+          //   contentTypeId: content_type_id,
+          //   parentId: parentId,
+          // });
 
-          await prisma.entity.update({
-            where: { id: val.id },
+          const result = await prisma.entity.create({
             data: {
-              column_config: {
-                push: [
-                  {
-                    hidden: false,
-                    key: randomUUID(),
-                    label: "Children",
-                    readonly: true,
-                    type: "total_children",
-                  },
-                ],
-              },
+              id: ulid(),
+              tenant_id: user.company_id,
+              parent_id: parentId,
+              data: { ...(attributes as any) },
+              type_id: contentType!.id,
             },
           });
 
-          redirect(`/app/item/${val.parent_id || val.id}`);
+          redirect(`/app/item/${result.parent_id || result.id}`);
         }}
       >
         <Box mb={2}>
-          <Typography level="h1">New {entityType.name}</Typography>
+          <Typography level="h1">New {contentType?.label}</Typography>
         </Box>
         <Box mb={2}>
-          <Typography level="body-md">{entityType.name}</Typography>
+          <Typography level="body-md">{contentType?.label}</Typography>
         </Box>
         <Box>
           <Box gap={1} display={"flex"} flexDirection={"column"}>
-            {entityType.entity_type_columns
-              .filter(({ column }) => !column.readonly)
-              .map(({ required, column }, i) => {
+            {contentType?.allAttributes
+              // .filter(({ column }) => !column.readonly)
+              .map(({ key, label, type }, i) => {
                 return (
-                  <FormControl key={column.id}>
-                    <FormLabel required={required === true}>
-                      {column.label}
-                    </FormLabel>
+                  <FormControl key={key}>
+                    <FormLabel required={true}>{label}</FormLabel>
                     <Input
-                      required={required === true}
+                      required={true}
                       autoComplete="off"
-                      type={column.type}
-                      name={column.id}
+                      type={"text"}
+                      name={key}
                       defaultValue={""}
                       autoFocus={i === 0}
                     />

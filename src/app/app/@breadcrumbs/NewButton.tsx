@@ -2,12 +2,9 @@ import * as React from "react";
 import Dropdown from "@mui/joy/Dropdown";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
 import AddIcon from "@mui/icons-material/Add";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SystemEntityTypes } from "@/lib/SystemTypes";
-import { NextLink } from "@/ui/NextLink";
 import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
@@ -16,48 +13,53 @@ import {
   ContentTypeCategories,
   GlobalContentTypeId,
 } from "@/config/ContentTypesConfig";
+import { getContentTypes } from "@/services/ContentTypeRepository";
+import { ContentTypeIcon } from "@/ui/Icons";
+import { SystemContentTypeIds } from "@/services/SystemContentTypes";
 
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await getUser();
+  const item = props.itemId
+    ? await prisma.entity.findFirstOrThrow({
+        where: { tenant_id: user.company_id, id: props.itemId },
+      })
+    : null;
+  const contentTypes = await getContentTypes();
+  const contentType = item
+    ? contentTypes.find((ct) => ct.id === item?.type_id)
+    : null;
 
-  const parentEntity = await prisma.entity.findFirst({
-    where: { id: props.itemId, tenant_id: { in: ["SYSTEM", user.company_id] } },
-    include: { type: true },
-  });
+  const validContentTypes = contentType
+    ? contentTypes.filter(
+        (ct) =>
+          !ct.abstract &&
+          ct.inheritageLineage.some((item) =>
+            contentType.allowed_child_content_types?.includes(item)
+          )
+      )
+    : contentTypes.filter((ct) =>
+        ct.inheritageLineage.includes(SystemContentTypeIds.Workspace)
+      );
 
-  const entityTypes = await prisma.entityType.findMany({
-    where: {
-      tenant_id: { in: ["SYSTEM", user.company_id] },
-    },
-  });
+  if (validContentTypes.length === 0) return null;
   return (
     <Dropdown>
       <MenuButton startDecorator={<AddIcon />}>New</MenuButton>
       <Menu placement="bottom-end" sx={{ minWidth: 150 }}>
-        {entityTypes
-          .filter((et) =>
-            parentEntity
-              ? parentEntity.type.valid_child_type_ids.includes(et.id)
-              : et.id === ("workspace" satisfies GlobalContentTypeId)
-          )
-          .filter(
-            ({ category }) =>
-              category !== ("hidden" satisfies ContentTypeCategories)
-          )
-          .map((et) => {
-            return (
-              <MenuItemLink
-                key={et.id}
-                // disabled={!allowedTypeIds.includes(et.id)}
-                href={`/app/item/${props.itemId || "null"}/new/${et.id}`}
-              >
-                <ListItemDecorator>
-                  <EntityTypeIcon entityTypeIcon={et.icon} />
-                </ListItemDecorator>
-                New {et.name}
-              </MenuItemLink>
-            );
-          })}
+        {validContentTypes.map((ct) => {
+          return (
+            <MenuItemLink
+              key={ct.id}
+              // disabled={!allowedTypeIds.includes(et.id)}
+              href={`/app/item/${props.itemId || "null"}/new/${ct.id}`}
+            >
+              <ListItemDecorator>
+                <ContentTypeIcon color={ct.color} icon={ct.icon} />
+              </ListItemDecorator>
+              {ct.label}
+            </MenuItemLink>
+          );
+        })}
       </Menu>
     </Dropdown>
   );

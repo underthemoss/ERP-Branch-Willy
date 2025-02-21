@@ -10,9 +10,9 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
   height,
   width,
 }) => {
-  const { item } = useItem();
+  const { item, columns } = useItem();
   const actualWidth = Math.max(
-    item.column_config.reduce((t, i) => t + i.width, 0),
+    // item.column_config.reduce((t, i) => t + i.width, 0),
     width
   );
   return (
@@ -38,7 +38,7 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
           <Button
             variant="plain"
             onClick={async () => {
-              await addRecord(item.id);
+              // await addRecord(item.id);
             }}
             // disabled
           >
@@ -48,7 +48,7 @@ export const TableFooter: React.FC<{ width: number; height: number }> = ({
         <Box flex={1}></Box>
         <Box mr={2}>
           <Typography level="title-sm">
-            Total rows: {item.rows.length}{" "}
+            {/* Total rows: {item.rows?.length}{" "} */}
           </Typography>
         </Box>
       </Box>

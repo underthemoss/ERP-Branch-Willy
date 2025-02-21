@@ -9,184 +9,132 @@ import SQL from "sql-template-strings";
 import { ColumnConfig, Entity } from "../../prisma/generated/mongo";
 import { tenantIds } from "./hashingUtils";
 import { GlobalColumnData, GlobalColumnIds } from "@/config/ColumnConfig";
-import { pool } from "@/lib/pool";
+import { pgConfig, pool } from "@/lib/pool";
+import { IDatabaseConnection, sql } from "@pgtyped/runtime";
+import { assets } from "./assets.queries";
+import { Client } from "pg";
 
 export const syncAssets = async (tenantId: string) => {
-  const workspaceId = tenantId + "-" + "assets";
-  const columns: ColumnConfig[] = [
-    {
-      key: "id",
-      hidden: false,
-      label: "ID",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 150,
-      lookup: null,
-    },
-    {
-      key: "equipment_photo",
-      hidden: false,
-      label: "Photo",
-      readonly: true,
-      type: "img_url",
-      width: 70,
-      lookup: null,
-    },
-    {
-      key: "name",
-      hidden: false,
-      label: "Custom name",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 200,
-      lookup: null,
-    },
-    {
-      key: "location",
-      hidden: false,
-      label: "Location",
-      readonly: true,
-      type: "location",
-      width: 150,
-      lookup: null,
-    },
-    {
-      key: "equipment_category",
-      hidden: false,
-      label: "Category",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 120,
-      lookup: null,
-    },
-    {
-      key: "equipment_class",
-      hidden: false,
-      label: "Class",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 200,
-      lookup: null,
-    },
-    {
-      key: "equipment_make",
-      hidden: false,
-      label: "Make",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 200,
-      lookup: null,
-    },
-    {
-      key: "equipment_model",
-      hidden: false,
-      label: "Model",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 200,
-      lookup: null,
-    },
-    {
-      key: "equipment_custom_model",
-      hidden: false,
-      label: "Custom Model",
-      readonly: true,
-      type: "single_line_of_text",
-      width: 200,
-      lookup: null,
-    },
-    {
-      key: "total_children",
-      hidden: false,
-      label: "Children",
-      readonly: true,
-      type: "total_children",
-      width: 200,
-      lookup: null,
-    },
-  ];
+  // const workspaceId = tenantId + "-" + "assets";
 
-  await prisma.entity.upsert({
-    where: { id: workspaceId },
-    create: {
-      id: workspaceId,
-      tenant_id: tenantId,
-      data: {
-        name: "Assets",
-      },
-      type_id: "workspace",
-      column_config: columns,
-    },
+  // const columns: ColumnConfig[] = [
+  //   {
+  //     key: "id",
+  //     hidden: false,
+  //     label: "ID",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 150,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_photo",
+  //     hidden: false,
+  //     label: "Photo",
+  //     readonly: true,
+  //     type: "img_url",
+  //     width: 70,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "name",
+  //     hidden: false,
+  //     label: "Custom name",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "location",
+  //     hidden: false,
+  //     label: "Location",
+  //     readonly: true,
+  //     type: "location",
+  //     width: 150,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_category",
+  //     hidden: false,
+  //     label: "Category",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 120,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_class",
+  //     hidden: false,
+  //     label: "Class",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_make",
+  //     hidden: false,
+  //     label: "Make",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_model",
+  //     hidden: false,
+  //     label: "Model",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "equipment_custom_model",
+  //     hidden: false,
+  //     label: "Custom Model",
+  //     readonly: true,
+  //     type: "single_line_of_text",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  //   {
+  //     key: "total_children",
+  //     hidden: false,
+  //     label: "Children",
+  //     readonly: true,
+  //     type: "total_children",
+  //     width: 200,
+  //     lookup: null,
+  //   },
+  // ];
 
-    update: {},
-  });
-  const client = await pool.connect();
+  // await prisma.entity.upsert({
+  //   where: { id: workspaceId },
+  //   create: {
+  //     id: workspaceId,
+  //     tenant_id: tenantId,
+  //     data: {
+  //       name: "Assets",
+  //     },
+  //     type_id: "workspace",
+  //     column_config: columns,
+  //   },
+
+  //   update: {},
+  // });
+
+  const client = new Client(pgConfig);
+  const connection: IDatabaseConnection = {
+    query: (query, bindings) => client.query(query, bindings) as any,
+    stream: (query, bindings) => client.query(new Cursor(query, bindings)),
+  };
+
+  await client.connect();
+  const cursor = assets.stream({ company_id: Number(tenantId) }, connection);
+
   try {
-    const cursor = client.query(
-      new Cursor<{
-        id: number;
-        custom_name: string;
-        company_id: number;
-        model: string;
-        equipment_class_name: string | null;
-        category_name: string | null;
-        photo_filename: string | null;
-        make_name: string | null;
-        model_name: string | null;
-        status: {
-          asset_status_key_value_id: number;
-          asset_id: number;
-          name: string;
-          // the "value" is built as an array of two numbers [x, y]
-          value: [number, number];
-        }[];
-      }>(
-        SQL`
-      SELECT 
-        a.asset_id AS id,
-        a.custom_name,
-        a.company_id,
-        a.model,
-        ec.name AS equipment_class_name,
-        c.name AS category_name,
-        p.filename AS photo_filename,
-        mk.name AS make_name,
-        em.name AS model_name,
-        json_agg(
-          json_build_object(
-            'asset_status_key_value_id', askv.asset_status_key_value_id,
-            'asset_id', askv.asset_id,
-            'name', askv.name,
-            'value', ARRAY [ST_X(ST_AsText(askv.value)),ST_Y(ST_AsText(askv.value))]
-          )
-        ) FILTER (WHERE askv.asset_status_key_value_id IS NOT NULL) AS status
-      FROM assets a
-      LEFT JOIN equipment_classes ec 
-        ON a.equipment_class_id = ec.equipment_class_id
-      LEFT JOIN categories c 
-        ON a.category_id = c.category_id
-      LEFT JOIN photos p 
-        ON a.photo_id = p.photo_id
-      LEFT JOIN equipment_makes mk 
-        ON a.equipment_make_id = mk.equipment_make_id
-      LEFT JOIN equipment_models em 
-        ON a.equipment_model_id = em.equipment_model_id
-      LEFT JOIN asset_status_key_values askv 
-        ON a.asset_id = askv.asset_id AND askv.name = 'location'
-      WHERE a.company_id = $1
-      GROUP BY 
-        a.asset_id, 
-        ec.name, 
-        c.name, 
-        p.filename, 
-        mk.name, 
-        em.name
-  
-          `.text,
-        [tenantId]
-      )
-    );
-
     while (true) {
       const rows = await cursor.read(5_000);
 
@@ -199,7 +147,8 @@ export const syncAssets = async (tenantId: string) => {
           id,
           custom_name,
           company_id,
-          status,
+          latitude,
+          longitude,
           equipment_class_name,
           make_name,
           model_name,
@@ -211,11 +160,8 @@ export const syncAssets = async (tenantId: string) => {
           const { assetsSheetId } = tenantIds(tenant_id);
 
           const _id = tenantIds(company_id).assetId(id);
-          const coordinates = status?.[0]?.value
-            ? status[0].value.filter(Boolean).length > 0
-              ? status?.[0]?.value
-              : null
-            : null;
+          const coordinates =
+            latitude && longitude ? [latitude, longitude] : undefined;
           return [
             {
               upsert: true,
@@ -225,8 +171,8 @@ export const syncAssets = async (tenantId: string) => {
                   $set: {
                     _id: _id,
                     tenant_id: company_id.toString(),
-                    type_id: "record" satisfies GlobalContentTypeId,
-                    parent_id: workspaceId,
+                    type_id: "asset",
+                    parent_id: null,
                     hidden: false,
                     sort_order: 0,
                     column_config: [],
@@ -243,7 +189,7 @@ export const syncAssets = async (tenantId: string) => {
                         ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
                         : null,
                     },
-                  } satisfies Omit<Entity, "id"> & { _id: string },
+                  } //satisfies Omit<Entity, "id"> & { _id: string },
                 },
               ],
             },
@@ -257,6 +203,7 @@ export const syncAssets = async (tenantId: string) => {
       });
     }
   } finally {
-    client.release();
+    await cursor.close();
+    await client.end();
   }
 };

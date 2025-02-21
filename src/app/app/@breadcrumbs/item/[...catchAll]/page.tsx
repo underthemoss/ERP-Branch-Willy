@@ -7,33 +7,40 @@ import NewButton from "../../NewButton";
 import { JsonObject } from "@prisma/client/runtime/library";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { EntityTypeIcon as EntityTypeIconEnum } from "../../../../../../prisma/generated/mongo";
+import { ContentTypeComponent } from "@/ui/Icons";
+import {
+  ContentTypeDefinition,
+  getContentTypes,
+} from "@/services/ContentTypeRepository";
 
 const traverseUp = async (
   tenantId: string,
-  id: string | null
+  id: string | null,
+  contentTypes: ContentTypeDefinition[]
 ): Promise<
-  { id: string; name: string; typeId: string; icon: EntityTypeIconEnum }[]
+  { id: string; name: string; typeId: string; icon: string; color: string }[]
 > => {
   if (!id || id === "null") return [];
 
   const entity = await prisma.entity.findFirstOrThrow({
-    where: { id, tenant_id: { in: ["SYSTEM", tenantId] } },
+    where: { id, tenant_id: tenantId },
     select: {
       data: true,
       parent_id: true,
       id: true,
       type_id: true,
-      type: { select: { icon: true } },
+      // type: { select: { icon: true, color: true } },
     },
   });
-
+  const type = contentTypes.find((ct) => ct.id === entity.type_id);
   return [
-    ...(await traverseUp(tenantId, entity.parent_id)),
+    ...(await traverseUp(tenantId, entity.parent_id, contentTypes)),
     {
-      name: (entity.data as JsonObject).name as string, //todo: item_title is not great here
+      name: Object.values(entity.data as JsonObject)[0] as string,
       id: entity.id,
-      typeId: entity.type_id,
-      icon: entity.type.icon,
+      typeId: type?.id || "",
+      icon: type?.icon || "",
+      color: type?.color || "",
     },
   ];
 };
@@ -43,8 +50,8 @@ export default async function HeaderBreadcrumbs(props: {
 }) {
   const { user } = await getUser();
   const itemId = (await props.params).catchAll[2];
-  const ancestors = await traverseUp(user.company_id, itemId);
-
+  const contentTypes = await getContentTypes();
+  const ancestors = await traverseUp(user.company_id, itemId, contentTypes);
   return (
     <>
       <Box display={"flex"}>
@@ -57,8 +64,11 @@ export default async function HeaderBreadcrumbs(props: {
 
           {ancestors.map((s) => (
             <NextLink href={`/app/item/${s.id}`} key={s.id}>
-              <EntityTypeIcon entityTypeIcon={s.icon} entityId={s.id} />
-              <Box ml={1}>{s.name}</Box>
+              <ContentTypeComponent
+                color={s.color}
+                icon={s.icon}
+                label={s.name}
+              />
             </NextLink>
           ))}
         </Breadcrumbs>
