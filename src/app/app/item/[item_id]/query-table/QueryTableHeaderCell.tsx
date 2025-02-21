@@ -29,7 +29,7 @@ const ColumnHeaderSortOptions: React.FC<{
 }> = ({ index }) => {
   const { columns, query } = useTable();
   const column = columns[index];
-  const isOrderedColumn = query.sort_by === column.key;
+  const isOrderedColumn = query.sort_by === column.id;
   const path = usePathname();
   if (isOrderedColumn) {
     const sortOrder = isOrderedColumn ? query.sort_order : null;
@@ -37,7 +37,7 @@ const ColumnHeaderSortOptions: React.FC<{
     return (
       <Box>
         <NextLink
-          href={`${path}?sort_by=${column.key}&sort_order=${toggleOption}`}
+          href={`${path}?sort_by=${column.id}&sort_order=${toggleOption}`}
         >
           <IconButton size="sm" color="neutral" sx={{ opacity: 0.9 }}>
             {sortOrder === "desc" ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
@@ -49,7 +49,7 @@ const ColumnHeaderSortOptions: React.FC<{
   return (
     <Box className={isOrderedColumn ? "" : "sort-options"}>
       <NextLink
-        href={`${path}?sort_by=${column.key}&sort_order=${
+        href={`${path}?sort_by=${column.id}&sort_order=${
           !isOrderedColumn
             ? "asc"
             : query.sort_order === "desc"
@@ -89,13 +89,13 @@ const ColumnHeaderMoreOptions: React.FC<{
           <MoreVertIcon />
         </MenuButton>
         <Menu placement="bottom-end" sx={{ width: 250 }}>
-          <MenuItemLink href={`${path}?sort_by=${column.key}&sort_order=asc`}>
+          <MenuItemLink href={`${path}?sort_by=${column.id}&sort_order=asc`}>
             <ListItemDecorator>
               <ArrowUpwardIcon />
             </ListItemDecorator>
             Sort by ASC
           </MenuItemLink>
-          <MenuItemLink href={`${path}?sort_by=${column.key}&sort_order=desc`}>
+          <MenuItemLink href={`${path}?sort_by=${column.id}&sort_order=desc`}>
             <ListItemDecorator>
               <ArrowDownwardIcon />
             </ListItemDecorator>

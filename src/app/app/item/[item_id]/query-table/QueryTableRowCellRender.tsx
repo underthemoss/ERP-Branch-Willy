@@ -10,6 +10,7 @@ import {
 } from "@mui/joy";
 import {
   ColumnType,
+  ContentTypeConfigFieldType,
   LookupConfig,
 } from "../../../../../../prisma/generated/mongo";
 import { HTMLInputTypeAttribute, useState } from "react";
@@ -20,7 +21,7 @@ import { LookupPicker } from "@/ui/picker/LookupPicker";
 import { useTable } from "./QueryTableProvider";
 
 export const QueryTableRowCellRender = (props: {
-  type: ColumnType;
+  type: ContentTypeConfigFieldType;
   value: string | undefined | null;
   readonly: boolean;
   onBlur: (value: string | undefined | null) => Promise<void>;
@@ -164,7 +165,7 @@ export const QueryTableRowCellRender = (props: {
       display={"flex"}
       height={"100%"}
     >
-      {props.type === "user" &&
+      {/* {props.type === "user" &&
         props.value &&
         (props.readonly ? (
           <LazyUserDetail userId={props.value} />
@@ -202,16 +203,16 @@ export const QueryTableRowCellRender = (props: {
             );
           })()}
         </Box>
-      )}
+      )} */}
 
-      {props.type === "total_children" && (
+      {/* {props.type === "total_children" && (
         <Box pl={1} alignContent={"center"} overflow={"hidden"}>
           <Typography noWrap>{(props.value || 0).toString()}</Typography>
         </Box>
-      )}
+      )} */}
       {isEditing && !props.readonly ? (
         <>
-          {props.type === "single_line_of_text" && (
+          {props.type === "text" && (
             <SimpleEditInput type="text" defaultValue={props.value} />
           )}
           {props.type === "date" && (
@@ -220,12 +221,12 @@ export const QueryTableRowCellRender = (props: {
           {props.type === "email" && (
             <SimpleEditInput type="email" defaultValue={props.value} />
           )}
-          {props.type === "integer" && (
+          {props.type === "number" && (
             <SimpleEditInput type="number" defaultValue={props.value} />
           )}
-          {props.type === "img_url" && (
+          {/* {props.type === "img_url" && (
             <SimpleEditInput type="text" defaultValue={props.value} />
-          )}
+          )} */}
         </>
       ) : (
         <Box
@@ -238,10 +239,10 @@ export const QueryTableRowCellRender = (props: {
           onClick={() => setFocus(props.colIndex, props.rowIndex)}
         >
           <Typography noWrap>
-            {props.type === "single_line_of_text" && props.value}
+            {props.type === "text" && props.value}
             {props.type === "email" && props.value}
           </Typography>
-          {props.type === "img_url" &&
+          {/* {props.type === "img_url" &&
             props.value &&
             props.value.startsWith("http") && (
               <Tooltip
@@ -250,8 +251,8 @@ export const QueryTableRowCellRender = (props: {
               >
                 <Avatar sx={{ position: "unset" }} src={props.value} />
               </Tooltip>
-            )}
-          {props.type === "integer" && props.value}
+            )} */}
+          {props.type === "number" && props.value}
           {/* {props.type === "user" && props.value && (
             <LazyUserDetail userId={props.value} />
           )} */}

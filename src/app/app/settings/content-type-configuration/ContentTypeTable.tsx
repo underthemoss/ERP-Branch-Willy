@@ -1,33 +1,12 @@
-import { getUser } from "@/lib/auth";
+"use client";
 import { NextLink } from "@/ui/NextLink";
-import { prisma } from "@/lib/prisma";
-import {
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  Table,
-  Tooltip,
-  Typography,
-} from "@mui/joy";
-import Link from "next/link";
-import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import {
-  ContentType,
-  ContentTypeAttribute,
-} from "../../../../../prisma/generated/mongo";
-import { Fragment } from "react";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { getContentTypes } from "@/services/ContentTypeRepository";
-import { ContentTypeComponent, ContentTypeIcon } from "@/ui/Icons";
+import { Box, Chip, Table, Typography } from "@mui/joy";
+import { ContentTypeIcon } from "@/ui/Icons";
 import { InheritanceLayer } from "./InheritanceLayer";
+import { useContentTypes } from "@/lib/content-types/useContentTypes";
 
-export default async function Page(props: {
-  params: Promise<{ item_id: string }>;
-}) {
-  const contentTypes = (await getContentTypes());
-
+export const ContentTypeTable = () => {
+  const { config } = useContentTypes();
   return (
     <Box>
       <Box display={"flex"}>
@@ -38,7 +17,9 @@ export default async function Page(props: {
         <Box flex={1}></Box>
       </Box>
 
-      <InheritanceLayer contentTypes={contentTypes} />
+      {/* <Test config={contentTypes} /> */}
+
+      <InheritanceLayer contentTypes={config} />
 
       <Box mt={3}>
         <Box mb={2}>
@@ -57,13 +38,15 @@ export default async function Page(props: {
             </tr>
           </thead>
           <tbody>
-            {contentTypes.map((ct) => {
+            {config.map((ct) => {
               const marginLeft = 3;
               return (
                 <tr key={ct.id}>
                   <td>
-                    <Box pl={ct.inheritageLineage.length * marginLeft}>
-                      <NextLink href={`/app/settings/content-types/${ct.id}`}>
+                    <Box pl={ct.computed.depth * marginLeft}>
+                      <NextLink
+                        href={`/app/settings/content-type-configuration/${ct.id}`}
+                      >
                         <ContentTypeIcon
                           icon={ct.icon}
                           color={ct.color}
@@ -76,7 +59,7 @@ export default async function Page(props: {
                   </td>
                   <td>
                     <Box display={"flex"} gap={2}>
-                      {ct.validChildContentTypes.map((ct) => (
+                      {ct.computed.creatableChildTypes.map((ct) => (
                         <NextLink
                           key={ct.id}
                           href={`/app/settings/content-types/${ct.id}`}
@@ -88,13 +71,13 @@ export default async function Page(props: {
                     </Box>
                   </td>
                   <td>
-                    {ct.attributes.map((attr) => (
-                      <Chip key={attr.key}>{attr.label}</Chip>
+                    {ct.fields.map((field) => (
+                      <Chip key={field.id}>{field.label}</Chip>
                     ))}
                   </td>
                   <td>
-                    {ct.inheritedAttributes.map((attr) => (
-                      <Chip key={attr.key}>{attr.label}</Chip>
+                    {ct.computed.inheritedFields.map((field) => (
+                      <Chip key={field.id}>{field.label}</Chip>
                     ))}
                   </td>
                 </tr>
@@ -104,10 +87,10 @@ export default async function Page(props: {
         </Table>
       </Box>
       <Box mt={4}>
-        <NextLink href="/app/settings/content-types/create-new-content-type">
+        <NextLink href="/app/settings/content-type-configuration/create-new-content-type">
           Create New Content Type
         </NextLink>
       </Box>
     </Box>
   );
-}
+};

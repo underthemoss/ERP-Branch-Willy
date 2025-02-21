@@ -1,5 +1,5 @@
 import { CustomModal } from "../../../../../CustomModal";
-import Child from "../../../../../../settings/content-types/[contentTypeId]/create-subtype/page";
+import Child from "../../../../../../settings/content-type-configuration/page";
 
 export default async function Page(props: any) {
   return (

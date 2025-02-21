@@ -31,27 +31,31 @@ import Done from "@mui/icons-material/Done";
 import {
   ContentTypeAttribute,
   ContentTypeAttributeType,
+  ContentTypeConfigField,
+  ContentTypeConfigFieldType,
 } from "../../../../../../prisma/generated/mongo";
 import { Input } from "@mui/joy";
-import AttributeDataTypeSelect, { ContentTypeAttributeDataTypeOptions } from "./AttributeDataTypeSelect";
+import AttributeDataTypeSelect, {
+  ContentTypeAttributeDataTypeOptions,
+} from "./AttributeDataTypeSelect";
 import IconSelector from "./IconSelect";
 import { ulid } from "ulid";
 
 export default function AttributeEditor(props: {
   open: boolean;
   setOpen: (val: boolean) => void;
-  defaultValue: ContentTypeAttribute | null | undefined;
-  onChange: (attr: ContentTypeAttribute) => void;
+  defaultValue: ContentTypeConfigField | null | undefined;
+  onChange: (attr: ContentTypeConfigField) => void;
 }) {
   const { open, setOpen, defaultValue, onChange } = props;
 
-  const [type, setType] = React.useState<ContentTypeAttributeType>(
-    ContentTypeAttributeType.single_line_of_text
+  const [type, setType] = React.useState<ContentTypeConfigFieldType>(
+    ContentTypeConfigFieldType.text
   );
   const [label, setLabel] = React.useState<string>("");
 
   React.useEffect(() => {
-    setType(defaultValue?.type || ContentTypeAttributeType.single_line_of_text);
+    setType(defaultValue?.type || ContentTypeConfigFieldType.text);
     setLabel(defaultValue?.label || "");
   }, [defaultValue, setType, setLabel]);
 
@@ -159,7 +163,7 @@ export default function AttributeEditor(props: {
             <Button
               onClick={() => {
                 setOpen(false);
-                onChange({ label, type, key: defaultValue?.key || ulid() });
+                onChange({ label, type, id: defaultValue?.id || ulid() });
               }}
             >
               Accept

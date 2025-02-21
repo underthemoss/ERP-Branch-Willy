@@ -9,9 +9,10 @@ import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
-import { getContentTypes } from "@/services/ContentTypeRepository";
+import { getContentTypeConfig } from "@/services/ContentTypeRepository";
 import { ContentTypeIcon } from "@/ui/Icons";
 import { SystemContentTypeIds } from "@/services/SystemContentTypes";
+import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await getUser();
@@ -20,21 +21,18 @@ export default async function NewButton(props: { itemId: string }) {
         where: { tenant_id: user.company_id, id: props.itemId },
       })
     : null;
-  const contentTypes = await getContentTypes();
+  const contentTypes = denormaliseConfig(await getContentTypeConfig());
   const contentType = item
     ? contentTypes.find((ct) => ct.id === item?.type_id)
     : null;
 
   const validContentTypes = contentType
-    ? contentTypes.filter(
+    ? contentType.computed.creatableChildTypes
+    : contentTypes.filter(
         (ct) =>
-          !ct.abstract &&
-          ct.inheritageLineage.some((item) =>
-            contentType.allowed_child_content_types?.includes(item)
-          )
-      )
-    : contentTypes.filter((ct) =>
-        ct.inheritageLineage.includes(SystemContentTypeIds.Workspace)
+          ct.computed.ancestors.some(
+            ({ id }) => id === SystemContentTypeIds.Workspace
+          ) || ct.id === SystemContentTypeIds.Workspace
       );
 
   if (validContentTypes.length === 0) return null;

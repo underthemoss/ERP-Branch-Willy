@@ -20,10 +20,6 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import {
-  ContentTypeDefinition,
-  upsertContentType,
-} from "@/services/ContentTypeRepository";
 import { NextLink } from "@/ui/NextLink";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRouter } from "next/navigation";
@@ -35,14 +31,15 @@ import { ContentTypeComponent, ContentTypeIcon } from "@/ui/Icons";
 
 import { ulid } from "ulid";
 import { ContentTypeAttributeDataTypeOptions } from "./AttributeDataTypeSelect";
+import { useContentTypes } from "@/lib/content-types/useContentTypes";
 
 const CreateContentTypeForm: React.FC<{
   id?: string;
-  contentTypes: ContentTypeDefinition[];
-}> = ({ contentTypes, id }) => {
-  const defaultState = contentTypes.find((ct) => ct.id === id);
+}> = ({ id }) => {
+  const { config, saveConfig, rawConfig } = useContentTypes();
+  const defaultState = config.find((ct) => ct.id === id);
 
-  const [attributes, setAttributes] = useState(defaultState?.attributes || []);
+  const [attributes, setAttributes] = useState(defaultState?.fields || []);
   const [label, setLabel] = useState(defaultState?.label || "");
   const [icon, setIcon] = useState(defaultState?.icon || "");
   const [parentId, setParentId] = useState(defaultState?.parent_id || null);
@@ -53,35 +50,39 @@ const CreateContentTypeForm: React.FC<{
   >(defaultState?.allowed_child_content_types || []);
 
   const [editingAssetKey, setEditingAssetKey] = useState<
-    (typeof attributes)[number]["key"] | null
+    (typeof attributes)[number]["id"] | null
   >(null);
   const { push } = useRouter();
 
   const allAttributes = [
-    ...(contentTypes.find((ct) => ct.id === parentId)?.allAttributes || []).map(
-      (ct) => ({ ...ct, inherited: true })
+    ...(config.find((c) => c.id === parentId)?.computed.allFields || []).map(
+      (ct) => ({
+        ...ct,
+        inherited: true,
+      })
     ),
     ...attributes.map((ct) => ({ ...ct, inherited: false, contentType: null })),
   ];
 
   const onSubmit = async () => {
-    await upsertContentType({
-      attributes,
-      id: id || "",
+    const newContentType = {
+      fields: attributes,
+      id: id || ulid(),
       label: label,
-      parent_id: parentId,
+      parent_id: parentId || "",
       color: color || "",
       icon: icon,
       abstract: false,
       allowed_child_content_types: allowedChildContentTypes,
+    };
+
+    await saveConfig({
+      ...rawConfig,
+      types: id
+        ? rawConfig.types.map((ct) => (ct.id === id ? newContentType : ct))
+        : [...rawConfig.types, newContentType],
     });
-    push("/app/settings/content-types");
-    // await upsertContentType({
-    //   id: defaultState?.id || "",
-    //   attributes,
-    //   label: label,
-    //   parent_id: parentId || null,
-    // });
+    push("/app/settings/content-type-configuration");
   };
 
   return (
@@ -132,7 +133,7 @@ const CreateContentTypeForm: React.FC<{
                 value={parentId}
                 onChange={(e, value) => setParentId(value)}
                 renderValue={(option) => {
-                  const ct = contentTypes.find((ct) => ct.id === option?.value);
+                  const ct = config.find((ct) => ct.id === option?.value);
                   if (!ct) return null;
                   return (
                     <ContentTypeComponent
@@ -143,15 +144,19 @@ const CreateContentTypeForm: React.FC<{
                   );
                 }}
               >
-                {contentTypes.map((ct) => {
+                {config.map((ct) => {
                   return (
                     <Option
                       key={ct.id}
                       value={ct.id}
-                      disabled={id ? ct.inheritageLineage.includes(id) : false}
+                      disabled={
+                        id
+                          ? ct.computed.ancestors.some((ct) => ct.id === id)
+                          : false
+                      }
                     >
                       <ContentTypeComponent
-                        ml={ct.inheritageLineage.length * 3}
+                        ml={ct.computed.depth * 3}
                         color={ct.color}
                         icon={ct.icon}
                         label={ct.label}
@@ -172,7 +177,7 @@ const CreateContentTypeForm: React.FC<{
                   return (
                     <Box maxWidth={500} display={"flex"} gap={1}>
                       {options.map((o: any) => {
-                        const ct = contentTypes.find((c) => c.id === o.value);
+                        const ct = config.find((c) => c.id === o.value);
                         if (!ct) return null;
                         return (
                           <Chip
@@ -215,11 +220,11 @@ const CreateContentTypeForm: React.FC<{
                   // );
                 }}
               >
-                {contentTypes.map((ct) => {
+                {config.map((ct) => {
                   return (
                     <Option key={ct.id} value={ct.id}>
                       <ContentTypeComponent
-                        ml={ct.inheritageLineage.length * 3}
+                        ml={ct.computed.depth * 3}
                         color={ct.color}
                         label={ct.label}
                         icon={ct.icon}
@@ -245,7 +250,7 @@ const CreateContentTypeForm: React.FC<{
               const isDisabled = attr.inherited;
               const isinherited = attr.inherited;
               return (
-                <tr key={attr.key}>
+                <tr key={attr.id}>
                   <td>{attr.label}</td>
                   <td>
                     <Box
@@ -277,7 +282,7 @@ const CreateContentTypeForm: React.FC<{
                         <IconButton
                           variant="outlined"
                           color="primary"
-                          onClick={() => setEditingAssetKey(attr.key)}
+                          onClick={() => setEditingAssetKey(attr.id)}
                         >
                           <EditIcon />
                         </IconButton>
@@ -286,9 +291,7 @@ const CreateContentTypeForm: React.FC<{
                           color="danger"
                           onClick={() =>
                             setAttributes([
-                              ...attributes.filter(
-                                ({ key }) => key !== attr.key
-                              ),
+                              ...attributes.filter(({ id }) => id !== attr.id),
                             ])
                           }
                         >
@@ -355,10 +358,10 @@ const CreateContentTypeForm: React.FC<{
       </Stack>
       <AttributeEditor
         defaultValue={
-          attributes.find((attr) => attr.key === editingAssetKey) || {
-            key: ulid(),
+          attributes.find((attr) => attr.id === editingAssetKey) || {
+            id: ulid(),
             label: "",
-            type: "single_line_of_text",
+            type: "text",
           }
         }
         open={!!editingAssetKey}
@@ -366,10 +369,8 @@ const CreateContentTypeForm: React.FC<{
           if (!val) setEditingAssetKey(null);
         }}
         onChange={(attr) => {
-          if (attributes.find((a) => a.key === attr.key)) {
-            setAttributes(
-              attributes.map((a) => (attr.key === a.key ? attr : a))
-            );
+          if (attributes.find((a) => a.id === attr.id)) {
+            setAttributes(attributes.map((a) => (attr.id === a.id ? attr : a)));
           } else {
             setAttributes([...attributes, attr]);
           }

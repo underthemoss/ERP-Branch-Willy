@@ -10,16 +10,23 @@ import SearchIcon from "@mui/icons-material/Search";
 import ImageIcon from "@mui/icons-material/Image";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import EmailIcon from "@mui/icons-material/Email";
-import { ContentTypeAttributeType } from "../../../../../../prisma/generated/mongo";
+import {
+  ContentTypeAttributeType,
+  ContentTypeConfigFieldType,
+} from "../../../../../../prisma/generated/mongo";
 
-export const ContentTypeAttributeDataTypeOptions = [
+export const ContentTypeAttributeDataTypeOptions: {
+  value: ContentTypeConfigFieldType;
+  label: string;
+  icon: React.ReactElement;
+}[] = [
   {
-    value: "single_line_of_text",
+    value: "text",
     label: "Single Line of Text",
     icon: <TextFieldsIcon fontSize="small" />,
   },
   {
-    value: "integer",
+    value: "number",
     label: "Integer",
     icon: <FormatListNumberedIcon fontSize="small" />,
   },
@@ -29,17 +36,17 @@ export const ContentTypeAttributeDataTypeOptions = [
     icon: <CalendarTodayIcon fontSize="small" />,
   },
   {
-    value: "lookup",
-    label: "Lookup",
+    value: "relation",
+    label: "Relation",
     icon: <SearchIcon fontSize="small" />,
   },
+  // {
+  //   value: "iage",
+  //   label: "Image URL",
+  //   icon: <ImageIcon fontSize="small" />,
+  // },
   {
-    value: "img_url",
-    label: "Image URL",
-    icon: <ImageIcon fontSize="small" />,
-  },
-  {
-    value: "location",
+    value: "location" as any,
     label: "Location",
     icon: <LocationOnIcon fontSize="small" />,
   },
@@ -51,8 +58,8 @@ export const ContentTypeAttributeDataTypeOptions = [
 ];
 
 export default function AttributeDataTypeSelect(props: {
-  value: ContentTypeAttributeType;
-  onChange: (value: ContentTypeAttributeType) => void;
+  value: ContentTypeConfigFieldType;
+  onChange: (value: ContentTypeConfigFieldType) => void;
 }) {
   return (
     <Select
@@ -60,11 +67,13 @@ export default function AttributeDataTypeSelect(props: {
       value={props.value}
       required
       onChange={(event, newValue) =>
-        props.onChange(newValue as ContentTypeAttributeType)
+        props.onChange(newValue as ContentTypeConfigFieldType)
       }
       // Optionally, customize the startDecorator to show the icon in the selected value.
       startDecorator={
-        ContentTypeAttributeDataTypeOptions.find((option) => option.value === props.value)?.icon || null
+        ContentTypeAttributeDataTypeOptions.find(
+          (option) => option.value === props.value
+        )?.icon || null
       }
     >
       {ContentTypeAttributeDataTypeOptions.map((option) => (

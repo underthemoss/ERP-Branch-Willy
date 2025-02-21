@@ -2,9 +2,7 @@
 import "../../../../../../node_modules/react-grid-layout/css/styles.css";
 import "../../../../../../node_modules/react-resizable/css/styles.css";
 
-import {
-  Box,
-} from "@mui/joy";
+import { Box } from "@mui/joy";
 import { QueryTableHeaderCell } from "./QueryTableHeaderCell";
 
 import GridLayout from "react-grid-layout";
@@ -56,7 +54,7 @@ export const QueryTableHeader: React.FC<{
           // const isLastColumn = item.column_config.length === index + 1;
           return (
             <Box
-              key={column.key}
+              key={column.id}
               data-grid={{
                 x: index + 100,
                 y: 0,

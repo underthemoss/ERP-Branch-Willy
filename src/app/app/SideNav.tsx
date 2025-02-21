@@ -16,8 +16,10 @@ import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import { Add } from "@mui/icons-material";
 import { ContentTypeComponent } from "@/ui/Icons";
-import { getContentTypes } from "@/services/ContentTypeRepository";
+
 import NewButton from "./@breadcrumbs/NewButton";
+import { getContentTypeConfig } from "@/services/ContentTypeRepository";
+import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 
 export default async function SideNav() {
   const { user } = await getUser();
@@ -32,7 +34,7 @@ export default async function SideNav() {
       type_id: true,
     },
   });
-  const contentTypes = await getContentTypes();
+  const contentTypes = denormaliseConfig(await getContentTypeConfig());
 
   return (
     <Box display={"flex"} flexDirection={"column"} flex={1}>
@@ -51,7 +53,6 @@ export default async function SideNav() {
             <List>
               {entities.map((item) => {
                 const ct = contentTypes.find((ct) => ct.id === item.type_id);
-
                 if (!ct) return null;
                 return (
                   <Link href={`/app/item/${item.id}`} key={item.id}>
@@ -62,9 +63,7 @@ export default async function SideNav() {
                             color={ct.color}
                             icon={ct.icon}
                             label={
-                              (item.data as any)[
-                                ct.allAttributes.find(() => true)?.key || ""
-                              ]
+                              (item.data as any)[ct.computed.allFields[0].id]
                             }
                           />
                         </Box>

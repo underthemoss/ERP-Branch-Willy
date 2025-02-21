@@ -15,7 +15,9 @@ export default async function Page(props: {
         </Typography>
       </Box>
       <Box mt={2}>
-        <NextLink href={"/app/settings/content-types"}>Content Types</NextLink>
+        <NextLink href={"/app/settings/content-type-configuration"}>
+          Content Types
+        </NextLink>
       </Box>
     </>
   );

@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Box,
-} from "@mui/joy";
+import { Box } from "@mui/joy";
 // import { minimumColWidth } from "./TableHeaderCell";
 import { NextLink } from "@/ui/NextLink";
 import { QueryTableRowCellRender } from "./QueryTableRowCellRender";
@@ -69,7 +67,7 @@ export const QueryTableRow: React.FC<{
         // const width = Math.max(column.width - indent, 0);
         return (
           <Box
-            key={column.key}
+            key={column.id}
             width={width}
             alignContent={"center"}
             className={`col-${colIndex} row-${index}`}

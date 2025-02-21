@@ -1,8 +1,9 @@
 import { GlobalColumnData } from "@/config/ColumnConfig";
 
 import { getUser } from "@/lib/auth";
+import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 import { prisma } from "@/lib/prisma";
-import { getContentTypes } from "@/services/ContentTypeRepository";
+import { getContentTypeConfig } from "@/services/ContentTypeRepository";
 
 import { NextLinkBack } from "@/ui/NextLink";
 import {
@@ -27,7 +28,7 @@ export const NewEntityForm = async (props: {
   const parentId = parent_id === "null" ? undefined : parent_id;
   const { user } = await getUser();
 
-  const contentTypes = await getContentTypes();
+  const contentTypes = denormaliseConfig(await getContentTypeConfig());
   const contentType = contentTypes.find((ct) => ct.id === content_type_id);
   // console.log(contentType);
   return (
@@ -65,17 +66,17 @@ export const NewEntityForm = async (props: {
         </Box>
         <Box>
           <Box gap={1} display={"flex"} flexDirection={"column"}>
-            {contentType?.allAttributes
+            {contentType?.computed.allFields
               // .filter(({ column }) => !column.readonly)
-              .map(({ key, label, type }, i) => {
+              .map(({ id, label, type }, i) => {
                 return (
-                  <FormControl key={key}>
+                  <FormControl key={id}>
                     <FormLabel required={true}>{label}</FormLabel>
                     <Input
                       required={true}
                       autoComplete="off"
                       type={"text"}
-                      name={key}
+                      name={id}
                       defaultValue={""}
                       autoFocus={i === 0}
                     />

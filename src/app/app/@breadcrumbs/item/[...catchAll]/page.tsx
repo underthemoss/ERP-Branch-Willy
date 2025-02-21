@@ -10,13 +10,14 @@ import { EntityTypeIcon as EntityTypeIconEnum } from "../../../../../../prisma/g
 import { ContentTypeComponent } from "@/ui/Icons";
 import {
   ContentTypeDefinition,
-  getContentTypes,
+  getContentTypeConfig,
 } from "@/services/ContentTypeRepository";
+import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 
 const traverseUp = async (
   tenantId: string,
   id: string | null,
-  contentTypes: ContentTypeDefinition[]
+  contentTypes: ReturnType<typeof denormaliseConfig>
 ): Promise<
   { id: string; name: string; typeId: string; icon: string; color: string }[]
 > => {
@@ -50,7 +51,7 @@ export default async function HeaderBreadcrumbs(props: {
 }) {
   const { user } = await getUser();
   const itemId = (await props.params).catchAll[2];
-  const contentTypes = await getContentTypes();
+  const contentTypes = denormaliseConfig(await getContentTypeConfig());
   const ancestors = await traverseUp(user.company_id, itemId, contentTypes);
   return (
     <>

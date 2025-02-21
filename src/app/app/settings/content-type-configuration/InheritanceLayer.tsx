@@ -3,12 +3,13 @@ import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { Box } from "@mui/joy";
 import { ContentTypeDefinition } from "@/services/ContentTypeRepository";
+import { ContentTypesConfigDenormalised } from "@/lib/content-types/ContentTypesConfigParser";
 type Connection = {
   from: { x: number; y: number };
   to: { x: number; y: number };
 };
 export const InheritanceLayer: React.FC<{
-  contentTypes: ContentTypeDefinition[];
+  contentTypes: ContentTypesConfigDenormalised;
 }> = ({ contentTypes }) => {
   const ref = useRef<HTMLElement>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -18,7 +19,7 @@ export const InheritanceLayer: React.FC<{
       const { x: xOffset, y: yOffset } = el.getBoundingClientRect();
       const connections: Connection[] = [];
       for (const ct of contentTypes) {
-        const from = ct.inheritsFrom?.id;
+        const from = ct.computed.parentType?.id;
         const to = ct.id;
         const fromElement = document.querySelector(
           `[data-content-type-id='${from}']`
@@ -27,7 +28,6 @@ export const InheritanceLayer: React.FC<{
           `[data-content-type-id='${to}']`
         );
         if (fromElement && toElement) {
-
           const from = fromElement.getBoundingClientRect();
           const to = toElement.getBoundingClientRect();
           connections.push({
@@ -99,7 +99,6 @@ export const InheritanceLayer: React.FC<{
                 y2={c.from.y + 5}
                 stroke={"#336699"}
                 strokeWidth={1}
-                // strokeDasharray={"2"}
                 strokeLinecap="round"
               />
               <line
@@ -109,96 +108,12 @@ export const InheritanceLayer: React.FC<{
                 y2={c.from.y + 5}
                 stroke={"#336699"}
                 strokeWidth={1}
-                // strokeDasharray={"2"}
                 strokeLinecap="round"
               />
-
-              {/* <path
-                d={`M${c.from.x} ${c.from.y} L${c.from.x - 5} ${
-                  c.from.y + 5
-                }  M${c.from.x} ${c.from.y} L${c.from.x - 5} L${c.from.x + 5} ${
-                  c.from.y + 5
-                } L${c.from.x} ${c.from.y}`}
-                stroke={"#336699"}
-                strokeWidth={1}
-                // fill="black"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              /> */}
             </Fragment>
           );
         })}
-        {/*         
-        <line
-          x1="12"
-          y1="0"
-          x2="12"
-          y2="41"
-          stroke={"#336699"}
-          strokeWidth={1}
-          strokeDasharray={"0"}
-          strokeLinecap="round"
-        />
-        <line
-          x1="12"
-          y1="41"
-          x2="25"
-          y2="41"
-          stroke={"#336699"}
-          strokeWidth={1}
-          strokeDasharray={"0"}
-          strokeLinecap="round"
-        /> */}
       </svg>
     </Box>
   );
 };
-
-// {ct.inheritageLineage.length > 0 && (
-//     <Box>
-//       <Box
-//         width={0}
-//         height={0}
-//         ml={(ct.inheritageLineage.length - 1) * marginLeft}
-//       >
-//         <Box position={"relative"} mt={-marginTop}>
-//           <svg
-//             width={24}
-//             height={50}
-//             viewBox="0 0 24 50"
-//             fill="none"
-//             xmlns="http://www.w3.org/2000/svg"
-//           >
-//             {/* <path
-//             d="M14 12L18 8L22 12"
-//             stroke={"black"}
-//             strokeWidth={1}
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//           /> */}
-
-//             <line
-//               x1="12"
-//               y1="0"
-//               x2="12"
-//               y2="41"
-//               stroke={"#336699"}
-//               strokeWidth={1}
-//               strokeDasharray={"0"}
-//               strokeLinecap="round"
-//             />
-//             <line
-//               x1="12"
-//               y1="41"
-//               x2="25"
-//               y2="41"
-//               stroke={"#336699"}
-//               strokeWidth={1}
-//               strokeDasharray={"0"}
-//               strokeLinecap="round"
-//             />
-//           </svg>
-//         </Box>
-//       </Box>
-//     </Box>
-//   )}

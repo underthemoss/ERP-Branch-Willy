@@ -176,9 +176,8 @@ type ContentTypeConfigField {
 
 type ContentTypeConfigType {
   id                          String
-  tenant_id                   String
   label                       String
-  attributes                  ContentTypeConfigField[]
+  fields                  ContentTypeConfigField[]
   color                       String
   icon                        String
   allowed_child_content_types String[]
@@ -190,7 +189,6 @@ model ContentTypesConfig {
   id        String                  @id @map("_id")
   tenant_id String
   types     ContentTypeConfigType[]
-  version   Int
 }
 
 enum ContentTypeAttributeType {
