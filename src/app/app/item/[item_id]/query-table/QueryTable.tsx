@@ -1,22 +1,17 @@
 "use client";
 import "./QueryTable.css";
-import { ItemProviderClient, useItem } from "../ItemProvider";
 import {
   Box,
-  Card,
   Dropdown,
   ListDivider,
   ListItemDecorator,
   Menu,
   MenuButton,
   MenuItem,
-  Skeleton,
-  Typography,
 } from "@mui/joy";
 import AddIcon from "@mui/icons-material/Add";
-import Check from "@mui/icons-material/Check";
+
 import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
-import { MenuItemLink } from "@/ui/MenuItemLink";
 
 import { QueryTableHeader } from "./QueryTableHeader";
 import { QueryTableRow } from "./QueryTableRow";

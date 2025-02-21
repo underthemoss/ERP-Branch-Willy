@@ -1,33 +1,14 @@
 "use client";
 import "../../../../../../node_modules/react-grid-layout/css/styles.css";
 import "../../../../../../node_modules/react-resizable/css/styles.css";
-import { useItem } from "../ItemProvider";
+
 import {
   Box,
-  Button,
-  Dropdown,
-  ListDivider,
-  ListItemDecorator,
-  Menu,
-  MenuButton,
-  MenuItem,
-  Tooltip,
-  Typography,
 } from "@mui/joy";
-import AddIcon from "@mui/icons-material/Add";
-import Check from "@mui/icons-material/Check";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 import { QueryTableHeaderCell } from "./QueryTableHeaderCell";
-import { MenuItemLink } from "@/ui/MenuItemLink";
-import { NextLink } from "@/ui/NextLink";
-import { QueryTableRowCellRender } from "./QueryTableRowCellRender";
 
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import { Fragment, useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout";
 import _ from "lodash";
-import { ContentTypeAttributeType } from "../../../../../../prisma/generated/mongo";
 import { useTable } from "./QueryTableProvider";
 
 export const QueryTableHeader: React.FC<{

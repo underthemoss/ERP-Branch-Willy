@@ -1,29 +1,13 @@
 "use client";
-import { useItem } from "../ItemProvider";
+
 import {
   Box,
-  Button,
-  Dropdown,
-  ListDivider,
-  ListItemDecorator,
-  Menu,
-  MenuButton,
-  MenuItem,
-  Tooltip,
-  Typography,
 } from "@mui/joy";
-import AddIcon from "@mui/icons-material/Add";
-import Check from "@mui/icons-material/Check";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { VirtualAsyncTable } from "../../../../../ui/VirtualAsyncTable";
 // import { minimumColWidth } from "./TableHeaderCell";
-import { MenuItemLink } from "@/ui/MenuItemLink";
 import { NextLink } from "@/ui/NextLink";
 import { QueryTableRowCellRender } from "./QueryTableRowCellRender";
 
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import { QueryTableHeader } from "./QueryTableHeader";
-import { EntityCard, EntityCardToolTip } from "@/ui/entity-card/EntityCard";
+import { EntityCardToolTip } from "@/ui/entity-card/EntityCard";
 import { ContentTypeComponent } from "@/ui/Icons";
 import { useTable } from "./QueryTableProvider";
 

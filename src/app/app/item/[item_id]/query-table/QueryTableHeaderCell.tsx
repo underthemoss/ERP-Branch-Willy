@@ -15,14 +15,10 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { useState } from "react";
 import { NextLink } from "@/ui/NextLink";
 
-import { useItem } from "../ItemProvider";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import { MenuItemLink } from "@/ui/MenuItemLink";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import _ from "lodash";
-import { deleteItem } from "../actions";
 import { DeleteForever } from "@mui/icons-material";
 import { usePathname } from "next/navigation";
 import { useTable } from "./QueryTableProvider";
@@ -129,7 +125,9 @@ const ColumnHeaderMoreOptions: React.FC<{
   );
 };
 
-export const QueryTableHeaderCell: React.FC<{ index: number }> = ({ index }) => {
+export const QueryTableHeaderCell: React.FC<{ index: number }> = ({
+  index,
+}) => {
   const { columns } = useTable();
   const column = columns[index];
   return (

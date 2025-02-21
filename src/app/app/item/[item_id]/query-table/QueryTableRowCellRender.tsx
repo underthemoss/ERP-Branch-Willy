@@ -16,8 +16,7 @@ import { HTMLInputTypeAttribute, useState } from "react";
 import { LazyUserDetail } from "@/ui/LazyUserDetails";
 import { UserPicker } from "@/ui/picker/UserPicker";
 import { LookupPicker } from "@/ui/picker/LookupPicker";
-import { useItem } from "../ItemProvider";
-import { Point } from "wkx";
+
 import { useTable } from "./QueryTableProvider";
 
 export const QueryTableRowCellRender = (props: {

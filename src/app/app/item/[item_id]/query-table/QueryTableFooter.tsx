@@ -1,11 +1,9 @@
 import { Box, Button, Typography } from "@mui/joy";
-import { useItem } from "../ItemProvider";
 
 export const QueryTableFooter: React.FC<{ width: number; height: number }> = ({
   height,
   width,
 }) => {
-  const { item, columns } = useItem();
   const actualWidth = Math.max(
     // item.column_config.reduce((t, i) => t + i.width, 0),
     width
