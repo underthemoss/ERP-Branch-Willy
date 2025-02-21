@@ -1,8 +1,8 @@
 "use client";
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import PropTypes from "prop-types";
+
 import { Box } from "@mui/joy";
-import { ContentTypeDefinition } from "@/services/ContentTypeRepository";
+
 import { ContentTypesConfigDenormalised } from "@/lib/content-types/ContentTypesConfigParser";
 type Connection = {
   from: { x: number; y: number };

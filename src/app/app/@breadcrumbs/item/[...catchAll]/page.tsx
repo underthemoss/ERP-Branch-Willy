@@ -5,13 +5,8 @@ import { Box, Breadcrumbs, IconButton, Link } from "@mui/joy";
 import { getUser } from "@/lib/auth";
 import NewButton from "../../NewButton";
 import { JsonObject } from "@prisma/client/runtime/library";
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import { EntityTypeIcon as EntityTypeIconEnum } from "../../../../../../prisma/generated/mongo";
 import { ContentTypeComponent } from "@/ui/Icons";
-import {
-  ContentTypeDefinition,
-  getContentTypeConfig,
-} from "@/services/ContentTypeRepository";
+import { getContentTypeConfig } from "@/services/ContentTypeRepository";
 import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 
 const traverseUp = async (
