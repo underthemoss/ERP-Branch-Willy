@@ -1,11 +1,7 @@
 import { GlobalColumnData } from "@/config/ColumnConfig";
-import { ContentTypeData } from "@/config/ContentTypesConfig";
+
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  createContentTypeInstance,
-  getContentType,
-} from "@/services/ContentService";
 import { getContentTypes } from "@/services/ContentTypeRepository";
 
 import { NextLinkBack } from "@/ui/NextLink";

@@ -1,7 +1,3 @@
-import {
-  ContentTypeData,
-  GlobalContentTypeId,
-} from "@/config/ContentTypesConfig";
 import { prisma } from "@/lib/prisma";
 
 import Cursor from "pg-cursor";
@@ -189,7 +185,7 @@ export const syncAssets = async (tenantId: string) => {
                         ? `https://appcdn.equipmentshare.com/uploads/small/${photo_filename}`
                         : null,
                     },
-                  } //satisfies Omit<Entity, "id"> & { _id: string },
+                  }, //satisfies Omit<Entity, "id"> & { _id: string },
                 },
               ],
             },

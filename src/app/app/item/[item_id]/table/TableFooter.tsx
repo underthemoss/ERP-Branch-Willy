@@ -1,10 +1,5 @@
 import { Box, Button, Typography } from "@mui/joy";
 import { useItem } from "../ItemProvider";
-import { addRecord, addRow } from "../actions"; // todo: not this
-import {
-  createContentTypeInstance,
-  createSystemContentTypeInstance,
-} from "@/services/ContentService";
 
 export const TableFooter: React.FC<{ width: number; height: number }> = ({
   height,

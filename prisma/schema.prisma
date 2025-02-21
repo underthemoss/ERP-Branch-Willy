@@ -147,22 +147,51 @@ model Entity {
 
   // Hierarchical relationships
   parent_id    String?
-  parent       Entity?     @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children     Entity[]    @relation("EntityHierarchy")
-  EntityType   EntityType? @relation(fields: [entityTypeId], references: [id])
+  parent       Entity?  @relation("EntityHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children     Entity[] @relation("EntityHierarchy")
+  // EntityType   EntityType? @relation(fields: [entityTypeId], references: [id])
   entityTypeId String?
 }
 
-// type ContentTypeConfigField {
-//   id String
-//   name String
-// }
+enum ContentTypeConfigFieldType {
+  bool
+  number
+  text
+  email
+  url
+  editor
+  date
+  autodate
+  select
+  file
+  relation
+  json
+}
 
-// model ContentTypeConfig {
-//   id        String                   @id @map("_id")
-//   tenant_id String
-//   fields    ContentTypeConfigField[]
-// }
+type ContentTypeConfigField {
+  id    String
+  label String
+  type  ContentTypeConfigFieldType
+}
+
+type ContentTypeConfigType {
+  id                          String
+  tenant_id                   String
+  label                       String
+  attributes                  ContentTypeConfigField[]
+  color                       String
+  icon                        String
+  allowed_child_content_types String[]
+  abstract                    Boolean?                 @default(false)
+  parent_id                   String
+}
+
+model ContentTypesConfig {
+  id        String                  @id @map("_id")
+  tenant_id String
+  types     ContentTypeConfigType[]
+  version   Int
+}
 
 enum ContentTypeAttributeType {
   single_line_of_text
@@ -200,7 +229,7 @@ model ContentType {
 model EntityType {
   id                   String             @id @map("_id")
   name                 String
-  entities             Entity[]
+  // entities             Entity[]
   entity_type_columns  EntityTypeColumn[]
   tenant_id            String
   icon                 EntityTypeIcon

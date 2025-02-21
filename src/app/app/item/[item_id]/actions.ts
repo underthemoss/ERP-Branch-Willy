@@ -8,11 +8,8 @@ import { Entity } from "../../../../../prisma/generated/mongo";
 import { SystemEntityTypes } from "@/lib/SystemTypes";
 import { revalidatePath } from "next/cache";
 import { GlobalColumnIds } from "@/config/ColumnConfig";
-import {
-  ContentTypeData,
-  GlobalContentTypeId,
-} from "@/config/ContentTypesConfig";
-import { createSystemContentTypeInstance } from "@/services/ContentService";
+
+
 
 export type Query = {
   // parent_id?: string;
@@ -197,16 +194,16 @@ export const addRow = async (item_id: string) => {
   revalidatePath("/");
 };
 
-export const addRecord = async (parentId: string) => {
-  await createSystemContentTypeInstance({
-    contentTypeId: "record",
-    attributes: {
-      name: "",
-    },
-    parentId: parentId,
-  });
-  revalidatePath("/");
-};
+// export const addRecord = async (parentId: string) => {
+//   await createSystemContentTypeInstance({
+//     contentTypeId: "record",
+//     attributes: {
+//       name: "",
+//     },
+//     parentId: parentId,
+//   });
+//   revalidatePath("/");
+// };
 
 export const updateColumnOrder = async (
   itemId: string,

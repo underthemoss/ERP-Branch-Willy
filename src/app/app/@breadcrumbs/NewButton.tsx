@@ -9,10 +9,6 @@ import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
 import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
-import {
-  ContentTypeCategories,
-  GlobalContentTypeId,
-} from "@/config/ContentTypesConfig";
 import { getContentTypes } from "@/services/ContentTypeRepository";
 import { ContentTypeIcon } from "@/ui/Icons";
 import { SystemContentTypeIds } from "@/services/SystemContentTypes";

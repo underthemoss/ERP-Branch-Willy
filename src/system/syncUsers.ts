@@ -1,7 +1,3 @@
-import {
-  ContentTypeData,
-  GlobalContentTypeId,
-} from "@/config/ContentTypesConfig";
 import { prisma } from "@/lib/prisma";
 
 import Cursor from "pg-cursor";
@@ -156,7 +152,7 @@ export const syncUsers = async (tenantId: string) => {
                   $set: {
                     _id: _id,
                     tenant_id: tenant_id,
-                    type_id: "record" satisfies GlobalContentTypeId,
+                    type_id: "record", // satisfies GlobalContentTypeId,
                     parent_id: workspaceId,
                     hidden: false,
                     sort_order: 0,

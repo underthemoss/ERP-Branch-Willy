@@ -6,8 +6,8 @@ export async function register() {
     await (await import("./system/mongo-dev-server")).run();
     await (await import("./system/changeStreams")).changeStreams();
 
-    await (await import("./system/updateSystem")).run();
-    await (await import("./system/updateSystem")).run();
+    // await (await import("./system/updateSystem")).run();
+    // await (await import("./system/updateSystem")).run();
     await (await import("./system/pulse")).run();
 
 
