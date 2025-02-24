@@ -14,9 +14,9 @@ import {
   Input,
   Typography,
 } from "@mui/joy";
-import { randomUUID } from "crypto";
 
 import _ from "lodash";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ulid } from "ulid";
 
@@ -54,7 +54,7 @@ export const NewEntityForm = async (props: {
               type_id: contentType!.id,
             },
           });
-
+          revalidatePath("/", "page");
           redirect(`/app/item/${result.parent_id || result.id}`);
         }}
       >

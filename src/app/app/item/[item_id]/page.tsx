@@ -1,5 +1,6 @@
 import { Query } from "./actions";
 import { QueryTable } from "./query-table/QueryTable";
+import { getQueryTableData } from "./query-table/QueryTable.actions";
 export default async function Page(props: {
   params: Promise<{ item_id: string }>;
   searchParams: Promise<{ sort_by: string; sort_order: string }>;
@@ -17,5 +18,5 @@ export default async function Page(props: {
     },
   };
 
-  return <QueryTable query={query} />;
+  return <QueryTable query={query} data={await getQueryTableData(query)} />;
 }

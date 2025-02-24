@@ -28,7 +28,7 @@ export const EntityView: React.FC<{
             }}
           >
             <Box height={500} display={"flex"} flex={1}>
-              <QueryTable query={table.query} />
+              {/* <QueryTable query={table.query} /> */}
             </Box>
           </TabPanel>
         ))}

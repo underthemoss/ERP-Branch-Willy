@@ -20,6 +20,7 @@ import { QueryTableFooter } from "./QueryTableFooter";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { Query } from "../actions";
 import { QueryTableProvider, useTable } from "./QueryTableProvider";
+import { QueryTableData } from "./QueryTable.actions";
 
 const QueryTableRenderer = () => {
   const { query, rows } = useTable();
@@ -80,9 +81,12 @@ const QueryTableRenderer = () => {
   );
 };
 
-export const QueryTable: React.FC<{ query: Query }> = ({ query }) => {
+export const QueryTable: React.FC<{ query: Query; data: QueryTableData }> = ({
+  query,
+  data,
+}) => {
   return (
-    <QueryTableProvider key={Date.now()} query={query}>
+    <QueryTableProvider data={data}>
       <QueryTableRenderer />
     </QueryTableProvider>
   );

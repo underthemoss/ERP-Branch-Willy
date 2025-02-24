@@ -1,14 +1,11 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
-import { getContentTypeIdsInUse, getRows, Query } from "../actions";
+import { createContext, useContext } from "react";
+import { getRows, Query } from "../actions";
 
 import _ from "lodash";
-import {
-  ContentTypeAttribute,
-  ContentTypeConfigField,
-} from "../../../../../../prisma/generated/mongo";
-import { useContentTypes } from "@/lib/content-types/useContentTypes";
+import { ContentTypeConfigField } from "../../../../../../prisma/generated/mongo";
 import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
+import { QueryTableData } from "./QueryTable.actions";
 
 type ContentTypes = ReturnType<typeof denormaliseConfig>;
 type Row = Awaited<ReturnType<typeof getRows>>[number];
@@ -27,43 +24,11 @@ const QueryTableProviderContext = createContext<{
 
 export const QueryTableProvider: React.FC<{
   children: React.ReactNode;
-  query: Query;
-}> = ({ children, query }) => {
-  // const [item, setItem] = useState<ParentItem>();
-  const { config } = useContentTypes();
 
-  const [columns, setColumns] = useState<ContentTypeConfigField[]>([]);
-  const [rows, setRows] = useState<Row[]>([]);
-  useEffect(() => {
-    (async () => {
-      const [contentTypesInUse] = await Promise.all([
-        getContentTypeIdsInUse(query),
-      ]);
-
-      const contentTypeIds = contentTypesInUse.map(({ type_id }) => type_id);
-
-      const columns = config
-        .filter((ct) => contentTypeIds.includes(ct.id))
-        .reduce((acc, cur) => {
-          return _.uniqBy(
-            [...acc, ...cur.computed.allFields],
-            (attr) => attr.id
-          );
-        }, [] as ContentTypeConfigField[]);
-
-      const rows = await getRows(
-        query,
-        columns.map((c) => c.id)
-      );
-      setColumns(columns);
-      setRows(rows);
-    })();
-  }, []);
-
+  data: QueryTableData;
+}> = ({ children, data }) => {
   return (
-    <QueryTableProviderContext.Provider
-      value={{ query, contentTypes: config, columns, rows }}
-    >
+    <QueryTableProviderContext.Provider value={data}>
       {children}
     </QueryTableProviderContext.Provider>
   );
