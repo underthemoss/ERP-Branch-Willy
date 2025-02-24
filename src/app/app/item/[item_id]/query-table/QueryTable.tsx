@@ -81,10 +81,7 @@ const QueryTableRenderer = () => {
   );
 };
 
-export const QueryTable: React.FC<{ query: Query; data: QueryTableData }> = ({
-  query,
-  data,
-}) => {
+export const QueryTable: React.FC<{ data: QueryTableData }> = ({ data }) => {
   return (
     <QueryTableProvider data={data}>
       <QueryTableRenderer />

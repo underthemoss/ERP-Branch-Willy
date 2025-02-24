@@ -18,5 +18,5 @@ export default async function Page(props: {
     },
   };
 
-  return <QueryTable query={query} data={await getQueryTableData(query)} />;
+  return <QueryTable data={await getQueryTableData(query)} />;
 }
