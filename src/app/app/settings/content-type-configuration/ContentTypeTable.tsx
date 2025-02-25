@@ -1,10 +1,12 @@
 "use client";
 import { NextLink } from "@/ui/NextLink";
-import { Box, Chip, Table, Typography } from "@mui/joy";
+import { Box, Chip, Table, Tooltip, Typography } from "@mui/joy";
 import { ContentTypeIcon } from "@/ui/Icons";
 import { InheritanceLayer } from "./InheritanceLayer";
 import { useContentTypes } from "@/lib/content-types/useContentTypes";
-
+import CopyButton from "@/ui/CopyButton";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 export const ContentTypeTable = () => {
   const { config } = useContentTypes();
   return (
@@ -53,7 +55,14 @@ export const ContentTypeTable = () => {
                           data-content-type-id={ct.id}
                         />
 
-                        <Box ml={1}>{ct.label}</Box>
+                        <Box ml={1}>
+                          {ct.label}{" "}
+                          {ct.abstract && (
+                            <Tooltip title="Abstract content type">
+                              <VisibilityOffIcon />
+                            </Tooltip>
+                          )}
+                        </Box>
                       </NextLink>
                     </Box>
                   </td>
@@ -90,6 +99,14 @@ export const ContentTypeTable = () => {
         <NextLink href="/app/settings/content-type-configuration/create-new-content-type">
           Create New Content Type
         </NextLink>
+      </Box>
+      <Box mt={4}>
+        <CopyButton
+          variant="outlined"
+          copyValue={JSON.stringify(config, undefined, 2)}
+        >
+          Copy config
+        </CopyButton>
       </Box>
     </Box>
   );

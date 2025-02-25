@@ -16,6 +16,7 @@ import {
   Table,
   Chip,
   ChipDelete,
+  Checkbox,
 } from "@mui/joy";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -32,6 +33,7 @@ import { ContentTypeComponent, ContentTypeIcon } from "@/ui/Icons";
 import { ulid } from "ulid";
 import { ContentTypeAttributeDataTypeOptions } from "./AttributeDataTypeSelect";
 import { useContentTypes } from "@/lib/content-types/useContentTypes";
+import { CheckBox } from "@mui/icons-material";
 
 const CreateContentTypeForm: React.FC<{
   id?: string;
@@ -44,6 +46,10 @@ const CreateContentTypeForm: React.FC<{
   const [icon, setIcon] = useState(defaultState?.icon || "");
   const [parentId, setParentId] = useState(defaultState?.parent_id || null);
   const [color, setColor] = useState(defaultState?.color || null);
+  const [isRootType, setIsRootType] = useState(
+    defaultState?.is_root_type || false
+  );
+  const [isAbstract, setIsAbstract] = useState(defaultState?.abstract || false);
 
   const [allowedChildContentTypes, setAllowedChildContentTypes] = useState<
     string[]
@@ -72,8 +78,9 @@ const CreateContentTypeForm: React.FC<{
       parent_id: parentId || "",
       color: color || "",
       icon: icon,
-      abstract: false,
+      abstract: isAbstract || false,
       allowed_child_content_types: allowedChildContentTypes,
+      is_root_type: isRootType || false,
     };
 
     await saveConfig({
@@ -101,20 +108,9 @@ const CreateContentTypeForm: React.FC<{
       <Stack spacing={2}>
         <Box display={"flex"} gap={2}>
           <Box display="flex" flexDirection="column" gap={2}>
-            <FormControl>
+            <Box>
               <FormLabel>Label</FormLabel>
-              <Input
-                value={label}
-                autoComplete="off"
-                onChange={(e) => setLabel(e.target.value)}
-                required
-                name="label"
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Icon </FormLabel>
-              <Box display="flex" gap={1}>
+              <Box display="flex" gap={1} mt={1}>
                 <Box>
                   <IconSelector
                     value={{ icon, color }}
@@ -124,8 +120,15 @@ const CreateContentTypeForm: React.FC<{
                     }}
                   />
                 </Box>
+                <Input
+                  value={label}
+                  autoComplete="off"
+                  onChange={(e) => setLabel(e.target.value)}
+                  required
+                  name="label"
+                />
               </Box>
-            </FormControl>
+            </Box>
 
             <FormControl>
               <FormLabel>Base type</FormLabel>
@@ -233,6 +236,22 @@ const CreateContentTypeForm: React.FC<{
                   );
                 })}
               </Select>
+            </FormControl>
+            <FormControl>
+              <FormLabel>Top level</FormLabel>
+              <Checkbox
+                label="Can be created at top level"
+                checked={isRootType}
+                onChange={(e) => setIsRootType(e.target.checked)}
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel>Abstract</FormLabel>
+              <Checkbox
+                label="Is Abstract"
+                checked={isAbstract}
+                onChange={(e) => setIsAbstract(e.target.checked)}
+              />
             </FormControl>
           </Box>
         </Box>

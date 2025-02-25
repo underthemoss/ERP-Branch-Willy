@@ -177,12 +177,13 @@ type ContentTypeConfigField {
 type ContentTypeConfigType {
   id                          String
   label                       String
-  fields                  ContentTypeConfigField[]
+  fields                      ContentTypeConfigField[]
   color                       String
   icon                        String
   allowed_child_content_types String[]
   abstract                    Boolean?                 @default(false)
   parent_id                   String
+  is_root_type                Boolean                  @default(false)
 }
 
 model ContentTypesConfig {

@@ -7,11 +7,9 @@ import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
 import _ from "lodash";
 import { getContentTypeConfig } from "@/services/ContentTypeRepository";
 import { ContentTypeIcon } from "@/ui/Icons";
-import { SystemContentTypeIds } from "@/services/SystemContentTypes";
 import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 
 export default async function NewButton(props: { itemId: string }) {
@@ -28,12 +26,7 @@ export default async function NewButton(props: { itemId: string }) {
 
   const validContentTypes = contentType
     ? contentType.computed.creatableChildTypes
-    : contentTypes.filter(
-        (ct) =>
-          ct.computed.ancestors.some(
-            ({ id }) => id === SystemContentTypeIds.Workspace
-          ) || ct.id === SystemContentTypeIds.Workspace
-      );
+    : contentTypes.filter((ct) => ct.is_root_type);
 
   if (validContentTypes.length === 0) return null;
   return (

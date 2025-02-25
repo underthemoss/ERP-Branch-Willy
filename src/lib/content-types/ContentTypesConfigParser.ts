@@ -79,5 +79,19 @@ export const denormaliseConfig = (config: ContentTypesConfig) => {
       };
     });
 
-  return denormalisedTypes;
+  const depthFirstTraversal = (
+    node: (typeof denormalisedTypes)[number]
+  ): typeof denormalisedTypes => {
+    return [
+      node,
+      ...denormalisedTypes
+        .filter((t) => t.parent_id === node.id)
+        .flatMap(depthFirstTraversal),
+    ];
+  };
+
+  const orderedTypes = depthFirstTraversal(
+    denormalisedTypes.find((t) => !t.parent_id)!
+  );
+  return orderedTypes;
 };
