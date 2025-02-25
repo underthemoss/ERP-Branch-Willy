@@ -7,13 +7,7 @@ export const systemContentTypesConfig = {
     {
       id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
       label: "Item",
-      fields: [
-        {
-          id: "01JMFEAMJYA1D9EG99QQNB9JJJ",
-          label: "Name",
-          type: "text",
-        },
-      ],
+      fields: [],
       color: "#000000",
       icon: "LabelImportant",
       allowed_child_content_types: [],
@@ -30,12 +24,18 @@ export const systemContentTypesConfig = {
       allowed_child_content_types: [],
       abstract: false,
       parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
-      is_root_type: true,
+      is_root_type: false,
     },
     {
       id: "01JMY9B9AGE8HZT1TRF9D64GMZ",
       label: "Order",
-      fields: [],
+      fields: [
+        {
+          id: "01JMYVG3Q37A9TS65SK0XRHT1J",
+          label: "Order ID",
+          type: "text",
+        },
+      ],
       color: "#03a9f4",
       icon: "ReceiptLong",
       allowed_child_content_types: ["01JMY9BR7XKQQ8ZDT0DK5BGXWP"],
@@ -44,14 +44,20 @@ export const systemContentTypesConfig = {
       is_root_type: false,
     },
     {
-      fields: [],
       id: "01JMY9BR7XKQQ8ZDT0DK5BGXWP",
       label: "Line Item",
-      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      fields: [
+        {
+          id: "01JMYVHP0V45Y522GEKZVWA3FW",
+          label: "Product",
+          type: "text",
+        },
+      ],
       color: "#607d8b",
       icon: "Description",
-      abstract: false,
       allowed_child_content_types: [],
+      abstract: true,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
       is_root_type: false,
     },
     {
@@ -81,11 +87,6 @@ export const systemContentTypesConfig = {
       label: "Sale Line Item",
       fields: [
         {
-          id: "01JMYKZSV3E68KP5MMHEPP0BM1",
-          label: "Product",
-          type: "text",
-        },
-        {
           id: "01JMYKZZB07SYGSE9C3XVJWGH5",
           label: "Quantity",
           type: "number",
@@ -96,6 +97,126 @@ export const systemContentTypesConfig = {
       allowed_child_content_types: [],
       abstract: false,
       parent_id: "01JMY9BR7XKQQ8ZDT0DK5BGXWP",
+      is_root_type: false,
+    },
+    {
+      id: "01JMYT35G9EDJVJ39Q8V8D0XP8",
+      label: "Customer",
+      fields: [
+        {
+          id: "01JMYVN7G92T47Y279TXBFCWXX",
+          label: "Customer Name",
+          type: "text",
+        },
+        {
+          id: "01JMYVNKTV12FZMZ3KDCKR7QTJ",
+          label: "Hubspot ID",
+          type: "text",
+        },
+        {
+          id: "01JMYVPCSPNMRJ9N1F62R0T60X",
+          label: "Salesforce ID",
+          type: "text",
+        },
+      ],
+      color: "#03a9f4",
+      icon: "Folder",
+      allowed_child_content_types: ["01JMY9B9AGE8HZT1TRF9D64GMZ"],
+      abstract: false,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      is_root_type: false,
+    },
+    {
+      id: "01JMYVTD82C2A52FFV96PZ3E4F",
+      label: "Customer Library",
+      fields: [
+        {
+          id: "01JMYVT1VZ8GC9BY872JA9NREK",
+          label: "Name",
+          type: "text",
+        },
+      ],
+      color: "#03a9f4",
+      icon: "FolderShared",
+      allowed_child_content_types: ["01JMYT35G9EDJVJ39Q8V8D0XP8"],
+      abstract: false,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      is_root_type: true,
+    },
+    {
+      id: "01JMYWM2A1CFFD16RYCPD2SZ6M",
+      label: "Product Catalog",
+      fields: [
+        {
+          id: "01JMYWKXDEMY1W506G0W339FDZ",
+          label: "Name",
+          type: "text",
+        },
+      ],
+      color: "#673ab7",
+      icon: "FolderSpecial",
+      allowed_child_content_types: ["01JMYWQ37EWWT8E3SZ50J3YJ59"],
+      abstract: false,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      is_root_type: true,
+    },
+    {
+      id: "01JMYWP0A2EA37DQYXJMN4SWXC",
+      label: "Product",
+      fields: [
+        {
+          id: "01JMYWNQV23J0RTQJQX9TJVZPQ",
+          label: "Product Name",
+          type: "text",
+        },
+      ],
+      color: "#4caf50",
+      icon: "Star",
+      allowed_child_content_types: ["01JMYWQ37EWWT8E3SZ50J3YJ59"],
+      abstract: true,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      is_root_type: false,
+    },
+    {
+      id: "01JMYWQ37EWWT8E3SZ50J3YJ59",
+      label: "Product Category",
+      fields: [
+        {
+          id: "01JMYWQVWPR12X3NYPJR4FZQXY",
+          label: "Product Category Name",
+          type: "text",
+        },
+      ],
+      color: "#4caf50",
+      icon: "FolderOpen",
+      allowed_child_content_types: [
+        "01JMYWQ37EWWT8E3SZ50J3YJ59",
+        "01JMYWP0A2EA37DQYXJMN4SWXC",
+      ],
+      abstract: false,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
+      is_root_type: false,
+    },
+    {
+      id: "01JMYWS5P2BYNZ6P0G5ZKENC2R",
+      label: "Physical Good",
+      fields: [
+        {
+          id: "01JMYWSSFPMSZQ3VNRR03R21ZW",
+          label: "Weight",
+          type: "text",
+        },
+        {
+          id: "01JMYWT22N0YDNPSA7D3NBB24Z",
+          label: "Purchase Price",
+          type: "text",
+        },
+      ],
+      color: "#4caf50",
+      icon: "InsertDriveFile",
+      allowed_child_content_types: [],
+      abstract: false,
+      parent_id: "01JMYWP0A2EA37DQYXJMN4SWXC",
       is_root_type: false,
     },
   ],

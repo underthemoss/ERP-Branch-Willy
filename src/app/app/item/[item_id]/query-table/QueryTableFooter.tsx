@@ -28,7 +28,7 @@ export const QueryTableFooter: React.FC<{ width: number; height: number }> = ({
         alignItems={"center"}
       >
         <Box ml={1}>
-          <Button
+          {/* <Button
             variant="plain"
             onClick={async () => {
               // await addRecord(item.id);
@@ -36,7 +36,7 @@ export const QueryTableFooter: React.FC<{ width: number; height: number }> = ({
             // disabled
           >
             New record
-          </Button>
+          </Button> */}
         </Box>
         <Box flex={1}></Box>
         <Box mr={2}>

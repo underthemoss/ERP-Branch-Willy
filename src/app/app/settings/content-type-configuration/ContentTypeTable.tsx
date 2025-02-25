@@ -8,7 +8,7 @@ import CopyButton from "@/ui/CopyButton";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 export const ContentTypeTable = () => {
-  const { config } = useContentTypes();
+  const { config, rawConfig } = useContentTypes();
   return (
     <Box>
       <Box display={"flex"}>
@@ -103,7 +103,7 @@ export const ContentTypeTable = () => {
       <Box mt={4}>
         <CopyButton
           variant="outlined"
-          copyValue={JSON.stringify(config, undefined, 2)}
+          copyValue={JSON.stringify(rawConfig, undefined, 2)}
         >
           Copy config
         </CopyButton>

@@ -63,7 +63,7 @@ export default async function SideNav() {
                             color={ct.color}
                             icon={ct.icon}
                             label={
-                              (item.data as any)[ct.computed.allFields[0].id]
+                              (item.data as any)[ct.computed.allFields[0]?.id]
                             }
                           />
                         </Box>
