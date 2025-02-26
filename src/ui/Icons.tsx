@@ -468,6 +468,7 @@ const icons = {
 };
 
 export default icons;
+export type SystemIconTypes = keyof typeof icons;
 
 export const ContentTypeIcon = ({
   icon,

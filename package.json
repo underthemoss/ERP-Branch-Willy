@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:mongo": "ts-node-dev mongo-dev-server.ts",
+    "content-type:codegen": "ts-node-dev ./ConfigCodeGen.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -33,6 +34,7 @@
     "mapbox-gl": "^3.9.4",
     "maplibre-gl": "^4.7.1",
     "mongodb": "^6.13.0",
+    "mongoose": "^8.10.2",
     "next": "15.1.4",
     "pg": "^8.13.1",
     "pg-cursor": "^2.12.1",

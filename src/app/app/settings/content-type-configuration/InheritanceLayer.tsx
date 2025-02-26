@@ -3,14 +3,16 @@ import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { Box } from "@mui/joy";
 
-import { ContentTypesConfigDenormalised } from "@/lib/content-types/ContentTypesConfigParser";
+import { ContentTypesConfigDenormalised } from "@/db/ContentTypeViewModel";
+
 type Connection = {
   from: { x: number; y: number };
   to: { x: number; y: number };
 };
-export const InheritanceLayer: React.FC<{
-  contentTypes: ContentTypesConfigDenormalised;
-}> = ({ contentTypes }) => {
+
+export const InheritanceLayer: React.FC<{}> = ({}) => {
+  const contentTypes = ContentTypesConfigDenormalised;
+
   const ref = useRef<HTMLElement>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   useEffect(() => {
@@ -19,8 +21,8 @@ export const InheritanceLayer: React.FC<{
       const { x: xOffset, y: yOffset } = el.getBoundingClientRect();
       const connections: Connection[] = [];
       for (const ct of contentTypes) {
-        const from = ct.computed.parentType?.id;
-        const to = ct.id;
+        const from = ct.parent_type;
+        const to = ct.type;
         const fromElement = document.querySelector(
           `[data-content-type-id='${from}']`
         );
