@@ -1,3 +1,4 @@
+
 import { ContentTypesConfig } from "../../prisma/generated/mongo";
 
 export const systemContentTypesConfig = {
@@ -217,6 +218,63 @@ export const systemContentTypesConfig = {
       allowed_child_content_types: [],
       abstract: false,
       parent_id: "01JMYWP0A2EA37DQYXJMN4SWXC",
+      is_root_type: false,
+    },
+    {
+      id: "01JMYXG0347KRQM9C3PTKDKXNW",
+      label: "Asset",
+      fields: [
+        {
+          id: "01JMYXCZ2YNRFGGTTYM2D67188",
+          label: "Asset ID",
+          type: "text",
+        },
+        {
+          id: "01JMYXDHVA79ME19GZPBKTJW3Q",
+          label: "Custom Name",
+          type: "text",
+        },
+        {
+          id: "01JMYXDXD1MRZGNNF1DB43B82G",
+          label: "Location",
+          type: "text",
+        },
+        {
+          id: "01JMYXE6ME22BPY4V9Q2VCM64N",
+          label: "Category",
+          type: "text",
+        },
+        {
+          id: "01JMYXEGRVSEHDACXRXBPDR0SV",
+          label: "Class",
+          type: "text",
+        },
+        {
+          id: "01JMYXENCB9MFG6CP2CJ0AHCKV",
+          label: "Make",
+          type: "text",
+        },
+        {
+          id: "01JMYXEWMV8TSP7N4GGFMKTHV5",
+          label: "Model",
+          type: "text",
+        },
+        {
+          id: "01JMYXF36HK11QKCQAC8SH105A",
+          label: "Custom Model",
+          type: "text",
+        },
+        {
+          id: "01JMYXFNN4Y6XWQW655YEDEWP1",
+          label: "Photo",
+          type: "text",
+        },
+      ],
+      color: "#673ab7",
+      icon: "Label",
+      allowed_child_content_types: [],
+      abstract: false,
+      parent_id: "5a3325f7-9052-4ccb-8d26-4556901012a8",
       is_root_type: false,
     },
   ],
