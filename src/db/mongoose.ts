@@ -1,55 +1,34 @@
 import mongoose, { Model, model, Schema } from "mongoose";
 
-import {
-  ContentTypeDataModel,
-  ContentTypeViewModel,
-  ContentTypeViewModelKeyed,
-} from "./ContentTypes.generated";
+import { ContentTypeDataModel } from "../model/ContentTypes.generated";
+import { ulid } from "ulid";
 
-interface ContentTypeDataModelExtended extends Model<ContentTypeDataModel> {
-  getContentTypes(): number;
-}
+const contentSchema = new Schema<ContentTypeDataModel>({
+  _id: { type: String, required: true },
+  type: { type: String, required: true },
+  parent_id: { type: String, required: false },
+  data: { type: Object, required: true },
+  tenant_id: { type: String, required: true },
+});
 
-const contentSchema = new Schema<ContentTypeDataModel>(
-  {
-    _id: { type: String, required: true },
-    type: { type: String, required: true },
-    parent_id: { type: String, required: true },
-    data: { type: Object, required: true },
-    tenant_id: { type: String, required: true },
-  },
-  {
-    statics: {
-      getContentTypes() {
-        return ContentTypeViewModel;
-      },
-    },
-  }
-);
+const createModel = () => {
+  return model<ContentTypeDataModel>("Entity", contentSchema);
+};
 
-const Content = model<ContentTypeDataModel, ContentTypeDataModelExtended>(
-  "Content",
-  contentSchema
-);
+export const Entity =
+  (mongoose.models?.Entity as ReturnType<typeof createModel>) || createModel();
 
-export const mongodb = async () => {
+export const mongodbConnect = async () => {
   await mongoose.connect(process.env.DATABASE_URL || "");
-  const content2 = await Content.findById("");
-  console.log(Content.getContentTypes());
-  if (content2?.type === "workspace") {
-    const contenttype = ContentTypeViewModelKeyed[content2.type];
-  }
-  const content = new Content({
-    _id: "test",
-    type: "workspace",
+  const item = await new Entity({
+    _id: ulid(),
+    parent_id: "",
+    // type: "collection_asset",
+    type: "collection_asset",
     data: {
-      created_by: "",
-      name: "",
+      created_by: "ady",
+      name: "Assets",
     },
-    parent_id: "123",
     tenant_id: "1854",
-  } satisfies ContentTypeDataModel);
-
-  //   ContentTypesConfig["magic_folder"].validate(data);
-  await content.save();
+  }).save();
 };

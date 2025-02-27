@@ -5,19 +5,16 @@ import { ContentTypeIcon } from "@/ui/Icons";
 import { InheritanceLayer } from "./InheritanceLayer";
 import { useContentTypes } from "@/lib/content-types/useContentTypes";
 import CopyButton from "@/ui/CopyButton";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import {
-  ContentTypesConfig,
-  ContentTypesConfigDenormalised,
-} from "@/db/ContentTypeViewModel";
+
 import {
   ContentTypeKeys,
-  ContentTypeViewModel,
   ContentTypeViewModelKeyed,
-} from "@/db/ContentTypes.generated";
+} from "@/model/ContentTypes.generated";
 export const ContentTypeTable = () => {
   const { config, rawConfig } = useContentTypes();
+  const contentTypes = Object.values(ContentTypeViewModelKeyed);
   return (
     <Box>
       <Box display={"flex"}>
@@ -44,7 +41,7 @@ export const ContentTypeTable = () => {
             </tr>
           </thead>
           <tbody>
-            {ContentTypeViewModel.map((ct) => {
+            {contentTypes.map((ct) => {
               const marginLeft = 3;
               return (
                 <tr key={ct.type}>

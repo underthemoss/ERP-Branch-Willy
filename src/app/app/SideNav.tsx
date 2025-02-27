@@ -1,40 +1,28 @@
 import { getUser } from "@/lib/auth";
 import { UserDetail } from "@/ui/UserDetail";
-import {
-  Avatar,
-  Box,
-  Divider,
-  List,
-  ListItem,
-  ListItemDecorator,
-} from "@mui/joy";
+import { Box, Divider, List, ListItem, ListItemDecorator } from "@mui/joy";
 import ListItemButton from "@mui/joy/ListItemButton";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
-import { EntityTypeIcon } from "@/ui/EntityTypeIcons";
-import { Add } from "@mui/icons-material";
 import { ContentTypeComponent } from "@/ui/Icons";
 
 import NewButton from "./@breadcrumbs/NewButton";
-import { getContentTypeConfig } from "@/services/ContentTypeRepository";
-import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
+
+import { Entity } from "@/db/mongoose";
+import {
+  CastContentType,
+  ContentTypeKeys,
+  ContentTypeViewModelKeyed,
+} from "@/model/ContentTypes.generated";
 
 export default async function SideNav() {
   const { user } = await getUser();
-  const entities = await prisma.entity.findMany({
-    where: {
-      tenant_id: user.company_id,
-      parent_id: { isSet: false },
-    },
-    select: {
-      id: true,
-      data: true,
-      type_id: true,
-    },
+  const items = await Entity.find({
+    tenant_id: user.company_id,
+    parent_id: "",
+    type: ContentTypeViewModelKeyed["collection"].descendents,
   });
-  const contentTypes = denormaliseConfig(await getContentTypeConfig());
 
   return (
     <Box display={"flex"} flexDirection={"column"} flex={1}>
@@ -51,27 +39,29 @@ export default async function SideNav() {
             </Link>
 
             <List>
-              {entities.map((item) => {
-                const ct = contentTypes.find((ct) => ct.id === item.type_id);
-                if (!ct) return null;
-                return (
-                  <Link href={`/app/item/${item.id}`} key={item.id}>
-                    <ListItem>
-                      <ListItemButton>
-                        <Box>
-                          <ContentTypeComponent
-                            color={ct.color}
-                            icon={ct.icon}
-                            label={
-                              (item.data as any)[ct.computed.allFields[0]?.id]
-                            }
-                          />
-                        </Box>
-                      </ListItemButton>
-                    </ListItem>
-                  </Link>
-                );
-              })}
+              {items
+                .map((item) => CastContentType<"collection">(item))
+                .map((item) => {
+                  const ct = ContentTypeViewModelKeyed[item.type];
+
+                  return (
+                    <Link href={`/app/item/${item._id}`} key={item._id}>
+                      <ListItem>
+                        <ListItemButton>
+                          <Box>
+                            <ContentTypeComponent
+                              color={ct.color}
+                              icon={ct.icon}
+                              label={item.data.name}
+                            />
+                          </Box>
+                        </ListItemButton>
+                      </ListItem>
+                    </Link>
+                  );
+
+                  return null;
+                })}
             </List>
           </ListItem>
         </List>

@@ -2,8 +2,7 @@
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { Box } from "@mui/joy";
-
-import { ContentTypesConfigDenormalised } from "@/db/ContentTypeViewModel";
+import { ContentTypeViewModelKeyed } from "@/model/ContentTypes.generated";
 
 type Connection = {
   from: { x: number; y: number };
@@ -11,7 +10,7 @@ type Connection = {
 };
 
 export const InheritanceLayer: React.FC<{}> = ({}) => {
-  const contentTypes = ContentTypesConfigDenormalised;
+  const contentTypes = Object.values(ContentTypeViewModelKeyed);
 
   const ref = useRef<HTMLElement>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -21,7 +20,7 @@ export const InheritanceLayer: React.FC<{}> = ({}) => {
       const { x: xOffset, y: yOffset } = el.getBoundingClientRect();
       const connections: Connection[] = [];
       for (const ct of contentTypes) {
-        const from = ct.parent_type;
+        const from = ct.parent;
         const to = ct.type;
         const fromElement = document.querySelector(
           `[data-content-type-id='${from}']`

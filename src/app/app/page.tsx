@@ -9,18 +9,20 @@ import { getContentTypeConfig } from "@/services/ContentTypeRepository";
 import { contentTypeLookup } from "@/services/SystemContentTypes";
 import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
 import { ContentTypeComponent } from "@/ui/Icons";
+import { Entity } from "@/db/mongoose";
+import {
+  CastContentType,
+  ContentTypeViewModelKeyed,
+  isTypeof,
+} from "@/model/ContentTypes.generated";
 export default async function Home() {
   const { user } = await getUser();
   const config = denormaliseConfig(await getContentTypeConfig());
-
-  const spaces = await prisma.entity.findMany({
-    where: {
-      tenant_id: user.company_id,
-      type_id: {
-        in: config.filter((t) => t.is_root_type).map((t) => t.id),
-      },
-    },
+  const entities = await Entity.find({
+    parent_id: "",
+    tenant_id: user.company_id,
   });
+
   return (
     <Box>
       <Box p={2} display={"flex"}>
@@ -42,38 +44,38 @@ export default async function Home() {
             </tr>
           </thead>
           <tbody>
-            {spaces.map((ws) => {
-              const ct = config.find((t) => t.id === ws.type_id)!;
-              return (
-                <tr key={ws.id}>
-                  <td>
-                    <Box display={"flex"} gap={1}>
-                      <NextLink href={`/app/item/${ws.id}`}>
-                        <ContentTypeComponent
-                          color={ct?.color}
-                          icon={ct?.icon}
-                          label={
-                            (ws.data as any)[
-                              config.find((t) => t.id === ws.type_id)?.computed
-                                .allFields[0].id || ""
-                            ]
-                          }
-                        />{" "}
-                      </NextLink>
-                    </Box>
-                  </td>
-                  <td>{(ws.data as any).description}</td>
-                  <td>
-                    {/* {(ws.data as any)["created_by"] && (
-                      <UserDetail userId={(ws.data as any)["created_by"]} />
-                    )} */}
-                  </td>
-                  <td>
-                    {/* {(ws.data as any)["created_at"]?.toDateString()} */}
-                  </td>
-                  <td></td>
-                </tr>
-              );
+            {entities.map((item) => {
+              const ct = ContentTypeViewModelKeyed[item.type];
+              if (isTypeof(item.type, "collection")) {
+                const collection = CastContentType<"collection">(item);
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      <Box display={"flex"} gap={1}>
+                        <NextLink href={`/app/item/${item.id}`}>
+                          <ContentTypeComponent
+                            color={ct?.color}
+                            icon={ct?.icon}
+                            label={collection.data.name}
+                          />
+                        </NextLink>
+                      </Box>
+                    </td>
+                    <td>{(item.data as any).description}</td>
+                    <td>
+                      {collection.data.created_by}
+                      {/* {(ws.data as any)["created_by"] && (
+                        <UserDetail userId={(ws.data as any)["created_by"]} />
+                      )} */}
+                    </td>
+                    <td>
+                      {/* {(ws.data as any)["created_at"]?.toDateString()} */}
+                    </td>
+                    <td></td>
+                  </tr>
+                );
+                return null;
+              }
             })}
           </tbody>
         </Table>
