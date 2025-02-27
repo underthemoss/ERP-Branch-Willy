@@ -11,6 +11,11 @@ import {
   ContentTypesConfig,
   ContentTypesConfigDenormalised,
 } from "@/db/ContentTypeViewModel";
+import {
+  ContentTypeKeys,
+  ContentTypeViewModel,
+  ContentTypeViewModelKeyed,
+} from "@/db/ContentTypes.generated";
 export const ContentTypeTable = () => {
   const { config, rawConfig } = useContentTypes();
   return (
@@ -39,7 +44,7 @@ export const ContentTypeTable = () => {
             </tr>
           </thead>
           <tbody>
-            {ContentTypesConfigDenormalised.map((ct) => {
+            {ContentTypeViewModel.map((ct) => {
               const marginLeft = 3;
               return (
                 <tr key={ct.type}>
@@ -69,7 +74,12 @@ export const ContentTypeTable = () => {
                   <td>
                     <Box display={"flex"} gap={2}>
                       {ct.allowed_children
-                        .map((t) => ContentTypesConfig[t])
+                        .map(
+                          (t) =>
+                            ContentTypeViewModelKeyed[
+                              t as keyof typeof ContentTypeViewModelKeyed
+                            ]
+                        )
                         .map((ct) => (
                           <NextLink
                             key={ct.type}
@@ -82,20 +92,28 @@ export const ContentTypeTable = () => {
                     </Box>
                   </td>{" "}
                   <td>
-                    {Object.entries(ct.fields).map(([id, field]) => (
-                      <Chip
-                        key={id}
-                        startDecorator={
-                          <ContentTypeIcon
-                            icon={ct.icon}
-                            color={ct.color}
-                            data-content-type-id={ct.type}
-                          />
-                        }
-                      >
-                        {field.label}
-                      </Chip>
-                    ))}
+                    {Object.entries(ct.fields).map(([id, field]) => {
+                      // const contentType = field.
+                      // field.
+                      const { type, icon, color } =
+                        ContentTypeViewModelKeyed[
+                          field.source as ContentTypeKeys
+                        ];
+                      return (
+                        <Chip
+                          key={id}
+                          startDecorator={
+                            <ContentTypeIcon
+                              icon={icon}
+                              color={color}
+                              data-content-type-id={type}
+                            />
+                          }
+                        >
+                          {field.label}
+                        </Chip>
+                      );
+                    })}
                   </td>
                   {/* 
              

@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:mongo": "ts-node-dev mongo-dev-server.ts",
-    "content-type:codegen": "ts-node-dev ./ConfigCodeGen.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
