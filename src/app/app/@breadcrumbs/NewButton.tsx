@@ -4,50 +4,34 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import AddIcon from "@mui/icons-material/Add";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { MenuItemLink } from "../../../ui/MenuItemLink";
 import { ListItemDecorator } from "@mui/joy";
 import _ from "lodash";
-import { getContentTypeConfig } from "@/services/ContentTypeRepository";
-import { ContentTypeIcon } from "@/ui/Icons";
-import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
+
+import { UIConfig } from "@/types/UIModelConfig";
 
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await getUser();
-  const item = props.itemId
-    ? await prisma.entity.findFirstOrThrow({
-        where: { tenant_id: user.company_id, id: props.itemId },
-      })
-    : null;
-  const contentTypes = denormaliseConfig(await getContentTypeConfig());
-  const contentType = item
-    ? contentTypes.find((ct) => ct.id === item?.type_id)
-    : null;
-
-  const validContentTypes = contentType
-    ? contentType.computed.creatableChildTypes
-    : contentTypes.filter((ct) => ct.is_root_type);
-
-  if (validContentTypes.length === 0) return null;
-  return (
-    <Dropdown>
-      <MenuButton startDecorator={<AddIcon />}>New</MenuButton>
-      <Menu placement="bottom-end" sx={{ minWidth: 150 }}>
-        {validContentTypes.map((ct) => {
-          return (
-            <MenuItemLink
-              key={ct.id}
-              // disabled={!allowedTypeIds.includes(et.id)}
-              href={`/app/item/${props.itemId || "null"}/new/${ct.id}`}
-            >
-              <ListItemDecorator>
-                <ContentTypeIcon color={ct.color} icon={ct.icon} />
-              </ListItemDecorator>
-              {ct.label}
-            </MenuItemLink>
-          );
-        })}
-      </Menu>
-    </Dropdown>
-  );
+  return "asd";
+  // return (
+  //   <Dropdown>
+  //     <MenuButton startDecorator={<AddIcon />}>New</MenuButton>
+  //     <Menu placement="bottom-end" sx={{ minWidth: 150 }}>
+  //       {Object.entries(UIConfig).map(([ct, config]) => {
+  //         return (
+  //           <MenuItemLink
+  //             key={ct}
+  //             // disabled={!allowedTypeIds.includes(et.id)}
+  //             href={`/app/item/${props.itemId || "null"}/new/${ct}`}
+  //           >
+  //             <ListItemDecorator>
+  //               {/* <ContentTypeIcon color={'red'} icon={ct.icon} /> */}
+  //             </ListItemDecorator>
+  //             {config.create_form.title}
+  //           </MenuItemLink>
+  //         );
+  //       })}
+  //     </Menu>
+  //   </Dropdown>
+  // );
 }

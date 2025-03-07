@@ -50,11 +50,11 @@ export default async function RootLayout({
         >
           <Box>{breadcrumbs}</Box>
           <Box display={"flex"} flex={1}>
-            <ContentTypesConfigProvider
+            {/* <ContentTypesConfigProvider
               contentTypesConfig={await getContentTypeConfig()}
-            >
+            > */}
               {children}
-            </ContentTypesConfigProvider>
+            {/* </ContentTypesConfigProvider> */}
           </Box>
         </Box>
       </Box>

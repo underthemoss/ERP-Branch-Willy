@@ -1,42 +1,32 @@
 import { NextLink } from "@/ui/NextLink";
-import { prisma } from "@/lib/prisma";
 import HomeIcon from "@mui/icons-material/Home";
 import { Box, Breadcrumbs, IconButton, Link } from "@mui/joy";
 import { getUser } from "@/lib/auth";
 import NewButton from "../../NewButton";
-import { JsonObject } from "@prisma/client/runtime/library";
 import { ContentTypeComponent } from "@/ui/Icons";
-import { getContentTypeConfig } from "@/services/ContentTypeRepository";
-import { denormaliseConfig } from "@/lib/content-types/ContentTypesConfigParser";
+import { Entity, findEntities } from "@/db/mongoose";
 
 const traverseUp = async (
   tenantId: string,
-  id: string | null,
-  contentTypes: ReturnType<typeof denormaliseConfig>
+  id: string | null
 ): Promise<
   { id: string; name: string; typeId: string; icon: string; color: string }[]
 > => {
   if (!id || id === "null") return [];
-
-  const entity = await prisma.entity.findFirstOrThrow({
-    where: { id, tenant_id: tenantId },
-    select: {
-      data: true,
-      parent_id: true,
-      id: true,
-      type_id: true,
-      // type: { select: { icon: true, color: true } },
-    },
+  const [entity] = await findEntities({
+    id: [id],
   });
-  const type = contentTypes.find((ct) => ct.id === entity.type_id);
+
+  if (!entity) return [];
+
   return [
-    ...(await traverseUp(tenantId, entity.parent_id, contentTypes)),
+    ...(await traverseUp(tenantId, entity.parent_id || null)),
     {
-      name: Object.values(entity.data as JsonObject)[0] as string,
+      name: entity.title,
       id: entity.id,
-      typeId: type?.id || "",
-      icon: type?.icon || "",
-      color: type?.color || "",
+      typeId: entity.type,
+      icon: "FolderOpen",
+      color: "gray",
     },
   ];
 };
@@ -46,8 +36,8 @@ export default async function HeaderBreadcrumbs(props: {
 }) {
   const { user } = await getUser();
   const itemId = (await props.params).catchAll[2];
-  const contentTypes = denormaliseConfig(await getContentTypeConfig());
-  const ancestors = await traverseUp(user.company_id, itemId, contentTypes);
+  const ancestors = await traverseUp(user.company_id, itemId);
+
   return (
     <>
       <Box display={"flex"}>

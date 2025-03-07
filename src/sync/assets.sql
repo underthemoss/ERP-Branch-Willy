@@ -10,7 +10,9 @@ SELECT
     mk.name AS make_name,
     em.name AS model_name,
     ST_Y(ST_AsText(askv_location.value)) as longitude,
-    ST_X(ST_AsText(askv_location.value)) as latitude
+    ST_X(ST_AsText(askv_location.value)) as latitude,
+    a.date_created,
+    a.date_updated
 FROM
     assets a
     LEFT JOIN equipment_classes ec ON a.equipment_class_id = ec.equipment_class_id
@@ -21,7 +23,8 @@ FROM
     LEFT JOIN asset_status_key_values askv_location ON a.asset_id = askv_location.asset_id
     AND askv_location.name = 'location'
 WHERE
-    a.company_id = :company_id
+    a.asset_id % :num_shards = :current_shard
+    AND a.company_id = :tenant_id
 GROUP BY
     a.asset_id,
     ec.name,

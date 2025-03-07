@@ -12,8 +12,6 @@ import { GlobalColumnIds } from "@/config/ColumnConfig";
 
 
 export type Query = {
-  // parent_id?: string;
-  // cursor?: string;
   take: number;
   skip: number;
   sort_by: string;

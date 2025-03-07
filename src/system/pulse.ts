@@ -2,10 +2,12 @@ import { prisma } from "@/lib/prisma";
 import Pulse from "@pulsecron/pulse";
 
 import { setupTenant } from "./setupTenant";
-import { syncAssets } from "./syncAssets";
-import { syncUsers } from "./syncUsers";
+
 import { Entity } from "../../prisma/generated/mongo";
 import { mongodbClient } from "./changeStreams";
+import { syncAssets } from "@/sync/assets";
+import { syncUsers } from "@/sync/users";
+import { syncWorkOrders } from "@/sync/work_orders";
 const mongoConnectionString = process.env.DATABASE_URL || "";
 
 export const pulse = new Pulse({
@@ -17,8 +19,8 @@ export const pulse = new Pulse({
 });
 
 const tenants: string[] = [
-  // "420",
-  // , "1854"
+  "420",
+  "1854",
 ];
 
 const tenantSyncJobName = (tenant: string) => `tenant-sync-${tenant}`;
@@ -30,11 +32,14 @@ tenants.forEach((tenantId) => {
       const msg = `[SYNC] ${tenantId}`;
       console.log(msg);
       console.time(msg);
-      await setupTenant(tenantId);
-      // await syncUsers(tenantId);
-      await syncAssets(tenantId);
+      await Promise.all([
+        syncWorkOrders(tenantId),
+        syncUsers(tenantId),
+        syncAssets(tenantId),
+      ]);
       console.timeEnd(msg);
-    }
+    },
+    {}
   );
 });
 
