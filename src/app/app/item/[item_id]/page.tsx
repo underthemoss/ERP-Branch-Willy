@@ -14,7 +14,9 @@ export default async function Page(props: {
   const { item_id } = await props.params;
   const { sort_by, sort_order } = await props.searchParams;
 
-  const [parent] = await findEntities({
+  const {
+    results: [parent],
+  } = await findEntities({
     id: [item_id],
   });
   return null;

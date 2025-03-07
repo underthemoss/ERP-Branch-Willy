@@ -9,7 +9,7 @@ export const ViewTable: React.FC<{
   data: Awaited<ReturnType<typeof findEntities>>;
 }> = ({ query, data }) => {
   const include = query.include || [
-    ...new Set(data.flatMap((d) => Object.keys(d.data))),
+    ...new Set(data.results.flatMap((d) => Object.keys(d.data))),
   ];
   const columns = typeof include === "string" ? [include] : include;
   const previousDisabled = (Number(query.offset) || 0) <= 0;
@@ -51,7 +51,7 @@ export const ViewTable: React.FC<{
         </tr>
       </thead>
       <tbody>
-        {data.map((item) => {
+        {data.results.map((item) => {
           return (
             <tr key={item.id} style={{ height: 60 }}>
               {columns.map((c) => {

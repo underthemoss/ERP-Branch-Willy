@@ -117,12 +117,14 @@ export const findEntities = async (query: UniversalQuery = {}) => {
     .limit(query.limit || 20)
     .exec();
 
-  return results
-    .map((r) => r._doc)
-    .map((r) => ({
-      ...r,
+  return {
+    results: results
+      .map((r) => r._doc)
+      .map((r) => ({
+        ...r,
 
-      title: r._id,
-      id: r._id,
-    }));
+        title: r._id,
+        id: r._id,
+      })),
+  };
 };
