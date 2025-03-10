@@ -96,6 +96,7 @@ export const ViewTable: React.FC<{
                   encodeUniversalQuery({
                     ...query,
                     options: {
+                      ...query.options,
                       skip:
                         Number(query.options?.skip || 0) +
                         Number(query.options?.limit || 20),
