@@ -58,7 +58,7 @@ export const findEntities = async (query: UniversalQuery) => {
 
   const results = await Entity.find<{ _doc: ContentTypeDataModel }>(
     { ...query.filter, tenant_id: user.company_id },
-    { ...(query.include as {}), type: 1, _id: 1, data: { make: 1 } },
+    { ...(query.include as any), type: 1, _id: 1, data: { make: 1 } },
     {
       skip: 0,
       limit: 20,

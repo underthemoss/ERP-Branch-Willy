@@ -17,7 +17,11 @@ export default async function Page(props: {
   const {
     results: [parent],
   } = await findEntities({
-    id: [item_id],
+    // id: [item_id],
+    filter: {
+      id: item_id,
+    },
+    include: {},
   });
   return null;
   // if (parent.type_id === "view") {
