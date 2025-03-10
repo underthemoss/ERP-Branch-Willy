@@ -11,10 +11,12 @@ export const MapView: React.FC<{
     id: "scatter-layer",
     data: locations.map((l) => ({ coordinates: [l.lat, l.lng] })),
     getPosition: (d) => d.coordinates,
-    getFillColor: () => [255, 0, 0, 255], // Red points with some transparency
-    getRadius: () => 4, // Radius in meters (adjust based on zoom level)
+    getFillColor: () => [255, 100, 0, 190], // Red points with some transparency
+    getRadius: () => 5, // Radius in meters (adjust based on zoom level)
     pickable: true,
-    radiusUnits: "pixels",
+    radiusUnits: "meters",
+    radiusMaxPixels: 15,
+    radiusMinPixels: 4,
   });
   return (
     <Box

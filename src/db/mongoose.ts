@@ -66,13 +66,15 @@ export const findEntities = async (query: UniversalQuery) => {
     }
   ).exec();
 
-  const points = await Entity.find<{ _doc: ContentTypeDataModel }>(
-    { ...filter, "data.location": { $exists: true } },
-    {
-      "data.location": 1,
-      _id: 0,
-    }
-  ).lean();
+  const points = query.components?.map
+    ? await Entity.find<{ _doc: ContentTypeDataModel }>(
+        { ...filter, "data.location": { $exists: true } },
+        {
+          "data.location": 1,
+          _id: 0,
+        }
+      ).lean()
+    : [];
   const locations = points
     .map((r) => (r.data as any).location)
     .filter((d) => d.lat && d.lng);

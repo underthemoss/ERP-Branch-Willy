@@ -17,6 +17,11 @@ export type UniversalQuery = {
   filter: FilterParam;
   include: ProjectionParam;
   options?: OptionsParam;
+  components?: {
+    map?: boolean;
+    list?: boolean;
+    kanban?: boolean;
+  };
 };
 
 export const parseUrl = (url: string) => {
@@ -32,6 +37,14 @@ export const parseUrl = (url: string) => {
         Object.entries(rawQuery.options?.sort || {}).map(([k, v]) => [
           k,
           Number(v),
+        ])
+      ),
+    },
+    components: {
+      ...Object.fromEntries(
+        Object.entries(rawQuery.components || {}).map(([k, v]: any) => [
+          k,
+          v === "true",
         ])
       ),
     },

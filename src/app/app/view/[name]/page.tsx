@@ -1,10 +1,12 @@
 import { findEntities } from "@/db/mongoose";
 
-import { Box, Table, Typography } from "@mui/joy";
+import { Box, Typography } from "@mui/joy";
 import { ViewTable } from "./Table";
 
 import { parseUrl, stringifySearchParams } from "@/lib/UniversalQuery";
 import { MapView } from "./Map";
+
+import ViewSelector from "./ViewSelector";
 
 function snakeToPascal(snakeStr: string) {
   return snakeStr
@@ -23,17 +25,26 @@ export default async function Page(props: {
   const data = await findEntities(query);
 
   return (
-    <Box>
+    <Box display={"flex"} flexDirection={'column'} width={'100%'}>
       <Box p={2} display={"flex"}>
         <Typography level="h1" fontWeight={500}>
           {snakeToPascal(name)}
         </Typography>
       </Box>
-
-      <Box>
-        <MapView locations={data.locations} />
+      <Box mb={1} display={"flex"}>
+        <Box flex={1}></Box>
+        <ViewSelector query={query} />
       </Box>
-      <ViewTable key={name} query={query} data={data} />
+      {query.components?.map && (
+        <Box>
+          <MapView locations={data.locations} />
+        </Box>
+      )}
+      {query.components?.list && (
+        <Box>
+          <ViewTable key={name} query={query} data={data} />
+        </Box>
+      )}
     </Box>
   );
 }

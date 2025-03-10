@@ -66,6 +66,9 @@ export default async function SideNav() {
                     "data.email": 1,
                   },
                   options: {},
+                  components: {
+                    list: true,
+                  },
                 })}`}
               >
                 <ListItem>
@@ -92,6 +95,9 @@ export default async function SideNav() {
                     "data.company_id": 1,
                   },
                   options: {},
+                  components: {
+                    list: true,
+                  },
                 })}`}
               >
                 <ListItem>
@@ -118,6 +124,9 @@ export default async function SideNav() {
                     created_at: 1,
                   },
                   options: {},
+                  components: {
+                    list: true,
+                  },
                 })}`}
               >
                 <ListItem>
