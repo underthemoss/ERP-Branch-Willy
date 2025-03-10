@@ -141,15 +141,7 @@ const main = async () => {
           .join("")}
       }
       
-      
-      export type UniversalQuery = {
-        limit?: number;
-        offset?: number;
-        id?: string[];
-        type?: string[];
-        parent_id?: string[];
-      };
-      
+   
 
       `,
       { parser: "typescript" }

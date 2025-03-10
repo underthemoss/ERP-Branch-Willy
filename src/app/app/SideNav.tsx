@@ -18,6 +18,7 @@ import { ContentTypeComponent } from "@/ui/Icons";
 import PeopleAltTwoToneIcon from "@mui/icons-material/PeopleAltTwoTone";
 import NewButton from "./@breadcrumbs/NewButton";
 import HandymanTwoToneIcon from "@mui/icons-material/HandymanTwoTone";
+import { encodeUniversalQuery } from "@/lib/UniversalQuery";
 export default async function SideNav() {
   const { user } = await getUser();
 
@@ -54,15 +55,18 @@ export default async function SideNav() {
                 );
               })} */}
               <Link
-                href={`/app/view/users?${[
-                  "type=user",
-                  "include=data.id",
-                  "include=data.first_name",
-                  "include=data.last_name",
-                  "include=data.email",
-                  "limit=10",
-                  "offset=0",
-                ].join("&")}`}
+                href={`/app/view/users?${encodeUniversalQuery({
+                  filter: {
+                    type: "user",
+                  },
+                  include: {
+                    "data.id": 1,
+                    "data.first_name": 1,
+                    "data.last_name": 1,
+                    "data.email": 1,
+                  },
+                  options: {},
+                })}`}
               >
                 <ListItem>
                   <ListItemButton>
@@ -74,18 +78,20 @@ export default async function SideNav() {
                 </ListItem>
               </Link>
               <Link
-                href={`/app/view/assets?${[
-                  "type=asset",
-                  "include=data.photo_filename",
-                  "include=data.id",
-                  "include=data.custom_name",
-                  "include=data.make_name",
-                  "include=data.model_name",
-                  "include=data.category_name",
-                  "include=data.company_id",
-                  "limit=10",
-                  "offset=0",
-                ].join("&")}`}
+                href={`/app/view/assets?${encodeUniversalQuery({
+                  filter: {
+                    type: "asset",
+                  },
+                  include: {
+                    "data.id": 1,
+                    "data.custom_name": 1,
+                    "data.make_name": 1,
+                    "data.model_name": 1,
+                    "data.category_name": 1,
+                    "data.company_id": 1,
+                  },
+                  options: {},
+                })}`}
               >
                 <ListItem>
                   <ListItemButton>
@@ -98,17 +104,20 @@ export default async function SideNav() {
               </Link>
 
               <Link
-                href={`/app/view/work_orders?${[
-                  "type=work_order",
-                  "include=data.id",
-                  "include=data.description",
-                  "include=data.status",
-                  "include=data.due_date",
-                  "include=data.assigned_to",
-                  "include=created_at",
-                  "limit=20",
-                  "offset=0",
-                ].join("&")}`}
+                href={`/app/view/work_orders?${encodeUniversalQuery({
+                  filter: {
+                    type: "work_order",
+                  },
+                  include: {
+                    "data.id": 1,
+                    "data.description": 1,
+                    "data.status": 1,
+                    "data.due_date": 1,
+                    "data.assigned_to": 1,
+                    created_at: 1,
+                  },
+                  options: {},
+                })}`}
               >
                 <ListItem>
                   <ListItemButton>

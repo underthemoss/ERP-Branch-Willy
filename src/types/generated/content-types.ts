@@ -215,11 +215,3 @@ export interface UIConfigInterface {
     >;
   };
 }
-
-export type UniversalQuery = {
-  limit?: number;
-  offset?: number;
-  id?: string[];
-  type?: string[];
-  parent_id?: string[];
-};

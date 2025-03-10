@@ -13,8 +13,17 @@ const traverseUp = async (
   { id: string; name: string; typeId: string; icon: string; color: string }[]
 > => {
   if (!id || id === "null") return [];
-  const [entity] = await findEntities({
-    id: [id],
+  const {
+    results: [entity],
+  } = await findEntities({
+    filter: {
+      id: id,
+    },
+    include: {
+      _id: 1,
+      type: 1,
+      data: 1,
+    },
   });
 
   if (!entity) return [];

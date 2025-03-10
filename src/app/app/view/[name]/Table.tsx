@@ -1,29 +1,28 @@
 import { findEntities } from "@/db/mongoose";
 import { TableCellRenderer, TableHeaderRenderer } from "@/types/FieldRender";
-import { encodeUniversalQuery, UniversalQuery } from "@/types/UniversalQuery";
+
 import { Box, Button, Table } from "@mui/joy";
 import { get } from "lodash";
 import { NextLink } from "@/ui/NextLink";
+import { encodeUniversalQuery, UniversalQuery } from "@/lib/UniversalQuery";
+
 export const ViewTable: React.FC<{
   query: UniversalQuery;
   data: Awaited<ReturnType<typeof findEntities>>;
 }> = ({ query, data }) => {
-  const include = query.include || [
+  const include = Object.keys(query.include) || [
     ...new Set(data.results.flatMap((d) => Object.keys(d.data))),
   ];
   const columns = typeof include === "string" ? [include] : include;
-  const previousDisabled = (Number(query.offset) || 0) <= 0;
-  const order_by =
-    typeof query.order_by === "string" ? [query.order_by] : query.order_by;
+  const previousDisabled = (Number(query.options?.skip) || 0) <= 0;
 
   return (
     <Table>
       <thead>
         <tr>
           {columns.map((c, i, { length }) => {
-            const sorted = order_by?.find((o) => o.startsWith(c + ":"));
-            const dir = sorted?.split(":")[1];
-            const otherDir = dir === "asc" ? "desc" : "asc";
+            const dir = query.options?.sort[c] || -1;
+            const otherDir = dir * -1;
             return (
               <th
                 key={c}
@@ -37,7 +36,11 @@ export const ViewTable: React.FC<{
                       "?" +
                       encodeUniversalQuery({
                         ...query,
-                        order_by: [`${c}:${otherDir}`],
+                        options: {
+                          sort: {
+                            [c]: otherDir,
+                          },
+                        },
                       })
                     }
                   >
@@ -56,7 +59,7 @@ export const ViewTable: React.FC<{
             <tr key={item.id} style={{ height: 60 }}>
               {columns.map((c) => {
                 const Component =
-                  TableCellRenderer[item.type][c] ||
+                  TableCellRenderer?.[item.type]?.[c] ||
                   ((props: { value: any }) => "");
                 return (
                   <td key={c}>
@@ -76,8 +79,12 @@ export const ViewTable: React.FC<{
                   "?" +
                   encodeUniversalQuery({
                     ...query,
-                    offset:
-                      Number(query.offset || 0) - Number(query.limit || 20),
+                    options: {
+                      ...query.options,
+                      skip:
+                        Number(query.options?.skip || 0) -
+                        Number(query.options?.limit || 20),
+                    },
                   })
                 }
               >
@@ -88,8 +95,11 @@ export const ViewTable: React.FC<{
                   "?" +
                   encodeUniversalQuery({
                     ...query,
-                    offset:
-                      Number(query.offset || 0) + Number(query.limit || 20),
+                    options: {
+                      skip:
+                        Number(query.options?.skip || 0) +
+                        Number(query.options?.limit || 20),
+                    },
                   })
                 }
               >
