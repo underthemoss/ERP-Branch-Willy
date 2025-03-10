@@ -23,33 +23,7 @@ export default async function Page(props: {
 }) {
   const { name } = await props.params;
 
-  const raw = stringifySearchParams(await props.searchParams);
-  console.log({ raw }, parseUrl(raw));
-
-  // const searchUrl = encodeUniversalQuery({
-  //   filter: {
-  //     type: "asset",
-  //   },
-  //   include: {
-  //     "data.id": 1,
-  //     "data.custom_name": 1,
-  //   },
-  //   options: {
-  //     limit: 20,
-  //     offset: 0,
-  //     sort: {
-  //       _id: 1,
-  //     },
-  //   },
-  // });
-  // console.log(searchUrl);
-
-  const query = parseUrl(raw);
-
-  // return null;
-
-  // const url = stringifySearchParams(await props.searchParams);
-  // const query = parseUrl(url);
+  const query = parseUrl(stringifySearchParams(await props.searchParams));
   const data = await findEntities(query);
 
   return (
