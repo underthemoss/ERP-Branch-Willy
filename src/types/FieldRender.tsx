@@ -45,6 +45,26 @@ export const TableCellRenderer: Record<
     "data.model_name": StringRenderer,
     "data.photo_filename": PhotoRenderer,
   },
+  rental: {
+    _id: StringRenderer,
+    created_at: DateRenderer,
+    created_by: StringRenderer,
+    updated_at: DateRenderer,
+    updated_by: StringRenderer,
+    parent_id: StringRenderer,
+    tenant_id: StringRenderer,
+    type: StringRenderer,
+    "data.category_name": StringRenderer,
+    "data.company_id": StringRenderer,
+    "data.custom_model": StringRenderer,
+    "data.custom_name": StringRenderer,
+    "data.equipment_class_name": StringRenderer,
+    "data.id": StringRenderer,
+    "data.location": () => <div></div>,
+    "data.make_name": StringRenderer,
+    "data.model_name": StringRenderer,
+    "data.photo_filename": PhotoRenderer,
+  },
   user: {
     _id: StringRenderer,
     created_at: DateRenderer,
@@ -108,4 +128,5 @@ export const TableHeaderRenderer: Record<string, HeaderConfig> = {
   "data.date_completed": { label: "Date Completed", width: 100 },
   "data.due_date": { label: "Due Date", width: 135 },
   "data.assigned_to": { label: "Assigned To", width: 350 },
+
 } satisfies IHeaderRenderLookup;

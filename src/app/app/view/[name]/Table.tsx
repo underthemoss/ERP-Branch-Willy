@@ -23,6 +23,7 @@ export const ViewTable: React.FC<{
           {columns.map((c, i, { length }) => {
             const dir = query.options?.sort[c] || -1;
             const otherDir = dir * -1;
+
             return (
               <th
                 key={c}

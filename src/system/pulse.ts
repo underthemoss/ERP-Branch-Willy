@@ -18,10 +18,7 @@ export const pulse = new Pulse({
   resumeOnRestart: true,
 });
 
-const tenants: string[] = [
-  "420",
-  "1854",
-];
+const tenants: string[] = ["1854"];
 
 const tenantSyncJobName = (tenant: string) => `tenant-sync-${tenant}`;
 
@@ -33,9 +30,9 @@ tenants.forEach((tenantId) => {
       console.log(msg);
       console.time(msg);
       await Promise.all([
-        syncWorkOrders(tenantId),
-        syncUsers(tenantId),
-        syncAssets(tenantId),
+        // syncWorkOrders(tenantId),
+        syncUsers(),
+        syncAssets(),
       ]);
       console.timeEnd(msg);
     },

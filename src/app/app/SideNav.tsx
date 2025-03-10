@@ -83,6 +83,7 @@ export default async function SideNav() {
                     type: "asset",
                   },
                   include: {
+                    "data.photo_filename": 1,
                     "data.id": 1,
                     "data.custom_name": 1,
                     "data.make_name": 1,

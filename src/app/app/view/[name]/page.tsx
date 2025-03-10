@@ -1,15 +1,10 @@
 import { findEntities } from "@/db/mongoose";
-import { TableCellRenderer } from "@/types/FieldRender";
 
 import { Box, Table, Typography } from "@mui/joy";
 import { ViewTable } from "./Table";
-import qs from "qs";
-import {
-  encodeUniversalQuery,
-  parseUrl,
-  stringifySearchParams,
-  UniversalQuery,
-} from "@/lib/UniversalQuery";
+
+import { parseUrl, stringifySearchParams } from "@/lib/UniversalQuery";
+import { MapView } from "./Map";
 
 function snakeToPascal(snakeStr: string) {
   return snakeStr
@@ -17,6 +12,7 @@ function snakeToPascal(snakeStr: string) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word.
     .join(" "); // Join all the words without any separator.
 }
+
 export default async function Page(props: {
   searchParams: Promise<Record<string, string | string[]>>;
   params: Promise<{ name: string }>;
@@ -34,7 +30,9 @@ export default async function Page(props: {
         </Typography>
       </Box>
 
-      <Box></Box>
+      <Box>
+        <MapView locations={data.locations} />
+      </Box>
       <ViewTable key={name} query={query} data={data} />
     </Box>
   );

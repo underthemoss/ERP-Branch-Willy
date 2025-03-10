@@ -1,7 +1,7 @@
 // AUTO GENERATED
-import { Asset, User, WorkOrder } from "../DataModelConfig";
+import { Asset, Rental, User, WorkOrder } from "../DataModelConfig";
 
-export type ContentTypeDataModel = Asset | User | WorkOrder;
+export type ContentTypeDataModel = Asset | Rental | User | WorkOrder;
 
 export type IFieldRenderLookup = {
   asset: {
@@ -26,6 +26,32 @@ export type IFieldRenderLookup = {
     ["data.custom_model"]: React.FC<{ value: Asset["data"]["custom_model"] }>;
     ["data.photo_filename"]: React.FC<{
       value: Asset["data"]["photo_filename"];
+    }>;
+  };
+  rental: {
+    _id: React.FC<{ value: Rental["_id"] }>;
+    type: React.FC<{ value: Rental["type"] }>;
+    updated_at: React.FC<{ value: Rental["updated_at"] }>;
+    created_at: React.FC<{ value: Rental["created_at"] }>;
+    updated_by: React.FC<{ value: Rental["updated_by"] }>;
+    created_by: React.FC<{ value: Rental["created_by"] }>;
+    parent_id: React.FC<{ value: Rental["parent_id"] }>;
+    tenant_id: React.FC<{ value: Rental["tenant_id"] }>;
+    ["data.custom_name"]: React.FC<{ value: Rental["data"]["custom_name"] }>;
+    ["data.location"]: React.FC<{ value: Rental["data"]["location"] }>;
+    ["data.category_name"]: React.FC<{
+      value: Rental["data"]["category_name"];
+    }>;
+    ["data.company_id"]: React.FC<{ value: Rental["data"]["company_id"] }>;
+    ["data.id"]: React.FC<{ value: Rental["data"]["id"] }>;
+    ["data.equipment_class_name"]: React.FC<{
+      value: Rental["data"]["equipment_class_name"];
+    }>;
+    ["data.make_name"]: React.FC<{ value: Rental["data"]["make_name"] }>;
+    ["data.model_name"]: React.FC<{ value: Rental["data"]["model_name"] }>;
+    ["data.custom_model"]: React.FC<{ value: Rental["data"]["custom_model"] }>;
+    ["data.photo_filename"]: React.FC<{
+      value: Rental["data"]["photo_filename"];
     }>;
   };
   user: {
@@ -117,6 +143,56 @@ export interface UIForm<Fields extends string> {
 
 export interface UIConfigInterface {
   asset: {
+    primary_display_field:
+      | "custom_name"
+      | "location"
+      | "category_name"
+      | "company_id"
+      | "id"
+      | "equipment_class_name"
+      | "make_name"
+      | "model_name"
+      | "custom_model"
+      | "photo_filename";
+    create_form: UIForm<
+      | "custom_name"
+      | "location"
+      | "category_name"
+      | "company_id"
+      | "id"
+      | "equipment_class_name"
+      | "make_name"
+      | "model_name"
+      | "custom_model"
+      | "photo_filename"
+    >;
+    edit_form: UIForm<
+      | "custom_name"
+      | "location"
+      | "category_name"
+      | "company_id"
+      | "id"
+      | "equipment_class_name"
+      | "make_name"
+      | "model_name"
+      | "custom_model"
+      | "photo_filename"
+    >;
+    display_page: UIForm<
+      | "custom_name"
+      | "location"
+      | "category_name"
+      | "company_id"
+      | "id"
+      | "equipment_class_name"
+      | "make_name"
+      | "model_name"
+      | "custom_model"
+      | "photo_filename"
+    >;
+  };
+
+  rental: {
     primary_display_field:
       | "custom_name"
       | "location"

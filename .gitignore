@@ -1,4 +1,6 @@
 /Config.json
+/Config.stage.json
+/Config.prod.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -34,6 +36,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+
+stage.env
+prod.env
 
 # vercel
 .vercel

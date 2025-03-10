@@ -26,6 +26,22 @@ export type Asset = IBaseItem<
   }
 >;
 
+export type Rental = IBaseItem<
+  "rental",
+  {
+    custom_name: string;
+    location?: { lat: number; lng: number };
+    category_name?: string;
+    company_id?: string;
+    id?: string;
+    equipment_class_name?: string;
+    make_name?: string;
+    model_name?: string;
+    custom_model?: string;
+    photo_filename?: string | null;
+  }
+>;
+
 export type User = IBaseItem<
   "user",
   {

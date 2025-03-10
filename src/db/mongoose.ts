@@ -55,9 +55,9 @@ export const createEntity = async (args: {
 
 export const findEntities = async (query: UniversalQuery) => {
   const { user } = await getUser();
-
+  const filter = { ...query.filter, tenant_id: user.company_id };
   const results = await Entity.find<{ _doc: ContentTypeDataModel }>(
-    { ...query.filter, tenant_id: user.company_id },
+    filter,
     { ...(query.include as any), type: 1, _id: 1, data: { make: 1 } },
     {
       skip: 0,
@@ -66,12 +66,23 @@ export const findEntities = async (query: UniversalQuery) => {
     }
   ).exec();
 
+  const points = await Entity.find<{ _doc: ContentTypeDataModel }>(
+    { ...filter, "data.location": { $exists: true } },
+    {
+      "data.location": 1,
+      _id: 0,
+    }
+  ).lean();
+  const locations = points
+    .map((r) => (r.data as any).location)
+    .filter((d) => d.lat && d.lng);
+
   return {
+    locations,
     results: results
       .map((r) => r._doc)
       .map((r) => ({
         ...r,
-
         title: r._id,
         id: r._id,
       })),

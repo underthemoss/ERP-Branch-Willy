@@ -11,5 +11,4 @@ SELECT
 FROM
 	users
 WHERE
-	user_id % :num_shards = :current_shard
-	AND company_id = :tenant_id;
+	user_id % :num_shards = :current_shard;

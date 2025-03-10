@@ -12,7 +12,8 @@ SELECT
     ST_Y(ST_AsText(askv_location.value)) as longitude,
     ST_X(ST_AsText(askv_location.value)) as latitude,
     a.date_created,
-    a.date_updated
+    a.date_updated,
+    ARRAY_AGG(rental_users.company_id) as rented_to_company_id
 FROM
     assets a
     LEFT JOIN equipment_classes ec ON a.equipment_class_id = ec.equipment_class_id
@@ -22,9 +23,16 @@ FROM
     LEFT JOIN equipment_models em ON a.equipment_model_id = em.equipment_model_id
     LEFT JOIN asset_status_key_values askv_location ON a.asset_id = askv_location.asset_id
     AND askv_location.name = 'location'
+    LEFT JOIN rentals rentals ON a.asset_id = rentals.asset_id
+    AND rentals.start_date <= now()
+    AND (
+        rentals.end_date >= now()
+        OR rentals.end_date IS NULL
+    )
+    LEFT JOIN orders orders ON rentals.order_id = orders.order_id
+    LEFT JOIN users rental_users ON orders.user_id = rental_users.user_id
 WHERE
     a.asset_id % :num_shards = :current_shard
-    AND a.company_id = :tenant_id
 GROUP BY
     a.asset_id,
     ec.name,

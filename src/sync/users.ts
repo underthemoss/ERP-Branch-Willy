@@ -2,7 +2,7 @@ import { dataSync, sharded } from "@/sync/shared/DataSync";
 import { users } from "./users.queries.generated";
 import { deterministicId } from "./shared/deterministicId";
 
-export const syncUsers = async (tenantId: string) => {
+export const syncUsers = async () => {
   await sharded(
     { number_shards: 20 },
     async ({ current_shard, number_of_shards }) => {
@@ -11,7 +11,6 @@ export const syncUsers = async (tenantId: string) => {
         params: {
           num_shards: number_of_shards,
           current_shard,
-          tenant_id: Number(tenantId),
         },
         batchSize: 1000,
         map(r) {
@@ -24,7 +23,7 @@ export const syncUsers = async (tenantId: string) => {
                 r.user_id.toString()
               ),
               type: "user",
-              tenant_id: tenantId,
+              tenant_id: r.company_id.toString(),
               created_at: r.date_created,
               created_by: "system",
               updated_at: r.date_updated,
