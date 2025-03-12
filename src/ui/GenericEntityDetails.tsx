@@ -5,11 +5,12 @@ export const GenericEntityDetails = (props: {
   id: string | number;
   label: string;
   secondary: string;
+  logo?: React.ReactElement;
 }) => {
   return (
     <Box display={"inline-block"}>
       <Box display={"flex"} alignItems={"center"}>
-        <AutoImage value={props.id.toString()} />
+        {props.logo || <AutoImage value={props.id.toString()} />}
         <Box pl={2}>
           <Typography
             level="body-sm"

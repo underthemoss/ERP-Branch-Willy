@@ -1,7 +1,7 @@
 // AUTO GENERATED
-import { Asset, Rental, User, WorkOrder } from "../DataModelConfig";
+import { Asset, Rental, User, Company, WorkOrder } from "../DataModelConfig";
 
-export type ContentTypeDataModel = Asset | Rental | User | WorkOrder;
+export type ContentTypeDataModel = Asset | Rental | User | Company | WorkOrder;
 
 export type IFieldRenderLookup = {
   asset: {
@@ -68,6 +68,19 @@ export type IFieldRenderLookup = {
     ["data.last_name"]: React.FC<{ value: User["data"]["last_name"] }>;
     ["data.id"]: React.FC<{ value: User["data"]["id"] }>;
   };
+  company: {
+    _id: React.FC<{ value: Company["_id"] }>;
+    type: React.FC<{ value: Company["type"] }>;
+    updated_at: React.FC<{ value: Company["updated_at"] }>;
+    created_at: React.FC<{ value: Company["created_at"] }>;
+    updated_by: React.FC<{ value: Company["updated_by"] }>;
+    created_by: React.FC<{ value: Company["created_by"] }>;
+    parent_id: React.FC<{ value: Company["parent_id"] }>;
+    tenant_id: React.FC<{ value: Company["tenant_id"] }>;
+    ["data.id"]: React.FC<{ value: Company["data"]["id"] }>;
+    ["data.name"]: React.FC<{ value: Company["data"]["name"] }>;
+    ["data.domain"]: React.FC<{ value: Company["data"]["domain"] }>;
+  };
   work_order: {
     _id: React.FC<{ value: WorkOrder["_id"] }>;
     type: React.FC<{ value: WorkOrder["type"] }>;
@@ -113,6 +126,8 @@ export type IHeaderRenderLookup = {
   "data.email": HeaderConfig;
   "data.first_name": HeaderConfig;
   "data.last_name": HeaderConfig;
+  "data.name": HeaderConfig;
+  "data.domain": HeaderConfig;
   "data.description": HeaderConfig;
   "data.created_by": HeaderConfig;
   "data.status": HeaderConfig;
@@ -247,6 +262,13 @@ export interface UIConfigInterface {
     create_form: UIForm<"email" | "first_name" | "last_name" | "id">;
     edit_form: UIForm<"email" | "first_name" | "last_name" | "id">;
     display_page: UIForm<"email" | "first_name" | "last_name" | "id">;
+  };
+
+  company: {
+    primary_display_field: "id" | "name" | "domain";
+    create_form: UIForm<"id" | "name" | "domain">;
+    edit_form: UIForm<"id" | "name" | "domain">;
+    display_page: UIForm<"id" | "name" | "domain">;
   };
 
   work_order: {

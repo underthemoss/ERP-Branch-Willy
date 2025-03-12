@@ -5,6 +5,7 @@ import {
 } from "./generated/content-types";
 import { Avatar } from "@mui/joy";
 import { UserDetail } from "./../ui/UserDetail";
+import { CompanyDetail } from "./../ui/CompanyDetail";
 const StringRenderer: React.FC<{ value?: string | null }> = ({ value }) => {
   return value;
 };
@@ -19,6 +20,10 @@ const DateRenderer: React.FC<{ value?: Date | null }> = ({ value }) => {
 const PeopleRenderer: React.FC<{ value?: string[] | null }> = ({ value }) => {
   if (!value) return null;
   return [...new Set(value)].map((v) => <UserDetail key={v} userId={v} />);
+};
+const CompanyRenderer: React.FC<{ value?: string | null }> = ({ value }) => {
+  if (!value) return null;
+  return <CompanyDetail companyId={value} />;
 };
 
 export const TableCellRenderer: Record<
@@ -35,7 +40,7 @@ export const TableCellRenderer: Record<
     tenant_id: StringRenderer,
     type: StringRenderer,
     "data.category_name": StringRenderer,
-    "data.company_id": StringRenderer,
+    "data.company_id": CompanyRenderer,
     "data.custom_model": StringRenderer,
     "data.custom_name": StringRenderer,
     "data.equipment_class_name": StringRenderer,
@@ -55,7 +60,7 @@ export const TableCellRenderer: Record<
     tenant_id: StringRenderer,
     type: StringRenderer,
     "data.category_name": StringRenderer,
-    "data.company_id": StringRenderer,
+    "data.company_id": CompanyRenderer,
     "data.custom_model": StringRenderer,
     "data.custom_name": StringRenderer,
     "data.equipment_class_name": StringRenderer,
@@ -97,6 +102,19 @@ export const TableCellRenderer: Record<
     "data.due_date": DateRenderer,
     "data.assigned_to": PeopleRenderer,
   },
+  company: {
+    _id: StringRenderer,
+    created_at: DateRenderer,
+    created_by: StringRenderer,
+    updated_at: DateRenderer,
+    updated_by: StringRenderer,
+    parent_id: StringRenderer,
+    tenant_id: StringRenderer,
+    type: StringRenderer,
+    "data.domain": StringRenderer,
+    "data.id": CompanyRenderer,
+    "data.name": StringRenderer,
+  },
 } satisfies IFieldRenderLookup;
 
 export const TableHeaderRenderer: Record<string, HeaderConfig> = {
@@ -128,5 +146,6 @@ export const TableHeaderRenderer: Record<string, HeaderConfig> = {
   "data.date_completed": { label: "Date Completed", width: 100 },
   "data.due_date": { label: "Due Date", width: 135 },
   "data.assigned_to": { label: "Assigned To", width: 350 },
-
+  "data.domain": { label: "Domain", width: 350 },
+  "data.name": { label: "Name", width: 350 },
 } satisfies IHeaderRenderLookup;

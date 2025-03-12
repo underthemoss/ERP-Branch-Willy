@@ -7,6 +7,7 @@ import { parseUrl, stringifySearchParams } from "@/lib/UniversalQuery";
 import { MapView } from "./Map";
 
 import ViewSelector from "./ViewSelector";
+import { FixedSizeScroller } from "./FixedSizeScroller";
 
 function snakeToPascal(snakeStr: string) {
   return snakeStr
@@ -25,26 +26,42 @@ export default async function Page(props: {
   const data = await findEntities(query);
 
   return (
-    <Box display={"flex"} flexDirection={'column'} width={'100%'}>
+    <Box display={"flex"} flexDirection={"column"} width={"100%"}>
       <Box p={2} display={"flex"}>
         <Typography level="h1" fontWeight={500}>
           {snakeToPascal(name)}
         </Typography>
       </Box>
-      <Box mb={1} display={"flex"}>
+      <Box mb={1} display={"flex"} alignItems={"center"} gap={2}>
         <Box flex={1}></Box>
+        <Box>Total: {data.count.toLocaleString()}</Box>
         <ViewSelector query={query} />
       </Box>
-      {query.components?.map && (
-        <Box>
-          <MapView locations={data.locations} />
-        </Box>
-      )}
-      {query.components?.list && (
-        <Box>
-          <ViewTable key={name} query={query} data={data} />
-        </Box>
-      )}
+      <Box
+        display={"flex"}
+        flex={1}
+        border="1px solid red"
+        width={"100%"}
+        overflow={"hidden"}
+        style={{
+          overflowY: "hidden",
+        }}
+      >
+        {query.components?.list && (
+          <Box flex={1}>
+            <FixedSizeScroller>
+              <ViewTable key={name} query={query} data={data} />
+            </FixedSizeScroller>
+          </Box>
+        )}
+        {query.components?.map && (
+          <Box flex={1}>
+            <FixedSizeScroller>
+              <MapView query={query} data={data}></MapView>
+            </FixedSizeScroller>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

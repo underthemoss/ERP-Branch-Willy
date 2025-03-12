@@ -20,10 +20,11 @@ import ListIcon from "@mui/icons-material/List";
 import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
 import MapIcon from "@mui/icons-material/Map";
 import { encodeUniversalQuery, UniversalQuery } from "@/lib/UniversalQuery";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function ToggleGroupToolbar(props: { query: UniversalQuery }) {
   const { push } = useRouter();
+  const path = usePathname();
   const active = Object.entries(props.query.components || {})
     .filter((d) => d[1] === true)
     .map((d) => d[0]);
@@ -37,14 +38,14 @@ export default function ToggleGroupToolbar(props: { query: UniversalQuery }) {
         variant="plain"
         spacing={0.5}
         value={active}
-        onChange={(event, newFormats) => {
+        onChange={(event, components) => {
           const url = encodeUniversalQuery({
             ...props.query,
             components: {
-              ...Object.fromEntries(newFormats.map((k) => [k, true])),
+              ...Object.fromEntries(components.map((k) => [k, true])),
             },
           });
-          push(`/app/view/assets?${url}`);
+          push(`${path}?${url}`);
         }}
         aria-label="text formatting"
       >

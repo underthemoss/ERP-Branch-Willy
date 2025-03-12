@@ -8,6 +8,7 @@ import { mongodbClient } from "./changeStreams";
 import { syncAssets } from "@/sync/assets";
 import { syncUsers } from "@/sync/users";
 import { syncWorkOrders } from "@/sync/work_orders";
+import { syncCompanies } from "@/sync/companies";
 const mongoConnectionString = process.env.DATABASE_URL || "";
 
 export const pulse = new Pulse({
@@ -33,6 +34,7 @@ tenants.forEach((tenantId) => {
         // syncWorkOrders(tenantId),
         syncUsers(),
         syncAssets(),
+        syncCompanies(),
       ]);
       console.timeEnd(msg);
     },

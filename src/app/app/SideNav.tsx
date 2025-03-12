@@ -37,23 +37,6 @@ export default async function SideNav() {
             </Link>
 
             <List>
-              {/* {items.map((item) => {
-                return (
-                  <Link href={`/app/item/${item.id}`} key={item.id}>
-                    <ListItem>
-                      <ListItemButton>
-                        <Box>
-                          <ContentTypeComponent
-                            color={"gray"}
-                            icon={"FolderOpen"}
-                            label={item.title}
-                          />
-                        </Box>
-                      </ListItemButton>
-                    </ListItem>
-                  </Link>
-                );
-              })} */}
               <Link
                 href={`/app/view/users?${encodeUniversalQuery({
                   filter: {
@@ -81,9 +64,9 @@ export default async function SideNav() {
                 </ListItem>
               </Link>
               <Link
-                href={`/app/view/assets?${encodeUniversalQuery({
+                href={`/app/view/all_assets?${encodeUniversalQuery({
                   filter: {
-                    type: "asset",
+                    type: ["asset", "rental"],
                   },
                   include: {
                     "data.photo_filename": 1,
@@ -104,7 +87,66 @@ export default async function SideNav() {
                   <ListItemButton>
                     <PrecisionManufacturingTwoToneIcon style={{}} />
                     <Box>
-                      <Typography>Assets</Typography>
+                      <Typography>All assets</Typography>
+                    </Box>
+                  </ListItemButton>
+                </ListItem>
+              </Link>
+
+              <Link
+                href={`/app/view/my_fleet?${encodeUniversalQuery({
+                  filter: {
+                    type: ["asset"],
+                  },
+                  include: {
+                    "data.photo_filename": 1,
+                    "data.id": 1,
+                    "data.custom_name": 1,
+                    "data.make_name": 1,
+                    "data.model_name": 1,
+                    "data.category_name": 1,
+                    "data.company_id": 1,
+                  },
+                  options: {},
+                  components: {
+                    list: true,
+                  },
+                })}`}
+              >
+                <ListItem>
+                  <ListItemButton sx={{ pl: 7 }}>
+                    <PrecisionManufacturingTwoToneIcon style={{}} />
+                    <Box>
+                      <Typography>My Fleet</Typography>
+                    </Box>
+                  </ListItemButton>
+                </ListItem>
+              </Link>
+              <Link
+                href={`/app/view/rented_fleet?${encodeUniversalQuery({
+                  filter: {
+                    type: "rental",
+                  },
+                  include: {
+                    "data.photo_filename": 1,
+                    "data.id": 1,
+                    "data.custom_name": 1,
+                    "data.make_name": 1,
+                    "data.model_name": 1,
+                    "data.category_name": 1,
+                    "data.company_id": 1,
+                  },
+                  options: {},
+                  components: {
+                    list: true,
+                  },
+                })}`}
+              >
+                <ListItem>
+                  <ListItemButton sx={{ pl: 7 }}>
+                    <PrecisionManufacturingTwoToneIcon style={{}} />
+                    <Box>
+                      <Typography>Rented Fleet</Typography>
                     </Box>
                   </ListItemButton>
                 </ListItem>

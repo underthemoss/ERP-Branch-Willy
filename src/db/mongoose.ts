@@ -56,19 +56,27 @@ export const createEntity = async (args: {
 export const findEntities = async (query: UniversalQuery) => {
   const { user } = await getUser();
   const filter = { ...query.filter, tenant_id: user.company_id };
-  const results = await Entity.find<{ _doc: ContentTypeDataModel }>(
-    filter,
-    { ...(query.include as any), type: 1, _id: 1, data: { make: 1 } },
-    {
-      skip: 0,
-      limit: 20,
-      ...query.options,
-    }
-  ).exec();
+
+  const skip = Number(query.options?.skip) || 0;
+  const limit = Number(query.options?.limit) || 20;
+
+  const [results, count] = await Promise.all([
+    Entity.find<{ _doc: ContentTypeDataModel }>(
+      filter,
+      // { ...(query.include as any), type: 1, _id: 1, data: { make: 1 } },
+      undefined,
+      {
+        ...query.options,
+        limit,
+        skip,
+      }
+    ).exec(),
+    Entity.countDocuments(filter),
+  ]);
 
   const points = query.components?.map
     ? await Entity.find<{ _doc: ContentTypeDataModel }>(
-        { ...filter, "data.location": { $exists: true } },
+        { ...filter },
         {
           "data.location": 1,
           _id: 0,
@@ -81,6 +89,9 @@ export const findEntities = async (query: UniversalQuery) => {
 
   return {
     locations,
+    count,
+    skip,
+    limit,
     results: results
       .map((r) => r._doc)
       .map((r) => ({

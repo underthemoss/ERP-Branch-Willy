@@ -52,6 +52,15 @@ export type User = IBaseItem<
   }
 >;
 
+export type Company = IBaseItem<
+  "company",
+  {
+    id: string;
+    name: string;
+    domain?: string;
+  }
+>;
+
 export type WorkOrder = IBaseItem<
   "work_order",
   {

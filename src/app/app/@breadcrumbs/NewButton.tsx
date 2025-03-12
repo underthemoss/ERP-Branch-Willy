@@ -12,7 +12,7 @@ import { UIConfig } from "@/types/UIModelConfig";
 
 export default async function NewButton(props: { itemId: string }) {
   const { user } = await getUser();
-  return "asd";
+  return "";
   // return (
   //   <Dropdown>
   //     <MenuButton startDecorator={<AddIcon />}>New</MenuButton>

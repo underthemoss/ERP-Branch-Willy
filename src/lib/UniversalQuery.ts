@@ -25,7 +25,19 @@ export type UniversalQuery = {
 };
 
 export const parseUrl = (url: string) => {
-  const rawQuery = qs.parse(url) as unknown as UniversalQuery;
+  const rawQuery = qs.parse(url, {
+    decoder(str, defaultDecoder, charset, type) {
+      const result = defaultDecoder(str, defaultDecoder, charset);
+      // Only process value types
+      if (type === "value" && !isNaN(result as any) && result.trim() !== "") {
+        // Convert to number (handles both integers and floats)
+        const num = Number(result);
+        return isNaN(num) ? result : num;
+      }
+      return result;
+    },
+  }) as unknown as UniversalQuery;
+
   const query: UniversalQuery = {
     ...rawQuery,
     include: Object.fromEntries(
@@ -39,6 +51,8 @@ export const parseUrl = (url: string) => {
           Number(v),
         ])
       ),
+      skip: Number(rawQuery.options?.skip || 0),
+      limit: Number(rawQuery.options?.limit || 0),
     },
     components: {
       ...Object.fromEntries(

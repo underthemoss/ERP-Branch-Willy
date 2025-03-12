@@ -258,6 +258,68 @@
       ],
       "additionalProperties": false
     },
+    "Company": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "company"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_by": {
+          "type": "string"
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "parent_id": {
+          "type": "string"
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "domain": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "_id",
+        "type",
+        "updated_at",
+        "created_at",
+        "updated_by",
+        "created_by",
+        "tenant_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
     "WorkOrder": {
       "type": "object",
       "properties": {
