@@ -48,3 +48,9 @@ prod.env
 next-env.d.ts
 
 /scratch
+
+pgtyped.json
+pgtyped.stage.json
+pgtyped.prod.json
+
+.partykit
