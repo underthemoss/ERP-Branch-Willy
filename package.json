@@ -7,10 +7,7 @@
     "dev:mongo": "ts-node-dev mongo-dev-server.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "pgtyped": "pgtyped -c config.json",
-    "codegen": "cd ./src/model/content-types/ && npx ts-node-dev codegen.ts",
-    "codegen2": "cd ./src/types/ && npx ts-node-dev codegen.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@deck.gl/core": "^9.1.0",
