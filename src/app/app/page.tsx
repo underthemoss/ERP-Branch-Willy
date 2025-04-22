@@ -1,34 +1,55 @@
-import { getUser } from "@/lib/auth";
-import { AutoImage } from "@/ui/AutoImage";
+"use client";
+import * as React from "react";
+import { DataGridPro, GridColDef, GridRowId } from "@mui/x-data-grid-pro";
+export interface DataRowModel {
+  id: GridRowId;
+  [price: string]: number | string;
+}
 
-import { Box, Table, Typography } from "@mui/joy";
-export default async function Home() {
-  const { user } = await getUser();
+export interface GridData {
+  columns: GridColDef[];
+  rows: DataRowModel[];
+}
+
+function useData(rowLength: number, columnLength: number) {
+  const [data, setData] = React.useState<GridData>({ columns: [], rows: [] });
+
+  React.useEffect(() => {
+    const rows: DataRowModel[] = [];
+
+    for (let i = 0; i < rowLength; i += 1) {
+      const row: DataRowModel = {
+        id: i,
+      };
+
+      for (let j = 1; j <= columnLength; j += 1) {
+        row[`price${j}M`] = `${i.toString()}, ${j} `;
+      }
+
+      rows.push(row);
+    }
+
+    const columns: GridColDef[] = [];
+
+    for (let j = 1; j <= columnLength; j += 1) {
+      columns.push({ field: `price${j}M`, headerName: `${j}M` });
+    }
+
+    setData({
+      rows,
+      columns,
+    });
+  }, [rowLength, columnLength]);
+
+  return data;
+}
+
+export default function ColumnVirtualizationGrid() {
+  const data = useData(100_000, 10);
 
   return (
-    <Box>
-      <Box p={2} display={"flex"}>
-        <Typography level="h1" fontWeight={500}>
-          Workspaces
-        </Typography>
-      </Box>
-      <AutoImage value="test" />
-
-      <Box></Box>
-      <Box>
-        <Table>
-          <thead>
-            <tr>
-              <th>Name{user.email}</th>
-              <th>Description</th>
-              <th>Created by</th>
-              <th>Created at</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </Table>
-      </Box>
-    </Box>
+    <div style={{ height: 400, width: "100%" }}>
+      <DataGridPro {...data} columnBufferPx={100} />
+    </div>
   );
 }

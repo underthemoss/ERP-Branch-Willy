@@ -1,4 +1,5 @@
 "use client";
+import { MuiLicense } from "@/ui/MuiLicense";
 import { CssBaseline } from "@mui/material";
 // import { CssVarsProvider, extendTheme } from "@mui/material/styles";
 
@@ -33,7 +34,7 @@ export const Theme: React.FC<{ children: React.ReactNode }> = ({
   return (
     <>
       <CssBaseline />
-      {children}
+      <MuiLicense>{children}</MuiLicense>
     </>
   );
 };
