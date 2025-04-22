@@ -1,25 +1,26 @@
 import DataLoader from "dataloader";
-import { esdb } from "@/lib/esdb";
+
 import { getUser } from "@/lib/auth";
 import { GenericEntityDetails } from "./GenericEntityDetails";
 
 const getUserBatch = async (userIds: number[]) => {
-  const results = await esdb.user.findMany({
-    where: { id: { in: userIds } },
-    select: {
-      id: true,
-      username: true,
-      first_name: true,
-      last_name: true,
-      company: {
-        select: {
-          name: true,
-          id: true,
-        },
-      },
-    },
-  });
-  return userIds.map((id) => results.find((r) => r.id === id));
+  return []
+  // const results = await esdb.user.findMany({
+  //   where: { id: { in: userIds } },
+  //   select: {
+  //     id: true,
+  //     username: true,
+  //     first_name: true,
+  //     last_name: true,
+  //     company: {
+  //       select: {
+  //         name: true,
+  //         id: true,
+  //       },
+  //     },
+  //   },
+  // });
+  // return userIds.map((id) => results.find((r) => r.id === id));
 };
 
 const userLoader = new DataLoader<number, any>(
