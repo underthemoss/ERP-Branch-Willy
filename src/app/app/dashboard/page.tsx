@@ -50,9 +50,9 @@ export default function ColumnVirtualizationGrid() {
   const data = useData(100_000, 10);
 
   return (
-    <PageContainer>
+    <PageContainer  >
       <div style={{ flex: 1, maxHeight: 400 }}>
-        <DataGridPro {...data} columnBufferPx={100} />
+        Dashboard
       </div>
     </PageContainer>
   );

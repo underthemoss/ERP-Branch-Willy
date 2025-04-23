@@ -1,4 +1,4 @@
-FROM node:20-bullseye-slim AS base
+FROM node:slim AS base
 
 # Declaring envs
 ENV LEVEL=${LEVEL}
@@ -18,7 +18,7 @@ COPY . .
 
 # Installing dependencies
 RUN npm install --force
-RUN npm run prisma:generate
+
 
 
 

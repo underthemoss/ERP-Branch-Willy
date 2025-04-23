@@ -29,7 +29,6 @@ unit-test:
   stage: test
   script:
     - npm install --force
-    - npm run prisma:generate
 
 deploy-staging:
   extends: .build
