@@ -29,6 +29,7 @@ tests:
   stage: test
   script:
     - npm install --force
+    - npm i -g depcheck
     - npm run test:depcheck
 
 deploy-staging:
