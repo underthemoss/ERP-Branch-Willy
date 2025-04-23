@@ -23,12 +23,13 @@ docker-test:
   stage: test
   variables:
     DESTINATION: 696398453447.dkr.ecr.us-west-2.amazonaws.com/es-erp-stage:mr-${CI_COMMIT_REF_NAME}-${CI_PIPELINE_IID}
-unit-test:
+tests:
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   stage: test
   script:
     - npm install --force
+    - npm run test:depcheck
 
 deploy-staging:
   extends: .build
