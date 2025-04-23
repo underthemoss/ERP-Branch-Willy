@@ -1,5 +1,5 @@
 import { LicenseInfo } from "@mui/x-license";
-
+import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 // This feels wrong but the key is designed to be public
 // and is expected to be exposed in the bundled JS
 // See: https://mui.com/x/introduction/licensing/#license-key-security
@@ -8,5 +8,12 @@ LicenseInfo.setLicenseKey(
 );
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <DashboardLayout
+      defaultSidebarCollapsed
+      branding={{ title: "ES-ERP", logo: <div>🚗</div>, homeUrl: "#" }}
+    >
+      {children}
+    </DashboardLayout>
+  );
 }
