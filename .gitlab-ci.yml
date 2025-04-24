@@ -41,7 +41,7 @@ playwright:
     - echo "Node Index - $CI_NODE_INDEX"
     - echo "Total Nodes - $CI_NODE_TOTAL"
     - npm install --force
-    - pnpm run test:playwright --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
+    - npm run test:playwright -- --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
   artifacts:
     expire_in: 1 week
     when: always
