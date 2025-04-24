@@ -54,3 +54,5 @@ pgtyped.stage.json
 pgtyped.prod.json
 
 .partykit
+
+/test-results/
