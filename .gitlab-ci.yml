@@ -37,6 +37,8 @@ playwright:
   image: mcr.microsoft.com/playwright:v1.52.0-noble
   stage: test
   parallel: 3
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   script:
     - echo "Node Index - $CI_NODE_INDEX"
     - echo "Total Nodes - $CI_NODE_TOTAL"
