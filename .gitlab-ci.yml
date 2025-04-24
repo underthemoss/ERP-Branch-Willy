@@ -34,7 +34,6 @@ tests:
     - npm run test:depcheck
 
 playwright:
-  extends: .test-common
   image: mcr.microsoft.com/playwright:v1.52.0-noble
   parallel: 3
   script:
