@@ -35,6 +35,7 @@ tests:
 
 playwright:
   image: mcr.microsoft.com/playwright:v1.52.0-noble
+  stage: test
   parallel: 3
   script:
     - echo "Node Index - $CI_NODE_INDEX"
