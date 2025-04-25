@@ -1,22 +1,18 @@
 "use client";
-import * as React from "react";
-import {
-  DataGridPro,
-  GridColDef,
-  GridRenderEditCellParams,
-  GridRowId,
-} from "@mui/x-data-grid-pro";
-import { PageContainer } from "@toolpad/core/PageContainer";
-import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
-import dayjs, { Dayjs } from "dayjs";
-import Stepper from "@mui/material/Stepper";
+
+import { graphql } from "@/graphql";
+import { useGetTransactionsQuery } from "@/graphql/hooks";
+import { Box, Button } from "@mui/material";
 import Step from "@mui/material/Step";
-import { StepLabel } from "@mui/material";
+import Stepper from "@mui/material/Stepper";
+import { DataGridPro, GridColDef, GridRenderEditCellParams, GridRowId } from "@mui/x-data-grid-pro";
+import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import dayjs, { Dayjs } from "dayjs";
+import * as React from "react";
 
 function MiniCalendarEditCell(props: GridRenderEditCellParams) {
-  const value = props.value
-    ? [dayjs(props.value?.[0]), dayjs(props.value?.[1])]
-    : ([null, null] as any);
+  const value = props.value ? [dayjs(props.value?.[0]), dayjs(props.value?.[1])] : ([null, null] as any);
   return (
     <DateRangePicker
       sx={{ flex: 1, border: 0 }}
@@ -38,7 +34,22 @@ type Row = {
   status: string;
 };
 
+graphql(`
+  query getTransactions {
+    listTransactions {
+      items {
+        __typename
+        ... on BaseTransaction {
+          id
+          type
+        }
+      }
+    }
+  }
+`);
+
 export default function ColumnVirtualizationGrid() {
+  const { data, loading, refetch } = useGetTransactionsQuery({});
   const columns: readonly GridColDef<Row>[] = [
     {
       field: "id",
@@ -77,12 +88,8 @@ export default function ColumnVirtualizationGrid() {
             }}
           >
             <Stepper>
-              <Step>
-             2
-              </Step>
-              <Step>
-                1
-              </Step>
+              <Step>2</Step>
+              <Step>1</Step>
             </Stepper>
           </div>
         );
@@ -104,21 +111,23 @@ export default function ColumnVirtualizationGrid() {
       type: "string",
     },
   ];
-  const rows: Row[] = [
-    {
-      id: "1",
-      product: "Skid steer",
-      status: "Received",
-    },
-    {
-      id: "2",
-      product: "Telehandler",
-      status: "Accepted",
-    },
-  ];
+
+  const rows: Row[] =
+    data?.listTransactions.items.map((item) => {
+      return {
+        id: item.id || Math.random().toString(),
+        product: item.id,
+        status: item.type?.toString() || "",
+      };
+    }) || [];
+
   return (
     <PageContainer>
-      <div style={{ flex: 1, maxHeight: 400 }}>
+      <Box display={"flex"}>
+        <Box flex={1}></Box>
+        <Button>Add</Button>
+      </Box>
+      <div style={{ flex: 1, maxHeight: 500 }}>
         <DataGridPro
           columns={columns}
           rows={rows}

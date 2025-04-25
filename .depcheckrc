@@ -3,4 +3,5 @@ ignores:
   - "@graphql-codegen/*"
   - "@0no-co/graphqlsp"
   - "@parcel/watcher"
+  - "@ianvs/prettier-plugin-sort-imports"
 skip-missing: true

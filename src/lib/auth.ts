@@ -1,6 +1,7 @@
 "use server";
-import { cookies } from "next/headers";
+
 import * as jose from "jose";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type User = {
@@ -12,9 +13,7 @@ export type User = {
 };
 
 const envPrefix = process.env.LEVEL === "prod" ? "" : "staging-";
-export const JWKS = jose.createRemoteJWKSet(
-  new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`)
-);
+export const JWKS = jose.createRemoteJWKSet(new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`));
 const extractTokenValue = (keySuffix: string, token: any) => {
   return Object.entries(token)
     .filter(([key]) => key.endsWith(keySuffix))
@@ -31,10 +30,7 @@ const getAuthUser = async () => {
     email: extractTokenValue("equipmentshare.com/es_user_email", payload),
     user_name: extractTokenValue("equipmentshare.com/es_user_name", payload),
     user_id: extractTokenValue("equipmentshare.com/es_user_id", payload),
-    security_level: extractTokenValue(
-      "equipmentshare.com/es_security_level_id",
-      payload
-    ),
+    security_level: extractTokenValue("equipmentshare.com/es_security_level_id", payload),
   };
 
   return { isAuth: true, user };

@@ -1,11 +1,12 @@
 "use client";
+
 import { MuiLicense } from "@/ui/MuiLicense";
 import { createTheme, CssBaseline } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { AppProvider } from "@toolpad/core/AppProvider";
 import * as React from "react";
 import { NAVIGATION } from "./Navigation";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from '@mui/x-date-pickers';
 
 const lightTheme = createTheme({
   palette: {
@@ -18,9 +19,7 @@ const lightTheme = createTheme({
     },
   },
 });
-export const Theme: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <AppProvider navigation={NAVIGATION} theme={lightTheme}>

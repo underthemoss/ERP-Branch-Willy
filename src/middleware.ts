@@ -1,7 +1,5 @@
-import { NextResponse } from "next/server";
-
-import { NextRequest } from "next/server";
 import * as jose from "jose";
+import { NextRequest, NextResponse } from "next/server";
 import { JWKS } from "./lib/auth";
 
 async function verifyJWT(token: string) {

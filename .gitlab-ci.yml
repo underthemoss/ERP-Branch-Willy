@@ -33,6 +33,7 @@ tests:
     - npm run codegen
     - npm i -g depcheck
     - npm run test:depcheck
+    - npm run prettier:check
 
 playwright:
   image: mcr.microsoft.com/playwright:v1.52.0-noble

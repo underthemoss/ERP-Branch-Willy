@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import DescriptionIcon from "@mui/icons-material/Description";
 import LayersIcon from "@mui/icons-material/Layers";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { type Navigation } from "@toolpad/core/AppProvider";
+import * as React from "react";
 
 export const NAVIGATION: Navigation = [
   {
