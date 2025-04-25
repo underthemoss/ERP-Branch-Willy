@@ -13,7 +13,9 @@ export type User = {
 };
 
 const envPrefix = process.env.LEVEL === "prod" ? "" : "staging-";
-export const JWKS = jose.createRemoteJWKSet(new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`));
+export const JWKS = jose.createRemoteJWKSet(
+  new URL(`https://${envPrefix}equipmentshare.auth0.com/.well-known/jwks.json`),
+);
 const extractTokenValue = (keySuffix: string, token: any) => {
   return Object.entries(token)
     .filter(([key]) => key.endsWith(keySuffix))

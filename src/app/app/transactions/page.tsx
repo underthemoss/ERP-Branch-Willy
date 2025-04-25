@@ -43,7 +43,9 @@ graphql(`
 `);
 
 function MiniCalendarEditCell(props: GridRenderEditCellParams) {
-  const value = props.value ? [dayjs(props.value?.[0]), dayjs(props.value?.[1])] : ([null, null] as any);
+  const value = props.value
+    ? [dayjs(props.value?.[0]), dayjs(props.value?.[1])]
+    : ([null, null] as any);
   return (
     <DateRangePicker
       sx={{ flex: 1, border: 0 }}
@@ -64,7 +66,11 @@ type Row = {
   date_range?: [Date, Date];
   status: string;
 };
-const isInRangeInclusive = (date: dayjs.ConfigType, start: dayjs.ConfigType, end: dayjs.ConfigType) => {
+const isInRangeInclusive = (
+  date: dayjs.ConfigType,
+  start: dayjs.ConfigType,
+  end: dayjs.ConfigType,
+) => {
   const d = dayjs(date);
   return (d.isAfter(start) || d.isSame(start)) && (d.isBefore(end) || d.isSame(end));
 };
@@ -121,7 +127,15 @@ export default function ColumnVirtualizationGrid() {
                 const weekDay = !isWeekend(thisDay);
                 const isActiveDate = isInRangeInclusive(thisDay, startDate, endDate);
                 return (
-                  <Box minWidth={38} maxWidth={38} sx={{ background: !weekDay ? "#dfdfdf" : "", border: "1px solid white", overflow: "hidden" }}>
+                  <Box
+                    minWidth={38}
+                    maxWidth={38}
+                    sx={{
+                      background: !weekDay ? "#dfdfdf" : "",
+                      border: "1px solid white",
+                      overflow: "hidden",
+                    }}
+                  >
                     {isActiveDate ? (
                       <>
                         <Checkbox size="small" checked></Checkbox>
@@ -178,7 +192,11 @@ export default function ColumnVirtualizationGrid() {
         <Box flex={1}></Box>
         <Button
           onClick={async () => {
-            await createTransaction({ variables: { input: { projectId: "", type: TransactionType.Rental, workspaceId: "" } } });
+            await createTransaction({
+              variables: {
+                input: { projectId: "", type: TransactionType.Rental, workspaceId: "" },
+              },
+            });
             refetch();
           }}
         >

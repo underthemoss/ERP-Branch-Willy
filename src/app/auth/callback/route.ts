@@ -21,5 +21,7 @@ export async function GET(req: NextRequest) {
 
   const host = req.headers.get("host");
 
-  return NextResponse.redirect(`http${host?.startsWith("localhost") ? "" : "s"}://${host}/es-erp/app`);
+  return NextResponse.redirect(
+    `http${host?.startsWith("localhost") ? "" : "s"}://${host}/es-erp/app`,
+  );
 }
