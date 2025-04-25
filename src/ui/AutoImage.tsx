@@ -1,11 +1,9 @@
 "use client";
-import React, { useEffect, useRef } from "react";
-import * as jdenticon from "jdenticon";
 
-export const AutoImage: React.FC<{ value: string; size?: number }> = ({
-  value,
-  size = 30,
-}) => {
+import * as jdenticon from "jdenticon";
+import React, { useEffect, useRef } from "react";
+
+export const AutoImage: React.FC<{ value: string; size?: number }> = ({ value, size = 30 }) => {
   const icon = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

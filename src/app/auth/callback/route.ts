@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.nextUrl);
@@ -21,7 +21,5 @@ export async function GET(req: NextRequest) {
 
   const host = req.headers.get("host");
 
-  return NextResponse.redirect(
-    `http${host?.startsWith("localhost") ? "" : "s"}://${host}/es-erp/app`
-  );
+  return NextResponse.redirect(`http${host?.startsWith("localhost") ? "" : "s"}://${host}/es-erp/app`);
 }

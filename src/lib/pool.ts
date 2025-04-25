@@ -1,4 +1,4 @@
-import { Pool, ClientConfig } from "pg";
+import { ClientConfig, Pool } from "pg";
 
 const { ESDB_HOST, ESDB_PORT, ESDB_USER, ESDB_PASSWORD } = process.env;
 
