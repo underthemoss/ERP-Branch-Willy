@@ -4,4 +4,5 @@ ignores:
   - "@0no-co/graphqlsp"
   - "@parcel/watcher"
   - "@ianvs/prettier-plugin-sort-imports"
+  - prettier-plugin-packagejson
 skip-missing: true
