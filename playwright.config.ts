@@ -8,8 +8,8 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     port: 3000,
-    stderr: 'pipe',
-    stdout: 'pipe',
+    stderr: "pipe",
+    stdout: "pipe",
     reuseExistingServer: !process.env.CI,
   },
   projects: [
