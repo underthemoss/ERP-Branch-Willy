@@ -3,9 +3,7 @@
 import { graphql } from "@/graphql";
 import { TransactionType } from "@/graphql/graphql";
 import { useCreateTransactionMutation, useGetTransactionsQuery } from "@/graphql/hooks";
-import { Box, Button } from "@mui/material";
-import Step from "@mui/material/Step";
-import Stepper from "@mui/material/Stepper";
+import { Box, Button, Checkbox } from "@mui/material";
 import { DataGridPro, GridColDef, GridRenderEditCellParams, GridRowId } from "@mui/x-data-grid-pro";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { PageContainer } from "@toolpad/core/PageContainer";
@@ -66,7 +64,15 @@ type Row = {
   date_range?: [Date, Date];
   status: string;
 };
+const isInRangeInclusive = (date: dayjs.ConfigType, start: dayjs.ConfigType, end: dayjs.ConfigType) => {
+  const d = dayjs(date);
+  return (d.isAfter(start) || d.isSame(start)) && (d.isBefore(end) || d.isSame(end));
+};
 
+const isWeekend = (date: dayjs.ConfigType): boolean => {
+  const day = dayjs(date).day();
+  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+};
 export default function ColumnVirtualizationGrid() {
   const { data, loading, refetch } = useGetTransactionsQuery({});
   const [createTransaction] = useCreateTransactionMutation({});
@@ -90,13 +96,14 @@ export default function ColumnVirtualizationGrid() {
       field: "date_range",
       headerName: "Dates",
       editable: true,
-      minWidth: 270,
+      minWidth: 38 * 30,
       renderEditCell: MiniCalendarEditCell,
       renderCell({ value }) {
         // if (!value) return "";
-        // const startDate = dayjs(value?.[0]);
-        // const endDate = dayjs(value?.[1]);
-        // const rangeText = `${startDate.format("MMM D, YYYY")} - ${endDate.format("MMM D, YYYY")}`;
+        const startDate = dayjs(value?.[0]);
+        const endDate = dayjs(value?.[1]);
+
+        const today = dayjs();
 
         return (
           <div
@@ -108,10 +115,24 @@ export default function ColumnVirtualizationGrid() {
               padding: 0,
             }}
           >
-            <Stepper>
-              <Step>2</Step>
-              <Step>1</Step>
-            </Stepper>
+            <Box display={"flex"}>
+              {Array.from({ length: 30 }).map((_, i) => {
+                const thisDay = today.add(i, "days");
+                const weekDay = !isWeekend(thisDay);
+                const isActiveDate = isInRangeInclusive(thisDay, startDate, endDate);
+                return (
+                  <Box minWidth={38} maxWidth={38} sx={{ background: !weekDay ? "#dfdfdf" : "", border: "1px solid white", overflow: "hidden" }}>
+                    {isActiveDate ? (
+                      <>
+                        <Checkbox size="small" checked></Checkbox>
+                      </>
+                    ) : (
+                      <></>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
           </div>
         );
       },
@@ -141,6 +162,7 @@ export default function ColumnVirtualizationGrid() {
           product: item.pimId || "",
           status: item.type?.toString() || "",
           notes: item.__typename,
+          date_range: [item.startDate, item.endDate],
         };
       return {
         id: item.id,
