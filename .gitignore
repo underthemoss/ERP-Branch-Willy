@@ -56,3 +56,5 @@ pgtyped.prod.json
 .partykit
 
 /test-results/
+
+/src/graphql

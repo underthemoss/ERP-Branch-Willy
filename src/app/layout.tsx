@@ -7,6 +7,7 @@ import "@fontsource/roboto/700.css";
 
 import React from "react";
 import { Theme } from "./Theme";
+import { ApolloClientProvider } from "@/providers/ApolloProvider";
 
 export const metadata: Metadata = {
   title: "ES-ERP",
@@ -23,12 +24,11 @@ export default async function RootLayout({
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </head>
       <body>
+      <ApolloClientProvider>
         <Theme>
-    
-  
             {children}
-
         </Theme>
+      </ApolloClientProvider>
       </body>
     </html>
   );

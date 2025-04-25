@@ -1,0 +1,6 @@
+ignores:
+  - "eslint"
+  - "@graphql-codegen/*"
+  - "@0no-co/graphqlsp"
+  - "@parcel/watcher"
+skip-missing: true

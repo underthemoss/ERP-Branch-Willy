@@ -3,6 +3,22 @@ import * as React from "react";
 import { DataGridPro, GridColDef, GridRowId } from "@mui/x-data-grid-pro";
 import { PageContainer } from "@toolpad/core/PageContainer";
 
+import { useListTransactionQuery } from "@/graphql/hooks";
+import { graphql } from "@/graphql";
+
+graphql(`
+  query listTransaction {
+    listTransactions {
+      items {
+        __typename
+        ... on BaseTransaction {
+          id
+        }
+      }
+    }
+  }
+`);
+
 export interface DataRowModel {
   id: GridRowId;
   [price: string]: number | string;
@@ -15,7 +31,8 @@ export interface GridData {
 
 function useData(rowLength: number, columnLength: number) {
   const [data, setData] = React.useState<GridData>({ columns: [], rows: [] });
-
+  const { data: asd } = useListTransactionQuery();
+  console.log(asd);
   React.useEffect(() => {
     const rows: DataRowModel[] = [];
 
@@ -50,10 +67,8 @@ export default function ColumnVirtualizationGrid() {
   const data = useData(100_000, 10);
 
   return (
-    <PageContainer  >
-      <div style={{ flex: 1, maxHeight: 400 }}>
-        Dashboard
-      </div>
+    <PageContainer>
+      <div style={{ flex: 1, maxHeight: 400 }}>Dashboard</div>
     </PageContainer>
   );
 }

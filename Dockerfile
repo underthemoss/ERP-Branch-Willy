@@ -18,9 +18,7 @@ COPY . .
 
 # Installing dependencies
 RUN npm install --force
-
-
-
+RUN npm run codegen
 
 # Build
 RUN npm run build
