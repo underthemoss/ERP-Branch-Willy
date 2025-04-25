@@ -1,7 +1,8 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useGetTransactionsQuery } from "@/graphql/hooks";
+import { TransactionType } from "@/graphql/graphql";
+import { useCreateTransactionMutation, useGetTransactionsQuery } from "@/graphql/hooks";
 import { Box, Button } from "@mui/material";
 import Step from "@mui/material/Step";
 import Stepper from "@mui/material/Stepper";
@@ -10,6 +11,38 @@ import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import dayjs, { Dayjs } from "dayjs";
 import * as React from "react";
+
+graphql(`
+  query getTransactions {
+    listTransactions {
+      items {
+        __typename
+
+        ... on BaseTransaction {
+          id
+          type
+        }
+        ... on RentalTransaction {
+          id
+          assetId
+          pimId
+          startDate
+          endDate
+        }
+      }
+    }
+  }
+`);
+
+graphql(`
+  mutation createTransaction($input: TransactionInput!) {
+    createTransaction(input: $input) {
+      ... on BaseTransaction {
+        id
+      }
+    }
+  }
+`);
 
 function MiniCalendarEditCell(props: GridRenderEditCellParams) {
   const value = props.value ? [dayjs(props.value?.[0]), dayjs(props.value?.[1])] : ([null, null] as any);
@@ -34,22 +67,10 @@ type Row = {
   status: string;
 };
 
-graphql(`
-  query getTransactions {
-    listTransactions {
-      items {
-        __typename
-        ... on BaseTransaction {
-          id
-          type
-        }
-      }
-    }
-  }
-`);
-
 export default function ColumnVirtualizationGrid() {
   const { data, loading, refetch } = useGetTransactionsQuery({});
+  const [createTransaction] = useCreateTransactionMutation({});
+  console.log(data);
   const columns: readonly GridColDef<Row>[] = [
     {
       field: "id",
@@ -114,20 +135,35 @@ export default function ColumnVirtualizationGrid() {
 
   const rows: Row[] =
     data?.listTransactions.items.map((item) => {
+      if (item.__typename === "RentalTransaction")
+        return {
+          id: item.id,
+          product: item.pimId || "",
+          status: item.type?.toString() || "",
+          notes: item.__typename,
+        };
       return {
-        id: item.id || Math.random().toString(),
-        product: item.id,
-        status: item.type?.toString() || "",
+        id: item.id,
+        notes: item.__typename,
+        product: "",
+        status: "",
       };
     }) || [];
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth={false}>
       <Box display={"flex"}>
         <Box flex={1}></Box>
-        <Button>Add</Button>
+        <Button
+          onClick={async () => {
+            await createTransaction({ variables: { input: { projectId: "", type: TransactionType.Rental, workspaceId: "" } } });
+            refetch();
+          }}
+        >
+          Add
+        </Button>
       </Box>
-      <div style={{ flex: 1, maxHeight: 500 }}>
+      <div style={{ flex: 1 }}>
         <DataGridPro
           columns={columns}
           rows={rows}

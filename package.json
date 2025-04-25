@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:local-gql": "NEXT_PUBLIC_LOCAL_GQL=true next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
