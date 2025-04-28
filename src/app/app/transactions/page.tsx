@@ -130,6 +130,7 @@ export default function ColumnVirtualizationGrid() {
                   <Box
                     minWidth={38}
                     maxWidth={38}
+                    key={i}
                     sx={{
                       background: !weekDay ? "#dfdfdf" : "",
                       border: "1px solid white",
