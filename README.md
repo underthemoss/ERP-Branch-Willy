@@ -17,6 +17,10 @@ To run with local running BE
 
 `npm run dev:local-gql`
 
+> BE found here [es-erp-api](https://gitlab.internal.equipmentshare.com/fleet/es-erp-api)
+
+> Terraform found here [es-erp-terraform](https://gitlab.internal.equipmentshare.com/fleet/es-erp-terraform)
+
 ## Codegen
 
 Graphql types and hooks are auto generated. To manually run 
