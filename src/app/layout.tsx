@@ -20,7 +20,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </head>
       <body>
-        <Auth0ClientProvider>
+        <Auth0ClientProvider
+          domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
+          clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
+          redirect={process.env.NEXT_PUBLIC_BASE_URL || ""}
+        >
           <ApolloClientProvider>
             <Theme>{children}</Theme>
           </ApolloClientProvider>

@@ -25,13 +25,18 @@ export const useAuth = () => {
   };
 };
 
-export const Auth0ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const Auth0ClientProvider: React.FC<{
+  domain: string;
+  clientId: string;
+  redirect: string;
+  children: React.ReactNode;
+}> = ({ children, clientId, domain, redirect }) => {
   return (
     <Auth0Provider
-      domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
-      clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
+      domain={domain}
+      clientId={clientId}
       authorizationParams={{
-        redirect_uri: process.env.NEXT_PUBLIC_BASE_URL + "" || "",
+        redirect_uri: redirect,
       }}
     >
       {children}
