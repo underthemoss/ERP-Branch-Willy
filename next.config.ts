@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "/es-erp",
-  assetPrefix: "/es-erp/",
+  basePath: "",
+  assetPrefix: "",
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",

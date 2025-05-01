@@ -5,6 +5,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
+import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import React from "react";
 import { Theme } from "./Theme";
 
@@ -19,9 +20,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </head>
       <body>
-        <ApolloClientProvider>
-          <Theme>{children}</Theme>
-        </ApolloClientProvider>
+        <Auth0ClientProvider>
+          <ApolloClientProvider>
+            <Theme>{children}</Theme>
+          </ApolloClientProvider>
+        </Auth0ClientProvider>
       </body>
     </html>
   );

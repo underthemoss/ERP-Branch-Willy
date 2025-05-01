@@ -4,16 +4,17 @@
 
 ## Local setup
 
-```bash 
+```bash
 nvm use 22
 npm i
 npm run codegen
 ```
+
 To run against staging BE
 
 `npm run dev`
 
-To run with local running BE 
+To run with local running BE
 
 `npm run dev:local-gql`
 
@@ -23,7 +24,7 @@ To run with local running BE
 
 ## Codegen
 
-Graphql types and hooks are auto generated. To manually run 
+Graphql types and hooks are auto generated. To manually run
 
 `npm run codegen`
 
@@ -36,9 +37,9 @@ To pull the latest version of the schema.
 `npm run codegen:update-schema`
 
 > ### Why is only schema.graphql checked in?
-> 
+>
 > We want deterministic builds – every CI run regenerates the same artifacts.
-> 
+>
 > Generated files are large/noisy & can always be reproduced with npm run codegen.
 
 ## Linting and Quality Gates
