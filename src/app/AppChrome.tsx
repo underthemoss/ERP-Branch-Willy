@@ -6,6 +6,7 @@ import { createTheme, CssBaseline, LinearProgress } from "@mui/material";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Account } from "@toolpad/core";
 import { NextAppProvider } from "@toolpad/core/nextjs";
 import * as React from "react";
 import { NAVIGATION } from "./Navigation";
@@ -21,7 +22,7 @@ const lightTheme = createTheme({
     },
   },
 });
-export const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth0();
   if (!user) return null;
   return (
@@ -31,6 +32,10 @@ export const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           <NextAppProvider
             navigation={NAVIGATION}
             theme={lightTheme}
+            branding={{
+              logo: <></>,
+              title: "",
+            }}
             authentication={{
               signIn: () => {},
               signOut: () => {
@@ -39,10 +44,9 @@ export const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             }}
             session={{
               user: {
-                email: user?.email,
-                image:
-                  "https://lh3.googleusercontent.com/a/ACg8ocIc1DqI86TpFbcWHHtAeiExSw0gvn0nOJKNhkfBlRJS2YMUwfJw=s96-c",
-                name: user?.name,
+                email: user.email,
+                image: user.picture,
+                name: user.name,
               },
             }}
           >
