@@ -8,14 +8,13 @@ import { DataGridPro, GridColDef, GridRenderEditCellParams, GridRowId } from "@m
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import dayjs, { Dayjs } from "dayjs";
+import { useParams } from "next/navigation";
 import * as React from "react";
 
 graphql(`
-  query getTransactions {
-    listTransactions {
+  query getTransactions($workspaceId: ID!) {
+    listTransactions(workspaceId: $workspaceId) {
       items {
-        __typename
-
         ... on BaseTransaction {
           id
           type
@@ -80,7 +79,8 @@ const isWeekend = (date: dayjs.ConfigType): boolean => {
   return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
 };
 export default function ColumnVirtualizationGrid() {
-  const { data, refetch } = useGetTransactionsQuery({});
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+  const { data, refetch } = useGetTransactionsQuery({ variables: { workspaceId: workspace_id } });
   const [createTransaction] = useCreateTransactionMutation({});
 
   const columns: readonly GridColDef<Row>[] = [

@@ -7,7 +7,6 @@ import "@fontsource/roboto/700.css";
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import React from "react";
-import { AppChrome } from "./AppChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           redirect={process.env.NEXT_PUBLIC_BASE_URL || ""}
           audience={process.env.NEXT_PUBLIC_API_URL || ""}
         >
-          <ApolloClientProvider api={api}>
-            <AppChrome>{children}</AppChrome>
-          </ApolloClientProvider>
+          <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
         </Auth0ClientProvider>
       </body>
     </html>

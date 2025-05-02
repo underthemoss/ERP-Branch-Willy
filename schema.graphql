@@ -74,8 +74,13 @@ type ListTransactionResult {
   page: PaginationInfo!
 }
 
+type ListWorkspacesResult {
+  items: [Workspace!]!
+  page: PaginationInfo!
+}
+
 type Mutation {
-  createTransaction(input: TransactionInput): Transaction
+  createTransaction(input: TransactionInput!): Transaction
 }
 
 type PaginationInfo {
@@ -99,7 +104,8 @@ type Project {
 type Query {
   currentUser: JWTPayload
   helloWorld: String
-  listTransactions: ListTransactionResult!
+  listTransactions(workspaceId: ID!): ListTransactionResult!
+  listWorkspaces: ListWorkspacesResult!
 }
 
 type Quote {
@@ -189,8 +195,8 @@ union Transaction = RentalTransaction | SaleTransaction | ServiceTransaction
 
 input TransactionInput {
   projectId: ID
-  type: TransactionType
-  workspaceId: ID
+  type: TransactionType!
+  workspaceId: ID!
 }
 
 type TransactionLogEntry {
@@ -228,6 +234,7 @@ type Workflow {
 }
 
 type Workspace {
+  companyId: Int
   id: ID
   name: String
 }

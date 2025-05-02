@@ -9,7 +9,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { NextAppProvider } from "@toolpad/core/nextjs";
 import { DialogsProvider } from "@toolpad/core/useDialogs";
 import * as React from "react";
-import { NAVIGATION } from "./Navigation";
+import { useNavigation } from "../app/Navigation";
 
 const lightTheme = createTheme({
   palette: {
@@ -24,13 +24,15 @@ const lightTheme = createTheme({
 });
 export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth0();
+  const navigation = useNavigation();
   if (!user) return null;
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <AppRouterCacheProvider options={{}}>
         <React.Suspense fallback={<LinearProgress />}>
           <NextAppProvider
-            navigation={NAVIGATION}
+            navigation={navigation}
             theme={lightTheme}
             branding={{
               logo: <></>,

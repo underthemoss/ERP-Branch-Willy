@@ -1,3 +1,7 @@
+"use client";
+
+import { graphql } from "@/graphql";
+import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { CustomDialog } from "@/ui/CustomDialog";
 import { useAuth0 } from "@auth0/auth0-react";
 import AddIcon from "@mui/icons-material/Add";
@@ -14,31 +18,35 @@ import {
 } from "@mui/material";
 import { AccountPopoverFooter, AccountPreview, SignOutButton } from "@toolpad/core/Account";
 import { useDialogs } from "@toolpad/core/useDialogs";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
-export default function WorkspaceSwitcher() {
-  const { user } = useAuth0();
-  const dialogs = useDialogs();
-  const workspaces = [
-    {
-      id: 1,
-      name: "EquipmentShare",
-      subtext: "Default Workspace",
-      image: "/favicon.ico",
-    },
-    {
-      id: 3,
-      name: "Baton Rouge, LA - Core Solutions",
+graphql(`
+  query fetchWorkspaces {
+    listWorkspaces {
+      items {
+        id
+        companyId
+        name
+      }
+    }
+  }
+`);
 
-      color: "#8B4513", // Brown color
-    },
-    {
-      id: 2,
-      name: user?.name,
-      subtext: "Private Workspace",
-      color: "#8B4513", // Brown color
-    },
-  ];
+export default function WorkspaceSwitcher() {
+  const { push } = useRouter();
+  const dialogs = useDialogs();
+  const { data } = useFetchWorkspacesQuery();
+  const workspaces =
+    data?.listWorkspaces?.items.map((d) => {
+      return {
+        id: d.id,
+        name: d.name,
+        subtext: d.companyId,
+        image: "/favicon.ico",
+      };
+    }) || [];
+
   return (
     <Stack direction="column">
       <AccountPreview variant="expanded" />
@@ -56,6 +64,9 @@ export default function WorkspaceSwitcher() {
               width: "100%",
               columnGap: 2,
             }}
+            onClick={() => {
+              push(`/app/${workspace.id}`);
+            }}
           >
             <ListItemIcon>
               <Avatar
@@ -63,7 +74,7 @@ export default function WorkspaceSwitcher() {
                   width: 32,
                   height: 32,
                   fontSize: "0.95rem",
-                  bgcolor: workspace.color,
+                  bgcolor: "AppWorkspace",
                 }}
                 src={workspace.image ?? ""}
                 alt={workspace.name ?? ""}
