@@ -14,12 +14,12 @@ export const NAVIGATION: Navigation = [
     title: "Main items",
   },
   {
-    segment: "es-erp/app/dashboard",
+    segment: "app/dashboard",
     title: "Dashboard",
     icon: <DashboardIcon />,
   },
   {
-    segment: "es-erp/app/transactions",
+    segment: "app/transactions",
     title: "Transactions",
     icon: <ShoppingCartIcon />,
   },

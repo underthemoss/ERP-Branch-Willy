@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: "ES-ERP",
   description: "Equipmentshare",
 };
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -26,8 +27,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
           clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
           redirect={process.env.NEXT_PUBLIC_BASE_URL || ""}
+          audience={process.env.NEXT_PUBLIC_API_URL || ""}
         >
-          <ApolloClientProvider>
+          <ApolloClientProvider api={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql" || ""}>
             <Theme>{children}</Theme>
           </ApolloClientProvider>
         </Auth0ClientProvider>
