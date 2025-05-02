@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { useFetchCurrentUserQuery } from "@/graphql/hooks";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import Link from "next/link";
 import * as React from "react";
 
 graphql(`
@@ -15,5 +16,11 @@ graphql(`
 
 export default function ColumnVirtualizationGrid() {
   const { data } = useFetchCurrentUserQuery();
-  return <PageContainer>{data?.currentUser?.es_user_name}</PageContainer>;
+
+  return (
+    <PageContainer>
+      {data?.currentUser?.es_user_name}
+      <Link href={"/app/transactions"}>Transactions</Link>
+    </PageContainer>
+  );
 }
