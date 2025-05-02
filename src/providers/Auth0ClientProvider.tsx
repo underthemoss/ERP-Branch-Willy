@@ -9,7 +9,7 @@ export const useAuth = () => {
     useAuth0();
   const [token, setToken] = useState("");
   useEffect(() => {
-    getAccessTokenSilently()
+    getAccessTokenSilently({ cacheMode: "on" })
       .then(setToken)
       .catch((d) => {
         console.log(d);

@@ -15,7 +15,9 @@ export const metadata: Metadata = {
   title: "ES-ERP",
   description: "Equipmentshare",
 };
-
+const api = process.env.NEXT_PUBLIC_LOCAL_GQL
+  ? "http://localhost:5000/graphql"
+  : process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -29,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           redirect={process.env.NEXT_PUBLIC_BASE_URL || ""}
           audience={process.env.NEXT_PUBLIC_API_URL || ""}
         >
-          <ApolloClientProvider api={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql" || ""}>
+          <ApolloClientProvider api={api}>
             <Theme>{children}</Theme>
           </ApolloClientProvider>
         </Auth0ClientProvider>
