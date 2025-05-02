@@ -34,6 +34,12 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type HasuraClaims {
+  x_hasura_allowed_roles: [String]
+  x_hasura_default_role: String
+  x_hasura_user_id: String
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -43,6 +49,25 @@ scalar JSON
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSONObject
+
+type JWTPayload {
+  aud: [String]
+  azp: String
+  es_company_id: String
+  es_roles: [String]
+  es_security_level_id: String
+  es_user_email: String
+  es_user_id: String
+  es_user_name: String
+  exp: Int
+  hasura_claims: HasuraClaims
+  iat: Int
+  is_federated: Boolean
+  iss: String
+  permissions: [String]
+  scope: String
+  sub: String
+}
 
 type ListTransactionResult {
   items: [Transaction!]!
@@ -72,6 +97,7 @@ type Project {
 }
 
 type Query {
+  currentUser: JWTPayload
   helloWorld: String
   listTransactions: ListTransactionResult!
 }

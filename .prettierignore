@@ -6,3 +6,5 @@ out
 coverage
 dist
 *.log
+
+schema.graphql

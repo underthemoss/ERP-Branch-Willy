@@ -1,10 +1,12 @@
 "use client";
 
 import { MuiLicense } from "@/ui/MuiLicense";
-import { createTheme, CssBaseline } from "@mui/material";
+import { createTheme, CssBaseline, LinearProgress } from "@mui/material";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { AppProvider } from "@toolpad/core/AppProvider";
+import { NextAppProvider } from "@toolpad/core/nextjs";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { NAVIGATION } from "./Navigation";
 
@@ -22,10 +24,16 @@ const lightTheme = createTheme({
 export const Theme: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <AppProvider navigation={NAVIGATION} theme={lightTheme}>
-        <CssBaseline />
-        <MuiLicense>{children}</MuiLicense>
-      </AppProvider>
+      <AppRouterCacheProvider options={{}}>
+        <React.Suspense fallback={<LinearProgress />}>
+          {/* <AppProvider navigation={NAVIGATION} theme={lightTheme}> */}
+          <NextAppProvider navigation={NAVIGATION} theme={lightTheme}>
+            <CssBaseline />
+            <MuiLicense>{children}</MuiLicense>
+          </NextAppProvider>
+          {/* </AppProvider> */}
+        </React.Suspense>
+      </AppRouterCacheProvider>
     </LocalizationProvider>
   );
 };

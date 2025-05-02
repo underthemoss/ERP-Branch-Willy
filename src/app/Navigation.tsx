@@ -5,7 +5,8 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import DescriptionIcon from "@mui/icons-material/Description";
 import LayersIcon from "@mui/icons-material/Layers";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import { type Navigation } from "@toolpad/core/AppProvider";
+import type { Navigation } from "@toolpad/core"; // purely for typing
+
 import * as React from "react";
 
 export const NAVIGATION: Navigation = [
