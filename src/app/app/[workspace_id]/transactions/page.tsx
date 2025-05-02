@@ -195,7 +195,7 @@ export default function ColumnVirtualizationGrid() {
           onClick={async () => {
             await createTransaction({
               variables: {
-                input: { projectId: "", type: TransactionType.Rental, workspaceId: "" },
+                input: { projectId: "", type: TransactionType.Rental, workspaceId: workspace_id },
               },
             });
             refetch();
