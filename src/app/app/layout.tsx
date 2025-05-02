@@ -2,8 +2,8 @@
 
 import { Account } from "@toolpad/core";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
-import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import ToolbarActions from "./ToolbarActions";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
 
 const Nothing = () => <></>;
 export default function Layout({ children }: { children: React.ReactNode }) {

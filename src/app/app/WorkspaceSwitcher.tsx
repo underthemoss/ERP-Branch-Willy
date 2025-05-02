@@ -1,3 +1,4 @@
+import { CustomDialog } from "@/ui/CustomDialog";
 import { useAuth0 } from "@auth0/auth0-react";
 import AddIcon from "@mui/icons-material/Add";
 import {
@@ -12,10 +13,12 @@ import {
   Typography,
 } from "@mui/material";
 import { AccountPopoverFooter, AccountPreview, SignOutButton } from "@toolpad/core/Account";
+import { useDialogs } from "@toolpad/core/useDialogs";
 import * as React from "react";
 
 export default function WorkspaceSwitcher() {
   const { user } = useAuth0();
+  const dialogs = useDialogs();
   const workspaces = [
     {
       id: 1,
@@ -95,6 +98,9 @@ export default function WorkspaceSwitcher() {
           size="small"
           startIcon={<AddIcon />}
           disableElevation
+          onClick={() => {
+            dialogs.open(CustomDialog);
+          }}
         >
           Add new
         </Button>

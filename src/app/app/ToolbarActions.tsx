@@ -1,17 +1,11 @@
 // SearchAndActions.tsx
-import { FC } from 'react';
-import {
-  Box,
-  Paper,
-  InputBase,
-  IconButton,
-  Typography,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import SearchIcon from "@mui/icons-material/Search";
+import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
+import { Box, IconButton, InputBase, Paper, Typography } from "@mui/material";
+import { FC } from "react";
 
-const SHORTCUT = '⌘ /';    
+const SHORTCUT = "⌘ /";
 
 const ToolbarActions: FC = () => {
   return (
@@ -23,27 +17,24 @@ const ToolbarActions: FC = () => {
         sx={{
           px: 1.5,
           py: 0.5,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           width: 220,
           borderRadius: 50,
           bgcolor: (theme) => theme.palette.action.hover,
         }}
       >
-        <SearchIcon sx={{ mr: 1, fontSize: 20, color: 'text.secondary' }} />
+        <SearchIcon sx={{ mr: 1, fontSize: 20, color: "text.secondary" }} />
         <InputBase
           placeholder="Search"
-          inputProps={{ 'aria-label': 'search' }}
+          inputProps={{ "aria-label": "search" }}
           sx={{
             flex: 1,
             fontSize: 14,
-            '::placeholder': { color: 'text.secondary', opacity: 1 },
+            "::placeholder": { color: "text.secondary", opacity: 1 },
           }}
         />
-        <Typography
-          variant="caption"
-          sx={{ ml: 1, color: 'text.disabled', userSelect: 'none' }}
-        >
+        <Typography variant="caption" sx={{ ml: 1, color: "text.disabled", userSelect: "none" }}>
           {SHORTCUT}
         </Typography>
       </Paper>

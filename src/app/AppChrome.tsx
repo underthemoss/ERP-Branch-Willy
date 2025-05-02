@@ -6,8 +6,8 @@ import { createTheme, CssBaseline, LinearProgress } from "@mui/material";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { Account } from "@toolpad/core";
 import { NextAppProvider } from "@toolpad/core/nextjs";
+import { DialogsProvider } from "@toolpad/core/useDialogs";
 import * as React from "react";
 import { NAVIGATION } from "./Navigation";
 
@@ -50,8 +50,10 @@ export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children })
               },
             }}
           >
-            <CssBaseline />
-            <MuiLicense>{children}</MuiLicense>
+            <DialogsProvider>
+              <CssBaseline />
+              <MuiLicense>{children}</MuiLicense>
+            </DialogsProvider>
           </NextAppProvider>
         </React.Suspense>
       </AppRouterCacheProvider>

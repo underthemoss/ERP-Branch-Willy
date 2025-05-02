@@ -2,7 +2,6 @@
 
 import { graphql } from "@/graphql";
 import { useFetchCurrentUserQuery } from "@/graphql/hooks";
-
 import { PageContainer } from "@toolpad/core/PageContainer";
 import Link from "next/link";
 import * as React from "react";
