@@ -80,9 +80,9 @@ const isWeekend = (date: dayjs.ConfigType): boolean => {
   return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
 };
 export default function ColumnVirtualizationGrid() {
-  const { data, loading, refetch } = useGetTransactionsQuery({});
+  const { data, refetch } = useGetTransactionsQuery({});
   const [createTransaction] = useCreateTransactionMutation({});
-  console.log(data);
+
   const columns: readonly GridColDef<Row>[] = [
     {
       field: "id",
