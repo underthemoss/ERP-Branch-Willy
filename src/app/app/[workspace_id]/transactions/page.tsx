@@ -4,9 +4,8 @@ import { graphql } from "@/graphql";
 import { TransactionType } from "@/graphql/graphql";
 import { useCreateTransactionMutation, useGetTransactionsQuery } from "@/graphql/hooks";
 import { Box, Button, Checkbox } from "@mui/material";
-import { DataGridPro, GridColDef, GridRenderEditCellParams, GridRowId } from "@mui/x-data-grid-pro";
+import { DataGridPro, GridColDef, GridRenderEditCellParams } from "@mui/x-data-grid-pro";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
-import { PageContainer } from "@toolpad/core/PageContainer";
 import dayjs, { Dayjs } from "dayjs";
 import { useParams } from "next/navigation";
 import * as React from "react";
@@ -188,7 +187,7 @@ export default function ColumnVirtualizationGrid() {
     }) || [];
 
   return (
-    <PageContainer maxWidth={false}>
+    <Box sx={{ minWidth: "1200px" }}>
       <Box display={"flex"}>
         <Box flex={1}></Box>
         <Button
@@ -215,6 +214,6 @@ export default function ColumnVirtualizationGrid() {
           }}
         />
       </div>
-    </PageContainer>
+    </Box>
   );
 }

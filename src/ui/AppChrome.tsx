@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeProviderComponent } from "@/providers/ThemeProvider";
 import { MuiLicense } from "@/ui/MuiLicense";
 import { useAuth0 } from "@auth0/auth0-react";
 import { createTheme, CssBaseline, LinearProgress } from "@mui/material";
@@ -11,17 +12,6 @@ import { DialogsProvider } from "@toolpad/core/useDialogs";
 import * as React from "react";
 import { useNavigation } from "../app/Navigation";
 
-const lightTheme = createTheme({
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#1976d2",
-    },
-    secondary: {
-      main: "#dc004e",
-    },
-  },
-});
 export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth0();
   const navigation = useNavigation();
@@ -30,34 +20,12 @@ export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children })
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <AppRouterCacheProvider options={{}}>
-        <React.Suspense fallback={<LinearProgress />}>
-          <NextAppProvider
-            navigation={navigation}
-            theme={lightTheme}
-            branding={{
-              logo: <></>,
-              title: "",
-            }}
-            authentication={{
-              signIn: () => {},
-              signOut: () => {
-                logout({});
-              },
-            }}
-            session={{
-              user: {
-                email: user.email,
-                image: user.picture,
-                name: user.name,
-              },
-            }}
-          >
-            <DialogsProvider>
-              <CssBaseline />
-              <MuiLicense>{children}</MuiLicense>
-            </DialogsProvider>
-          </NextAppProvider>
-        </React.Suspense>
+        <ThemeProviderComponent>
+          <DialogsProvider>
+            <CssBaseline />
+            <MuiLicense>{children}</MuiLicense>
+          </DialogsProvider>
+        </ThemeProviderComponent>
       </AppRouterCacheProvider>
     </LocalizationProvider>
   );
