@@ -15,5 +15,9 @@ export default function Page() {
     }
   }, [data, loading]);
 
-  return <LinearProgress></LinearProgress>;
+  return (
+    <>
+      <LinearProgress></LinearProgress>Loading workspaces...
+    </>
+  );
 }

@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 test("user must be authenticated", async ({ page }) => {
-  await page.goto("/es-erp/");
+  await page.goto("/app");
+
   await expect(
-    page.getByText("Could not authenticate", { exact: false }),
-  ).toBeVisible();
+    page.getByText("Continue with google", { exact: false }),
+  ).toBeVisible({ timeout: 10_000 });
 });
