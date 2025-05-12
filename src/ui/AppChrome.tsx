@@ -9,6 +9,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { NextAppProvider } from "@toolpad/core/nextjs";
 import { DialogsProvider } from "@toolpad/core/useDialogs";
+import { NotificationsProvider } from "@toolpad/core/useNotifications";
 import * as React from "react";
 import { useNavigation } from "../app/Navigation";
 
@@ -21,10 +22,12 @@ export const AppChrome: React.FC<{ children: React.ReactNode }> = ({ children })
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <AppRouterCacheProvider options={{}}>
         <ThemeProviderComponent>
-          <DialogsProvider>
-            <CssBaseline />
-            <MuiLicense>{children}</MuiLicense>
-          </DialogsProvider>
+          <NotificationsProvider>
+            <DialogsProvider>
+              <CssBaseline />
+              <MuiLicense>{children}</MuiLicense>
+            </DialogsProvider>
+          </NotificationsProvider>
         </ThemeProviderComponent>
       </AppRouterCacheProvider>
     </LocalizationProvider>

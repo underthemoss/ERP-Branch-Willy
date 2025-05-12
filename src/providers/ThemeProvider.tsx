@@ -4,10 +4,10 @@ import * as React from "react";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#0f0d15", // Dark background color from the avatar
+      main: "#0063E9", // Dark background color from the avatar
     },
     secondary: {
-      main: "#e7e7e8", // Selected menu item background
+      main: "#161616", // Selected menu item background
     },
     text: {
       primary: "#161616", // Selected menu text
@@ -27,6 +27,28 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: "'Inter', Helvetica, Arial, sans-serif",
+    h1: {
+      fontFamily: "Inter",
+      fontSize: "24px",
+      fontStyle: "normal",
+      fontWeight: 600,
+      lineHeight: "28px",
+      letterSpacing: "-0.72px",
+    },
+    body1: {
+      fontFamily: "Inter",
+      fontSize: "14px",
+      fontStyle: "normal",
+      fontWeight: 500,
+      lineHeight: "21px",
+    },
+    body2: {
+      fontFamily: "Inter",
+      fontSize: "12px",
+      fontStyle: "normal",
+      fontWeight: 400,
+      lineHeight: "18px",
+    },
   },
 });
 

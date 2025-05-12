@@ -21,7 +21,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 
-export const Sidebar = () => {
+export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
   const { user } = useAuth0();
   const pathname = usePathname();
@@ -68,7 +68,7 @@ export const Sidebar = () => {
 
   return (
     <Box
-      className="sidebar"
+      className="navbar"
       sx={{
         display: "inline-flex",
         flexDirection: "column",
