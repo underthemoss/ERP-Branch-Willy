@@ -4,7 +4,7 @@ import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { Topbar } from "@/ui/Topbar";
 import { usePathname } from "next/navigation";
 import * as React from "react";
-import { Sidebar } from "./Sidebar";
+import { NavBar } from "./NavBar";
 
 const DashboardMainSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isSidebarOpen } = useSidebar();
@@ -89,7 +89,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       }}
     >
       <SidebarProvider>
-        <Sidebar />
+        <NavBar />
         <Box
           className="right-section"
           sx={{

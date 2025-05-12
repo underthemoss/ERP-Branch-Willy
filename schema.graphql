@@ -20,8 +20,44 @@ The `BigInt` scalar type represents non-fractional signed whole numeric values.
 """
 scalar BigInt
 
+type BusinessContact {
+  accountsPayableContactId: String
+  address: String
+  contactType: ContactType!
+  createdAt: DateTime!
+  createdBy: String!
+  id: ID!
+  name: String!
+  notes: String
+  phone: String
+  profilePicture: String
+  taxId: String
+  updatedAt: DateTime!
+  website: String
+  workspaceId: String!
+}
+
+input BusinessContactInput {
+  accountsPayableContactId: ID
+  address: String
+  name: String!
+  notes: String
+  phone: String
+  profilePicture: String
+  taxId: String
+  website: String
+  workspaceId: String!
+}
+
 type Comment {
   id: ID
+}
+
+union Contact = BusinessContact | PersonContact
+
+enum ContactType {
+  BUSINESS
+  PERSON
 }
 
 """
@@ -69,6 +105,21 @@ type JWTPayload {
   sub: String
 }
 
+input ListContactsFilter {
+  contactType: ContactType
+  workspaceId: String!
+}
+
+input ListContactsPage {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListContactsResult {
+  items: [Contact!]!
+  page: PaginationInfo!
+}
+
 type ListTransactionResult {
   items: [Transaction!]!
   page: PaginationInfo!
@@ -80,6 +131,8 @@ type ListWorkspacesResult {
 }
 
 type Mutation {
+  createBusinessContact(input: BusinessContactInput!): BusinessContact
+  createPersonContact(input: PersonContactInput!): PersonContact
   createTransaction(input: TransactionInput!): Transaction
 }
 
@@ -95,6 +148,33 @@ enum PaginationOrder {
   DESC
 }
 
+type PersonContact {
+  businessId: String!
+  contactType: ContactType!
+  createdAt: DateTime!
+  createdBy: String!
+  email: String!
+  id: ID!
+  name: String!
+  notes: String
+  phone: String
+  profilePicture: String
+  role: String
+  updatedAt: DateTime!
+  workspaceId: String!
+}
+
+input PersonContactInput {
+  businessId: ID!
+  email: String!
+  name: String!
+  notes: String
+  phone: String
+  profilePicture: String
+  role: String!
+  workspaceId: String!
+}
+
 type Project {
   code: String
   id: ID
@@ -104,6 +184,7 @@ type Project {
 type Query {
   currentUser: JWTPayload
   helloWorld: String
+  listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }

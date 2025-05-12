@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   title: "ES-ERP",
   description: "Equipmentshare",
 };
-const api = process.env.NEXT_PUBLIC_LOCAL_GQL
-  ? "http://localhost:5000/graphql"
-  : process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
+
+const api =
+  process.env.NEXT_PUBLIC_GQL_URL || process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
