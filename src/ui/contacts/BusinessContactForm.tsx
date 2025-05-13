@@ -1,35 +1,11 @@
 import { graphql } from "@/graphql";
-import { useCreateBusinessContactMutation } from "@/graphql/hooks";
+import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
 import { Box, Button, Grid, TextField } from "@mui/material";
 import { DialogProps } from "@toolpad/core";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { useParams } from "next/navigation";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
-
-graphql(`
-  mutation CreateBusinessContact(
-    $workspaceId: String!
-    $name: String!
-    $phone: String
-    $address: String
-    $taxId: String!
-    $website: String
-  ) {
-    createBusinessContact(
-      input: {
-        workspaceId: $workspaceId
-        name: $name
-        phone: $phone
-        address: $address
-        taxId: $taxId
-        website: $website
-      }
-    ) {
-      id
-    }
-  }
-`);
 
 type FormData = {
   businessName: string;

@@ -1,9 +1,10 @@
 "use client";
 
-import { useSidebar } from "@/contexts/SidebarContext";
 import { graphql } from "@/graphql";
-import { useListPersonContactsQuery } from "@/graphql/hooks";
+import { useListPersonContactsQuery } from "@/ui/contacts/api";
+import { ContactListItem } from "@/ui/contacts/ContactListItem";
 import { NewContactDialog } from "@/ui/contacts/NewContactDialog";
+import { useSidebar } from "@/ui/sidebar/useSidebar";
 import { useAuth0 } from "@auth0/auth0-react";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -52,24 +53,9 @@ const HomepageBox: React.FC<{
   );
 };
 
-graphql(`
-  query ListPersonContacts($workspaceId: String!, $page: ListContactsPage!) {
-    listContacts(filter: { workspaceId: $workspaceId, contactType: PERSON }, page: $page) {
-      items {
-        ... on PersonContact {
-          id
-          name
-          email
-          profilePicture
-        }
-      }
-    }
-  }
-`);
-
 export default function DashboardMainSection() {
   const { user } = useAuth0();
-  const { toggleSidebar } = useSidebar();
+  const { openSidebar } = useSidebar();
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const dialogs = useDialogs();
   const { data } = useListPersonContactsQuery({
@@ -89,70 +75,26 @@ export default function DashboardMainSection() {
         <Typography>Let&apos;s torque today!</Typography>
       </Box>
       <Box sx={{ display: "flex", mt: "24px", gap: "16px", flexWrap: "wrap" }}>
-        <HomepageBox title="Projects" toggleSideBar={toggleSidebar}>
+        <HomepageBox
+          title="Projects"
+          toggleSideBar={() => openSidebar({ sidebarType: "projects" })}
+        >
           ..
         </HomepageBox>
         <HomepageBox
           title="Contacts Directory"
-          toggleSideBar={toggleSidebar}
+          toggleSideBar={() => openSidebar({ sidebarType: "contacts" })}
           plusAction={() => dialogs.open(NewContactDialog)}
         >
-          {data?.listContacts?.items.slice(0, 3).map((contact) =>
-            contact.__typename === "PersonContact" ? (
-              <Box
-                key={contact.id}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                  mb: "16px",
-                  p: "10px",
-                  borderRadius: "10px",
-                  border: "1px solid #E5E5EC",
-                }}
-              >
-                {contact.profilePicture ? (
-                  <img
-                    src={contact.profilePicture}
-                    alt={contact.name}
-                    style={{ width: "32px", height: "32px", borderRadius: "50%" }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      minWidth: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      backgroundColor: "black",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      fontWeight: "bold",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {contact.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()}
-                  </Box>
-                )}
-                <Box>
-                  <Typography variant="body1">{contact.name}</Typography>
-                  <Typography variant="body2" color="grey.400">
-                    {contact.email}
-                  </Typography>
-                </Box>
-                <IconButton sx={{ ml: "auto" }} color="secondary">
-                  <MoreVertIcon />
-                </IconButton>
-              </Box>
-            ) : null,
-          )}
+          {data?.listContacts?.items
+            .slice(0, 3)
+            // @ts-expect-error union type interferance
+            .map((contact, i) => <ContactListItem key={i} contact={contact} />)}
         </HomepageBox>
-        <HomepageBox title="Resource Directory" toggleSideBar={toggleSidebar}>
+        <HomepageBox
+          title="Resource Directory"
+          toggleSideBar={() => openSidebar({ sidebarType: "resources" })}
+        >
           ...
         </HomepageBox>
       </Box>

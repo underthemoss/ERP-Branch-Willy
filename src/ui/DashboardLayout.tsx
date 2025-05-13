@@ -1,13 +1,16 @@
 import Box from "@mui/material/Box";
 import type {} from "@mui/material/themeCssVarsAugmentation";
-import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { Topbar } from "@/ui/Topbar";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { NavBar } from "./NavBar";
+import { Sidebar } from "./sidebar/Sidebar";
+import { useSidebar } from "./sidebar/useSidebar";
 
 const DashboardMainSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isSidebarOpen } = useSidebar();
+  const { getSidebarState } = useSidebar();
+  const sidebarState = getSidebarState();
+  const isSidebarOpen = sidebarState !== null;
 
   return (
     <Box
@@ -43,30 +46,8 @@ const DashboardMainSection: React.FC<{ children: React.ReactNode }> = ({ childre
           {children}
         </Box>
       </Box>
-
       {/* Right panel */}
-      <Box
-        sx={{
-          bgcolor: "white",
-          width: isSidebarOpen ? "500px" : "0px",
-          flexShrink: 0,
-          margin: "10px",
-          marginLeft: 0,
-          borderRadius: "12px",
-          overflow: "hidden",
-          transition: "width 0.3s ease",
-        }}
-      >
-        <Box
-          sx={{
-            opacity: isSidebarOpen ? 1 : 0,
-            transition: "opacity 0.3s ease",
-            p: isSidebarOpen ? 2 : 0,
-          }}
-        >
-          right panel
-        </Box>
-      </Box>
+      <Sidebar />
     </Box>
   );
 };
@@ -88,19 +69,17 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         width: "100vw",
       }}
     >
-      <SidebarProvider>
-        <NavBar />
-        <Box
-          className="right-section"
-          sx={{
-            flex: 1,
-            minWidth: 0, // allow shrinking
-            overflowX: "auto", // allow horizontal scroll if needed
-          }}
-        >
-          <DashboardMainSection>{children}</DashboardMainSection>
-        </Box>
-      </SidebarProvider>
+      <NavBar />
+      <Box
+        className="right-section"
+        sx={{
+          flex: 1,
+          minWidth: 0, // allow shrinking
+          overflowX: "auto", // allow horizontal scroll if needed
+        }}
+      >
+        <DashboardMainSection>{children}</DashboardMainSection>
+      </Box>
     </Box>
   );
 };
