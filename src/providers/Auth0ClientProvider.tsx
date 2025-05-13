@@ -9,7 +9,8 @@ const AuthWall: React.FC<{
   const { loginWithRedirect, getAccessTokenSilently } = useAuth0();
 
   useEffect(() => {
-    getAccessTokenSilently({ cacheMode: "on" }).catch((d) => {
+    getAccessTokenSilently({ cacheMode: "on" }).catch((e) => {
+      console.error(e);
       loginWithRedirect({});
     });
   }, []);
