@@ -1,12 +1,12 @@
 "use client";
 
-import { useSidebar } from "@/contexts/SidebarContext";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 import { Box, Breadcrumbs, IconButton, InputBase, Paper, Typography } from "@mui/material";
 import { usePathname } from "next/navigation";
 import * as React from "react";
+import { useSidebar } from "./sidebar/useSidebar";
 
 const SHORTCUT = "⌘ /";
 
@@ -55,7 +55,7 @@ const ToolbarActions: React.FC<{ toggleSideBar: () => void }> = ({ toggleSideBar
 };
 
 export const Topbar = function () {
-  const { toggleSidebar } = useSidebar();
+  const { closeSidebar } = useSidebar();
   const pathname = usePathname();
 
   const breadcrumbs = pathname.split("/").slice(3); // ignore /app/id
@@ -94,7 +94,7 @@ export const Topbar = function () {
         ))}
       </Breadcrumbs>
       <Box>
-        <ToolbarActions toggleSideBar={toggleSidebar} />
+        <ToolbarActions toggleSideBar={closeSidebar} />
       </Box>
     </Box>
   );

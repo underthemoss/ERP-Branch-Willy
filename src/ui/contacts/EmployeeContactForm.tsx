@@ -1,5 +1,5 @@
 import { graphql } from "@/graphql";
-import { useCreatePersonContactMutation, useListBusinessContactsQuery } from "@/graphql/hooks";
+import { useCreatePersonContactMutation, useListBusinessContactsQuery } from "@/ui/contacts/api";
 import { Autocomplete, Box, Button, Grid, TextField, Typography } from "@mui/material";
 import { DialogProps, useNotifications } from "@toolpad/core";
 import { useParams } from "next/navigation";
@@ -17,47 +17,6 @@ type EmployeeFormData = {
     profilePicture?: string;
   } | null;
 };
-graphql(`
-  mutation CreatePersonContact(
-    $workspaceId: String!
-    $name: String!
-    $phone: String
-    $email: String!
-    $role: String!
-    $businessId: ID!
-  ) {
-    createPersonContact(
-      input: {
-        workspaceId: $workspaceId
-        name: $name
-        phone: $phone
-        email: $email
-        role: $role
-        businessId: $businessId
-      }
-    ) {
-      id
-      name
-      email
-      profilePicture
-      __typename
-    }
-  }
-`);
-
-graphql(`
-  query ListBusinessContacts($workspaceId: String!, $page: ListContactsPage!) {
-    listContacts(filter: { workspaceId: $workspaceId, contactType: BUSINESS }, page: $page) {
-      items {
-        ... on BusinessContact {
-          id
-          name
-          profilePicture
-        }
-      }
-    }
-  }
-`);
 
 export function EmployeeContactForm({ onClose }: Pick<DialogProps, "onClose">) {
   const {
@@ -109,39 +68,6 @@ export function EmployeeContactForm({ onClose }: Pick<DialogProps, "onClose">) {
           email: data.email,
           role: data.role,
           businessId: data.business?.id as string,
-        },
-        update: (cache, { data }) => {
-          if (!data?.createPersonContact) return;
-
-          cache.modify({
-            fields: {
-              listContacts(existing = { items: [] }, { readField }) {
-                const newContactRef = cache.writeFragment({
-                  data: data.createPersonContact,
-                  fragment: graphql(`
-                    fragment NewPersonContact on PersonContact {
-                      id
-                      name
-                      email
-                      profilePicture
-                      __typename
-                    }
-                  `),
-                });
-
-                // Check if it's already in the list
-                const alreadyExists = existing.items.some(
-                  (item: any) => readField("id", item) === data?.createPersonContact?.id,
-                );
-                if (alreadyExists) return existing;
-
-                return {
-                  ...existing,
-                  items: [newContactRef, ...existing.items],
-                };
-              },
-            },
-          });
         },
       });
 
