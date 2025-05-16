@@ -4,7 +4,7 @@ import { SidebarSingleContact } from "../contacts/SidebarSingleContact";
 import { useSidebar } from "./useSidebar";
 
 export function Sidebar() {
-  const { closeSidebar, getSidebarState } = useSidebar();
+  const { getSidebarState } = useSidebar();
   const sidebarState = getSidebarState();
   const isSidebarOpen = sidebarState !== null;
 
@@ -13,10 +13,10 @@ export function Sidebar() {
   let content = null;
   switch (sidebarState?.sidebarType) {
     case "contact":
-      content = <SidebarSingleContact onClose={closeSidebar} />;
+      content = <SidebarSingleContact />;
       break;
     case "contacts":
-      content = <SidebarListContacts onClose={closeSidebar} />;
+      content = <SidebarListContacts />;
       break;
     case "project":
       content = <div>Project</div>;

@@ -13,24 +13,53 @@ export {
   useCreateBusinessContactMutation,
   useListBusinessContactsQuery,
   useListContactsQuery,
+  useGetContactByIdQuery,
+  useUpdateBusinessContactMutation,
+  useUpdatePersonContactMutation,
+  useDeleteContactMutation,
 } from "@/graphql/hooks";
 
 export const PersonContactFieldsFragment = graphql(`
   fragment PersonContactFields on PersonContact {
-    id
-    name
-    email
-    profilePicture
     __typename
+    id
+    contactType
+    notes
+    profilePicture
+    name
+    phone
+    email
+    role
+    businessId
   }
 `);
 
 export const BusinessContactFieldsFragment = graphql(`
   fragment BusinessContactFields on BusinessContact {
-    id
-    name
-    profilePicture
     __typename
+    id
+    contactType
+    notes
+    profilePicture
+    name
+    phone
+    address
+    taxId
+    website
+  }
+`);
+
+graphql(`
+  query GetContactById($id: ID!) {
+    getContactById(id: $id) {
+      __typename
+      ... on BusinessContact {
+        ...BusinessContactFields
+      }
+      ... on PersonContact {
+        ...PersonContactFields
+      }
+    }
   }
 `);
 
@@ -46,6 +75,28 @@ graphql(`
         }
       }
     }
+  }
+`);
+
+graphql(`
+  mutation UpdateBusinessContact($id: ID!, $input: UpdateBusinessContactInput!) {
+    updateBusinessContact(id: $id, input: $input) {
+      ...BusinessContactFields
+    }
+  }
+`);
+
+graphql(`
+  mutation UpdatePersonContact($id: ID!, $input: UpdatePersonContactInput!) {
+    updatePersonContact(id: $id, input: $input) {
+      ...PersonContactFields
+    }
+  }
+`);
+
+graphql(`
+  mutation DeleteContact($id: ID!) {
+    deleteContactById(id: $id)
   }
 `);
 
