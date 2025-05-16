@@ -1,12 +1,13 @@
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import { Box, IconButton, InputBase, Paper, Typography } from "@mui/material";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useListContactsQuery } from "./api";
 import { ContactListItem } from "./ContactListItem";
 
-export function SidebarListContacts({ onClose }: { onClose: () => void }) {
+export function SidebarListContacts() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
+  const router = useRouter();
   const { data, loading, error } = useListContactsQuery({
     variables: {
       workspaceId: workspace_id,
@@ -18,7 +19,7 @@ export function SidebarListContacts({ onClose }: { onClose: () => void }) {
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography>Contacts</Typography>
-        <IconButton onClick={onClose} sx={{ p: 0 }}>
+        <IconButton onClick={() => router.back()} sx={{ p: 0 }}>
           <CloseIcon />
         </IconButton>
       </Box>

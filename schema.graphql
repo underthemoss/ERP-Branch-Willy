@@ -134,6 +134,9 @@ type Mutation {
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createPersonContact(input: PersonContactInput!): PersonContact
   createTransaction(input: TransactionInput!): Transaction
+  deleteContactById(id: ID!): Boolean
+  updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
+  updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
 }
 
 type PaginationInfo {
@@ -183,6 +186,7 @@ type Project {
 
 type Query {
   currentUser: JWTPayload
+  getContactById(id: ID!): Contact
   helloWorld: String
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
@@ -306,6 +310,27 @@ enum TransactionType {
   RENTAL
   SALE
   SERVICE
+}
+
+input UpdateBusinessContactInput {
+  accountsPayableContactId: ID
+  address: String
+  name: String
+  notes: String
+  phone: String
+  profilePicture: String
+  taxId: String
+  website: String
+}
+
+input UpdatePersonContactInput {
+  businessId: ID
+  email: String
+  name: String
+  notes: String
+  phone: String
+  profilePicture: String
+  role: String
 }
 
 type Workflow {
