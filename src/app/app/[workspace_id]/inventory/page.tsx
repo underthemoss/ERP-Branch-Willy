@@ -33,7 +33,7 @@ graphql(`
 `);
 
 export default function Inventory() {
-  const pageSize = 50;
+  const pageSize = 200_000;
   const [rows, setRows] = React.useState<any[]>([]);
   const [page, setPage] = React.useState(1);
 
