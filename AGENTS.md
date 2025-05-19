@@ -1,4 +1,3 @@
-
 # General
 
 - Always respond with emojis
@@ -7,9 +6,9 @@
 
 # Writing Client side GQL queries
 
-When writing GQL queries use `import { graphql } from "@/graphql";` 
+When writing GQL queries use `import { graphql } from "@/graphql";`
 
-eg. 
+eg.
 
 ```typescript
 graphql(`
