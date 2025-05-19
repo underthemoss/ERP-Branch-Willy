@@ -7,19 +7,14 @@ import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Avatar,
-  Badge,
   Box,
-  Button,
   Chip,
   Container,
   IconButton,
   InputAdornment,
   MenuItem,
   Select,
-  Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { DataGridPro, GridColDef, GridRowScrollEndParams } from "@mui/x-data-grid-pro";
@@ -69,11 +64,10 @@ export default function Inventory() {
   const [rows, setRows] = React.useState<any[]>([]);
   const [page, setPage] = React.useState(1);
   const [totalItems, setTotalItems] = React.useState(0);
-  const [loadAssets, { data, loading, previousData }] = useListAssetsLazyQuery({
-    fetchPolicy: "network-only",
+  const [loadAssets, { data, loading }] = useListAssetsLazyQuery({
+    fetchPolicy: "cache-and-network",
   });
-  const [activeFilters, setActiveFilters] = useState(["Available", "Serialized Assets"]);
-  const [selectedStatus, setSelectedStatus] = useState("Available");
+  const [activeFilters, setActiveFilters] = useState(["Available"]);
 
   React.useEffect(() => {
     setRows([]);
