@@ -1,3 +1,23 @@
+type Asset {
+  company_id: String
+  custom_name: String
+  description: String
+  id: String
+  name: String
+  photo_id: String
+  pim_category_id: String
+  pim_category_name: String
+  pim_category_path: String
+  pim_make: String
+  pim_make_id: String
+  pim_product_id: String
+  pim_product_model: String
+  pim_product_name: String
+  pim_product_platform_id: String
+  pim_product_variant: String
+  pim_product_year: String
+}
+
 interface BaseTransaction {
   comments: [Comment!]
   createdAt: DateTime
@@ -26,6 +46,7 @@ type BusinessContact {
   contactType: ContactType!
   createdAt: DateTime!
   createdBy: String!
+  employees: ListPersonContactsResult
   id: ID!
   name: String!
   notes: String
@@ -105,6 +126,16 @@ type JWTPayload {
   sub: String
 }
 
+input ListAssetsPage {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListAssetsResult {
+  items: [Asset!]!
+  page: PaginationInfo!
+}
+
 input ListContactsFilter {
   contactType: ContactType
   workspaceId: String!
@@ -117,6 +148,11 @@ input ListContactsPage {
 
 type ListContactsResult {
   items: [Contact!]!
+  page: PaginationInfo!
+}
+
+type ListPersonContactsResult {
+  items: [PersonContact!]!
   page: PaginationInfo!
 }
 
@@ -152,6 +188,7 @@ enum PaginationOrder {
 }
 
 type PersonContact {
+  business: BusinessContact
   businessId: String!
   contactType: ContactType!
   createdAt: DateTime!
@@ -188,6 +225,7 @@ type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
   helloWorld: String
+  listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
