@@ -2,7 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useListAssetsLazyQuery } from "@/graphql/hooks";
-import { Box } from "@mui/material";
+import { Avatar, Box } from "@mui/material";
 import { DataGridPro, GridColDef, GridRowScrollEndParams } from "@mui/x-data-grid-pro";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import * as React from "react";
@@ -12,6 +12,7 @@ graphql(`
     listAssets(page: $page) {
       items {
         id
+        photo_id
         name
         custom_name
         description
@@ -56,6 +57,7 @@ export default function Inventory() {
       ...prev,
       ...items.map((item) => ({
         id: item.id ?? "",
+        photo_id: item.photo_id ?? "",
         name: item.name,
         custom_name: item.custom_name,
         description: item.description,
@@ -71,6 +73,17 @@ export default function Inventory() {
   }, [data]);
 
   const columns: GridColDef[] = [
+    {
+      field: "photo_id",
+      headerName: "",
+      width: 60,
+      renderCell: (params) => {
+        if (!params.value) return <></>;
+        return <Avatar sx={{ width: 32, height: 32, marginTop: 1 }}>{params.value}</Avatar>;
+      },
+      sortable: false,
+      filterable: false,
+    },
     { field: "id", headerName: "ID", width: 100 },
     { field: "name", headerName: "Name", flex: 1 },
     { field: "custom_name", headerName: "Custom Name", flex: 1 },
