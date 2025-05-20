@@ -3,10 +3,11 @@
 import { graphql } from "@/graphql";
 import { TransactionType } from "@/graphql/graphql";
 import { useCreateTransactionMutation, useGetTransactionsQuery } from "@/graphql/hooks";
-import { Box, Button, Checkbox } from "@mui/material";
+import { NewTransactionPopover } from "@/ui/transactions/NewTransaction";
+import { Box, Button, Checkbox, Popover, Typography } from "@mui/material";
 import { DataGridPro, GridColDef, GridRenderEditCellParams } from "@mui/x-data-grid-pro";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import * as React from "react";
 
@@ -77,6 +78,7 @@ const isWeekend = (date: dayjs.ConfigType): boolean => {
   const day = dayjs(date).day();
   return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
 };
+
 export default function ColumnVirtualizationGrid() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, refetch } = useGetTransactionsQuery({ variables: { workspaceId: workspace_id } });
@@ -202,6 +204,7 @@ export default function ColumnVirtualizationGrid() {
         >
           Add
         </Button>
+        <NewTransactionPopover />
       </Box>
       <div style={{ flex: 1 }}>
         <DataGridPro
