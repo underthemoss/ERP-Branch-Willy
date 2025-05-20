@@ -62,6 +62,8 @@ graphql(`
 export default function Inventory() {
   const pageSize = 200_000;
   const [rows, setRows] = React.useState<any[]>([]);
+  // Holds the value typed into the search input
+  const [searchTerm, setSearchTerm] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [totalItems, setTotalItems] = React.useState(0);
   const [loadAssets, { data, loading }] = useListAssetsLazyQuery({
@@ -122,6 +124,19 @@ export default function Inventory() {
     { field: "pim_product_year", headerName: "Year", width: 120 },
   ];
 
+  // Memoised list of rows that match the current search term. We run a simple
+  // case-insensitive substring match against every primitive value in the row
+  // object so that the search works across all visible columns.
+  const filteredRows = React.useMemo(() => {
+    if (!searchTerm) return rows;
+
+    const lower = searchTerm.toLowerCase();
+
+    return rows.filter((row) =>
+      Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
+    );
+  }, [rows, searchTerm]);
+
   return (
     <PageContainer>
       <Container maxWidth="lg">
@@ -139,12 +154,21 @@ export default function Inventory() {
             variant="outlined"
             size="small"
             fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
                   <SearchIcon />
                 </InputAdornment>
               ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchTerm("")}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
             }}
           />
 
@@ -211,7 +235,7 @@ export default function Inventory() {
         <Box sx={{ height: 600 }}>
           <DataGridPro
             columns={columns}
-            rows={rows}
+            rows={filteredRows}
             loading={loading}
             pagination
             paginationMode="server"
