@@ -57,7 +57,7 @@
     "@playwright/test": "^1.52.0",
     "@types/pg": "^8.11.11",
     "@types/react": "^19",
-    "eslint": "^9",
+    "eslint": "^8.57.1",
     "eslint-config-next": "15.1.4",
     "npm": "^11.0.0",
     "playwright": "^1.52.0",
