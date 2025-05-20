@@ -16,7 +16,8 @@
     "test:depcheck": "depcheck | tee /dev/tty | grep -q 'No depcheck issue' || (echo 'Unused dependencies found' && exit 1)",
     "test:playwright": "npx playwright test",
     "prettier:check": "npx prettier . --check",
-    "prettier:fix": "npx prettier . -w"
+    "prettier:fix": "npx prettier . -w",
+    "codex": "codex --full-auto -m o3"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",

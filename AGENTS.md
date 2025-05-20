@@ -1,12 +1,11 @@
 # General
 
 - Always respond with emojis
-- Always run `npm run codegen:update-schema` before starting any work
 - Use `npm run lint` and `npm run prettier:check` to check your work. Use `npm run prettier:fix` if you encounter styling issues.
 
 # Writing Client side GQL queries
 
-When writing GQL queries use `import { graphql } from "@/graphql";`
+When writing new GQL queries use `import { graphql } from "@/graphql";`
 
 eg.
 
