@@ -1,9 +1,9 @@
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
   Autocomplete,
   Box,
   Button,
   Checkbox,
+  Divider,
   FormControlLabel,
   Grid,
   Link,
@@ -17,6 +17,7 @@ import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useListBusinessContactsQuery } from "../contacts/api";
+import { PimTreeView } from "../pim/PimTreeView";
 
 export type TransactionStep = 0 | 1;
 
@@ -45,8 +46,6 @@ const SelectContactStep: React.FC<{
   onNext: (data: Partial<TransactionFormData>) => void;
   onClose: () => void;
 }> = ({ defaultValues, onNext, onClose }) => {
-  console.log("SelectContactStep defaultValues: ", defaultValues);
-
   const {
     handleSubmit,
     control,
@@ -56,7 +55,6 @@ const SelectContactStep: React.FC<{
   });
 
   const onSubmit = (data: TransactionFormData) => {
-    console.log("SelectContactStep form data:", data);
     onNext({ buyerId: data.buyerId });
   };
 
@@ -148,7 +146,7 @@ const durationUnits = ["Hour", "Day", "Week"];
 export const ProductDetailsStep: React.FC<{
   defaultValues: TransactionFormData;
   onBack: () => void;
-  onCreate: () => void;
+  onCreate: (data: TransactionFormData) => void;
 }> = ({ defaultValues, onBack, onCreate }) => {
   const [productType, setProductType] = useState<"PHYSICAL" | "SERVICE">("PHYSICAL");
 
@@ -156,18 +154,20 @@ export const ProductDetailsStep: React.FC<{
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<TransactionFormData>({
     defaultValues,
   });
 
-  const onSubmit = () => {
-    onCreate();
+  const onSubmit = (data: TransactionFormData) => {
+    console.log("ProductDetailsStep form data:", data);
+    onCreate(data);
   };
 
   const renderPhysicalFields = () => (
-    <>
+    <Box sx={{ mt: 2 }}>
       <Grid container spacing={2}>
-        <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
+        <Typography variant="subtitle2" sx={{ my: 1 }}>
           Rental Rates
         </Typography>
 
@@ -216,7 +216,7 @@ export const ProductDetailsStep: React.FC<{
         label="Check if selling asset (ownership changes, no lease)"
         sx={{ mt: 2 }}
       />
-    </>
+    </Box>
   );
 
   const renderServiceFields = () => (
@@ -269,23 +269,8 @@ export const ProductDetailsStep: React.FC<{
           <Tab label="Physical Good" value="PHYSICAL" />
           <Tab label="Service Product" value="SERVICE" />
         </Tabs>
-
-        <TextField
-          {...register("productId", { required: true })}
-          fullWidth
-          placeholder="Select product"
-          sx={{ mb: 2 }}
-        />
-
-        <Typography variant="body2" color="text.secondary" mb={2}>
-          Use the resource library lookup to make a selection or{" "}
-          <Link href="#" underline="hover">
-            Enter known product ID here
-          </Link>
-        </Typography>
-
+        <PimTreeView onProductSelected={(productId) => setValue("productId", productId)} />
         {productType === "PHYSICAL" ? renderPhysicalFields() : renderServiceFields()}
-
         <Box mt={3} display="flex" justifyContent="space-between">
           <Typography variant="body2">{`2 of 2`}</Typography>
           <Box display="flex" gap={2}>
@@ -332,8 +317,14 @@ export const NewSellTransaction: React.FC<{
 
   const handleBack = () => setActiveStep((prev) => (prev - 1) as TransactionStep);
 
-  const handleCreate = async () => {
-    console.log("Creating transaction with:", formData);
+  const handleCreate = async (productData: Partial<TransactionFormData>) => {
+    const newFormData = {
+      ...formData,
+      ...productData,
+    };
+    console.log("Creating transaction with data:", newFormData);
+
+    setFormData(newFormData);
     // await api call here
     onClose();
   };

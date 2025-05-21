@@ -156,6 +156,16 @@ type ListPersonContactsResult {
   page: PaginationInfo!
 }
 
+input ListPimProductsPage {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListPimProductsResult {
+  items: [PimProduct!]!
+  page: PaginationInfo!
+}
+
 type ListTransactionResult {
   items: [Transaction!]!
   page: PaginationInfo!
@@ -215,6 +225,22 @@ input PersonContactInput {
   workspaceId: String!
 }
 
+type PimProduct {
+  id: String
+  is_deleted: Boolean
+  make: String
+  manufacturer_part_number: String
+  model: String
+  name: String
+  pim_category_id: String
+  pim_category_path: String
+  pim_product_id: String
+  sku: String
+  tenant_id: String
+  upc: String
+  year: String
+}
+
 type Project {
   code: String
   id: ID
@@ -224,9 +250,11 @@ type Project {
 type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
+  getPimProductById(id: ID!): PimProduct
   helloWorld: String
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
+  listPimProducts(page: ListPimProductsPage): ListPimProductsResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }
