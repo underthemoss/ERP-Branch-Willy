@@ -65,6 +65,8 @@ codex_review:
       - job_execution_timeout
       - runner_system_failure
       - stuck_or_timeout_failure
+  variables:
+    GIT_DEPTH: 0
   script:
     - npm install -g @openai/codex
     - npm install --force
