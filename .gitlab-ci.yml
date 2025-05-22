@@ -57,6 +57,8 @@ playwright:
 codex_review:
   image: node:22-bullseye
   stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   retry:
     max: 2
     when:
@@ -84,10 +86,6 @@ codex_review:
               --data "{\"body\":$COMMENT_BODY}" \
               "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
        fi
-  only:
-    - merge_requests
-  variables:
-    GIT_DEPTH: 0
 
 deploy-staging:
   extends: .build
