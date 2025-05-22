@@ -68,9 +68,11 @@ codex_review:
   variables:
     GIT_DEPTH: 0
   script:
+    - apk add --no-cache jq
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
+    - "export COMMENTS=$(curl --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \"$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes\")"
     - export COMMENT_ID=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("<!-- codex-review-bot -->")) | .id' | head -n1)
     - timeout 5m npm run codex:codereview
     - export COMMENT_BODY=$(node -p "JSON.stringify('<!-- codex-review-bot -->' + require('fs').readFileSync('review.md', 'utf8'))")
