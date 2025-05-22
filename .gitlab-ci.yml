@@ -68,7 +68,7 @@ codex_review:
     - npm install --force
     - npm run codegen
     - timeout 5m npm run codex:codereview
-    - export COMMENT_BODY=$(jq -Rs . < review.md)
+    - export COMMENT_BODY=$(node -p "JSON.stringify(require('fs').readFileSync('review.md', 'utf8'))")
     # Update existing comment or post new one
     - |
       curl --request POST \
