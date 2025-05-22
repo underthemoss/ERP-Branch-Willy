@@ -54,6 +54,27 @@ playwright:
       - ./playwright-report/
       - ./test-results/
 
+codex_review:
+  image: node:22-bullseye
+  stage: codex_review
+  script:
+    - npm install -g @codex-team/codex.cli jq
+    - npm install --force
+    - npm run codegen
+    - npm run codex:codereview
+    - export COMMENT_BODY=$(jq -Rs . < review.md)
+    # Update existing comment or post new one
+    - |
+      curl --request POST \
+      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      --header "Content-Type: application/json" \
+      --data "{\"body\":$COMMENT_BODY}" \
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+  only:
+    - merge_requests
+  variables:
+    GIT_DEPTH: 0
+
 deploy-staging:
   extends: .build
   rules:

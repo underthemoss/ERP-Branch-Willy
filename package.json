@@ -17,7 +17,8 @@
     "test:playwright": "npx playwright test",
     "prettier:check": "npx prettier . --check",
     "prettier:fix": "npx prettier . -w",
-    "codex": "codex --full-auto -m o3"
+    "codex": "codex --full-auto -m o3",
+    "codex:codereview": "git diff origin/main > diff.patch && codex -q --full-auto 'review the code diff in \"diff.patch\" and perform a code review. Write the code review to ./review.md in markdown format'"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
