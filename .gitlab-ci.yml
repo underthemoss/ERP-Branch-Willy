@@ -56,7 +56,7 @@ playwright:
 
 codex_review:
   image: node:22-bullseye
-  stage: codex_review
+  stage: test
   script:
     - npm install -g @codex-team/codex.cli jq
     - npm install --force
