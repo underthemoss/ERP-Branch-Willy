@@ -74,6 +74,8 @@ codex_review:
     - |
       export COMMENT_ID=$(node -e "
         const comments = JSON.parse(process.env.COMMENTS || '[]');
+        console.log(comments);
+        console.log(process.env.COMMENTS)
         const found = comments.find(c => c.body.includes('<!-- codex-review-bot -->'));
         if (found) console.log(found.id);
       ")
