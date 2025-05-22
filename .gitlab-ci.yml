@@ -55,7 +55,7 @@ playwright:
       - ./test-results/
 
 codex_review:
-  image: node:22-alpine
+  image: node:22
   stage: test
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
@@ -72,7 +72,7 @@ codex_review:
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
-    - "export COMMENTS=$(curl --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \"$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes\")"
+    - 'export COMMENTS=$(curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes")'
     - export COMMENT_ID=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("<!-- codex-review-bot -->")) | .id' | head -n1)
     - timeout 5m npm run codex:codereview
     - export COMMENT_BODY=$(node -p "JSON.stringify('<!-- codex-review-bot -->' + require('fs').readFileSync('review.md', 'utf8'))")
