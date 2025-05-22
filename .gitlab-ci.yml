@@ -58,7 +58,7 @@ codex_review:
   image: node:22-bullseye
   stage: test
   script:
-    - npm install -g @codex-team/codex.cli jq
+    - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
     - npm run codex:codereview
