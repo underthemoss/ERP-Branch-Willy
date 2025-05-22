@@ -69,7 +69,7 @@ codex_review:
     - npm run codegen
     - export COMMENT_ID=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("<!-- codex-review-bot -->")) | .id' | head -n1)
     - timeout 5m npm run codex:codereview
-    - export COMMENT_BODY=$(node -p "JSON.stringify("<!-- codex-review-bot -->\n" + require('fs').readFileSync('review.md', 'utf8'))")
+    - export COMMENT_BODY=$(node -p "JSON.stringify('<!-- codex-review-bot -->' + require('fs').readFileSync('review.md', 'utf8'))")
     - |
       if [ -n "$COMMENT_ID" ]; then
          curl --request PUT \
