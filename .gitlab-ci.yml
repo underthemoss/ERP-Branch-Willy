@@ -57,11 +57,17 @@ playwright:
 codex_review:
   image: node:22-bullseye
   stage: test
+  retry:
+    max: 2
+    when:
+      - job_execution_timeout
+      - runner_system_failure
+      - stuck_or_timeout_failure
   script:
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
-    - npm run codex:codereview
+    - timeout 5m npm run codex:codereview
     - export COMMENT_BODY=$(jq -Rs . < review.md)
     # Update existing comment or post new one
     - |
