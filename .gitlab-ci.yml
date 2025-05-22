@@ -67,15 +67,23 @@ codex_review:
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
+    - export COMMENT_ID=$(echo "$COMMENTS" | jq '.[] | select(.body | contains("<!-- codex-review-bot -->")) | .id' | head -n1)
     - timeout 5m npm run codex:codereview
-    - export COMMENT_BODY=$(node -p "JSON.stringify(require('fs').readFileSync('review.md', 'utf8'))")
-    # Update existing comment or post new one
+    - export COMMENT_BODY=$(node -p "JSON.stringify("<!-- codex-review-bot -->\n" + require('fs').readFileSync('review.md', 'utf8'))")
     - |
-      curl --request POST \
-      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-      --header "Content-Type: application/json" \
-      --data "{\"body\":$COMMENT_BODY}" \
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+      if [ -n "$COMMENT_ID" ]; then
+         curl --request PUT \
+              --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data "{\"body\":$COMMENT_BODY}" \
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes/$COMMENT_ID"
+       else
+         curl --request POST \
+              --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data "{\"body\":$COMMENT_BODY}" \
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+       fi
   only:
     - merge_requests
   variables:
