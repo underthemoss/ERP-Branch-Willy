@@ -55,7 +55,7 @@ playwright:
       - ./test-results/
 
 codex_review:
-  image: node:22-bullseye
+  image: node:22-alpine
   stage: test
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
