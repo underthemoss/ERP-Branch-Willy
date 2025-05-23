@@ -18,7 +18,7 @@
     "prettier:check": "npx prettier . --check",
     "prettier:fix": "npx prettier . -w",
     "codex": "codex --full-auto -m o3",
-    "codex:codereview": "git diff origin/main > diff.patch && npx ts-node-dev ./scripts/code-review-retry.ts"
+    "codex:codereview": "git fetch origin main && git diff $(git merge-base origin/main HEAD)...HEAD > diff.patch && npx ts-node-dev ./scripts/code-review-retry.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
