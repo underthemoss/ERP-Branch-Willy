@@ -1,6 +1,7 @@
 "use client";
 
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
+import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
 const AuthWall: React.FC<{
@@ -11,7 +12,14 @@ const AuthWall: React.FC<{
   useEffect(() => {
     getAccessTokenSilently({ cacheMode: "on" }).catch((e) => {
       console.error(e);
-      loginWithRedirect({});
+      if (e.error === "login_required") {
+        loginWithRedirect();
+      }
+      if (e.error === "consent_required") {
+        loginWithRedirect();
+      }
+
+      redirect("/auth/error");
     });
   }, []);
 
