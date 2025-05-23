@@ -53,32 +53,26 @@ playwright:
     paths:
       - ./playwright-report/
       - ./test-results/
-
 codex_review:
   image: node:22-bullseye
   stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   retry:
     max: 2
     when:
       - job_execution_timeout
       - runner_system_failure
       - stuck_or_timeout_failure
+  variables:
+    GIT_DEPTH: 0
   script:
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
+    - npm i ts-node-dev
     - timeout 5m npm run codex:codereview
-    - export COMMENT_BODY=$(node -p "JSON.stringify(require('fs').readFileSync('review.md', 'utf8'))")
-    - |
-      curl --request POST \
-      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-      --header "Content-Type: application/json" \
-      --data "{\"body\":$COMMENT_BODY}" \
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
-  only:
-    - merge_requests
-  variables:
-    GIT_DEPTH: 0
+    - npx ts-node-dev ./scripts/mr-comment.ts
 
 deploy-staging:
   extends: .build

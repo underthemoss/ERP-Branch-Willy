@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",
+    "@gitbeaker/rest": "^42.5.0",
     "@graphql-codegen/cli": "^5.0.5",
     "@graphql-codegen/near-operation-file-preset": "^3.0.0",
     "@graphql-codegen/schema-ast": "^4.1.0",
