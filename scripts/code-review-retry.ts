@@ -22,7 +22,7 @@ function runCommandWithWatch(retriesLeft: number): void {
     if (graceTimer) clearTimeout(graceTimer);
     graceTimer = setTimeout(() => {
       console.warn(
-        'No output within 10 seconds after "reasoning" message. Restarting process...'
+        'No output within 10 seconds after "reasoning" message. Restarting process...',
       );
       proc.kill("SIGKILL");
       if (retriesLeft > 0) {
@@ -49,7 +49,7 @@ function runCommandWithWatch(retriesLeft: number): void {
     } catch {
       if (graceTimer) {
         console.log(
-          "[progress] Non-JSON output received — resetting grace period"
+          "[progress] Non-JSON output received — resetting grace period",
         );
         resetGraceTimer();
       }
