@@ -25,16 +25,14 @@ const main = async () => {
       CI_MERGE_REQUEST_IID,
       note.id,
       {
-        body: `${tag} 
-        ${review}`,
-      }
+        body: `${tag}\n${review}`,
+      },
     );
   } else {
     await api.MergeRequestNotes.create(
       CI_PROJECT_ID,
       CI_MERGE_REQUEST_IID,
-      `${tag} 
-      ${review}`
+      `${tag}\n${review}`,
     );
   }
 };
