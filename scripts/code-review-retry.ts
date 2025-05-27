@@ -10,68 +10,43 @@ const ARGS = [
 ];
 
 const MAX_RETRIES = 5;
-const GRACE_PERIOD_MS = 60_000;
+
+const GRACE_PERIOD_MS = 20_000;
 
 function runCommandWithWatch(retriesLeft: number): void {
-  console.log(`Starting codex process. Retries left: ${retriesLeft}`);
+  // If we've exhausted all retries, exit the script with a non-zero code so the CI job fails.
+  if (retriesLeft <= 0) {
+    console.error("Maximum retry attempts reached. Exiting with failure.");
+    process.exit(1);
+  }
   const proc = spawn(COMMAND, ARGS, { stdio: ["ignore", "pipe", "pipe"] });
 
-  let graceTimer: NodeJS.Timeout | null = null;
-
-  function resetGraceTimer() {
-    if (graceTimer) clearTimeout(graceTimer);
-    graceTimer = setTimeout(() => {
-      console.warn(
-        'No output within 10 seconds after "reasoning" message. Restarting process...',
-      );
-      proc.kill("SIGKILL");
-      if (retriesLeft > 0) {
-        runCommandWithWatch(retriesLeft - 1);
-      } else {
-        console.error("Max retries reached. Exiting.");
-      }
-    }, GRACE_PERIOD_MS);
-  }
-
   const rl = readline.createInterface({ input: proc.stdout });
+
+  let graceTimeout: NodeJS.Timeout | null = null;
 
   rl.on("line", (line) => {
     console.log("[stdout]", line);
     try {
       const obj = JSON.parse(line);
       if (obj?.type === "reasoning") {
-        console.log("[trigger] Reasoning detected — starting grace period");
-        resetGraceTimer();
-      } else if (graceTimer) {
-        console.log("[progress] Output received — resetting grace period");
-        resetGraceTimer();
+        graceTimeout = setTimeout(() => {
+          console.log("No output received in grace period. Killing process.");
+          proc.kill();
+          runCommandWithWatch(retriesLeft - 1);
+        }, GRACE_PERIOD_MS);
+      } else {
+        if (graceTimeout) clearTimeout(graceTimeout);
       }
-    } catch {
-      if (graceTimer) {
-        console.log(
-          "[progress] Non-JSON output received — resetting grace period",
-        );
-        resetGraceTimer();
-      }
-    }
+    } catch {}
   });
 
   proc.stderr.on("data", (data) => {
     console.error("[stderr]", data.toString());
   });
 
-  proc.on("exit", (code) => {
-    if (graceTimer) clearTimeout(graceTimer);
-    if (code === 0) {
-      console.log("codex completed successfully.");
-    } else {
-      console.warn(`codex exited with code ${code}.`);
-      if (retriesLeft > 0) {
-        runCommandWithWatch(retriesLeft - 1);
-      } else {
-        console.error("Max retries reached. Exiting.");
-      }
-    }
+  proc.on("exit", () => {
+    if (graceTimeout) clearTimeout(graceTimeout);
   });
 }
 
