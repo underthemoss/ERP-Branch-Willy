@@ -41,6 +41,13 @@ playwright:
   parallel: 3
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+      - node_modules/.cache/
   script:
     - echo "Node Index - $CI_NODE_INDEX"
     - echo "Total Nodes - $CI_NODE_TOTAL"
@@ -58,20 +65,21 @@ codex_review:
   stage: test
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
-  retry:
-    max: 2
-    when:
-      - job_execution_timeout
-      - runner_system_failure
-      - stuck_or_timeout_failure
   variables:
     GIT_DEPTH: 0
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+      - node_modules/.cache/
   script:
     - npm install -g @openai/codex
     - npm install --force
     - npm run codegen
     - npm i ts-node-dev
-    - timeout 5m npm run codex:codereview
+    - npm run codex:codereview
     - npx ts-node-dev ./scripts/mr-comment.ts
 
 deploy-staging:
