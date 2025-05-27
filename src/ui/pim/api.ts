@@ -1,15 +1,26 @@
 import { graphql } from "@/graphql";
 
 // Re-exporting types
-export type { PimProductTreeViewItemFragment as PimProductTreeViewItem } from "@/graphql/graphql";
+export type {
+  PimProductFieldsFragment as PimProductFields,
+  PimCategoryFieldsFragment as PimCategoryFields,
+} from "@/graphql/graphql";
 
-export { useListPimProductsQuery } from "@/graphql/hooks";
+export { useListPimProductsQuery, useListPimCategoriesQuery } from "@/graphql/hooks";
 
 graphql(`
-  fragment PimProductTreeViewItem on PimProduct {
+  fragment PimProductFields on PimProduct {
     id
     name
     pim_category_path
+  }
+`);
+
+graphql(`
+  fragment PimCategoryFields on PimCategory {
+    id
+    name
+    path
   }
 `);
 
@@ -23,7 +34,23 @@ graphql(`
         totalPages
       }
       items {
-        ...PimProductTreeViewItem
+        ...PimProductFields
+      }
+    }
+  }
+`);
+
+graphql(`
+  query ListPimCategories($page: ListPimCategoriesPage) {
+    listPimCategories(page: $page) {
+      page {
+        number
+        size
+        totalItems
+        totalPages
+      }
+      items {
+        ...PimCategoryFields
       }
     }
   }

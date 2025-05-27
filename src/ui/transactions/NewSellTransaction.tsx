@@ -17,13 +17,13 @@ import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useListBusinessContactsQuery } from "../contacts/api";
-import { PimTreeView } from "../pim/PimTreeView";
+import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
 
 export type TransactionStep = 0 | 1;
 
 export interface TransactionFormData {
   buyerId?: string;
-  productId?: string;
+  categoryId?: string;
   price?: number;
   rates?: {
     day?: number;
@@ -269,7 +269,9 @@ export const ProductDetailsStep: React.FC<{
           <Tab label="Physical Good" value="PHYSICAL" />
           <Tab label="Service Product" value="SERVICE" />
         </Tabs>
-        <PimTreeView onProductSelected={(productId) => setValue("productId", productId)} />
+        <PimCategoriesTreeView
+          onItemSelected={(categoryId) => setValue("categoryId", categoryId)}
+        />
         {productType === "PHYSICAL" ? renderPhysicalFields() : renderServiceFields()}
         <Box mt={3} display="flex" justifyContent="space-between">
           <Typography variant="body2">{`2 of 2`}</Typography>
@@ -292,7 +294,7 @@ export const NewSellTransaction: React.FC<{
   const [activeStep, setActiveStep] = useState<TransactionStep>(0);
   const [formData, setFormData] = useState<TransactionFormData>({
     buyerId: "",
-    productId: "",
+    categoryId: "",
     price: 0,
     rates: {
       day: 0,
