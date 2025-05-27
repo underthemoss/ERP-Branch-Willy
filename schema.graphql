@@ -81,6 +81,21 @@ enum ContactType {
   PERSON
 }
 
+input CreateRentalPriceInput {
+  asset_id: String
+  pim_product_id: String!
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
+}
+
+input CreateSalePriceInput {
+  asset_id: String
+  discounts: JSON!
+  pim_product_id: String!
+  unitCostInCents: Int!
+}
+
 """
 A date string, such as 2007-12-03, compliant with the `full-date` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
@@ -156,6 +171,16 @@ type ListPersonContactsResult {
   page: PaginationInfo!
 }
 
+input ListPimCategoriesPage {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListPimCategoriesResult {
+  items: [PimCategory!]!
+  page: PaginationInfo!
+}
+
 input ListPimProductsPage {
   number: Int = 1
   size: Int = 10
@@ -163,6 +188,22 @@ input ListPimProductsPage {
 
 type ListPimProductsResult {
   items: [PimProduct!]!
+  page: PaginationInfo!
+}
+
+input ListPricesFilter {
+  asset_id: String
+  pim_product_id: String
+  priceType: PriceType
+}
+
+input ListPricesPage {
+  number: Int! = 1
+  size: Int! = 10
+}
+
+type ListPricesResult {
+  items: [Price!]!
   page: PaginationInfo!
 }
 
@@ -179,8 +220,11 @@ type ListWorkspacesResult {
 type Mutation {
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createPersonContact(input: PersonContactInput!): PersonContact
+  createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
+  createSalePrice(input: CreateSalePriceInput!): SalePrice
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
+  deletePriceById(id: ID!): Boolean
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
 }
@@ -225,6 +269,17 @@ input PersonContactInput {
   workspaceId: String!
 }
 
+type PimCategory {
+  description: String
+  has_products: Boolean
+  id: String!
+  is_deleted: Boolean
+  name: String!
+  path: String!
+  platform_id: String!
+  tenant_id: String!
+}
+
 type PimProduct {
   id: String
   is_deleted: Boolean
@@ -241,6 +296,13 @@ type PimProduct {
   year: String
 }
 
+union Price = RentalPrice | SalePrice
+
+enum PriceType {
+  RENTAL
+  SALE
+}
+
 type Project {
   code: String
   id: ID
@@ -250,11 +312,14 @@ type Project {
 type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
+  getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
   helloWorld: String
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
+  listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
+  listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }
@@ -262,6 +327,20 @@ type Query {
 type Quote {
   id: ID
   url: String
+}
+
+type RentalPrice {
+  asset_id: String
+  company_id: String!
+  createdAt: DateTime!
+  createdBy: String!
+  id: ID!
+  pim_product_id: String!
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
+  priceType: PriceType!
+  updatedAt: DateTime!
 }
 
 type RentalTransaction implements BaseTransaction {
@@ -288,6 +367,19 @@ type RentalTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+type SalePrice {
+  asset_id: String
+  company_id: String!
+  createdAt: DateTime!
+  createdBy: String!
+  discounts: JSON!
+  id: ID!
+  pim_product_id: String!
+  priceType: PriceType!
+  unitCostInCents: Int!
+  updatedAt: DateTime!
 }
 
 type SaleTransaction implements BaseTransaction {
