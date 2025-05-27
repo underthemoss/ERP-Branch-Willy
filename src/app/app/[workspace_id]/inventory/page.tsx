@@ -43,6 +43,9 @@ graphql(`
         photo {
           filename
         }
+        company {
+          name
+        }
         name
         custom_name
         description
@@ -97,6 +100,7 @@ export default function Inventory() {
           ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
           : "",
         name: item.name,
+        company: item.company?.name ?? "",
         custom_name: item.custom_name,
         description: item.description,
         pim_category_name: item.pim_category_name,
@@ -139,6 +143,7 @@ export default function Inventory() {
     },
     { field: "id", headerName: "ID", width: 100 },
     { field: "name", headerName: "Name", flex: 1 },
+    { field: "company", headerName: "Company", flex: 1 },
     { field: "custom_name", headerName: "Custom Name", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     { field: "pim_category_name", headerName: "Category", flex: 1 },
