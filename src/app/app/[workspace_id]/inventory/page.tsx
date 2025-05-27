@@ -40,6 +40,9 @@ graphql(`
       items {
         id
         photo_id
+        photo {
+          filename
+        }
         name
         custom_name
         description
@@ -87,6 +90,12 @@ export default function Inventory() {
       ...items.map((item) => ({
         id: item.id ?? "",
         photo_id: item.photo_id ?? "",
+        // Use the production CDN for asset photos to prevent broken image links in non-prod environments,
+        // as lower environments may have incomplete or missing photo data. This is a temporary workaround
+        // until data hygiene is improved across all environments.
+        photo: item.photo?.filename
+          ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
+          : "",
         name: item.name,
         custom_name: item.custom_name,
         description: item.description,
@@ -103,12 +112,27 @@ export default function Inventory() {
 
   const columns: GridColDef[] = [
     {
-      field: "photo_id",
+      field: "photo",
       headerName: "",
       width: 60,
       renderCell: (params) => {
         if (!params.value) return <></>;
-        return <Avatar sx={{ width: 32, height: 32, marginTop: 1 }}>{params.value}</Avatar>;
+        return (
+          <Box
+            component="img"
+            src={params.value}
+            alt="Asset photo"
+            sx={{
+              width: 32,
+              height: 32,
+              marginTop: 1,
+              borderRadius: 2, // 2 * 4px = 8px for a rounded box
+              objectFit: "cover",
+              background: "#f0f0f0",
+              display: "block",
+            }}
+          />
+        );
       },
       sortable: false,
       filterable: false,

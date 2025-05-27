@@ -1,9 +1,18 @@
 type Asset {
+  category: AssetCategory
+  class: AssetClass
+  company: AssetCompany
   company_id: String
   custom_name: String
   description: String
+  details: AssetDetails
+  groups: [AssetGroup]
   id: String
+  inventory_branch: AssetInventoryBranch
+  keypad: [String]
+  msp_branch: AssetMspBranch
   name: String
+  photo: AssetPhoto
   photo_id: String
   pim_category_id: String
   pim_category_name: String
@@ -16,6 +25,100 @@ type Asset {
   pim_product_platform_id: String
   pim_product_variant: String
   pim_product_year: String
+  rsp_branch: AssetRspBranch
+  tracker: AssetTracker
+  tsp_companies: [AssetTspCompany]
+  type: AssetType
+}
+
+type AssetCategory {
+  category_id: String
+  composite: String
+  level_1: String
+  level_2: String
+  level_3: String
+}
+
+type AssetClass {
+  description: String
+  id: String
+  name: String
+}
+
+type AssetCompany {
+  id: String
+  name: String
+}
+
+type AssetDetails {
+  asset_id: String
+  camera_id: String
+  custom_name: String
+  description: String
+  driver_name: String
+  model: String
+  name: String
+  photo_id: String
+  serial_number: String
+  tracker_id: String
+  vin: String
+  year: String
+}
+
+type AssetGroup {
+  company_id: String
+  company_name: String
+  id: String
+  name: String
+}
+
+type AssetInventoryBranch {
+  company_id: String
+  company_name: String
+  description: String
+  id: String
+  name: String
+}
+
+type AssetMspBranch {
+  company_id: String
+  company_name: String
+  description: String
+  id: String
+  name: String
+}
+
+type AssetPhoto {
+  filename: String
+  photo_id: String
+}
+
+type AssetRspBranch {
+  company_id: String
+  company_name: String
+  description: String
+  id: String
+  name: String
+}
+
+type AssetTracker {
+  company_id: String
+  created: String
+  device_serial: String
+  id: String
+  tracker_type_id: String
+  updated: String
+  vendor_id: String
+}
+
+type AssetTspCompany {
+  company_id: String
+  company_name: String
+}
+
+type AssetType {
+  id: String
+  name: String
 }
 
 interface BaseTransaction {
