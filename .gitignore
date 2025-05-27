@@ -58,3 +58,6 @@ pgtyped.prod.json
 /test-results/
 
 /src/graphql
+
+/diff.patch
+/review.md
