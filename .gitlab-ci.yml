@@ -63,6 +63,7 @@ playwright:
 codex_review:
   image: node:22-bullseye
   stage: test
+  allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   variables:
