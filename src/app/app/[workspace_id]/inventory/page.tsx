@@ -2,14 +2,20 @@
 
 import { graphql } from "@/graphql";
 import { useListAssetsLazyQuery } from "@/graphql/hooks";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ClearIcon from "@mui/icons-material/Clear";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  Avatar,
   Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
   Chip,
   Container,
+  Grid,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -269,7 +275,69 @@ export default function Inventory() {
             pagination
             paginationMode="server"
             rowCount={totalItems}
-            getDetailPanelContent={({ row }) => <div>Asset ID: {row.id}</div>}
+            getDetailPanelContent={({ row }) => (
+              <Box sx={{ p: 2 }}>
+                <Card variant="outlined" sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }}>
+                  {row.photo && (
+                    <CardMedia
+                      component="img"
+                      image={row.photo}
+                      alt={row.name}
+                      sx={{
+                        width: "100%",
+                        maxHeight: 220,
+                        objectFit: "cover",
+                        background: "#f5f5f5",
+                        borderBottom: "1px solid #eee",
+                      }}
+                    />
+                  )}
+                  <CardContent>
+                    <Typography gutterBottom variant="h5" component="div">
+                      {row.name}
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {[
+                        ["ID", row.id],
+                        ["Photo ID", row.photo_id],
+                        ["Company", row.company],
+                        ["Custom Name", row.custom_name],
+                        ["Description", row.description],
+                        ["Category", row.pim_category_name],
+                        ["Make", row.pim_make],
+                        ["Product Name", row.pim_product_name],
+                        ["Model", row.pim_product_model],
+                        ["Product Year", row.pim_product_year],
+                      ].map(([label, value]) => (
+                        <Grid key={label} size={4} alignItems="center">
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontWeight: 500 }}
+                          >
+                            {label}
+                          </Typography>
+
+                          <Typography variant="body2" sx={{ wordBreak: "break-word" }}>
+                            {value || <span style={{ color: "#aaa" }}>—</span>}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </CardContent>
+                  <CardActions>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<CalendarTodayIcon />}
+                      sx={{ minWidth: 180 }}
+                    >
+                      See Asset Schedule
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Box>
+            )}
             getDetailPanelHeight={({ row }) => "auto"}
             initialState={{
               pagination: { paginationModel: { pageSize } },
