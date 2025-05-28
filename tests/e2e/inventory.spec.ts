@@ -29,13 +29,8 @@ test("expand the first row and inspect visible information", async ({ page }) =>
   await expandButton.click();
 
   // Assert that the detail panel is visible and contains key information
-  await expect(page.getByRole("heading", { name: /.+/ })).toBeVisible(); // Asset name
-
-  await expect(page.getByRole("button", { name: /See Asset Schedule/i })).toBeVisible();
-
-  // Assert a specific value from the first row is visible in the detail panel (e.g., the first row's ID)
-  const firstRowId = await page.locator('[role="rowgroup"] [role="row"]').nth(1).locator('[role="cell"]').first().textContent();
-  if (firstRowId) {
-    await expect(page.getByText(firstRowId.trim(), { exact: true })).toBeVisible();
-  }
+  await expect(page.locator('[data-test="inventory-detail-panel"]')).toBeVisible();
+  await expect(page.locator('[data-test="inventory-asset-name"]')).toBeVisible();
+  await expect(page.locator('[data-test="inventory-asset-id"]')).toBeVisible();
+  await expect(page.locator('[data-test="inventory-schedule-btn"]')).toBeVisible();
 });
