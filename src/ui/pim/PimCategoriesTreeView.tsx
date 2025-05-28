@@ -20,13 +20,13 @@ type TreeViewNode = Record<
 type PimCategoryTreeViewItem = TreeViewBaseItem<{ id: string; label: string; path: string }>;
 
 function getTreeItems(
-  pimProducts: PimCategoryFields[],
+  pimCategories: PimCategoryFields[],
   searchTerm?: string,
 ): PimCategoryTreeViewItem[] {
   const treeItemsMap: TreeViewNode = {};
 
-  pimProducts.forEach((product) => {
-    const { id, name, path } = product;
+  pimCategories.forEach((category) => {
+    const { id, name, path } = category;
     const categoryPath = path!.split("|").filter(Boolean);
 
     if (
@@ -60,8 +60,6 @@ function getTreeItems(
       children: {},
     };
   });
-
-  console.log("Tree items map:", treeItemsMap);
 
   return flattenTree(treeItemsMap);
 }
@@ -153,7 +151,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
     variables: {
       page: {
         number: 0,
-        size: 3000,
+        size: 5000,
       },
     },
   });
@@ -171,9 +169,14 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         return;
       }
 
-      const hasChildren = data?.listPimCategories?.items.some((c) =>
-        c.path.includes(category?.name),
-      );
+      const hasChildren = data?.listPimCategories?.items.some((c) => {
+        const expectedPath = category.path
+          ? `${category.path}${category?.name}|`
+          : `|${category?.name}|`;
+        const match = c.path === expectedPath;
+
+        return match;
+      });
 
       if (hasChildren) {
         return;
@@ -242,17 +245,16 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         <Box>
           <TextField
             fullWidth
-            placeholder="Search by name, category or product ID"
+            placeholder="Search categories"
             sx={{ mb: 2 }}
             onChange={(e) => setPimSearch(e.target.value.toLowerCase())}
           />
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Search for a product by name or category or use the tree view to navigate through
-            categories.
+            Search for a category by name or use the tree view to navigate through them.
           </Typography>
           <Box>
             {loading && <Typography>Loading...</Typography>}
-            {error && <Typography color="error">Error loading products</Typography>}
+            {error && <Typography color="error">Error loading categories</Typography>}
             <RichTreeView
               items={items}
               apiRef={apiRef}
