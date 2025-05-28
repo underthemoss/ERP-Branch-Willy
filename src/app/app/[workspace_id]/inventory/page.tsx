@@ -2,14 +2,20 @@
 
 import { graphql } from "@/graphql";
 import { useListAssetsLazyQuery } from "@/graphql/hooks";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ClearIcon from "@mui/icons-material/Clear";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import {
-  Avatar,
   Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
   Chip,
   Container,
+  Grid,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -40,6 +46,12 @@ graphql(`
       items {
         id
         photo_id
+        photo {
+          filename
+        }
+        company {
+          name
+        }
         name
         custom_name
         description
@@ -87,7 +99,17 @@ export default function Inventory() {
       ...items.map((item) => ({
         id: item.id ?? "",
         photo_id: item.photo_id ?? "",
+        // Use the production CDN for asset photos to prevent broken image links in non-prod environments,
+        // as lower environments may have incomplete or missing photo data. This is a temporary workaround
+        // until data hygiene is improved across all environments.
+        photo: item.photo?.filename
+          ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
+          : "",
+        photo_large: item.photo?.filename
+          ? `https://appcdn.equipmentshare.com/uploads/${item.photo.filename}`
+          : "",
         name: item.name,
+        company: item.company?.name ?? "",
         custom_name: item.custom_name,
         description: item.description,
         pim_category_name: item.pim_category_name,
@@ -103,18 +125,34 @@ export default function Inventory() {
 
   const columns: GridColDef[] = [
     {
-      field: "photo_id",
+      field: "photo",
       headerName: "",
       width: 60,
       renderCell: (params) => {
         if (!params.value) return <></>;
-        return <Avatar sx={{ width: 32, height: 32, marginTop: 1 }}>{params.value}</Avatar>;
+        return (
+          <Box
+            component="img"
+            src={params.value}
+            alt="Asset photo"
+            sx={{
+              width: 32,
+              height: 32,
+              marginTop: 1,
+              borderRadius: 2, // 2 * 4px = 8px for a rounded box
+              objectFit: "cover",
+              background: "#f0f0f0",
+              display: "block",
+            }}
+          />
+        );
       },
       sortable: false,
       filterable: false,
     },
     { field: "id", headerName: "ID", width: 100 },
     { field: "name", headerName: "Name", flex: 1 },
+    { field: "company", headerName: "Company", flex: 1 },
     { field: "custom_name", headerName: "Custom Name", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     { field: "pim_category_name", headerName: "Category", flex: 1 },
@@ -240,7 +278,80 @@ export default function Inventory() {
             pagination
             paginationMode="server"
             rowCount={totalItems}
-            getDetailPanelContent={({ row }) => <div>Asset ID: {row.id}</div>}
+            getDetailPanelContent={({ row }) => (
+              <Box sx={{ p: 2 }}>
+                <Card
+                  variant="outlined"
+                  sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }}
+                  data-test="inventory-detail-panel"
+                >
+                  {row.photo_large && (
+                    <CardMedia
+                      component="img"
+                      image={row.photo_large}
+                      alt={row.name}
+                      sx={{
+                        width: "100%",
+                        maxHeight: 220,
+                        objectFit: "cover",
+                        background: "#f5f5f5",
+                        borderBottom: "1px solid #eee",
+                      }}
+                    />
+                  )}
+                  <CardContent>
+                    <Typography
+                      gutterBottom
+                      variant="h5"
+                      component="div"
+                      data-test="inventory-asset-name"
+                    >
+                      {row.name || row.custom_name}
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {[
+                        ["ID", row.id],
+                        ["Photo ID", row.photo_id],
+                        ["Company", row.company],
+                        ["Custom Name", row.custom_name],
+                        ["Description", row.description],
+                        ["Category", row.pim_category_name],
+                        ["Make", row.pim_make],
+                        ["Product Name", row.pim_product_name],
+                        ["Model", row.pim_product_model],
+                        ["Product Year", row.pim_product_year],
+                      ].map(([label, value]) => (
+                        <Grid key={label} size={4} alignItems="center">
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontWeight: 500 }}
+                            {...(label === "ID" ? { "data-test": "inventory-asset-id" } : {})}
+                          >
+                            {label}
+                          </Typography>
+
+                          <Typography variant="body2" sx={{ wordBreak: "break-word" }}>
+                            {value || <span style={{ color: "#aaa" }}>—</span>}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </CardContent>
+                  <CardActions>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<CalendarTodayIcon />}
+                      sx={{ minWidth: 180 }}
+                      data-test="inventory-schedule-btn"
+                    >
+                      See Asset Schedule
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Box>
+            )}
             getDetailPanelHeight={({ row }) => "auto"}
             initialState={{
               pagination: { paginationModel: { pageSize } },
