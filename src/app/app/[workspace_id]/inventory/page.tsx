@@ -105,6 +105,9 @@ export default function Inventory() {
         photo: item.photo?.filename
           ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
           : "",
+        photo_large: item.photo?.filename
+          ? `https://appcdn.equipmentshare.com/uploads/${item.photo.filename}`
+          : "",
         name: item.name,
         company: item.company?.name ?? "",
         custom_name: item.custom_name,
@@ -278,10 +281,10 @@ export default function Inventory() {
             getDetailPanelContent={({ row }) => (
               <Box sx={{ p: 2 }}>
                 <Card variant="outlined" sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }}>
-                  {row.photo && (
+                  {row.photo_large && (
                     <CardMedia
                       component="img"
-                      image={row.photo}
+                      image={row.photo_large}
                       alt={row.name}
                       sx={{
                         width: "100%",
