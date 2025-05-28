@@ -13,7 +13,9 @@ test("navigate to inventory page via menu and verify", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("expand the first row and inspect visible information", async ({ page }) => {
+test("expand the first row and inspect visible information", async ({
+  page,
+}) => {
   await login({ page });
 
   // Navigate to inventory page via menu
@@ -29,8 +31,14 @@ test("expand the first row and inspect visible information", async ({ page }) =>
   await expandButton.click();
 
   // Assert that the detail panel is visible and contains key information
-  await expect(page.locator('[data-test="inventory-detail-panel"]')).toBeVisible();
-  await expect(page.locator('[data-test="inventory-asset-name"]')).toBeVisible();
+  await expect(
+    page.locator('[data-test="inventory-detail-panel"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-test="inventory-asset-name"]'),
+  ).toBeVisible();
   await expect(page.locator('[data-test="inventory-asset-id"]')).toBeVisible();
-  await expect(page.locator('[data-test="inventory-schedule-btn"]')).toBeVisible();
+  await expect(
+    page.locator('[data-test="inventory-schedule-btn"]'),
+  ).toBeVisible();
 });

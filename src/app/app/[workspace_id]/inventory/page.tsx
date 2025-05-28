@@ -280,7 +280,11 @@ export default function Inventory() {
             rowCount={totalItems}
             getDetailPanelContent={({ row }) => (
               <Box sx={{ p: 2 }}>
-                <Card variant="outlined" sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }} data-test="inventory-detail-panel">
+                <Card
+                  variant="outlined"
+                  sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }}
+                  data-test="inventory-detail-panel"
+                >
                   {row.photo_large && (
                     <CardMedia
                       component="img"
@@ -296,7 +300,12 @@ export default function Inventory() {
                     />
                   )}
                   <CardContent>
-                    <Typography gutterBottom variant="h5" component="div" data-test="inventory-asset-name">
+                    <Typography
+                      gutterBottom
+                      variant="h5"
+                      component="div"
+                      data-test="inventory-asset-name"
+                    >
                       {row.name || row.custom_name}
                     </Typography>
                     <Grid container spacing={2}>
