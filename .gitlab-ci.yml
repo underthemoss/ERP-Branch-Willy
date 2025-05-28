@@ -24,15 +24,37 @@ docker-test:
   variables:
     DESTINATION: 696398453447.dkr.ecr.us-west-2.amazonaws.com/es-erp-stage:mr-${CI_COMMIT_REF_NAME}-${CI_PIPELINE_IID}
 
-tests:
+depcheck:
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   stage: test
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+      - node_modules/.cache/
+  script:
+    - npm install --force
+    - npm i -g depcheck
+    - npm run codegen
+    - npm run test:depcheck
+
+prettier_check:
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+  stage: test
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+      - node_modules/.cache/
   script:
     - npm install --force
     - npm run codegen
-    - npm i -g depcheck
-    - npm run test:depcheck
     - npm run prettier:check
 
 playwright:
