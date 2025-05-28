@@ -1,7 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useListAssetsLazyQuery } from "@/graphql/hooks";
+import { useListAssetsQuery } from "@/graphql/hooks";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ClearIcon from "@mui/icons-material/Clear";
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
@@ -73,54 +73,37 @@ graphql(`
 
 export default function Inventory() {
   const pageSize = 200_000;
-  const [rows, setRows] = React.useState<any[]>([]);
-  // Holds the value typed into the search input
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [page, setPage] = React.useState(1);
-  const [totalItems, setTotalItems] = React.useState(0);
-  const [loadAssets, { data, loading }] = useListAssetsLazyQuery({
+  const { data, loading } = useListAssetsQuery({
+    variables: { page: { number: 1, size: pageSize } },
     fetchPolicy: "cache-and-network",
   });
   const [activeFilters, setActiveFilters] = useState(["Available"]);
 
-  React.useEffect(() => {
-    setRows([]);
-    setPage(1);
-    loadAssets({ variables: { page: { number: 1, size: pageSize } } });
-  }, [loadAssets, pageSize]);
-
-  React.useEffect(() => {
-    if (!data) {
-      return;
-    }
-    const items = data.listAssets?.items || [];
-    setRows((prev) => [
-      ...prev,
-      ...items.map((item) => ({
-        id: item.id ?? "",
-        photo_id: item.photo_id ?? "",
-        // Use the production CDN for asset photos to prevent broken image links in non-prod environments,
-        // as lower environments may have incomplete or missing photo data. This is a temporary workaround
-        // until data hygiene is improved across all environments.
-        photo: item.photo?.filename
-          ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
-          : "",
-        photo_large: item.photo?.filename
-          ? `https://appcdn.equipmentshare.com/uploads/${item.photo.filename}`
-          : "",
-        name: item.name,
-        company: item.company?.name ?? "",
-        custom_name: item.custom_name,
-        description: item.description,
-        pim_category_name: item.pim_category_name,
-        pim_make: item.pim_make,
-        pim_product_name: item.pim_product_name,
-        pim_product_model: item.pim_product_model,
-        pim_product_year: item.pim_product_year,
-      })),
-    ]);
-    setTotalItems(data.listAssets?.page.totalItems || 0);
-    setPage((data.listAssets?.page.number || 0) + 1);
+  const rows = React.useMemo(() => {
+    const items = data?.listAssets?.items || [];
+    return items.map((item) => ({
+      id: item.id ?? "",
+      photo_id: item.photo_id ?? "",
+      // Use the production CDN for asset photos to prevent broken image links in non-prod environments,
+      // as lower environments may have incomplete or missing photo data. This is a temporary workaround
+      // until data hygiene is improved across all environments.
+      photo: item.photo?.filename
+        ? `https://appcdn.equipmentshare.com/uploads/small/${item.photo.filename}`
+        : "",
+      photo_large: item.photo?.filename
+        ? `https://appcdn.equipmentshare.com/uploads/${item.photo.filename}`
+        : "",
+      name: item.name,
+      company: item.company?.name ?? "",
+      custom_name: item.custom_name,
+      description: item.description,
+      pim_category_name: item.pim_category_name,
+      pim_make: item.pim_make,
+      pim_product_name: item.pim_product_name,
+      pim_product_model: item.pim_product_model,
+      pim_product_year: item.pim_product_year,
+    }));
   }, [data]);
 
   const columns: GridColDef[] = [
@@ -275,9 +258,6 @@ export default function Inventory() {
             columns={columns}
             rows={filteredRows}
             loading={loading}
-            pagination
-            paginationMode="server"
-            rowCount={totalItems}
             getDetailPanelContent={({ row }) => (
               <Box sx={{ p: 2 }}>
                 <Card
@@ -357,13 +337,6 @@ export default function Inventory() {
               pagination: { paginationModel: { pageSize } },
             }}
             hideFooter
-            onRowsScrollEnd={(params: GridRowScrollEndParams) => {
-              if (!loading && rows.length < totalItems) {
-                loadAssets({
-                  variables: { page: { number: page, size: pageSize } },
-                });
-              }
-            }}
           />
         </Box>
       </Container>
