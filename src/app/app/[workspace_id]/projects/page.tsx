@@ -30,9 +30,16 @@ graphql(`
       name
       project_code
       description
-      companyId
+      company {
+        id
+        name
+      }
       created_at
       created_by
+      created_by_user {
+        firstName
+        lastName
+      }
       updated_at
       deleted
     }
@@ -54,9 +61,11 @@ export default function ProjectsPage() {
         name: project?.name ?? "",
         project_code: project?.project_code ?? "",
         description: project?.description ?? "",
-        companyId: project?.companyId ?? "",
+        company: project?.company?.name ?? "",
         created_at: project?.created_at ?? "",
-        created_by: project?.created_by ?? "",
+        created_by: project?.created_by_user
+          ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
+          : "",
         updated_at: project?.updated_at ?? "",
         deleted: project?.deleted ?? false,
       })) ?? []
@@ -79,10 +88,15 @@ export default function ProjectsPage() {
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 120 },
-    { field: "name", headerName: "Name", flex: 1 },
-    { field: "project_code", headerName: "Project Code", flex: 1 },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 2,
+      minWidth: 250,
+    },
+    { field: "project_code", headerName: "Project Code", flex: 2, minWidth: 200 },
     { field: "description", headerName: "Description", flex: 2 },
-    { field: "companyId", headerName: "Company ID", flex: 1 },
+    { field: "company", headerName: "Company", flex: 2, minWidth: 200 },
     {
       field: "created_at",
       headerName: "Created At",
@@ -201,6 +215,9 @@ export default function ProjectsPage() {
               disableRowSelectionOnClick
               hideFooter
               getRowId={(row) => row.id}
+              initialState={{
+                pinnedColumns: { left: ["name"] },
+              }}
               onRowClick={(params) => {
                 if (params.row.id) {
                   router.push(`projects/${params.row.id}`);

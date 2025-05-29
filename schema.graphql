@@ -177,6 +177,11 @@ type Comment {
   id: ID
 }
 
+type Company {
+  id: String!
+  name: String!
+}
+
 union Contact = BusinessContact | PersonContact
 
 enum ContactType {
@@ -442,9 +447,11 @@ enum PriceType {
 }
 
 type Project {
+  company: Company
   companyId: String!
   created_at: String!
   created_by: String!
+  created_by_user: User
   deleted: Boolean!
   description: String
   id: String!
@@ -651,6 +658,14 @@ input UpdatePersonContactInput {
   phone: String
   profilePicture: String
   role: String
+}
+
+type User {
+  companyId: String!
+  email: String!
+  firstName: String!
+  id: String!
+  lastName: String!
 }
 
 type Workflow {
