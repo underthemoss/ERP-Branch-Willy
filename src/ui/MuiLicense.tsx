@@ -6,7 +6,7 @@ import { LicenseInfo } from "@mui/x-license";
 // and is expected to be exposed in the bundled JS
 // See: https://mui.com/x/introduction/licensing/#license-key-security
 LicenseInfo.setLicenseKey(
-  "37f2944bfb6ce3381dd3702f9a035a96Tz0xMTE1NzYsRT0xNzc2NDcwMzk5MDAwLFM9cHJvLExNPXN1YnNjcmlwdGlvbixQVj1RMy0yMDI0LEtWPTI=",
+  "715e83fc5f3eb71ac9654e77ab59e321Tz0xMTM4MTcsRT0xNzgwMTg1NTk5MDAwLFM9cHJlbWl1bSxMTT1zdWJzY3JpcHRpb24sUFY9aW5pdGlhbCxLVj0y",
 );
 
 export const MuiLicense: React.FC<{
