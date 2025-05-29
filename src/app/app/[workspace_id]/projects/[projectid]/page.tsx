@@ -14,8 +14,9 @@ import {
   Grid,
   IconButton,
   Typography,
+  Tooltip,
 } from "@mui/material";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { useParams } from "next/navigation";
 
 graphql(`
@@ -123,17 +124,37 @@ export default function ProjectDetailPage() {
                 <Typography variant="subtitle2" color="text.secondary">
                   Created At
                 </Typography>
-                <Typography variant="body2" gutterBottom>
-                  {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
-                </Typography>
+                <Tooltip
+                  title={format(parseISO(project.created_at), "MMMM d, yyyy, h:mm a")}
+                  arrow
+                  placement="top"
+                >
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={{ cursor: "pointer", display: "inline" }}
+                  >
+                    {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
+                  </Typography>
+                </Tooltip>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Updated At
                 </Typography>
-                <Typography variant="body2" gutterBottom>
-                  {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
-                </Typography>
+                <Tooltip
+                  title={format(parseISO(project.updated_at), "MMMM d, yyyy, h:mm a")}
+                  arrow
+                  placement="top"
+                >
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={{ cursor: "pointer", display: "inline" }}
+                  >
+                    {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
+                  </Typography>
+                </Tooltip>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
