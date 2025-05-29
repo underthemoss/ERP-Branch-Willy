@@ -1,11 +1,11 @@
 "use client";
 
-import { useListProjectsQuery } from "@/graphql/hooks";
-import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
-import { Container, Typography, Box, Button } from "@mui/material";
-import { useRouter, useParams } from "next/navigation";
-import * as React from "react";
 import { graphql } from "@/graphql";
+import { useListProjectsQuery } from "@/graphql/hooks";
+import { Box, Button, Container, Typography } from "@mui/material";
+import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
+import { useParams, useRouter } from "next/navigation";
+import * as React from "react";
 
 graphql(`
   query ListProjects {
@@ -60,9 +60,7 @@ export default function ProjectsPage() {
   return (
     <Container maxWidth="lg">
       <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={2}>
-        <Typography variant="h1">
-          Projects
-        </Typography>
+        <Typography variant="h1">Projects</Typography>
         <Box>
           <Button
             variant="contained"

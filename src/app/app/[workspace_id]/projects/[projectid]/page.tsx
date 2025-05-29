@@ -77,9 +77,20 @@ export default function ProjectDetailPage() {
                 <Typography variant="subtitle2" color="text.secondary">
                   Project Code
                 </Typography>
-                <Typography variant="body1" fontWeight={500} gutterBottom>
-                  {project.project_code}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <Typography variant="body1" fontWeight={500}>
+                    {project.project_code}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    aria-label="Copy Project Code"
+                    onClick={() => {
+                      navigator.clipboard.writeText(project.project_code);
+                    }}
+                  >
+                    <ContentCopyIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -99,7 +110,7 @@ export default function ProjectDetailPage() {
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Deleted
+                  Status
                 </Typography>
                 <Chip
                   label={project.deleted ? "Deleted" : "Active"}
@@ -136,13 +147,7 @@ export default function ProjectDetailPage() {
                 <Divider />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={1}
-                  mt={1}
-                  justifyContent="flex-end"
-                >
+                <Box display="flex" alignItems="center" gap={1} mt={1} justifyContent="flex-end">
                   <Typography variant="body2" color="text.secondary">
                     Project ID:
                   </Typography>

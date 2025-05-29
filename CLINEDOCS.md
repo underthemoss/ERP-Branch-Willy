@@ -9,12 +9,13 @@ This file is always read by Cline before starting any new task in this project.
 
 ---
 
-
 ### Project Overview
 
-This is a typescript project, always use typescript. 
+This is a typescript project, always use typescript.
 
-This is a NextJs app router project.  
+This is a NextJs app router project.
+
+This project uses prettier. After finishing a task, always run `npm run prettier:fix`
 
 ### Coding Standards for MUI components
 
@@ -61,4 +62,3 @@ Generated code is importanted like
 ```js
 import { useListProjectsQuery } from "@/graphql/hooks";
 ```
-

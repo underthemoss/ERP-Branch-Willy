@@ -2,6 +2,8 @@
 
 import { graphql } from "@/graphql";
 import { useCreateProjectMutation } from "@/graphql/hooks";
+import { Alert, Box, Button, TextField, Typography } from "@mui/material";
+import React, { useState } from "react";
 
 graphql(`
   mutation createProject($input: ProjectInput) {
@@ -10,9 +12,6 @@ graphql(`
     }
   }
 `);
-
-import React, { useState } from "react";
-import { Box, Button, TextField, Typography, Alert } from "@mui/material";
 
 export default function CreateProjectPage() {
   const [name, setName] = useState("");
@@ -97,13 +96,7 @@ export default function CreateProjectPage() {
             {error}
           </Alert>
         )}
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          fullWidth
-          disabled={loading}
-        >
+        <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
           {loading ? "Creating..." : "Create Project"}
         </Button>
       </form>

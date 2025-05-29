@@ -1,11 +1,11 @@
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Avatar,
   Box,
