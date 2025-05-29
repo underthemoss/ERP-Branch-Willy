@@ -2,12 +2,24 @@
 
 import { graphql } from "@/graphql";
 import { useListProjectsQuery } from "@/graphql/hooks";
-import { Box, Button, Container, Typography, Chip, Tooltip, TextField, InputAdornment, IconButton, Select, MenuItem } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { PageContainer } from "@toolpad/core/PageContainer";
+import SearchIcon from "@mui/icons-material/Search";
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -126,9 +138,7 @@ export default function ProjectsPage() {
     <PageContainer>
       <Container maxWidth="lg">
         <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={1}>
-          <Typography variant="h1">
-            Project Management
-          </Typography>
+          <Typography variant="h1">Project Management</Typography>
           <Button
             variant="contained"
             color="primary"
@@ -169,6 +179,7 @@ export default function ProjectsPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             sx={{ minWidth: 180 }}
+            data-testid="project-status-filter"
             MenuProps={{
               MenuListProps: {
                 dense: true,
