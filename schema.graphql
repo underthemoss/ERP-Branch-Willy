@@ -349,6 +349,7 @@ type Mutation {
   deleteContactById(id: ID!): Boolean
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
+  deleteProject(id: String!): Project
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
   updateProject(id: String, input: ProjectInput): Project

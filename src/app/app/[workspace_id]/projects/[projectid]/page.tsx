@@ -1,15 +1,21 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useGetProjectByIdQuery } from "@/graphql/hooks";
+import { useDeleteProjectMutation, useGetProjectByIdQuery } from "@/graphql/hooks";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -17,7 +23,8 @@ import {
   Typography,
 } from "@mui/material";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
 graphql(`
   query getProjectById($id: String!) {
@@ -35,14 +42,39 @@ graphql(`
   }
 `);
 
+graphql(`
+  mutation deleteProject($id: String!) {
+    deleteProject(id: $id) {
+      id
+    }
+  }
+`);
+
 export default function ProjectDetailPage() {
   const { projectid } = useParams<{ projectid: string }>();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [deleteProject, { loading: deleting }] = useDeleteProjectMutation();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const { data, loading, error } = useGetProjectByIdQuery({
     variables: { id: projectid ?? "" },
     skip: !projectid,
+    fetchPolicy: "cache-and-network",
   });
 
   const project = data?.getProjectById;
+
+  const handleDelete = async () => {
+    if (!project?.id) return;
+    try {
+      await deleteProject({ variables: { id: project.id } });
+      setOpen(false);
+      router.push(`/app/${project.companyId}/projects`);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to delete project.");
+    }
+  };
 
   return (
     <Box mt={6} mx="auto" maxWidth={600}>
@@ -193,6 +225,50 @@ export default function ProjectDetailPage() {
             </Grid>
           </CardContent>
         </Card>
+      )}
+      {project && (
+        <Box display="flex" justifyContent="flex-end" mt={2}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setOpen(true)}
+            disabled={deleting}
+            data-testid="project-details-delete-btn"
+          >
+            Delete
+          </Button>
+          <Dialog
+            open={open}
+            onClose={() => setOpen(false)}
+            aria-labelledby="delete-project-dialog-title"
+          >
+            <DialogTitle id="delete-project-dialog-title">Delete Project</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Are you sure you want to delete this project? This action cannot be undone.
+              </DialogContentText>
+              {errorMsg && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {errorMsg}
+                </Alert>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpen(false)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDelete}
+                color="error"
+                variant="contained"
+                disabled={deleting}
+                data-testid="project-details-confirm-delete-btn"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
       )}
     </Box>
   );

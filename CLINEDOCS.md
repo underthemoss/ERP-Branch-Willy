@@ -33,6 +33,8 @@ This is wrong for our version!
 
 ### Coding Standards for GQL Queries and Mutations
 
+Read the ./schema.graphql file for GQL schema information
+
 Always declare queries like this
 
 ```js
@@ -62,3 +64,7 @@ Generated code is importanted like
 ```js
 import { useListProjectsQuery } from "@/graphql/hooks";
 ```
+
+### Running e2e tests
+
+Always run these in headed mode so i can watch progress.
