@@ -3,8 +3,8 @@
 import { graphql } from "@/graphql";
 import { useCreateProjectMutation } from "@/graphql/hooks";
 import { Alert, Box, Button, TextField, Typography } from "@mui/material";
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 graphql(`
   mutation createProject($input: ProjectInput) {

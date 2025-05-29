@@ -5,7 +5,9 @@ import { faker } from "@faker-js/faker";
 test.describe("Projects E2E", () => {
   // ... (other tests unchanged)
 
-  test("should create a project, show success, and redirect to details page", async ({ page }) => {
+  test("should create a project, show success, and redirect to details page", async ({
+    page,
+  }) => {
     await login({ page });
 
     // Wait for sidebar/nav to be ready
@@ -33,7 +35,9 @@ test.describe("Projects E2E", () => {
     await page.getByRole("button", { name: /create project/i }).click();
 
     // Wait for and assert the success message
-    await expect(page.getByTestId("project-create-success")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId("project-create-success")).toBeVisible({
+      timeout: 10000,
+    });
 
     // Wait for redirect (should happen after 1 second)
     await expect(page).toHaveURL(/\/projects\/[a-zA-Z0-9]+/, { timeout: 5000 });
