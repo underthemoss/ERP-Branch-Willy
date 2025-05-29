@@ -1,6 +1,7 @@
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
@@ -69,6 +70,12 @@ export const NavBar = () => {
       href: `/app/${currentWorkspace?.id}/sales-orders`,
       icon: <PostAddIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
+    },
+    {
+      text: "Projects",
+      href: `/app/${currentWorkspace?.id}/projects`,
+      icon: <FolderOpenIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/projects`,
     },
   ];
 
@@ -178,38 +185,40 @@ export const NavBar = () => {
       <Box className="navmenu" sx={{ width: "100%" }}>
         <List disablePadding>
           {navItems.map((item, index) => (
-            <ListItem disablePadding key={index}>
-              <ListItemButton
-                component={Link}
-                href={item.href}
-                selected={item.selected}
-                sx={{
-                  px: "12px",
-                  borderRadius: "8px",
-                  color: item.selected ? "text.primary" : "grey.400",
-                }}
-              >
-                <ListItemIcon
-                  sx={{ color: item.selected ? "text.primary" : "grey.400", minWidth: "30px" }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  disableTypography
+            <React.Fragment key={index}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={Link}
+                  href={item.href}
+                  selected={item.selected}
                   sx={{
+                    px: "12px",
+                    borderRadius: "8px",
                     color: item.selected ? "text.primary" : "grey.400",
-                    fontFamily: "Inter",
-                    fontSize: "14px",
-                    fontStyle: "normal",
-                    fontWeight: 500,
-                    lineHeight: "21px",
-                    letterSpacing: "0.28px",
                   }}
                 >
-                  {item.text}
-                </ListItemText>
-              </ListItemButton>
-            </ListItem>
+                  <ListItemIcon
+                    sx={{ color: item.selected ? "text.primary" : "grey.400", minWidth: "30px" }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    disableTypography
+                    sx={{
+                      color: item.selected ? "text.primary" : "grey.400",
+                      fontFamily: "Inter",
+                      fontSize: "14px",
+                      fontStyle: "normal",
+                      fontWeight: 500,
+                      lineHeight: "21px",
+                      letterSpacing: "0.28px",
+                    }}
+                  >
+                    {item.text}
+                  </ListItemText>
+                </ListItemButton>
+              </ListItem>
+            </React.Fragment>
           ))}
         </List>
       </Box>

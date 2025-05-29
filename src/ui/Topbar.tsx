@@ -102,7 +102,7 @@ export const Topbar = function () {
           const href =
             "/" +
             pathSegments
-              .slice(0, i + 2) // +2 to account for skipped segments
+              .slice(0, i + 3) // +3 to account for skipped segments
               .join("/");
 
           // Last breadcrumb is not a link
