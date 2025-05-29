@@ -184,18 +184,26 @@ enum ContactType {
   PERSON
 }
 
+input CreatePriceBookInput {
+  isDefault: Boolean!
+  name: String!
+  notes: String
+}
+
 input CreateRentalPriceInput {
-  asset_id: String
-  pim_product_id: String!
+  name: String!
+  pimCategoryId: String!
+  priceBookId: ID
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
   pricePerWeekInCents: Int!
 }
 
 input CreateSalePriceInput {
-  asset_id: String
   discounts: JSON!
-  pim_product_id: String!
+  name: String!
+  pimCategoryId: String!
+  priceBookId: ID
   unitCostInCents: Int!
 }
 
@@ -294,9 +302,19 @@ type ListPimProductsResult {
   page: PaginationInfo!
 }
 
+input ListPriceBooksPage {
+  number: Int! = 1
+  size: Int! = 10
+}
+
+type ListPriceBooksResult {
+  items: [PriceBook!]!
+  page: PaginationInfo!
+}
+
 input ListPricesFilter {
-  asset_id: String
-  pim_product_id: String
+  pimCategoryId: String
+  priceBookId: String
   priceType: PriceType
 }
 
@@ -323,13 +341,17 @@ type ListWorkspacesResult {
 type Mutation {
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createPersonContact(input: PersonContactInput!): PersonContact
+  createPriceBook(input: CreatePriceBookInput!): PriceBook
+  createProject(input: ProjectInput): Project
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
   createSalePrice(input: CreateSalePriceInput!): SalePrice
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
+  deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
+  updateProject(id: String, input: ProjectInput): Project
 }
 
 type PaginationInfo {
@@ -401,15 +423,40 @@ type PimProduct {
 
 union Price = RentalPrice | SalePrice
 
+type PriceBook {
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  id: ID!
+  isDefault: Boolean!
+  listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+  name: String!
+  notes: String
+  updatedAt: DateTime!
+}
+
 enum PriceType {
   RENTAL
   SALE
 }
 
 type Project {
-  code: String
-  id: ID
-  name: String
+  companyId: String!
+  created_at: String!
+  created_by: String!
+  deleted: Boolean!
+  description: String
+  id: String!
+  name: String!
+  project_code: String!
+  updated_at: String!
+}
+
+input ProjectInput {
+  deleted: Boolean!
+  description: String
+  name: String!
+  project_code: String!
 }
 
 type Query {
@@ -417,12 +464,15 @@ type Query {
   getContactById(id: ID!): Contact
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
+  getProjectById(id: String!): Project
   helloWorld: String
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
+  listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+  listProjects: [Project]
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }
@@ -433,12 +483,16 @@ type Quote {
 }
 
 type RentalPrice {
-  asset_id: String
-  company_id: String!
+  companyId: String!
   createdAt: DateTime!
   createdBy: String!
   id: ID!
-  pim_product_id: String!
+  name: String!
+  pimCategoryId: String!
+  pimCategoryName: String!
+  pimCategoryPath: String!
+  priceBook: PriceBook
+  priceBookId: ID
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
   pricePerWeekInCents: Int!
@@ -473,13 +527,17 @@ type RentalTransaction implements BaseTransaction {
 }
 
 type SalePrice {
-  asset_id: String
-  company_id: String!
+  companyId: String!
   createdAt: DateTime!
   createdBy: String!
   discounts: JSON!
   id: ID!
-  pim_product_id: String!
+  name: String!
+  pimCategoryId: String!
+  pimCategoryName: String!
+  pimCategoryPath: String!
+  priceBook: PriceBook
+  priceBookId: ID
   priceType: PriceType!
   unitCostInCents: Int!
   updatedAt: DateTime!
