@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
+import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
@@ -169,7 +169,7 @@ export default function SalesOrdersPage() {
         </Box>
         <Box sx={{ height: 600 }}>
           <div data-testid="sales-order-list" style={{ height: "100%" }}>
-            <DataGridPro
+            <DataGridPremium
               columns={columns}
               rows={filteredRows}
               disableRowSelectionOnClick

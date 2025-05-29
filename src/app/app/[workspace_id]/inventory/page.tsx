@@ -23,7 +23,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { DataGridPro, GridColDef, GridRowScrollEndParams } from "@mui/x-data-grid-pro";
+import { DataGridPremium, GridColDef, GridRowScrollEndParams } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import * as React from "react";
 import { useState } from "react";
@@ -254,7 +254,7 @@ export default function Inventory() {
       </Container>
       <Container maxWidth="lg">
         <Box sx={{ height: 600 }}>
-          <DataGridPro
+          <DataGridPremium
             columns={columns}
             rows={filteredRows}
             loading={loading}

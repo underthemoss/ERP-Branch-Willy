@@ -5,7 +5,7 @@ import { TransactionType } from "@/graphql/graphql";
 import { useCreateTransactionMutation, useGetTransactionsQuery } from "@/graphql/hooks";
 import { NewTransactionPopover } from "@/ui/transactions/NewTransaction";
 import { Box, Button, Checkbox, Popover, Typography } from "@mui/material";
-import { DataGridPro, GridColDef, GridRenderEditCellParams } from "@mui/x-data-grid-pro";
+import { DataGridPremium, GridColDef, GridRenderEditCellParams } from "@mui/x-data-grid-premium";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
@@ -207,7 +207,7 @@ export default function ColumnVirtualizationGrid() {
         <NewTransactionPopover />
       </Box>
       <div style={{ flex: 1 }}>
-        <DataGridPro
+        <DataGridPremium
           columns={columns}
           rows={rows}
           columnBufferPx={100}
