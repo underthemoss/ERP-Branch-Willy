@@ -37,6 +37,7 @@
     "@mui/x-license": "^8.0.0",
     "@mui/x-tree-view": "^8.3.1",
     "@toolpad/core": "^0.15.0",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "graphql": "^16.10.0",
     "jdenticon": "^3.3.0",
@@ -66,7 +67,7 @@
     "playwright": "^1.52.0",
     "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.5.10",
-    "typescript": "^5.7.3",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typescript": "^5.7.3"
   }
 }

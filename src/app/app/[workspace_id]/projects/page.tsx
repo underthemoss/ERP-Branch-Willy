@@ -1,11 +1,11 @@
 "use client";
 
-import { graphql } from "@/graphql";
 import { useListProjectsQuery } from "@/graphql/hooks";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { Container, Typography, Box, Button } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import * as React from "react";
+import { graphql } from "@/graphql";
 
 graphql(`
   query ListProjects {
@@ -55,6 +55,7 @@ export default function ProjectsPage() {
   ];
 
   const router = useRouter();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
 
   return (
     <Container maxWidth="lg">
@@ -80,6 +81,17 @@ export default function ProjectsPage() {
           loading={loading}
           disableRowSelectionOnClick
           hideFooter
+          onRowClick={(params) => {
+            if (params.row.id) {
+              router.push(`projects/${params.row.id}`);
+            }
+          }}
+          sx={{
+            cursor: "pointer",
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "#f5f5f5",
+            },
+          }}
         />
       </Box>
     </Container>
