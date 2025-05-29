@@ -49,6 +49,12 @@ export const NavBar = () => {
       selected: pathname === `/app/${currentWorkspace?.id}`,
     },
     {
+      text: "Sales Order",
+      href: `/app/${currentWorkspace?.id}/sales-orders`,
+      icon: <SyncAltIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
+    },
+    {
       text: "Transactions",
       href: `/app/${currentWorkspace?.id}/transactions`,
       icon: <SyncAltIcon fontSize="small" />,
@@ -71,12 +77,6 @@ export const NavBar = () => {
       href: `/app/${currentWorkspace?.id}/prices`,
       icon: <AttachMoneyIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/prices`,
-    },
-    {
-      text: "Sales Orders",
-      href: `/app/${currentWorkspace?.id}/sales-orders`,
-      icon: <PostAddIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
     },
     {
       text: "Projects",
