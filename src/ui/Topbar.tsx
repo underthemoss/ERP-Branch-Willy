@@ -6,8 +6,8 @@ import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 import { Box, Breadcrumbs, IconButton, InputBase, Paper, Typography } from "@mui/material";
 import { usePathname } from "next/navigation";
 import * as React from "react";
-import { useSidebar } from "./sidebar/useSidebar";
 import { NextLink } from "./NextLink";
+import { useSidebar } from "./sidebar/useSidebar";
 
 const SHORTCUT = "⌘ /";
 
@@ -107,9 +107,7 @@ export const Topbar = function () {
 
           // Last breadcrumb is not a link
           if (i === breadcrumbs.length - 1) {
-            return (
-              <span key={i}>{humanize(breadcrumb)}</span>
-            );
+            return <span key={i}>{humanize(breadcrumb)}</span>;
           }
           return (
             <NextLink key={i} href={href}>
