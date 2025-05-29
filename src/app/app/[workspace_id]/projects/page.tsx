@@ -2,8 +2,24 @@
 
 import { graphql } from "@/graphql";
 import { useListProjectsQuery } from "@/graphql/hooks";
-import { Box, Button, Container, Typography } from "@mui/material";
+import ClearIcon from "@mui/icons-material/Clear";
+import SearchIcon from "@mui/icons-material/Search";
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -24,7 +40,12 @@ graphql(`
 `);
 
 export default function ProjectsPage() {
-  const { data, loading } = useListProjectsQuery();
+  const { data, loading } = useListProjectsQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [statusFilter, setStatusFilter] = React.useState("Active Projects");
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const rows = React.useMemo(() => {
     return (
@@ -42,26 +63,82 @@ export default function ProjectsPage() {
     );
   }, [data]);
 
+  const filteredRows = React.useMemo(() => {
+    let filtered = rows;
+    if (statusFilter === "Active Projects") {
+      filtered = filtered.filter((row) => !row.deleted);
+    } else if (statusFilter === "Deleted") {
+      filtered = filtered.filter((row) => row.deleted);
+    }
+    if (!searchTerm) return filtered;
+    const lower = searchTerm.toLowerCase();
+    return filtered.filter((row) =>
+      Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
+    );
+  }, [rows, searchTerm, statusFilter]);
+
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 120 },
     { field: "name", headerName: "Name", flex: 1 },
     { field: "project_code", headerName: "Project Code", flex: 1 },
     { field: "description", headerName: "Description", flex: 2 },
     { field: "companyId", headerName: "Company ID", flex: 1 },
-    { field: "created_at", headerName: "Created At", width: 180 },
+    {
+      field: "created_at",
+      headerName: "Created At",
+      width: 180,
+      renderCell: (params) => {
+        const date = params.value ? parseISO(params.value) : null;
+        return date ? (
+          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
+            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          </Tooltip>
+        ) : (
+          ""
+        );
+      },
+    },
     { field: "created_by", headerName: "Created By", width: 180 },
-    { field: "updated_at", headerName: "Updated At", width: 180 },
-    { field: "deleted", headerName: "Deleted", width: 100, type: "boolean" },
+    {
+      field: "updated_at",
+      headerName: "Updated At",
+      width: 180,
+      renderCell: (params) => {
+        const date = params.value ? parseISO(params.value) : null;
+        return date ? (
+          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
+            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          </Tooltip>
+        ) : (
+          ""
+        );
+      },
+    },
+    {
+      field: "deleted",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.value ? "Deleted" : "Active"}
+          color={params.value ? "default" : "success"}
+          size="small"
+          sx={{ fontWeight: 600 }}
+        />
+      ),
+      sortable: false,
+      filterable: false,
+    },
   ];
 
   const router = useRouter();
   const { workspace_id } = useParams<{ workspace_id: string }>();
 
   return (
-    <Container maxWidth="lg">
-      <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={2}>
-        <Typography variant="h1">Projects</Typography>
-        <Box>
+    <PageContainer>
+      <Container maxWidth="lg">
+        <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={1}>
+          <Typography variant="h1">Project Management</Typography>
           <Button
             variant="contained"
             color="primary"
@@ -71,36 +148,75 @@ export default function ProjectsPage() {
             + Create Project
           </Button>
         </Box>
-      </Box>
-      <Box sx={{ height: 600 }}>
-        {rows.length === 0 && (
-          <div data-testid="empty-projects" style={{ padding: 16, textAlign: "center" }}>
-            No projects found.
-          </div>
-        )}
-        <div data-testid="project-list" style={{ height: "100%" }}>
-          <DataGridPro
-            columns={columns}
-            rows={rows}
-            loading={loading}
-            disableRowSelectionOnClick
-            hideFooter
-            getRowId={(row) => row.id}
-            onRowClick={(params) => {
-              if (params.row.id) {
-                router.push(`projects/${params.row.id}`);
-              }
+        <Typography variant="body1" color="text.secondary" mb={2}>
+          View, manage, and organize your projects.
+        </Typography>
+        <Box mb={2} display="flex" gap={2} alignItems="center">
+          <TextField
+            placeholder="Search project by name"
+            variant="outlined"
+            size="small"
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchTerm("")}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
             }}
-            sx={{
-              cursor: "pointer",
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "#f5f5f5",
+          />
+          <Select
+            size="small"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: 180 }}
+            data-testid="project-status-filter"
+            MenuProps={{
+              MenuListProps: {
+                dense: true,
               },
             }}
-            getRowClassName={() => "project-list-item"}
-          />
-        </div>
-      </Box>
-    </Container>
+          >
+            <MenuItem value="All Statuses">All Statuses</MenuItem>
+            <MenuItem disabled divider />
+            <MenuItem value="Active Projects">Active Projects</MenuItem>
+            <MenuItem value="Deleted">Deleted</MenuItem>
+          </Select>
+        </Box>
+        <Box sx={{ height: 600 }}>
+          <div data-testid="project-list" style={{ height: "100%" }}>
+            <DataGridPro
+              columns={columns}
+              rows={filteredRows}
+              loading={loading}
+              disableRowSelectionOnClick
+              hideFooter
+              getRowId={(row) => row.id}
+              onRowClick={(params) => {
+                if (params.row.id) {
+                  router.push(`projects/${params.row.id}`);
+                }
+              }}
+              sx={{
+                cursor: "pointer",
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+              getRowClassName={() => "project-list-item"}
+            />
+          </div>
+        </Box>
+      </Container>
+    </PageContainer>
   );
 }
