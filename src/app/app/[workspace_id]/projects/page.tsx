@@ -73,24 +73,33 @@ export default function ProjectsPage() {
         </Box>
       </Box>
       <Box sx={{ height: 600 }}>
-        <DataGridPro
-          columns={columns}
-          rows={rows}
-          loading={loading}
-          disableRowSelectionOnClick
-          hideFooter
-          onRowClick={(params) => {
-            if (params.row.id) {
-              router.push(`projects/${params.row.id}`);
-            }
-          }}
-          sx={{
-            cursor: "pointer",
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "#f5f5f5",
-            },
-          }}
-        />
+        {rows.length === 0 && (
+          <div data-testid="empty-projects" style={{ padding: 16, textAlign: "center" }}>
+            No projects found.
+          </div>
+        )}
+        <div data-testid="project-list" style={{ height: "100%" }}>
+          <DataGridPro
+            columns={columns}
+            rows={rows}
+            loading={loading}
+            disableRowSelectionOnClick
+            hideFooter
+            getRowId={(row) => row.id}
+            onRowClick={(params) => {
+              if (params.row.id) {
+                router.push(`projects/${params.row.id}`);
+              }
+            }}
+            sx={{
+              cursor: "pointer",
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "#f5f5f5",
+              },
+            }}
+            getRowClassName={() => "project-list-item"}
+          />
+        </div>
       </Box>
     </Container>
   );

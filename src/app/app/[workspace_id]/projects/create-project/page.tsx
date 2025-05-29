@@ -3,7 +3,8 @@
 import { graphql } from "@/graphql";
 import { useCreateProjectMutation } from "@/graphql/hooks";
 import { Alert, Box, Button, TextField, Typography } from "@mui/material";
-import React, { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 graphql(`
   mutation createProject($input: ProjectInput) {
@@ -19,8 +20,11 @@ export default function CreateProjectPage() {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
 
   const [createProject, { loading }] = useCreateProjectMutation();
+  const router = useRouter();
+  const params = useParams<{ workspace_id: string }>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +53,7 @@ export default function CreateProjectPage() {
       });
       if (res.data?.createProject?.id) {
         setSuccess("Project created successfully!");
+        setCreatedProjectId(res.data.createProject.id);
         setName("");
         setProjectCode("");
         setDescription("");
@@ -59,6 +64,15 @@ export default function CreateProjectPage() {
       setError(err.message || "An error occurred.");
     }
   };
+
+  useEffect(() => {
+    if (success && createdProjectId && params?.workspace_id) {
+      const timeout = setTimeout(() => {
+        router.push(`/app/${params.workspace_id}/projects/${createdProjectId}`);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [success, createdProjectId, params?.workspace_id, router]);
 
   return (
     <Box maxWidth={400} mx="auto" mt={4}>
@@ -101,7 +115,7 @@ export default function CreateProjectPage() {
         </Button>
       </form>
       {success && (
-        <Alert severity="success" sx={{ mt: 2 }}>
+        <Alert severity="success" sx={{ mt: 2 }} data-testid="project-create-success">
           {success}
         </Alert>
       )}

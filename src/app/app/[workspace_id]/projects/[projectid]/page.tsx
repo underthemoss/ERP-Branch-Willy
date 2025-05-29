@@ -65,7 +65,7 @@ export default function ProjectDetailPage() {
         </Alert>
       )}
       {project && (
-        <Card elevation={3}>
+        <Card elevation={3} data-testid="project-details">
           <CardContent>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12 }}>
@@ -85,6 +85,7 @@ export default function ProjectDetailPage() {
                   <IconButton
                     size="small"
                     aria-label="Copy Project Code"
+                    data-testid="project-details-copy-code"
                     onClick={() => {
                       navigator.clipboard.writeText(project.project_code);
                     }}
@@ -133,6 +134,7 @@ export default function ProjectDetailPage() {
                     variant="body2"
                     component="span"
                     sx={{ cursor: "pointer", display: "inline" }}
+                    data-testid="project-details-created-at"
                   >
                     {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
                   </Typography>
@@ -151,6 +153,7 @@ export default function ProjectDetailPage() {
                     variant="body2"
                     component="span"
                     sx={{ cursor: "pointer", display: "inline" }}
+                    data-testid="project-details-updated-at"
                   >
                     {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
                   </Typography>
@@ -178,6 +181,7 @@ export default function ProjectDetailPage() {
                   <IconButton
                     size="small"
                     aria-label="Copy Project ID"
+                    data-testid="project-details-copy-id"
                     onClick={() => {
                       navigator.clipboard.writeText(project.id);
                     }}
