@@ -13,10 +13,10 @@ import {
   Divider,
   Grid,
   IconButton,
-  Typography,
   Tooltip,
+  Typography,
 } from "@mui/material";
-import { formatDistanceToNow, parseISO, format } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams } from "next/navigation";
 
 graphql(`
