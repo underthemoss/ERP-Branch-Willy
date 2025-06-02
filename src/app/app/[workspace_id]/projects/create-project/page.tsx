@@ -82,7 +82,7 @@ export default function CreateProjectPage() {
     fetchPolicy: "cache-and-network",
   });
 
-  console.log(dropdownData)
+  console.log(dropdownData);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);

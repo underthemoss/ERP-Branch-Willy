@@ -1,10 +1,16 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { ProjectStatusEnum, ScopeOfWorkEnum } from "@/graphql/graphql";
 import {
-  useGetProjectByIdQuery,
-  useProjectCodeDescriptionsQuery,
+  ContactType,
+  ProjectContactRelationEnum,
+  ProjectStatusEnum,
+  ScopeOfWorkEnum,
+} from "@/graphql/graphql";
+import {
+  useGetProjectByIdForEditQuery,
+  useListContactsQuery,
+  useProjectDropdownOptionsQuery,
   useUpdateProjectMutation,
 } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -14,21 +20,27 @@ import {
   Button,
   Checkbox,
   FormControl,
-  IconButton,
   InputAdornment,
   InputLabel,
-  ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
   TextField,
   Typography,
 } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import Avatar from "@mui/material/Avatar";
+import CircularProgress from "@mui/material/CircularProgress";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import ListItemText from "@mui/material/ListItemText";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 graphql(`
-  query getProjectById($id: String!) {
+  query getProjectByIdForEdit($id: String!) {
     getProjectById(id: $id) {
       id
       name
@@ -41,15 +53,31 @@ graphql(`
       deleted
       scope_of_work
       status
+      project_contacts {
+        contact_id
+        relation_to_project
+        contact {
+          ... on PersonContact {
+            id
+            name
+            role
+            profilePicture
+          }
+        }
+      }
     }
   }
 
-  query ProjectCodeDescriptions {
+  query ProjectEditDropdownOptions {
     listProjectStatusCodes {
       code
       description
     }
     listScopeOfWorkCodes {
+      code
+      description
+    }
+    listProjectContactRelationCodes {
       code
       description
     }
@@ -72,11 +100,19 @@ graphql(`
   }
 `);
 
+type SelectedContact = {
+  id: string;
+  name: string;
+  role?: string | null;
+  profilePicture?: string | null;
+  relationToProject: string; // code from listProjectContactRelationCodes
+};
+
 export default function EditProjectPage() {
   const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
 
-  const { data, loading, error } = useGetProjectByIdQuery({
+  const { data, loading, error } = useGetProjectByIdForEditQuery({
     variables: { id: projectid ?? "" },
     skip: !projectid,
     fetchPolicy: "cache-and-network",
@@ -89,11 +125,39 @@ export default function EditProjectPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatusEnum | "">("");
   const [scopeOfWork, setScopeOfWork] = useState<ScopeOfWorkEnum[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<SelectedContact[]>([]);
+  const [contactSearch, setContactSearch] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const [updateProject, { loading: updating }] = useUpdateProjectMutation();
-  const { data: codeDescData } = useProjectCodeDescriptionsQuery();
+  const { data: codeDescData, loading: dropdownLoading } = useProjectDropdownOptionsQuery();
+
+  // Fetch person contacts for the current workspace, with search and pagination
+  const { data: contactsData, loading: contactsLoading } = useListContactsQuery({
+    variables: {
+      workspaceId: workspace_id,
+      page: { number: 1, size: 20 },
+      contactType: ContactType.Person,
+    },
+    skip: !workspace_id,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const allContacts = React.useMemo(() => {
+    if (!contactsData?.listContacts?.items) return [];
+    return contactsData.listContacts.items
+      .filter((c) => c.__typename === "PersonContact")
+      .map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        role: c.role,
+        profilePicture: c.profilePicture,
+      }));
+  }, [contactsData]);
+
+  // Use relationship types as returned by the API (no custom sorting)
+  const relationTypes = (codeDescData?.listProjectContactRelationCodes ?? []).filter(Boolean);
 
   // Prefill form when project data loads
   useEffect(() => {
@@ -107,6 +171,27 @@ export default function EditProjectPage() {
           ? (project.scope_of_work.filter(Boolean) as ScopeOfWorkEnum[])
           : [],
       );
+      if (Array.isArray(project.project_contacts)) {
+        const hydrated = project.project_contacts
+          .filter(
+            (c: any) =>
+              c &&
+              c.contact &&
+              c.contact.__typename === "PersonContact" &&
+              c.contact.id &&
+              c.contact.name,
+          )
+          .map((c: any) => ({
+            id: c.contact.id,
+            name: c.contact.name,
+            role: c.contact.role,
+            profilePicture: c.contact.profilePicture,
+            relationToProject: c.relation_to_project || "",
+          }));
+        setSelectedContacts(hydrated);
+      } else {
+        setSelectedContacts([]);
+      }
     }
   }, [project]);
 
@@ -123,6 +208,14 @@ export default function EditProjectPage() {
       setErrorMsg("Project code is required.");
       return;
     }
+    if (selectedContacts.length === 0) {
+      setErrorMsg("At least one project contact is required.");
+      return;
+    }
+    if (selectedContacts.some((c) => !c.relationToProject)) {
+      setErrorMsg("Each contact must have a relationship type.");
+      return;
+    }
 
     try {
       const res = await updateProject({
@@ -135,6 +228,10 @@ export default function EditProjectPage() {
             description: description.trim() ? description : undefined,
             status: status || undefined,
             scope_of_work: scopeOfWork.length > 0 ? scopeOfWork : undefined,
+            project_contacts: selectedContacts.map((c) => ({
+              contact_id: c.id,
+              relation_to_project: c.relationToProject as ProjectContactRelationEnum,
+            })),
           },
         },
       });
@@ -206,6 +303,114 @@ export default function EditProjectPage() {
           multiline
           minRows={2}
         />
+        {/* Contact selection */}
+        <Autocomplete
+          options={allContacts.filter((c) => !selectedContacts.some((sel) => sel.id === c.id))}
+          getOptionLabel={(option) => option.name + (option.role ? ` (${option.role})` : "")}
+          value={null}
+          onChange={(_, value) => {
+            if (
+              value &&
+              selectedContacts.length < 10 &&
+              !selectedContacts.some((c) => c.id === value.id)
+            ) {
+              setSelectedContacts([...selectedContacts, { ...value, relationToProject: "" }]);
+            }
+          }}
+          inputValue={contactSearch}
+          onInputChange={(_, value) => setContactSearch(value)}
+          loading={contactsLoading}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Add Contact (max 10)"
+              margin="normal"
+              fullWidth
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {contactsLoading ? <CircularProgress size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          disabled={selectedContacts.length >= 10}
+        />
+        <List dense sx={{ mb: 2 }}>
+          {selectedContacts.map((contact, idx) => (
+            <ListItem
+              key={contact.id}
+              alignItems="center"
+              secondaryAction={
+                <IconButton
+                  edge="end"
+                  aria-label="remove"
+                  onClick={() =>
+                    setSelectedContacts((prev) => prev.filter((c) => c.id !== contact.id))
+                  }
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar src={contact.profilePicture || undefined}>{contact.name[0]}</Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={contact.name}
+                secondary={contact.role}
+                sx={{ minWidth: 120, maxWidth: 180 }}
+              />
+              <FormControl
+                size="small"
+                sx={{ minWidth: 180, ml: 2 }}
+                required
+                error={!contact.relationToProject}
+                disabled={dropdownLoading || !relationTypes.length}
+              >
+                <InputLabel>Relationship</InputLabel>
+                <Select
+                  label="Relationship"
+                  value={contact.relationToProject}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setSelectedContacts((prev) =>
+                      prev.map((c, i) => (i === idx ? { ...c, relationToProject: code } : c)),
+                    );
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                      },
+                    },
+                  }}
+                >
+                  {dropdownLoading && (
+                    <MenuItem disabled>
+                      <em>Loading...</em>
+                    </MenuItem>
+                  )}
+                  {!dropdownLoading && relationTypes.length === 0 && (
+                    <MenuItem disabled>
+                      <em>No relationship types found</em>
+                    </MenuItem>
+                  )}
+                  {relationTypes.map((option) => (
+                    <MenuItem key={option!.code} value={option!.code}>
+                      {option!.description}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </ListItem>
+          ))}
+        </List>
         <FormControl fullWidth margin="normal" disabled={updating}>
           <InputLabel id="status-label">Project Status</InputLabel>
           <Select

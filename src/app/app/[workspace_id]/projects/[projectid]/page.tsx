@@ -3,13 +3,14 @@
 import { graphql } from "@/graphql";
 import {
   useDeleteProjectMutation,
-  useGetProjectByIdQuery,
+  useGetProjectByIdForDisplayQuery,
   useProjectCodeDescriptionsQuery,
 } from "@/graphql/hooks";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
@@ -32,7 +33,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 graphql(`
-  query getProjectById($id: String!) {
+  query getProjectByIdForDisplay($id: String!) {
     getProjectById(id: $id) {
       id
       name
@@ -45,6 +46,18 @@ graphql(`
       deleted
       scope_of_work
       status
+      project_contacts {
+        contact_id
+        relation_to_project
+        contact {
+          ... on PersonContact {
+            id
+            name
+            role
+            profilePicture
+          }
+        }
+      }
     }
   }
 `);
@@ -69,13 +82,13 @@ graphql(`
 `);
 
 export default function ProjectDetailPage() {
-  const { projectid } = useParams<{ projectid: string }>();
+  const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleteProject, { loading: deleting }] = useDeleteProjectMutation();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { data, loading, error } = useGetProjectByIdQuery({
+  const { data, loading, error } = useGetProjectByIdForDisplayQuery({
     variables: { id: projectid ?? "" },
     skip: !projectid,
     fetchPolicy: "cache-and-network",
@@ -295,6 +308,68 @@ export default function ProjectDetailPage() {
               <Grid size={{ xs: 12 }}>
                 <Divider />
               </Grid>
+              {/* Project Contacts Section */}
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                  Project Contacts
+                </Typography>
+                {project.project_contacts && project.project_contacts.length > 0 ? (
+                  <Box>
+                    {project.project_contacts
+                      .filter(
+                        (c: any) =>
+                          c &&
+                          c.contact &&
+                          c.contact.__typename === "PersonContact" &&
+                          c.contact.id &&
+                          c.contact.name,
+                      )
+                      .map((c: any) => (
+                        <Box
+                          key={c.contact_id}
+                          display="flex"
+                          alignItems="center"
+                          gap={2}
+                          sx={{ mb: 1 }}
+                        >
+                          <Avatar
+                            src={c.contact.profilePicture || undefined}
+                            sx={{ width: 32, height: 32 }}
+                          >
+                            {c.contact.name[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body1" fontWeight={500}>
+                              {c.contact.name}
+                            </Typography>
+                            {c.contact.role && (
+                              <Typography variant="body2" color="text.secondary">
+                                {c.contact.role}
+                              </Typography>
+                            )}
+                          </Box>
+                          <Chip
+                            label={c.relation_to_project.replace(/_/g, " ")}
+                            size="small"
+                            color="info"
+                            sx={{
+                              fontFamily: "monospace",
+                              fontWeight: 600,
+                              ml: 2,
+                            }}
+                          />
+                        </Box>
+                      ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No contacts assigned.
+                  </Typography>
+                )}
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Divider />
+              </Grid>
               <Grid size={{ xs: 12 }}>
                 <Box display="flex" alignItems="center" gap={1} mt={1} justifyContent="flex-end">
                   <Typography variant="body2" color="text.secondary">
@@ -325,7 +400,7 @@ export default function ProjectDetailPage() {
             variant="outlined"
             color="primary"
             startIcon={<EditIcon />}
-            onClick={() => router.push(`/app/${project.companyId}/projects/${project.id}/edit`)}
+            onClick={() => router.push(`/app/${workspace_id}/projects/${project.id}/edit`)}
             data-testid="project-details-edit-btn"
             aria-label="Edit Project"
           >
