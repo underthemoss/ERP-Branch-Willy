@@ -1,7 +1,11 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useDeleteProjectMutation, useGetProjectByIdQuery } from "@/graphql/hooks";
+import {
+  useDeleteProjectMutation,
+  useGetProjectByIdQuery,
+  useProjectCodeDescriptionsQuery,
+} from "@/graphql/hooks";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -39,11 +43,24 @@ graphql(`
       created_by
       updated_at
       deleted
+      scope_of_work
+      status
     }
   }
 `);
 
 graphql(`
+  query ProjectCodeDescriptions {
+    listProjectStatusCodes {
+      code
+      description
+    }
+    listScopeOfWorkCodes {
+      code
+      description
+    }
+  }
+
   mutation deleteProject($id: String!) {
     deleteProject(id: $id) {
       id
@@ -63,6 +80,24 @@ export default function ProjectDetailPage() {
     skip: !projectid,
     fetchPolicy: "cache-and-network",
   });
+
+  const { data: codeDescData } = useProjectCodeDescriptionsQuery();
+
+  const scopeOfWorkDescMap = codeDescData?.listScopeOfWorkCodes
+    ? Object.fromEntries(
+        codeDescData.listScopeOfWorkCodes
+          .filter(Boolean)
+          .map((item) => [item.code, item.description]),
+      )
+    : {};
+
+  const statusDescMap = codeDescData?.listProjectStatusCodes
+    ? Object.fromEntries(
+        codeDescData.listProjectStatusCodes
+          .filter(Boolean)
+          .map((item) => [item.code, item.description]),
+      )
+    : {};
 
   const project = data?.getProjectById;
 
@@ -199,6 +234,63 @@ export default function ProjectDetailPage() {
                 <Typography variant="body2" gutterBottom>
                   {project.created_by}
                 </Typography>
+              </Grid>
+              <Grid size={{ xs: 12 }}></Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Scope of Work
+                </Typography>
+                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
+                  {project.scope_of_work && project.scope_of_work.length > 0 ? (
+                    project.scope_of_work.filter(Boolean).map((code) => (
+                      <Tooltip
+                        key={code as string}
+                        title={scopeOfWorkDescMap[code as string] || ""}
+                        arrow
+                      >
+                        <Chip
+                          label={code as string}
+                          size="small"
+                          sx={{
+                            fontFamily: "monospace",
+                            fontWeight: 600,
+                            bgcolor: "primary.light",
+                            color: "primary.contrastText",
+                            letterSpacing: 0.5,
+                          }}
+                        />
+                      </Tooltip>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      —
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Project Status
+                </Typography>
+                {project.status ? (
+                  <Tooltip title={statusDescMap[project.status] || ""} arrow>
+                    <Chip
+                      label={project.status}
+                      size="small"
+                      sx={{
+                        fontFamily: "monospace",
+                        fontWeight: 600,
+                        bgcolor: "info.light",
+                        color: "info.contrastText",
+                        letterSpacing: 0.5,
+                      }}
+                    />
+                  </Tooltip>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    —
+                  </Typography>
+                )}
               </Grid>
               <Grid size={{ xs: 12 }}>
                 <Divider />
