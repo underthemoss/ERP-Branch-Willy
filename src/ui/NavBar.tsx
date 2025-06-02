@@ -1,9 +1,14 @@
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
@@ -27,6 +32,7 @@ export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
   const { user } = useAuth0();
   const pathname = usePathname();
+  const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
   console.log("pathname", pathname);
   const workspaces =
     data?.listWorkspaces?.items.map((d) => {
@@ -47,42 +53,72 @@ export const NavBar = () => {
       href: `/app/${currentWorkspace?.id}`,
       icon: <HomeOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}`,
+      testId: "nav-home",
     },
     {
       text: "Sales Order",
       href: `/app/${currentWorkspace?.id}/sales-orders`,
       icon: <SyncAltIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
+      testId: "nav-sales-order",
     },
     {
       text: "Transactions",
       href: `/app/${currentWorkspace?.id}/transactions`,
       icon: <SyncAltIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/transactions`,
+      testId: "nav-transactions",
     },
     {
       text: "Assignments",
       href: `/app/${currentWorkspace?.id}/assignments`,
       icon: <PostAddIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/assignments`,
+      testId: "nav-assignments",
     },
     {
       text: "Inventory",
       href: `/app/${currentWorkspace?.id}/inventory`,
       icon: <DescriptionOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
+      testId: "nav-inventory",
     },
     {
       text: "Prices",
       href: `/app/${currentWorkspace?.id}/prices`,
       icon: <AttachMoneyIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/prices`,
+      testId: "nav-prices",
     },
     {
       text: "Projects",
       href: `/app/${currentWorkspace?.id}/projects`,
       icon: <FolderOpenIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/projects`,
+      testId: "nav-projects",
+    },
+    {
+      text: "Contacts",
+      href: `/app/${currentWorkspace?.id}/contacts`,
+      icon: <ContactsOutlinedIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/contacts`,
+      testId: "nav-contacts",
+      subitems: [
+        {
+          text: "Businesses",
+          href: `/app/${currentWorkspace?.id}/contacts/businesses`,
+          icon: <BusinessOutlinedIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/contacts/businesses`,
+          testId: "nav-contacts-businesses",
+        },
+        {
+          text: "Employees",
+          href: `/app/${currentWorkspace?.id}/contacts/employees`,
+          icon: <PeopleOutlineIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/contacts/employees`,
+          testId: "nav-contacts-employees",
+        },
+      ],
     },
   ];
 
@@ -120,6 +156,7 @@ export const NavBar = () => {
           {currentWorkspace?.image ? (
             <img
               src={currentWorkspace?.image}
+              alt=""
               style={{
                 width: "100%",
                 height: "100%",
@@ -194,37 +231,140 @@ export const NavBar = () => {
           {navItems.map((item, index) => (
             <React.Fragment key={index}>
               <ListItem disablePadding>
-                <ListItemButton
-                  component={Link}
-                  href={item.href}
-                  selected={item.selected}
-                  sx={{
-                    px: "12px",
-                    borderRadius: "8px",
-                    color: item.selected ? "text.primary" : "grey.400",
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{ color: item.selected ? "text.primary" : "grey.400", minWidth: "30px" }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    disableTypography
+                {item.subitems ? (
+                  <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+                    <ListItemButton
+                      component={Link}
+                      href={item.href}
+                      selected={item.selected}
+                      data-testid={item.testId}
+                      sx={{
+                        px: "12px",
+                        borderRadius: "8px",
+                        color: item.selected ? "text.primary" : "grey.400",
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{
+                          color: item.selected ? "text.primary" : "grey.400",
+                          minWidth: "30px",
+                        }}
+                      >
+                        {item.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        disableTypography
+                        sx={{
+                          color: item.selected ? "text.primary" : "grey.400",
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontStyle: "normal",
+                          fontWeight: 500,
+                          lineHeight: "21px",
+                          letterSpacing: "0.28px",
+                        }}
+                      >
+                        {item.text}
+                      </ListItemText>
+                    </ListItemButton>
+                    <IconButton
+                      size="small"
+                      data-testid={`expand-nav-${item.text.toLowerCase().replace(/\s+/g, "-")}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedNav(expandedNav === item.text ? null : item.text);
+                      }}
+                      sx={{
+                        ml: 0.5,
+                        color: item.selected ? "text.primary" : "grey.400",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {expandedNav === item.text ? (
+                        <ExpandLess fontSize="small" />
+                      ) : (
+                        <ExpandMore fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <ListItemButton
+                    component={Link}
+                    href={item.href}
+                    selected={item.selected}
+                    data-testid={item.testId}
                     sx={{
+                      px: "12px",
+                      borderRadius: "8px",
                       color: item.selected ? "text.primary" : "grey.400",
-                      fontFamily: "Inter",
-                      fontSize: "14px",
-                      fontStyle: "normal",
-                      fontWeight: 500,
-                      lineHeight: "21px",
-                      letterSpacing: "0.28px",
                     }}
                   >
-                    {item.text}
-                  </ListItemText>
-                </ListItemButton>
+                    <ListItemIcon
+                      sx={{ color: item.selected ? "text.primary" : "grey.400", minWidth: "30px" }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      disableTypography
+                      sx={{
+                        color: item.selected ? "text.primary" : "grey.400",
+                        fontFamily: "Inter",
+                        fontSize: "14px",
+                        fontStyle: "normal",
+                        fontWeight: 500,
+                        lineHeight: "21px",
+                        letterSpacing: "0.28px",
+                      }}
+                    >
+                      {item.text}
+                    </ListItemText>
+                  </ListItemButton>
+                )}
               </ListItem>
+              {item.subitems &&
+                expandedNav === item.text &&
+                item.subitems.map((subitem, subindex) => (
+                  <ListItem disablePadding key={subindex}>
+                    <ListItemButton
+                      component={Link}
+                      href={subitem.href}
+                      selected={subitem.selected}
+                      data-testid={subitem.testId}
+                      sx={{
+                        pl: "48px",
+                        borderRadius: "8px",
+                        color: subitem.selected ? "text.primary" : "grey.400",
+                      }}
+                    >
+                      {subitem.icon && (
+                        <ListItemIcon
+                          sx={{
+                            color: subitem.selected ? "text.primary" : "grey.400",
+                            minWidth: "30px",
+                          }}
+                        >
+                          {subitem.icon}
+                        </ListItemIcon>
+                      )}
+                      <ListItemText
+                        disableTypography
+                        sx={{
+                          color: subitem.selected ? "text.primary" : "grey.400",
+                          fontFamily: "Inter",
+                          fontSize: "13px",
+                          fontStyle: "normal",
+                          fontWeight: 400,
+                          lineHeight: "19px",
+                          letterSpacing: "0.26px",
+                        }}
+                      >
+                        {subitem.text}
+                      </ListItemText>
+                    </ListItemButton>
+                  </ListItem>
+                ))}
             </React.Fragment>
           ))}
         </List>

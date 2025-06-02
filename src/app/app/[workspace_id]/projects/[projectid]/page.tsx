@@ -101,7 +101,7 @@ export default function ProjectDetailPage() {
           <CardContent>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12 }}>
-                <Typography variant="h5" fontWeight={700} gutterBottom>
+                <Typography variant="h5" component="h1" fontWeight={700} gutterBottom>
                   {project.name}
                 </Typography>
                 <Divider />

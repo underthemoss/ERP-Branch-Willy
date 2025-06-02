@@ -31,6 +31,7 @@ export const PersonContactFieldsFragment = graphql(`
     email
     role
     businessId
+    updatedAt
   }
 `);
 
@@ -46,6 +47,7 @@ export const BusinessContactFieldsFragment = graphql(`
     address
     taxId
     website
+    updatedAt
   }
 `);
 
