@@ -5,8 +5,20 @@ on:
 
 jobs:
   test:
-    name: Run Playwright tests
+    name: Run Playwright tests (${{ matrix.spec }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          - tests/e2e/auth.spec.ts
+          - tests/e2e/contacts-tests/business-table-flow.spec.ts
+          - tests/e2e/contacts-tests/employee-table-flow.spec.ts
+          - tests/e2e/contacts-tests/full-business-contact-flow.spec.ts
+          - tests/e2e/contacts-tests/full-employee-contact-flow.spec.ts
+          - tests/e2e/inventory.spec.ts
+          - tests/e2e/projects-edit.spec.ts
+          - tests/e2e/projects.spec.ts
     env:
       TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
       NEXT_PUBLIC_AUTH0_CLIENT_ID: 53s1fXaczcbCAuqxm94YVomnArbNyiMu
@@ -34,11 +46,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
       - name: Run Playwright tests
-        run: npm run test:playwright
+        run: npx playwright test ${{ matrix.spec }}
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.spec }}
           path: test-results/
           retention-days: 7
