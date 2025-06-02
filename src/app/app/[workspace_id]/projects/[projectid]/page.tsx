@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { useDeleteProjectMutation, useGetProjectByIdQuery } from "@/graphql/hooks";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import EditIcon from "@mui/icons-material/Edit";
 import {
   Alert,
   Box,
@@ -227,7 +228,17 @@ export default function ProjectDetailPage() {
         </Card>
       )}
       {project && (
-        <Box display="flex" justifyContent="flex-end" mt={2}>
+        <Box display="flex" justifyContent="flex-end" alignItems="center" gap={1} mt={2}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<EditIcon />}
+            onClick={() => router.push(`/app/${project.companyId}/projects/${project.id}/edit`)}
+            data-testid="project-details-edit-btn"
+            aria-label="Edit Project"
+          >
+            Edit
+          </Button>
           <Button
             variant="outlined"
             color="error"
