@@ -87,7 +87,7 @@ export default function ProjectDetailPage() {
     ? Object.fromEntries(
         codeDescData.listScopeOfWorkCodes
           .filter(Boolean)
-          .map((item) => [item.code, item.description]),
+          .map((item) => [item!.code, item!.description]),
       )
     : {};
 
@@ -95,7 +95,7 @@ export default function ProjectDetailPage() {
     ? Object.fromEntries(
         codeDescData.listProjectStatusCodes
           .filter(Boolean)
-          .map((item) => [item.code, item.description]),
+          .map((item) => [item!.code, item!.description]),
       )
     : {};
 

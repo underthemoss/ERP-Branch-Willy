@@ -111,9 +111,16 @@ export default function ProjectsPage() {
         const value: string[] = params.value ?? [];
         if (!value.length) return "";
         return (
-          <Box display="flex" flexWrap="wrap" gap={0.5}>
+          <Box>
             {value.map((scope) => (
-              <Chip key={scope} label={scope.replace(/_/g, " ")} size="small" />
+              <Chip
+                key={scope}
+                label={scope.replace(/_/g, " ")}
+                size="small"
+                sx={{
+                  verticalAlign: "middle",
+                }}
+              />
             ))}
           </Box>
         );
