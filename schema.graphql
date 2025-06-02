@@ -101,6 +101,33 @@ type AssetRspBranch {
   name: String
 }
 
+type AssetSchedule {
+  asset_id: String!
+  company_id: String!
+  created_at: String!
+  created_by: String!
+  end_date: String!
+  id: String!
+  project_id: String!
+  start_date: String!
+  updated_at: String!
+  updated_by: String!
+}
+
+input AssetScheduleInput {
+  asset_id: String!
+  end_date: String!
+  project_id: String!
+  start_date: String!
+}
+
+type AssetScheduleListResult {
+  items: [AssetSchedule!]!
+  limit: Int!
+  offset: Int!
+  total: Int!
+}
+
 type AssetTracker {
   company_id: String
   created: String
@@ -344,6 +371,7 @@ type ListWorkspacesResult {
 }
 
 type Mutation {
+  createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createPersonContact(input: PersonContactInput!): PersonContact
   createPriceBook(input: CreatePriceBookInput!): PriceBook
@@ -458,6 +486,16 @@ type Project {
   id: String!
   name: String!
   project_code: String!
+
+  """
+  Project scope of work. Allowed values: SITE_CIVIL, FOUNDATIONS, STRUCTURAL_FRAME, BUILDING_ENVELOPE, INTERIOR_BUILD_OUT, MEP, SPECIALTY_SYSTEMS, COMMISSIONING_STARTUP, DEMOBILIZATION_CLOSE_OUT, WARRANTY_SERVICES
+  """
+  scope_of_work: [ScopeOfWorkEnum]
+
+  """
+  Project status. Allowed values: CONCEPT_OPPORTUNITY, BIDDING_TENDERING, PRE_CONSTRUCTION, MOBILIZATION, ACTIVE_CONSTRUCTION, SUBSTANTIAL_COMPLETION, CLOSE_OUT, WARRANTY_MAINTENANCE, ARCHIVED_CLOSED
+  """
+  status: ProjectStatusEnum
   updated_at: String!
 }
 
@@ -466,6 +504,45 @@ input ProjectInput {
   description: String
   name: String!
   project_code: String!
+
+  """
+  Project scope of work. Allowed values: SITE_CIVIL, FOUNDATIONS, STRUCTURAL_FRAME, BUILDING_ENVELOPE, INTERIOR_BUILD_OUT, MEP, SPECIALTY_SYSTEMS, COMMISSIONING_STARTUP, DEMOBILIZATION_CLOSE_OUT, WARRANTY_SERVICES
+  """
+  scope_of_work: [ScopeOfWorkEnum]
+
+  """
+  Project status. Allowed values: CONCEPT_OPPORTUNITY, BIDDING_TENDERING, PRE_CONSTRUCTION, MOBILIZATION, ACTIVE_CONSTRUCTION, SUBSTANTIAL_COMPLETION, CLOSE_OUT, WARRANTY_MAINTENANCE, ARCHIVED_CLOSED
+  """
+  status: ProjectStatusEnum
+}
+
+type ProjectStatusCode {
+  code: String!
+  description: String!
+}
+
+"""
+Project status. Allowed values:
+- CONCEPT_OPPORTUNITY: CONCEPT / OPPORTUNITY
+- BIDDING_TENDERING: BIDDING / TENDERING
+- PRE_CONSTRUCTION: PRE‑CONSTRUCTION
+- MOBILIZATION: MOBILIZATION
+- ACTIVE_CONSTRUCTION: ACTIVE CONSTRUCTION
+- SUBSTANTIAL_COMPLETION: SUBSTANTIAL COMPLETION
+- CLOSE_OUT: CLOSE‑OUT
+- WARRANTY_MAINTENANCE: WARRANTY / MAINTENANCE
+- ARCHIVED_CLOSED: ARCHIVED / CLOSED
+"""
+enum ProjectStatusEnum {
+  ACTIVE_CONSTRUCTION
+  ARCHIVED_CLOSED
+  BIDDING_TENDERING
+  CLOSE_OUT
+  CONCEPT_OPPORTUNITY
+  MOBILIZATION
+  PRE_CONSTRUCTION
+  SUBSTANTIAL_COMPLETION
+  WARRANTY_MAINTENANCE
 }
 
 type Query {
@@ -476,14 +553,25 @@ type Query {
   getPriceBookById(id: ID!): PriceBook
   getProjectById(id: String!): Project
   helloWorld: String
+  listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+
+  """
+  Lists all possible project status codes and their descriptions, including recommended usage and stage meaning.
+  """
+  listProjectStatusCodes: [ProjectStatusCode]
   listProjects: [Project]
   listSalesOrders(limit: Int = 20, offset: Int = 0): SalesOrderListResult
+
+  """
+  Lists all possible scope_of_work codes and their descriptions, including recommended usage and stage meaning.
+  """
+  listScopeOfWorkCodes: [ScopeOfWorkCode]
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }
@@ -597,6 +685,37 @@ type SalesOrderListResult {
   limit: Int!
   offset: Int!
   total: Int!
+}
+
+type ScopeOfWorkCode {
+  code: String!
+  description: String!
+}
+
+"""
+Project scope of work. Allowed values:
+- SITE_CIVIL: Clearing, grubbing, earthwork, underground utilities, erosion control, paving, striping, hardscape, and landscaping.
+- FOUNDATIONS: Deep (pile, caisson) and shallow (spread footing, slab‑on‑grade) foundations, waterproofing, and sub‑slab drainage systems.
+- STRUCTURAL_FRAME: Structural steel or cast‑in‑place concrete frame, metal decking, shear bracing, anchor bolts, and related fireproofing.
+- BUILDING_ENVELOPE: Exterior wall systems (masonry, precast, curtain wall), thermal & moisture protection, roofing systems, windows, skylights, and exterior doors.
+- INTERIOR_BUILD_OUT: Metal studs, drywall, ceilings, flooring, interior glazing, millwork, casework, interior doors, hardware, paint, and specialty finishes.
+- MEP: HVAC equipment & ductwork, plumbing supply & waste, fire protection systems, medium- and low-voltage electrical distribution, lighting, and emergency power.
+- SPECIALTY_SYSTEMS: Vertical transportation (elevators, lifts), building automation, security & access control, audiovisual, structured cabling, and telecom infrastructure.
+- COMMISSIONING_STARTUP: Functional performance testing, TAB (testing, adjusting & balancing), systems verification, owner training sessions, and punch‑list resolution.
+- DEMOBILIZATION_CLOSE_OUT: Final cleaning, removal of temporary facilities, restoration of lay‑down areas, compilation of turnover documentation, warranty certificates, lien waivers, and final pay application.
+- WARRANTY_SERVICES: Scheduled inspections, corrective work, preventive maintenance, and performance monitoring through warranty expiration.
+"""
+enum ScopeOfWorkEnum {
+  BUILDING_ENVELOPE
+  COMMISSIONING_STARTUP
+  DEMOBILIZATION_CLOSE_OUT
+  FOUNDATIONS
+  INTERIOR_BUILD_OUT
+  MEP
+  SITE_CIVIL
+  SPECIALTY_SYSTEMS
+  STRUCTURAL_FRAME
+  WARRANTY_SERVICES
 }
 
 type ServiceTask {

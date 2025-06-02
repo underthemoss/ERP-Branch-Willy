@@ -43,6 +43,8 @@ graphql(`
       }
       updated_at
       deleted
+      scope_of_work
+      status
     }
   }
 `);
@@ -69,6 +71,8 @@ export default function ProjectsPage() {
           : "",
         updated_at: project?.updated_at ?? "",
         deleted: project?.deleted ?? false,
+        scope_of_work: project?.scope_of_work ?? [],
+        status: project?.status ?? "",
       })) ?? []
     );
   }, [data]);
@@ -98,6 +102,35 @@ export default function ProjectsPage() {
     { field: "project_code", headerName: "Project Code", flex: 2, minWidth: 200 },
     { field: "description", headerName: "Description", flex: 2 },
     { field: "company", headerName: "Company", flex: 2, minWidth: 200 },
+    {
+      field: "scope_of_work",
+      headerName: "Scope of Work",
+      flex: 2,
+      minWidth: 200,
+      renderCell: (params) => {
+        const value: string[] = params.value ?? [];
+        if (!value.length) return "";
+        return (
+          <Box display="flex" flexWrap="wrap" gap={0.5}>
+            {value.map((scope) => (
+              <Chip key={scope} label={scope.replace(/_/g, " ")} size="small" />
+            ))}
+          </Box>
+        );
+      },
+    },
+    {
+      field: "status",
+      headerName: "Project Status",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => {
+        const value: string = params.value ?? "";
+        if (!value) return "";
+        // Optionally, you could map enum values to friendlier labels here
+        return <Chip label={value.replace(/_/g, " ")} color="info" size="small" />;
+      },
+    },
     {
       field: "created_at",
       headerName: "Created At",
