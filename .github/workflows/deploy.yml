@@ -15,7 +15,7 @@ jobs:
     env:
       ECR_REGISTRY: 696398453447.dkr.ecr.us-west-2.amazonaws.com
       ECR_REPOSITORY: es-erp-stage
-      IMAGE_TAG: v10${{ github.run_number }}-github-test-push
+      IMAGE_TAG: v10${{ github.run_number }}
 
     steps:
       - name: Checkout code
