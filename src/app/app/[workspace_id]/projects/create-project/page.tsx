@@ -1,8 +1,9 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useCreateProjectMutation, useProjectDropdownOptionsQuery } from "@/graphql/hooks";
 import { ProjectStatusEnum, ScopeOfWorkEnum } from "@/graphql/graphql";
+import { useCreateProjectMutation, useProjectDropdownOptionsQuery } from "@/graphql/hooks";
+import ClearIcon from "@mui/icons-material/Clear";
 import {
   Alert,
   Box,
@@ -19,7 +20,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import ClearIcon from "@mui/icons-material/Clear";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -41,7 +41,6 @@ graphql(`
     }
   }
 `);
-
 
 export default function CreateProjectPage() {
   const [name, setName] = useState("");
@@ -176,7 +175,11 @@ export default function CreateProjectPage() {
                   <Typography variant="subtitle2" sx={{ fontFamily: "monospace", fontWeight: 600 }}>
                     {option!.code}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ whiteSpace: "pre-line" }}
+                  >
                     {option!.description}
                   </Typography>
                 </Box>
@@ -195,7 +198,7 @@ export default function CreateProjectPage() {
               setScopeOfWork(
                 typeof value === "string"
                   ? (value.split(",") as ScopeOfWorkEnum[])
-                  : (value as ScopeOfWorkEnum[])
+                  : (value as ScopeOfWorkEnum[]),
               );
             }}
             input={
@@ -249,7 +252,11 @@ export default function CreateProjectPage() {
                   <Typography variant="subtitle2" sx={{ fontFamily: "monospace", fontWeight: 600 }}>
                     {option!.code}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ whiteSpace: "pre-line" }}
+                  >
                     {option!.description}
                   </Typography>
                 </Box>
