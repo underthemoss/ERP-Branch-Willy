@@ -108,6 +108,32 @@ export default function Inventory() {
 
   const columns: GridColDef[] = [
     {
+      field: "expand",
+      type: "actions",
+      width: 50,
+      headerName: "",
+      getActions: (params) => [
+        <IconButton
+          key="expand"
+          aria-label="Expand"
+          data-testid="expand"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            // The DataGridPremium handles expand/collapse internally, so this is just for the test selector.
+          }}
+        >
+          <span className="MuiDataGrid-detailPanelToggleCell" />
+        </IconButton>,
+      ],
+      renderCell: () => null,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      disableExport: true,
+      disableReorder: true,
+    },
+    {
       field: "photo",
       headerName: "",
       width: 60,

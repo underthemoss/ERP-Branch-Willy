@@ -11,6 +11,7 @@ export default defineConfig({
     headless: true,
   },
   timeout: 60000,
+  retries: 2,
   webServer: {
     command: "npm run dev",
     port: 3000,

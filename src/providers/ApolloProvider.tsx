@@ -29,7 +29,7 @@ export const ApolloClientProvider: React.FC<{
       link: authLink.concat(httpLink),
       cache: new InMemoryCache(),
     });
-  }, []);
+  }, [api, getAccessTokenSilently]);
 
   return <ApolloProvider client={client}>{children}</ApolloProvider>;
 };

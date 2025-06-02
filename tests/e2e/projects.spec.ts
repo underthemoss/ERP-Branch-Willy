@@ -119,8 +119,13 @@ test.describe("Projects E2E", () => {
     // Select the "Deleted" option
     await page.getByRole("option", { name: "Deleted" }).click();
 
+    // Search for the deleted project by name
+    await page.getByPlaceholder("Search project by name").fill(name);
+
     // Verify the deleted project appears in the filtered list
     const projectList = page.getByTestId("project-list");
-    await expect(projectList.getByText(name)).toBeVisible();
+    const deletedRow = projectList.getByText(name);
+    await deletedRow.scrollIntoViewIfNeeded();
+    await expect(deletedRow).toBeVisible();
   });
 });

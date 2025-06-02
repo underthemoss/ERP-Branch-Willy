@@ -21,7 +21,7 @@ const AuthWall: React.FC<{
 
       redirect("/auth/error");
     });
-  }, []);
+  }, [getAccessTokenSilently, loginWithRedirect]);
 
   return children;
 };
