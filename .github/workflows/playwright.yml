@@ -5,8 +5,12 @@ on:
 
 jobs:
   test:
-    name: Run Playwright tests
+    name: Run Playwright tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
       NEXT_PUBLIC_AUTH0_CLIENT_ID: 53s1fXaczcbCAuqxm94YVomnArbNyiMu
@@ -34,11 +38,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
       - name: Run Playwright tests
-        run: npm run test:playwright
+        run: npx playwright test --shard ${{ matrix.shard }}/4
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
