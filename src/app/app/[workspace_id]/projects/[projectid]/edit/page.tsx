@@ -208,10 +208,6 @@ export default function EditProjectPage() {
       setErrorMsg("Project code is required.");
       return;
     }
-    if (selectedContacts.length === 0) {
-      setErrorMsg("At least one project contact is required.");
-      return;
-    }
     if (selectedContacts.some((c) => !c.relationToProject)) {
       setErrorMsg("Each contact must have a relationship type.");
       return;
