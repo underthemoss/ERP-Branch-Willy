@@ -60,7 +60,7 @@ prettier_check:
 playwright:
   image: mcr.microsoft.com/playwright:v1.52.0-noble
   stage: test
-  parallel: 3
+  parallel: 8
   rules:
     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
   cache:

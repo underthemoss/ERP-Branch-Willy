@@ -350,6 +350,7 @@ type Mutation {
   createProject(input: ProjectInput): Project
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
   createSalePrice(input: CreateSalePriceInput!): SalePrice
+  createSalesOrder(input: SalesOrderInput): SalesOrder
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
   deletePriceBookById(id: ID!): Boolean
@@ -482,6 +483,7 @@ type Query {
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
   listProjects: [Project]
+  listSalesOrders(limit: Int = 20, offset: Int = 0): SalesOrderListResult
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }
@@ -570,6 +572,31 @@ type SaleTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+type SalesOrder {
+  buyer_id: String!
+  company_id: String!
+  created_at: String!
+  id: String!
+  order_id: String!
+  project_id: String!
+  purchase_order_number: String!
+  updated_at: String!
+  updated_by: String!
+}
+
+input SalesOrderInput {
+  buyer_id: String!
+  project_id: String!
+  purchase_order_number: String!
+}
+
+type SalesOrderListResult {
+  items: [SalesOrder!]!
+  limit: Int!
+  offset: Int!
+  total: Int!
 }
 
 type ServiceTask {

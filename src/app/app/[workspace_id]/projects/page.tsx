@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { useListProjectsQuery } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
+import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
@@ -143,6 +144,30 @@ export default function ProjectsPage() {
       sortable: false,
       filterable: false,
     },
+    {
+      field: "actions",
+      headerName: "",
+      width: 60,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Tooltip title="Edit Project">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`projects/${params.row.id}/edit`);
+            }}
+            data-testid="project-edit-btn"
+            aria-label="Edit Project"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
 
   const router = useRouter();
@@ -216,7 +241,7 @@ export default function ProjectsPage() {
               hideFooter
               getRowId={(row) => row.id}
               initialState={{
-                pinnedColumns: { left: ["name"] },
+                pinnedColumns: { left: ["name"], right: ["actions"] },
               }}
               onRowClick={(params) => {
                 if (params.row.id) {
