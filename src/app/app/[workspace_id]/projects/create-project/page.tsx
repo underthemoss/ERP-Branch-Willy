@@ -1,8 +1,17 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { ProjectStatusEnum, ScopeOfWorkEnum } from "@/graphql/graphql";
-import { useCreateProjectMutation, useProjectDropdownOptionsQuery } from "@/graphql/hooks";
+import {
+  ContactType,
+  ProjectContactRelationEnum,
+  ProjectStatusEnum,
+  ScopeOfWorkEnum,
+} from "@/graphql/graphql";
+import {
+  useCreateProjectMutation,
+  useListContactsQuery,
+  useProjectDropdownOptionsQuery,
+} from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
 import {
   Alert,
@@ -10,16 +19,22 @@ import {
   Button,
   Checkbox,
   FormControl,
-  IconButton,
   InputAdornment,
   InputLabel,
-  ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
   TextField,
   Typography,
 } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import Avatar from "@mui/material/Avatar";
+import CircularProgress from "@mui/material/CircularProgress";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import ListItemText from "@mui/material/ListItemText";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -33,6 +48,10 @@ graphql(`
       code
       description
     }
+    listProjectContactRelationCodes {
+      code
+      description
+    }
   }
 
   mutation createProject($input: ProjectInput) {
@@ -42,14 +61,28 @@ graphql(`
   }
 `);
 
+type SelectedContact = {
+  id: string;
+  name: string;
+  role?: string | null;
+  profilePicture?: string | null;
+  relationToProject: string; // code from listProjectContactRelationCodes
+};
+
 export default function CreateProjectPage() {
   const [name, setName] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatusEnum | "">("");
   const [scopeOfWork, setScopeOfWork] = useState<ScopeOfWorkEnum[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<SelectedContact[]>([]);
+  const [contactSearch, setContactSearch] = useState("");
 
-  const { data: dropdownData, loading: dropdownLoading } = useProjectDropdownOptionsQuery();
+  const { data: dropdownData, loading: dropdownLoading } = useProjectDropdownOptionsQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  console.log(dropdownData)
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
@@ -57,6 +90,32 @@ export default function CreateProjectPage() {
   const [createProject, { loading }] = useCreateProjectMutation();
   const router = useRouter();
   const params = useParams<{ workspace_id: string }>();
+
+  // Fetch person contacts for the current workspace, with search and pagination
+  const { data: contactsData, loading: contactsLoading } = useListContactsQuery({
+    variables: {
+      workspaceId: params.workspace_id,
+      page: { number: 1, size: 20 },
+      contactType: ContactType.Person,
+    },
+    skip: !params.workspace_id,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const allContacts = React.useMemo(() => {
+    if (!contactsData?.listContacts?.items) return [];
+    return contactsData.listContacts.items
+      .filter((c) => c.__typename === "PersonContact")
+      .map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        role: c.role,
+        profilePicture: c.profilePicture,
+      }));
+  }, [contactsData]);
+
+  // Use relationship types as returned by the API (no custom sorting)
+  const relationTypes = (dropdownData?.listProjectContactRelationCodes ?? []).filter(Boolean);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +130,14 @@ export default function CreateProjectPage() {
       setError("Project code is required.");
       return;
     }
+    if (selectedContacts.length === 0) {
+      setError("At least one project contact is required.");
+      return;
+    }
+    if (selectedContacts.some((c) => !c.relationToProject)) {
+      setError("Each contact must have a relationship type.");
+      return;
+    }
 
     try {
       const res = await createProject({
@@ -82,6 +149,10 @@ export default function CreateProjectPage() {
             description: description.trim() ? description : undefined,
             status: status || undefined,
             scope_of_work: scopeOfWork.length > 0 ? scopeOfWork : undefined,
+            project_contacts: selectedContacts.map((c) => ({
+              contact_id: c.id,
+              relation_to_project: c.relationToProject as ProjectContactRelationEnum,
+            })),
           },
         },
       });
@@ -93,6 +164,7 @@ export default function CreateProjectPage() {
         setDescription("");
         setStatus("");
         setScopeOfWork([]);
+        setSelectedContacts([]);
       } else {
         setError("Failed to create project.");
       }
@@ -141,6 +213,114 @@ export default function CreateProjectPage() {
           multiline
           minRows={2}
         />
+        {/* Contact selection */}
+        <Autocomplete
+          options={allContacts.filter((c) => !selectedContacts.some((sel) => sel.id === c.id))}
+          getOptionLabel={(option) => option.name + (option.role ? ` (${option.role})` : "")}
+          value={null}
+          onChange={(_, value) => {
+            if (
+              value &&
+              selectedContacts.length < 10 &&
+              !selectedContacts.some((c) => c.id === value.id)
+            ) {
+              setSelectedContacts([...selectedContacts, { ...value, relationToProject: "" }]);
+            }
+          }}
+          inputValue={contactSearch}
+          onInputChange={(_, value) => setContactSearch(value)}
+          loading={contactsLoading}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Add Contact (max 10)"
+              margin="normal"
+              fullWidth
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {contactsLoading ? <CircularProgress size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          disabled={selectedContacts.length >= 10}
+        />
+        <List dense sx={{ mb: 2 }}>
+          {selectedContacts.map((contact, idx) => (
+            <ListItem
+              key={contact.id}
+              alignItems="center"
+              secondaryAction={
+                <IconButton
+                  edge="end"
+                  aria-label="remove"
+                  onClick={() =>
+                    setSelectedContacts((prev) => prev.filter((c) => c.id !== contact.id))
+                  }
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar src={contact.profilePicture || undefined}>{contact.name[0]}</Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={contact.name}
+                secondary={contact.role}
+                sx={{ minWidth: 120, maxWidth: 180 }}
+              />
+              <FormControl
+                size="small"
+                sx={{ minWidth: 180, ml: 2 }}
+                required
+                error={!contact.relationToProject}
+                disabled={dropdownLoading || !dropdownData?.listProjectContactRelationCodes?.length}
+              >
+                <InputLabel>Relationship</InputLabel>
+                <Select
+                  label="Relationship"
+                  value={contact.relationToProject}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setSelectedContacts((prev) =>
+                      prev.map((c, i) => (i === idx ? { ...c, relationToProject: code } : c)),
+                    );
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                      },
+                    },
+                  }}
+                >
+                  {dropdownLoading && (
+                    <MenuItem disabled>
+                      <em>Loading...</em>
+                    </MenuItem>
+                  )}
+                  {!dropdownLoading && relationTypes.length === 0 && (
+                    <MenuItem disabled>
+                      <em>No relationship types found</em>
+                    </MenuItem>
+                  )}
+                  {relationTypes.map((option) => (
+                    <MenuItem key={option!.code} value={option!.code}>
+                      {option!.description}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </ListItem>
+          ))}
+        </List>
         <FormControl fullWidth margin="normal" disabled={dropdownLoading}>
           <InputLabel id="status-label">Project Status</InputLabel>
           <Select
