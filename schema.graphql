@@ -488,6 +488,11 @@ type Project {
   project_code: String!
 
   """
+  Contacts associated with the project and their relation to the project.
+  """
+  project_contacts: [ProjectContact!]
+
+  """
   Project scope of work. Allowed values: SITE_CIVIL, FOUNDATIONS, STRUCTURAL_FRAME, BUILDING_ENVELOPE, INTERIOR_BUILD_OUT, MEP, SPECIALTY_SYSTEMS, COMMISSIONING_STARTUP, DEMOBILIZATION_CLOSE_OUT, WARRANTY_SERVICES
   """
   scope_of_work: [ScopeOfWorkEnum]
@@ -499,11 +504,50 @@ type Project {
   updated_at: String!
 }
 
+type ProjectContact {
+  contact: Contact
+  contact_id: String!
+  relation_to_project: ProjectContactRelationEnum!
+}
+
+input ProjectContactInput {
+  contact_id: String!
+  relation_to_project: ProjectContactRelationEnum!
+}
+
+type ProjectContactRelationCode {
+  code: String!
+  description: String!
+}
+
+"""
+Project contact relation to project. Allowed values:
+- PROJECT_MANAGER_GC: Project Manager (GC)
+- SITE_SUPERINTENDENT: Site Superintendent
+- OWNERS_REPRESENTATIVE: Owner’s Representative
+- ARCHITECT_ENGINEER_OF_RECORD: Architect / Engineer of Record
+- SAFETY_MANAGER: Safety Manager
+- EQUIPMENT_RENTAL_COORDINATOR: Equipment / Rental Coordinator
+"""
+enum ProjectContactRelationEnum {
+  ARCHITECT_ENGINEER_OF_RECORD
+  EQUIPMENT_RENTAL_COORDINATOR
+  OWNERS_REPRESENTATIVE
+  PROJECT_MANAGER_GC
+  SAFETY_MANAGER
+  SITE_SUPERINTENDENT
+}
+
 input ProjectInput {
   deleted: Boolean!
   description: String
   name: String!
   project_code: String!
+
+  """
+  Contacts associated with the project and their relation to the project.
+  """
+  project_contacts: [ProjectContactInput!]
 
   """
   Project scope of work. Allowed values: SITE_CIVIL, FOUNDATIONS, STRUCTURAL_FRAME, BUILDING_ENVELOPE, INTERIOR_BUILD_OUT, MEP, SPECIALTY_SYSTEMS, COMMISSIONING_STARTUP, DEMOBILIZATION_CLOSE_OUT, WARRANTY_SERVICES
@@ -560,6 +604,11 @@ type Query {
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+
+  """
+  Lists all possible project contact relation codes and their descriptions.
+  """
+  listProjectContactRelationCodes: [ProjectContactRelationCode]
 
   """
   Lists all possible project status codes and their descriptions, including recommended usage and stage meaning.
