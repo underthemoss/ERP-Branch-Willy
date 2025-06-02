@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4]
     env:
       TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
       NEXT_PUBLIC_AUTH0_CLIENT_ID: 53s1fXaczcbCAuqxm94YVomnArbNyiMu
