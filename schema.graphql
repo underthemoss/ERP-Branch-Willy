@@ -502,6 +502,8 @@ type Project {
   """
   status: ProjectStatusEnum
   updated_at: String!
+  updated_by: String!
+  updated_by_user: User
 }
 
 type ProjectContact {
