@@ -1,6 +1,7 @@
 import { graphql } from "@/graphql";
 import { useListResourceMapEntriesQuery } from "@/graphql/hooks";
 import AddIcon from "@mui/icons-material/Add";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import {
   Box,
   Button,
@@ -53,12 +54,17 @@ function buildTree(
     }));
 }
 
-// Helper to find label by id in the tree (recursive)
-function findLabelById(id: string, nodes: any[]): string | undefined {
+/**
+ * Helper to find the full lineage (root > ... > node) label by id in the tree.
+ * Returns a string like "root > parent > child".
+ */
+function findLineageLabelById(id: string, nodes: any[], path: string[] = []): string | undefined {
   for (const node of nodes) {
-    if (node.id === id) return node.label;
+    if (node.id === id) {
+      return [...path, node.label].join(" > ");
+    }
     if (node.children) {
-      const found = findLabelById(id, node.children);
+      const found = findLineageLabelById(id, node.children, [...path, node.label]);
       if (found) return found;
     }
   }
@@ -158,19 +164,66 @@ export const ResourceMapSelector: React.FC<ResourceMapSelectorProps> = ({
             Select resources…
           </Typography>
         ) : (
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ flex: 1 }}>
+          <Stack direction="column" spacing={0.5} alignItems="flex-start" sx={{ flex: 1 }}>
             {resourceMapIds.map((id) => (
-              <Chip
+              <Box
                 key={id}
-                label={findLabelById(id, treeItems) || id}
-                onDelete={(e) => {
-                  e.stopPropagation();
-                  handleDeleteChip(id);
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  backgroundColor: (theme) => theme.palette.primary.light,
+                  color: (theme) => theme.palette.primary.contrastText,
+                  borderRadius: 1, // 4px
+                  px: 1.5,
+                  py: 0.5,
+                  minHeight: 28,
+                  maxWidth: 520,
+                  mb: 0,
+                  gap: 1,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  boxShadow: "none",
+                  border: "none",
+                  position: "relative",
+                  cursor: "default",
+                  overflow: "hidden",
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
-                size="small"
-                sx={{ mb: 0.5 }}
-              />
+              >
+                <LocalOfferIcon fontSize="small" sx={{ mr: 0.5, flexShrink: 0 }} />
+                <span
+                  style={{
+                    display: "inline-block",
+                    maxWidth: 200,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    verticalAlign: "middle",
+                  }}
+                  title={findLineageLabelById(id, treeItems) || id}
+                >
+                  {findLineageLabelById(id, treeItems) || id}
+                </span>
+                <IconButton
+                  size="small"
+                  aria-label="Remove"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteChip(id);
+                  }}
+                  sx={{
+                    ml: 0.5,
+                    p: 0.5,
+                    color: (theme) => theme.palette.primary.contrastText,
+                    "&:hover": {
+                      color: (theme) => theme.palette.error.main,
+                      background: "transparent",
+                    },
+                  }}
+                >
+                  {/* Use a simple × for delete, or import CloseIcon if desired */}
+                  <span style={{ fontWeight: 700, fontSize: 16, lineHeight: 1 }}>×</span>
+                </IconButton>
+              </Box>
             ))}
           </Stack>
         )}
