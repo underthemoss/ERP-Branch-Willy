@@ -2,7 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useGetSalesOrderByIdQuery } from "@/graphql/hooks";
-import { Box, Button, Container, Divider, Grid, Paper, Typography } from "@mui/material";
+import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -115,6 +115,20 @@ export default function SalesOrderDetailPage() {
   });
 
   const salesOrder = data?.getSalesOrderById;
+
+  // Helper to format ISO date strings
+  function formatDate(dateString?: string | null) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
@@ -327,24 +341,76 @@ export default function SalesOrderDetailPage() {
                 Metadata
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <Typography>ID: {salesOrder.id}</Typography>
-              <Typography>Company ID: {salesOrder.company_id}</Typography>
-              <Typography>Project ID: {salesOrder.project_id}</Typography>
-              <Typography>Buyer ID: {salesOrder.buyer_id}</Typography>
-              <Typography>Created At: {salesOrder.created_at}</Typography>
-              <Typography>Updated At: {salesOrder.updated_at}</Typography>
-              <Typography>
-                Created By:{" "}
-                {salesOrder.created_by_user
-                  ? `${salesOrder.created_by_user.firstName} ${salesOrder.created_by_user.lastName} (${salesOrder.created_by_user.email})`
-                  : salesOrder.created_by}
-              </Typography>
-              <Typography>
-                Updated By:{" "}
-                {salesOrder.updated_by_user
-                  ? `${salesOrder.updated_by_user.firstName} ${salesOrder.updated_by_user.lastName} (${salesOrder.updated_by_user.email})`
-                  : salesOrder.updated_by}
-              </Typography>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {salesOrder.id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Company ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {salesOrder.company_id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Project ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {salesOrder.project_id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Buyer ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {salesOrder.buyer_id}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created At
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {formatDate(salesOrder.created_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated At
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {formatDate(salesOrder.updated_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ wordBreak: "break-all" }}>
+                    {salesOrder.created_by_user
+                      ? `${salesOrder.created_by_user.firstName} ${salesOrder.created_by_user.lastName} (${salesOrder.created_by_user.email})`
+                      : salesOrder.created_by}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ wordBreak: "break-all" }}>
+                    {salesOrder.updated_by_user
+                      ? `${salesOrder.updated_by_user.firstName} ${salesOrder.updated_by_user.lastName} (${salesOrder.updated_by_user.email})`
+                      : salesOrder.updated_by}
+                  </Typography>
+                </Box>
+              </Stack>
             </Paper>
 
             {/* Stubbed Help/Support Card */}
