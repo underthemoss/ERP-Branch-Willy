@@ -502,6 +502,8 @@ type Project {
   """
   status: ProjectStatusEnum
   updated_at: String!
+  updated_by: String!
+  updated_by_user: User
 }
 
 type ProjectContact {
@@ -712,15 +714,20 @@ type SaleTransaction implements BaseTransaction {
 }
 
 type SalesOrder {
+  buyer: Contact
   buyer_id: String!
   company_id: String!
   created_at: String!
+  created_by: String!
+  created_by_user: User
   id: String!
   order_id: String!
+  project: Project
   project_id: String!
   purchase_order_number: String!
   updated_at: String!
   updated_by: String!
+  updated_by_user: User
 }
 
 input SalesOrderInput {

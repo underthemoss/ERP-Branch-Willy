@@ -5,7 +5,6 @@ import { useCreateSalesOrderMutation } from "@/graphql/hooks";
 import ContactSelector from "@/ui/ContactSelector";
 import ProjectSelector from "@/ui/ProjectSelector";
 import AddIcon from "@mui/icons-material/Add";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import {
   Box,
   Button,
