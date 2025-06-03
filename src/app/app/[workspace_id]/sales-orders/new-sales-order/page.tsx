@@ -70,10 +70,7 @@ export default function NewSalesOrderPage() {
                 Project
               </Typography>
               <Box sx={{ mb: 2 }}>
-                <ProjectSelector
-                  projectId={projectId}
-                  onChange={setProjectId}
-                />
+                <ProjectSelector projectId={projectId} onChange={setProjectId} />
               </Box>
               <Typography variant="body2" color="text.secondary">
                 Optional — but recommended. Linking a project helps organize deliveries, billing,

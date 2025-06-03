@@ -145,7 +145,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                     <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
                       Description:
                     </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
+                    <Typography
+                      fontSize={13}
+                      color="text.secondary"
+                      noWrap
+                      sx={{
+                        maxWidth: 520,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "block",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {project.description}
                     </Typography>
                   </Box>
@@ -208,7 +219,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                     <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
                       Description:
                     </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
+                    <Typography
+                      fontSize={13}
+                      color="text.secondary"
+                      noWrap
+                      sx={{
+                        maxWidth: 500,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "block",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {project.description}
                     </Typography>
                   </Box>

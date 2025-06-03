@@ -199,7 +199,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
                 {"employees" in contact && contact.employees && (
                   <Box display="flex" gap={0.5} alignItems="center">
                     <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Employees:
+                      Contacts:
                     </Typography>
                     <Typography fontSize={13} color="text.secondary" noWrap>
                       {`${contact.employees.items.length} employee${contact.employees.items.length === 1 ? "" : "s"}`}
@@ -295,7 +295,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
                 {"employees" in contact && contact.employees && (
                   <Box display="flex" gap={0.5} alignItems="center">
                     <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Employees:
+                      Contacts:
                     </Typography>
                     <Typography fontSize={13} color="text.secondary" noWrap>
                       {`${contact.employees.items.length} employee${contact.employees.items.length === 1 ? "" : "s"}`}
