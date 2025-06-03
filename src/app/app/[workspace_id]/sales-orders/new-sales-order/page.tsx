@@ -1,6 +1,7 @@
 "use client";
 
 import ContactSelector from "@/ui/ContactSelector";
+import ProjectSelector from "@/ui/ProjectSelector";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import {
@@ -24,6 +25,7 @@ import * as React from "react";
 export default function NewSalesOrderPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const [buyerId, setBuyerId] = React.useState<string | undefined>(undefined);
+  const [projectId, setProjectId] = React.useState<string | undefined>(undefined);
 
   return (
     <Box sx={{ p: 4 }}>
@@ -67,17 +69,12 @@ export default function NewSalesOrderPage() {
               <Typography variant="subtitle1" gutterBottom>
                 Project
               </Typography>
-              <Paper variant="outlined" sx={{ display: "flex", alignItems: "center", p: 2, mb: 2 }}>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" fontWeight={700}>
-                    Project Name
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    #849202 • 3274 Dee Meadow Drive, Annapolis Jun...
-                  </Typography>
-                </Box>
-                <KeyboardArrowDownIcon color="action" />
-              </Paper>
+              <Box sx={{ mb: 2 }}>
+                <ProjectSelector
+                  projectId={projectId}
+                  onChange={setProjectId}
+                />
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Optional — but recommended. Linking a project helps organize deliveries, billing,
                 and on-site coordination.
