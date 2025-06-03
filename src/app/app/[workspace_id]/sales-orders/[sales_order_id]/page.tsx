@@ -118,7 +118,6 @@ export default function SalesOrderDetailPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
-  
       {loading && (
         <Typography variant="body1" color="text.secondary">
           Loading sales order details...
