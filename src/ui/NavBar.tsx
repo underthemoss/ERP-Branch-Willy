@@ -10,6 +10,7 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import {
@@ -65,7 +66,7 @@ export const NavBar = () => {
     {
       text: "Transactions",
       href: `/app/${currentWorkspace?.id}/transactions`,
-      icon: <SyncAltIcon fontSize="small" />,
+      icon: <ReceiptLongIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/transactions`,
       testId: "nav-transactions",
     },
