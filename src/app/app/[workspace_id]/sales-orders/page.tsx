@@ -314,6 +314,9 @@ export default function SalesOrdersPage() {
                 },
               }}
               getRowClassName={() => "sales-order-list-item"}
+              onRowClick={(params) => {
+                router.push(`/app/${workspace_id}/sales-orders/${params.id}`);
+              }}
             />
             {error && (
               <Typography color="error" mt={2}>
