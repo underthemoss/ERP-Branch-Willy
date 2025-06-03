@@ -27,7 +27,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 // GQL mutation for creating a new sales order
-export const CREATE_SALES_ORDER = graphql(`
+const CREATE_SALES_ORDER = graphql(`
   mutation CreateSalesOrder($input: SalesOrderInput!) {
     createSalesOrder(input: $input) {
       id
