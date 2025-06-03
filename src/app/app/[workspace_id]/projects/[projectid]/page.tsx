@@ -40,8 +40,15 @@ graphql(`
       project_code
       description
       companyId
+      company {
+        name
+      }
       created_at
       created_by
+      created_by_user {
+        firstName
+        lastName
+      }
       updated_at
       deleted
       scope_of_work
@@ -185,10 +192,10 @@ export default function ProjectDetailPage() {
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Company ID
+                  Company
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {project.companyId}
+                  {project.company?.name ?? "—"}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
@@ -245,7 +252,9 @@ export default function ProjectDetailPage() {
                   Created By
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  {project.created_by}
+                  {project.created_by_user
+                    ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
+                    : "—"}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}></Grid>
