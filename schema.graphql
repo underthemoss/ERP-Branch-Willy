@@ -195,6 +195,7 @@ input BusinessContactInput {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [ID!]
   taxId: String
   website: String
   workspaceId: String!
@@ -217,9 +218,16 @@ enum ContactType {
 }
 
 input CreatePriceBookInput {
-  isDefault: Boolean!
+  businessContactId: ID
+  isDefault: Boolean
+  location: String
   name: String!
   notes: String
+  parentPriceBookId: ID
+
+  """Percentage factor for the parent price book"""
+  parentPriceBookPercentageFactor: Float = 1
+  projectId: ID
 }
 
 input CreateRentalPriceInput {
@@ -425,6 +433,7 @@ input PersonContactInput {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [ID!]
   role: String!
   workspaceId: String!
 }
@@ -459,14 +468,22 @@ type PimProduct {
 union Price = RentalPrice | SalePrice
 
 type PriceBook {
+  businessContact: BusinessContact
+  businessContactId: ID
   companyId: String!
   createdAt: DateTime!
   createdBy: String!
   id: ID!
-  isDefault: Boolean!
+  isDefault: Boolean! @deprecated(reason: "soon to be removed")
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+  location: String
   name: String!
   notes: String
+  parentPriceBook: PriceBook
+  parentPriceBookId: ID
+  parentPriceBookPercentageFactor: Float
+  project: Project
+  projectId: ID
   updatedAt: DateTime!
 }
 
@@ -502,6 +519,8 @@ type Project {
   """
   status: ProjectStatusEnum
   updated_at: String!
+  updated_by: String!
+  updated_by_user: User
 }
 
 type ProjectContact {
@@ -596,6 +615,10 @@ type Query {
   getPimProductById(id: ID!): PimProduct
   getPriceBookById(id: ID!): PriceBook
   getProjectById(id: String!): Project
+
+  """Get a single resource map entry by id, with tenant check"""
+  getResourceMapEntry(id: String!): ResourceMapResource
+  getSalesOrderById(id: String): SalesOrder
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
@@ -615,6 +638,11 @@ type Query {
   """
   listProjectStatusCodes: [ProjectStatusCode]
   listProjects: [Project]
+
+  """
+  Get resource map entries filtered by tenant_id (from the calling user company id)
+  """
+  listResourceMapEntries: [ResourceMapResource]
   listSalesOrders(limit: Int = 20, offset: Int = 0): SalesOrderListResult
 
   """
@@ -636,6 +664,9 @@ type RentalPrice {
   createdBy: String!
   id: ID!
   name: String!
+  parentPrice: Price
+  parentPriceId: ID
+  parentPriceIdPercentageFactor: Float
   pimCategoryId: String!
   pimCategoryName: String!
   pimCategoryPath: String!
@@ -674,6 +705,20 @@ type RentalTransaction implements BaseTransaction {
   workspaceId: ID
 }
 
+type ResourceMapResource {
+  children: [ResourceMapResource]
+  hierarchy_id: String
+  hierarchy_name: String
+  id: String!
+  parent: ResourceMapResource
+  parent_id: String
+  path: [String!]
+  resource_id: String!
+  tenant_id: String!
+  type: String
+  value: String
+}
+
 type SalePrice {
   companyId: String!
   createdAt: DateTime!
@@ -681,6 +726,9 @@ type SalePrice {
   discounts: JSON!
   id: ID!
   name: String!
+  parentPrice: Price
+  parentPriceId: ID
+  parentPriceIdPercentageFactor: Float
   pimCategoryId: String!
   pimCategoryName: String!
   pimCategoryPath: String!
@@ -712,20 +760,25 @@ type SaleTransaction implements BaseTransaction {
 }
 
 type SalesOrder {
+  buyer: Contact
   buyer_id: String!
   company_id: String!
   created_at: String!
+  created_by: String!
+  created_by_user: User
   id: String!
   order_id: String!
-  project_id: String!
+  project: Project
+  project_id: String
   purchase_order_number: String!
   updated_at: String!
   updated_by: String!
+  updated_by_user: User
 }
 
 input SalesOrderInput {
   buyer_id: String!
-  project_id: String!
+  project_id: String
   purchase_order_number: String!
 }
 
@@ -842,6 +895,7 @@ input UpdateBusinessContactInput {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [ID!]
   taxId: String
   website: String
 }
@@ -853,6 +907,7 @@ input UpdatePersonContactInput {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [ID!]
   role: String
 }
 

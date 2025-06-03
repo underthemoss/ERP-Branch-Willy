@@ -21,7 +21,20 @@ export const PriceBookFieldsFragment = graphql(`
     name
     createdBy
     updatedAt
-    isDefault
+    parentPriceBook {
+      id
+      name
+    }
+    parentPriceBookPercentageFactor
+    location
+    businessContact {
+      id
+      name
+    }
+    project {
+      id
+      name
+    }
   }
 `);
 

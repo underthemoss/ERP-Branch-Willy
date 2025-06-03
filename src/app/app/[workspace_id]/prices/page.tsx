@@ -2,34 +2,13 @@
 
 import { PriceBookFields, useListPriceBooksQuery } from "@/ui/prices/api";
 import { NewPriceBookDialog } from "@/ui/prices/NewPriceBookDialog";
-import { CardActionArea } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
+import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useDialogs } from "@toolpad/core/useDialogs";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-
-function PriceBookCard({ id, name, createdBy, isDefault }: PriceBookFields) {
-  const router = useRouter();
-  const { workspace_id } = useParams<{ workspace_id: string }>();
-  return (
-    <Card sx={{ minWidth: 275 }}>
-      <CardActionArea onClick={() => router.push(`/app/${workspace_id}/prices/${id}`)}>
-        <CardContent>
-          <Typography variant="h5" color="text.secondary" gutterBottom>
-            {name}
-          </Typography>
-          {isDefault && <Chip label="default" />}
-        </CardContent>
-      </CardActionArea>
-    </Card>
-  );
-}
 
 export default function Prices() {
   const dialogs = useDialogs();
@@ -40,6 +19,63 @@ export default function Prices() {
       },
     },
   });
+  const router = useRouter();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+
+  // Define columns for the DataGridPro
+  const columns = React.useMemo<GridColDef<any>[]>(
+    () => [
+      { field: "name", headerName: "Name", minWidth: 200, flex: 1 },
+      { field: "location", headerName: "Location", minWidth: 150, flex: 1 },
+      {
+        field: "businessContactName",
+        headerName: "Business Contact",
+        minWidth: 180,
+        flex: 1,
+      },
+      {
+        field: "projectName",
+        headerName: "Project",
+        minWidth: 180,
+        flex: 1,
+      },
+      { field: "createdBy", headerName: "Created By", minWidth: 150, flex: 1 },
+      {
+        field: "updatedAt",
+        headerName: "Updated At",
+        minWidth: 180,
+        flex: 1,
+        valueGetter: (value: string) => new Date(value).toLocaleString(),
+      },
+      {
+        field: "parentPriceBookName",
+        headerName: "Parent Price Book",
+        minWidth: 200,
+        flex: 1,
+      },
+      {
+        field: "parentPriceBookPercentageFactor",
+        headerName: "Parent % Factor",
+        minWidth: 150,
+        flex: 1,
+      },
+    ],
+    [],
+  );
+
+  // Prepare rows for the DataGridPro
+  const rows = React.useMemo<any[]>(() => {
+    if (!data?.listPriceBooks?.items) return [];
+    return data.listPriceBooks.items.map((item: any) => ({
+      ...item,
+      id: item.id, // DataGridPro expects an 'id' field
+      parentPriceBookName:
+        item.parentPriceBook && item.parentPriceBook.name ? item.parentPriceBook.name : "",
+      businessContactName:
+        item.businessContact && item.businessContact.name ? item.businessContact.name : "",
+      projectName: item.project && item.project.name ? item.project.name : "",
+    }));
+  }, [data]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -49,10 +85,16 @@ export default function Prices() {
       <Typography variant="h4" gutterBottom>
         Price Books
       </Typography>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-        {data?.listPriceBooks?.items.map((priceBook: PriceBookFields) => (
-          <PriceBookCard key={priceBook.id} {...priceBook} />
-        ))}
+      <Box sx={{ height: 500, width: "100%", mb: 2 }}>
+        <DataGridPro
+          rows={rows}
+          columns={columns}
+          loading={loading}
+          onRowClick={(params) => {
+            router.push(`/app/${workspace_id}/prices/${params.id}`);
+          }}
+          disableRowSelectionOnClick
+        />
       </Box>
       <Box sx={{ mt: 2 }}>
         <Button
