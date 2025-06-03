@@ -1,9 +1,9 @@
 "use client";
 
+import ContactSelector from "@/ui/ContactSelector";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -18,8 +18,13 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useParams } from "next/navigation";
+import * as React from "react";
 
 export default function NewSalesOrderPage() {
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+  const [buyerId, setBuyerId] = React.useState<string | undefined>(undefined);
+
   return (
     <Box sx={{ p: 4 }}>
       {/* Header */}
@@ -41,23 +46,14 @@ export default function NewSalesOrderPage() {
               <Typography variant="subtitle1" gutterBottom>
                 Buyer
               </Typography>
-              <Paper variant="outlined" sx={{ display: "flex", alignItems: "center", p: 2, mb: 2 }}>
-                <Avatar sx={{ mr: 2 }}>
-                  {/* Placeholder for avatar */}
-                  <svg width="24" height="24">
-                    <circle cx="12" cy="12" r="12" fill="#e0e0e0" />
-                  </svg>
-                </Avatar>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" fontWeight={700}>
-                    Business Entity
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    contact@businessentity.com
-                  </Typography>
-                </Box>
-                <KeyboardArrowDownIcon color="action" />
-              </Paper>
+              <Box sx={{ mb: 2 }}>
+                <ContactSelector
+                  workspaceId={workspace_id}
+                  contactId={buyerId}
+                  onChange={setBuyerId}
+                  type="any"
+                />
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Assign who at this business is responsible for this order. Contacts must be linked
                 to the selected buyer entity.
