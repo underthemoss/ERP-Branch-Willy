@@ -96,6 +96,7 @@ export default function SalesOrdersPage() {
   // Map GQL data to table rows
   type SalesOrderRow = {
     id: string;
+    order_id: string;
     buyer: string;
     project: string;
     status: string;
@@ -122,25 +123,9 @@ export default function SalesOrdersPage() {
     );
 
     return data.listSalesOrders.items.map(
-      (order: {
-        id: string;
-        buyer_id?: string | null;
-        project_id?: string | null;
-        created_at?: string | null;
-        updated_at?: string | null;
-        updated_by?: string | null;
-        created_by_user?: {
-          firstName?: string | null;
-          lastName?: string | null;
-          email?: string | null;
-        } | null;
-        updated_by_user?: {
-          firstName?: string | null;
-          lastName?: string | null;
-          email?: string | null;
-        } | null;
-      }): SalesOrderRow => ({
+      (order): SalesOrderRow => ({
         id: order.id,
+        order_id: order.order_id,
         buyer: contactMap.get(order.buyer_id ?? "") ?? order.buyer_id ?? "not implemented",
         project: projectMap.get(order.project_id ?? "") ?? order.project_id ?? "not implemented",
         status: "not implemented",
