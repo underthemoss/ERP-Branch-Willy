@@ -42,6 +42,10 @@ graphql(`
         lastName
       }
       updated_at
+      updated_by_user {
+        firstName
+        lastName
+      }
       deleted
       scope_of_work
       status
@@ -70,6 +74,9 @@ export default function ProjectsPage() {
           ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
           : "",
         updated_at: project?.updated_at ?? "",
+        updated_by: project?.updated_by_user
+          ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
+          : "",
         deleted: project?.deleted ?? false,
         scope_of_work: project?.scope_of_work ?? [],
         status: project?.status ?? "",
@@ -169,6 +176,7 @@ export default function ProjectsPage() {
         );
       },
     },
+    { field: "updated_by", headerName: "Updated By", width: 180 },
     {
       field: "deleted",
       headerName: "Status",

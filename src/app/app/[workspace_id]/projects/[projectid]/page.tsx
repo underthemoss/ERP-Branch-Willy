@@ -50,6 +50,10 @@ graphql(`
         lastName
       }
       updated_at
+      updated_by_user {
+        firstName
+        lastName
+      }
       deleted
       scope_of_work
       status
@@ -194,7 +198,7 @@ export default function ProjectDetailPage() {
                 <Typography variant="subtitle2" color="text.secondary">
                   Company
                 </Typography>
-                <Typography variant="body1" gutterBottom>
+                <Typography variant="body2" gutterBottom>
                   {project.company?.name ?? "—"}
                 </Typography>
               </Grid>
@@ -211,50 +215,40 @@ export default function ProjectDetailPage() {
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Created At
-                </Typography>
-                <Tooltip
-                  title={format(parseISO(project.created_at), "MMMM d, yyyy, h:mm a")}
-                  arrow
-                  placement="top"
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{ cursor: "pointer", display: "inline" }}
-                    data-testid="project-details-created-at"
-                  >
-                    {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
-                  </Typography>
-                </Tooltip>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Updated At
-                </Typography>
-                <Tooltip
-                  title={format(parseISO(project.updated_at), "MMMM d, yyyy, h:mm a")}
-                  arrow
-                  placement="top"
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{ cursor: "pointer", display: "inline" }}
-                    data-testid="project-details-updated-at"
-                  >
-                    {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
-                  </Typography>
-                </Tooltip>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Created By
+                  Created
                 </Typography>
                 <Typography variant="body2" gutterBottom>
                   {project.created_by_user
                     ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
-                    : "—"}
+                    : "—"}{" "}
+                  <Tooltip
+                    title={format(parseISO(project.created_at), "MMMM d, yyyy, h:mm a")}
+                    arrow
+                    placement="top"
+                  >
+                    <span style={{ cursor: "pointer" }} data-testid="project-details-created-at">
+                      {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
+                    </span>
+                  </Tooltip>
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Updated
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  {project.updated_by_user
+                    ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
+                    : "—"}{" "}
+                  <Tooltip
+                    title={format(parseISO(project.updated_at), "MMMM d, yyyy, h:mm a")}
+                    arrow
+                    placement="top"
+                  >
+                    <span style={{ cursor: "pointer" }} data-testid="project-details-updated-at">
+                      {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
+                    </span>
+                  </Tooltip>
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}></Grid>
