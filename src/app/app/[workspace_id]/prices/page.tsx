@@ -25,38 +25,33 @@ export default function Prices() {
   // Define columns for the DataGridPro
   const columns = React.useMemo<GridColDef<any>[]>(
     () => [
-      { field: "name", headerName: "Name", minWidth: 200, flex: 1 },
-      { field: "location", headerName: "Location", minWidth: 150, flex: 1 },
+      { field: "name", headerName: "Name", minWidth: 150, flex: 1 },
       {
         field: "businessContactName",
         headerName: "Business Contact",
-        minWidth: 180,
         flex: 1,
       },
       {
         field: "projectName",
         headerName: "Project",
-        minWidth: 180,
         flex: 1,
       },
-      { field: "createdBy", headerName: "Created By", minWidth: 150, flex: 1 },
+      { field: "location", headerName: "Location", minWidth: 150, flex: 1 },
+      { field: "createdBy", headerName: "Created By", flex: 1 },
       {
         field: "updatedAt",
         headerName: "Updated At",
-        minWidth: 180,
         flex: 1,
         valueGetter: (value: string) => new Date(value).toLocaleString(),
       },
       {
         field: "parentPriceBookName",
         headerName: "Parent Price Book",
-        minWidth: 200,
         flex: 1,
       },
       {
         field: "parentPriceBookPercentageFactor",
         headerName: "Parent % Factor",
-        minWidth: 150,
         flex: 1,
       },
     ],
@@ -66,7 +61,7 @@ export default function Prices() {
   // Prepare rows for the DataGridPro
   const rows = React.useMemo<any[]>(() => {
     if (!data?.listPriceBooks?.items) return [];
-    return data.listPriceBooks.items.map((item: any) => ({
+    return data.listPriceBooks.items.map((item) => ({
       ...item,
       id: item.id, // DataGridPro expects an 'id' field
       parentPriceBookName:
@@ -74,6 +69,8 @@ export default function Prices() {
       businessContactName:
         item.businessContact && item.businessContact.name ? item.businessContact.name : "",
       projectName: item.project && item.project.name ? item.project.name : "",
+      createdBy: `${item.createdByUser?.firstName} ${item.createdByUser?.lastName}`,
+      updatedAt: item.updatedAt,
     }));
   }, [data]);
 

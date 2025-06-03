@@ -473,6 +473,7 @@ type PriceBook {
   companyId: String!
   createdAt: DateTime!
   createdBy: String!
+  createdByUser: User
   id: ID!
   isDefault: Boolean! @deprecated(reason: "soon to be removed")
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
@@ -485,6 +486,8 @@ type PriceBook {
   project: Project
   projectId: ID
   updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
 }
 
 enum PriceType {
