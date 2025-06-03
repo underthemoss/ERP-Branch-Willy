@@ -20,8 +20,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
   TextField,
+  Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useParams, useRouter } from "next/navigation";
@@ -52,7 +52,11 @@ export default function NewSalesOrderPage() {
   const [purchaseOrderNumber, setPurchaseOrderNumber] = React.useState<string>("");
 
   // Validation state
-  const [errors, setErrors] = React.useState<{ buyerId?: string; projectId?: string; purchaseOrderNumber?: string }>({});
+  const [errors, setErrors] = React.useState<{
+    buyerId?: string;
+    projectId?: string;
+    purchaseOrderNumber?: string;
+  }>({});
 
   // GQL mutation for creating a new sales order
   const [
@@ -65,7 +69,8 @@ export default function NewSalesOrderPage() {
     const newErrors: { buyerId?: string; projectId?: string; purchaseOrderNumber?: string } = {};
     if (!buyerId) newErrors.buyerId = "Buyer is required";
     if (!projectId) newErrors.projectId = "Project is required";
-    if (!purchaseOrderNumber.trim()) newErrors.purchaseOrderNumber = "Purchase order number is required";
+    if (!purchaseOrderNumber.trim())
+      newErrors.purchaseOrderNumber = "Purchase order number is required";
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
@@ -89,9 +94,7 @@ export default function NewSalesOrderPage() {
     <PageContainer>
       <Container maxWidth="lg">
         {/* Header */}
-        <Box
-          sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mb: 4 }}
-        >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mb: 4 }}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="h4" sx={{ flexGrow: 1 }}>
               New sales order
@@ -116,7 +119,9 @@ export default function NewSalesOrderPage() {
               size="small"
               fullWidth
               value={purchaseOrderNumber}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPurchaseOrderNumber(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPurchaseOrderNumber(e.target.value)
+              }
               placeholder="Enter purchase order number"
               inputProps={{ "data-testid": "purchase-order-number" }}
               error={!!errors.purchaseOrderNumber}
@@ -160,10 +165,7 @@ export default function NewSalesOrderPage() {
                   Project
                 </Typography>
                 <Box sx={{ mb: 2 }}>
-                  <ProjectSelector
-                    projectId={projectId}
-                    onChange={setProjectId}
-                  />
+                  <ProjectSelector projectId={projectId} onChange={setProjectId} />
                   {errors.projectId && (
                     <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
                       {errors.projectId}

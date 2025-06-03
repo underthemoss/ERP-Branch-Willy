@@ -1,8 +1,7 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { Box, Typography, Button } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { Box, Button, Typography } from "@mui/material";
+import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 export default function SalesOrderDetailPage() {
@@ -23,10 +22,7 @@ export default function SalesOrderDetailPage() {
       <Typography variant="subtitle1" sx={{ mb: 4 }}>
         Sales Order ID: <b>{sales_order_id}</b>
       </Typography>
-      <Button
-        variant="contained"
-        onClick={() => router.push(`/app/${workspace_id}/sales-orders`)}
-      >
+      <Button variant="contained" onClick={() => router.push(`/app/${workspace_id}/sales-orders`)}>
         Back to Sales Orders
       </Button>
     </Box>
