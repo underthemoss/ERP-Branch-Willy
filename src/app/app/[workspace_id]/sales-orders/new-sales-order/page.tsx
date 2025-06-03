@@ -21,11 +21,12 @@ import {
   Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 export default function NewSalesOrderPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
+  const router = useRouter();
   const [buyerId, setBuyerId] = React.useState<string | undefined>(undefined);
   const [projectId, setProjectId] = React.useState<string | undefined>(undefined);
 
@@ -39,7 +40,9 @@ export default function NewSalesOrderPage() {
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h4">New sales order</Typography>
           </Box>
-          <Button variant="outlined">Cancel</Button>
+          <Button variant="outlined" onClick={() => router.back()}>
+            Cancel
+          </Button>
           <Button variant="contained" sx={{ ml: 2 }}>
             Submit Order
           </Button>
