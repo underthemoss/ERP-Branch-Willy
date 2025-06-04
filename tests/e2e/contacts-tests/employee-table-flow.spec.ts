@@ -39,10 +39,10 @@ test("employee table create, verify, delete flow", async ({ page }) => {
   const email = faker.internet.email();
   const role = faker.person.jobTitle();
 
-  // Select the business just created
-  const businessSelect = page.getByLabel("Business");
-  await businessSelect.click();
-  await page.getByRole("option", { name: businessName }).click();
+  // Select the business just created using the new ContactSelector
+  await page.getByRole("combobox").click();
+  await page.getByText(businessName).scrollIntoViewIfNeeded();
+  await page.getByText(businessName).click();
 
   await page.getByLabel("Name").fill(employeeName);
   await page.getByLabel("Email").fill(email);
