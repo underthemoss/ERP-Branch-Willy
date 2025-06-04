@@ -2,7 +2,7 @@
 
 import { useCreatePersonContactMutation } from "@/ui/contacts/api";
 import ContactSelector from "@/ui/ContactSelector";
-import ResourceMapSelector from "@/ui/ResourceMapSelector";
+import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Alert,
   Box,
@@ -128,11 +128,13 @@ export default function CreateEmployeePage() {
             type="business"
             workspaceId={workspace_id}
           />
-          <ResourceMapSelector
-            resourceMapIds={form.resourceMapIds}
-            onChange={(ids) => setForm((prev) => ({ ...prev, resourceMapIds: ids }))}
-            label="Select resource map entries…"
+          <ResourceMapSearchSelector
+            onSelectionChange={(ids: string[]) =>
+              setForm((prev) => ({ ...prev, resourceMapIds: ids }))
+            }
+            selectedIds={form.resourceMapIds}
           />
+
           {error && <Alert severity="error">{error}</Alert>}
           <Box display="flex" justifyContent="flex-end" gap={2}>
             <Button
