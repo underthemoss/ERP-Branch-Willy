@@ -1,5 +1,7 @@
 "use client";
 
+import { graphql } from "@/graphql";
+import { useSalesOrdersWithLookupsQuery } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -21,50 +23,141 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
-const stubSalesOrders = [
-  {
-    id: "SO-1001",
-    buyer: "Business Entity",
-    project: "Project Name",
-    date: "2025-06-02T10:00:00Z",
-    status: "Open",
-    total: "$12,000",
-    created_by: "Jane Doe",
-  },
-  {
-    id: "SO-1002",
-    buyer: "Acme Corp",
-    project: "Warehouse Expansion",
-    date: "2025-05-15T14:30:00Z",
-    status: "Closed",
-    total: "$8,500",
-    created_by: "John Smith",
-  },
-  {
-    id: "SO-1003",
-    buyer: "Frontier LLC",
-    project: "Site Prep",
-    date: "2025-05-20T09:00:00Z",
-    status: "Open",
-    total: "$3,200",
-    created_by: "Alice Johnson",
-  },
-];
+graphql(`
+  query SalesOrdersWithLookups(
+    $limit: Int = 20
+    $offset: Int = 0
+    $contactsFilter: ListContactsFilter!
+    $contactsPage: ListContactsPage
+  ) {
+    listSalesOrders(limit: $limit, offset: $offset) {
+      items {
+        id
+        order_id
+        buyer_id
+        project_id
+        company_id
+        purchase_order_number
+        created_at
+        updated_at
+        updated_by
+        created_by_user {
+          id
+          firstName
+          lastName
+          email
+        }
+        updated_by_user {
+          id
+          firstName
+          lastName
+          email
+        }
+      }
+      total
+      limit
+      offset
+    }
+    listProjects {
+      id
+      name
+    }
+    listContacts(filter: $contactsFilter, page: $contactsPage) {
+      items {
+        ... on BusinessContact {
+          id
+          name
+        }
+        ... on PersonContact {
+          id
+          name
+        }
+      }
+    }
+  }
+`);
 
 export default function SalesOrdersPage() {
   const [statusFilter, setStatusFilter] = React.useState("All Statuses");
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  const rows = React.useMemo(() => stubSalesOrders, []);
+  // Fetch sales orders, projects, and contacts
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+  const { data, loading, error } = useSalesOrdersWithLookupsQuery({
+    variables: {
+      limit: 100,
+      offset: 0,
+      contactsFilter: { workspaceId: workspace_id },
+      contactsPage: { number: 1, size: 100 },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Map GQL data to table rows
+  type SalesOrderRow = {
+    id: string;
+    order_id: string;
+    buyer: string;
+    project: string;
+    status: string;
+    total: string;
+    created_by: string;
+    updated_by: string;
+    created_at: string;
+    updated_at: string;
+  };
+
+  const rows: SalesOrderRow[] = React.useMemo(() => {
+    if (!data?.listSalesOrders?.items || !data.listProjects || !data.listContacts?.items) return [];
+
+    // Build lookup maps
+    const projectMap = new Map(
+      data.listProjects
+        .filter((proj): proj is { id: string; name: string } => !!proj)
+        .map((proj) => [proj.id, proj.name]),
+    );
+    const contactMap = new Map(
+      data.listContacts.items
+        .filter((contact): contact is { id: string; name: string } => !!contact)
+        .map((contact) => [contact.id, contact.name]),
+    );
+
+    return data.listSalesOrders.items.map(
+      (order): SalesOrderRow => ({
+        id: order.id,
+        order_id: order.order_id,
+        buyer: contactMap.get(order.buyer_id ?? "") ?? order.buyer_id ?? "not implemented",
+        project: projectMap.get(order.project_id ?? "") ?? order.project_id ?? "not implemented",
+        status: "not implemented",
+        total: "not implemented",
+        created_by: order.created_by_user
+          ? [order.created_by_user.firstName, order.created_by_user.lastName]
+              .filter(Boolean)
+              .join(" ") ||
+            order.created_by_user.email ||
+            "not implemented"
+          : "not implemented",
+        updated_by: order.updated_by_user
+          ? [order.updated_by_user.firstName, order.updated_by_user.lastName]
+              .filter(Boolean)
+              .join(" ") ||
+            order.updated_by_user.email ||
+            "not implemented"
+          : "not implemented",
+        created_at: order.created_at ?? "not implemented",
+        updated_at: order.updated_at ?? "not implemented",
+      }),
+    );
+  }, [data]);
 
   const filteredRows = React.useMemo(() => {
     let filtered = rows;
     if (statusFilter !== "All Statuses") {
-      filtered = filtered.filter((row) => row.status === statusFilter);
+      filtered = filtered.filter((row: SalesOrderRow) => row.status === statusFilter);
     }
     if (!searchTerm) return filtered;
     const lower = searchTerm.toLowerCase();
-    return filtered.filter((row) =>
+    return filtered.filter((row: SalesOrderRow) =>
       Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
     );
   }, [rows, searchTerm, statusFilter]);
@@ -73,11 +166,33 @@ export default function SalesOrdersPage() {
     { field: "id", headerName: "Order #", width: 120 },
     { field: "buyer", headerName: "Buyer", flex: 2, minWidth: 180 },
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
+    { field: "total", headerName: "Total", width: 120 },
     {
-      field: "date",
-      headerName: "Date",
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) =>
+        params.value === "not implemented" ? (
+          "not implemented"
+        ) : (
+          <Chip
+            label={params.value}
+            color={params.value === "Open" ? "success" : "default"}
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
+        ),
+      sortable: false,
+      filterable: false,
+    },
+    { field: "created_by", headerName: "Created By", width: 160 },
+    { field: "updated_by", headerName: "Updated By", width: 160 },
+    {
+      field: "created_at",
+      headerName: "Created At",
       width: 180,
       renderCell: (params) => {
+        if (params.value === "not implemented") return "not implemented";
         const date = params.value ? parseISO(params.value) : null;
         return date ? (
           <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
@@ -88,27 +203,25 @@ export default function SalesOrdersPage() {
         );
       },
     },
-    { field: "total", headerName: "Total", width: 120 },
-    { field: "created_by", headerName: "Created By", width: 160 },
     {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.value}
-          color={params.value === "Open" ? "success" : "default"}
-          size="small"
-          sx={{ fontWeight: 600 }}
-        />
-      ),
-      sortable: false,
-      filterable: false,
+      field: "updated_at",
+      headerName: "Updated At",
+      width: 180,
+      renderCell: (params) => {
+        if (params.value === "not implemented") return "not implemented";
+        const date = params.value ? parseISO(params.value) : null;
+        return date ? (
+          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
+            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          </Tooltip>
+        ) : (
+          ""
+        );
+      },
     },
   ];
 
   const router = useRouter();
-  const { workspace_id } = useParams<{ workspace_id: string }>();
 
   return (
     <PageContainer>
@@ -172,9 +285,10 @@ export default function SalesOrdersPage() {
             <DataGridPremium
               columns={columns}
               rows={filteredRows}
+              loading={loading}
               disableRowSelectionOnClick
               hideFooter
-              getRowId={(row) => row.id}
+              getRowId={(row: SalesOrderRow) => row.id}
               initialState={{
                 pinnedColumns: { left: ["id"] },
               }}
@@ -185,7 +299,15 @@ export default function SalesOrdersPage() {
                 },
               }}
               getRowClassName={() => "sales-order-list-item"}
+              onRowClick={(params) => {
+                router.push(`/app/${workspace_id}/sales-orders/${params.id}`);
+              }}
             />
+            {error && (
+              <Typography color="error" mt={2}>
+                Failed to load sales orders.
+              </Typography>
+            )}
           </div>
         </Box>
       </Container>

@@ -57,6 +57,8 @@ graphql(`
 `);
 ```
 
+Use fetch policy fetchPolicy: "cache-and-network" by default for GQL queries
+
 Always run `npm run codegen` after writing or changing a query
 
 Generated code is importanted like
@@ -66,7 +68,5 @@ import { useListProjectsQuery } from "@/graphql/hooks";
 ```
 
 ### Running e2e tests
-
-`npm run test:playwright -- --headed`
 
 Always run these in headed mode so i can watch progress.
