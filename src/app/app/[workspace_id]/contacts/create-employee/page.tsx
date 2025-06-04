@@ -132,6 +132,7 @@ export default function CreateEmployeePage() {
             onSelectionChange={(ids: string[]) =>
               setForm((prev) => ({ ...prev, resourceMapIds: ids }))
             }
+            readonly={false}
             selectedIds={form.resourceMapIds}
           />
 

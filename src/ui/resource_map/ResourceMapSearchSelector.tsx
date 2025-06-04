@@ -21,11 +21,13 @@ export const ListResourceMapEntriesQuery = graphql(`
 type ResourceMapSearchSelectorProps = {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  readonly: boolean;
 };
 
 export default function ResourceMapSearchSelector({
   selectedIds,
   onSelectionChange,
+  readonly,
 }: ResourceMapSearchSelectorProps) {
   const { data, loading } = useListResourceMapEntriesQuery({
     fetchPolicy: "cache-and-network",
@@ -42,6 +44,11 @@ export default function ResourceMapSearchSelector({
     })) || [];
 
   return (
-    <RMTreeView items={items} onSelectionChange={onSelectionChange} selectedIds={selectedIds} />
+    <RMTreeView
+      readonly={readonly}
+      items={items}
+      onSelectionChange={onSelectionChange}
+      selectedIds={selectedIds}
+    />
   );
 }

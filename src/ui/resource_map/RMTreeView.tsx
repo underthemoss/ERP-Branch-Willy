@@ -21,12 +21,14 @@ type ResourceMapSearchSelectorProps = {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   items: Item[];
+  readonly: boolean;
 };
 
 export function RMTreeView({
   selectedIds,
   onSelectionChange,
   items,
+  readonly,
 }: ResourceMapSearchSelectorProps) {
   const [searchValue, setSearchValue] = React.useState("");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -64,7 +66,7 @@ export function RMTreeView({
                   mb: 0.5,
                 }}
                 color={"info"}
-                deleteIcon={<CloseIcon sx={{ color: "#fff" }} />}
+                deleteIcon={readonly ? <></> : <CloseIcon sx={{ color: "#fff" }} />}
                 onDelete={() => {
                   const newSelected = selectedIds.filter((selectedId) => selectedId !== id);
                   onSelectionChange(newSelected);
@@ -72,21 +74,23 @@ export function RMTreeView({
               />
             );
           })}
-        <Chip
-          icon={<TreeViewIcon />}
-          label="Add Reporting Designation"
-          sx={{
-            borderRadius: 0,
-            backgroundColor: "#eee",
-            color: "#333",
-            fontWeight: 500,
-            mr: 0.5,
-            mb: 0.5,
-            border: "1px solid #ccc",
-            cursor: "pointer",
-          }}
-          onClick={() => setDrawerOpen(true)}
-        />
+        {!readonly && (
+          <Chip
+            icon={<TreeViewIcon />}
+            label="Add Reporting Designation"
+            sx={{
+              borderRadius: 0,
+              backgroundColor: "#eee",
+              color: "#333",
+              fontWeight: 500,
+              mr: 0.5,
+              mb: 0.5,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setDrawerOpen(true)}
+          />
+        )}
       </div>
 
       <Drawer

@@ -60,6 +60,7 @@ graphql(`
       }
       ... on PersonContact {
         ...PersonContactFields
+        resourceMapIds
       }
     }
   }
