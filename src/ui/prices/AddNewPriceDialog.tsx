@@ -38,7 +38,7 @@ export function AddNewPriceDialog({
       handleClose();
       if (onSuccess) onSuccess();
     },
-    onError: (err) => {
+    onError: (err: Error) => {
       setFormError(err.message);
     },
     refetchQueries: ["ListPrices"],
