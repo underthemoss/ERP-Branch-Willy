@@ -1,5 +1,8 @@
 import { graphql } from "@/graphql";
-import { useCreatePriceBookMutation as _useCreatePriceBookMutation } from "@/graphql/hooks";
+import {
+  useCreatePriceBookMutation as _useCreatePriceBookMutation,
+  useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
+} from "@/graphql/hooks";
 
 // Re-exporting other hooks, that do not need any modifications
 export {
@@ -19,9 +22,32 @@ export const PriceBookFieldsFragment = graphql(`
   fragment PriceBookFields on PriceBook {
     id
     name
-    createdBy
     updatedAt
-    isDefault
+    createdAt
+    createdByUser {
+      id
+      firstName
+      lastName
+    }
+    updatedByUser {
+      id
+      firstName
+      lastName
+    }
+    parentPriceBook {
+      id
+      name
+    }
+    parentPriceBookPercentageFactor
+    location
+    businessContact {
+      id
+      name
+    }
+    project {
+      id
+      name
+    }
   }
 `);
 
@@ -104,10 +130,25 @@ graphql(`
   }
 `);
 
+graphql(`
+  mutation DeletePriceBookById($id: ID!) {
+    deletePriceBookById(id: $id)
+  }
+`);
+
 export function useCreatePriceBookMutation(
   options?: Parameters<typeof _useCreatePriceBookMutation>[0],
 ) {
   return _useCreatePriceBookMutation({
+    ...options,
+    refetchQueries: ["ListPriceBooks"],
+  });
+}
+
+export function useDeletePriceBookByIdMutation(
+  options?: Parameters<typeof _useDeletePriceBookByIdMutation>[0],
+) {
+  return _useDeletePriceBookByIdMutation({
     ...options,
     refetchQueries: ["ListPriceBooks"],
   });
