@@ -23,35 +23,7 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-
-graphql(`
-  query ListProjects {
-    listProjects {
-      id
-      name
-      project_code
-      description
-      company {
-        id
-        name
-      }
-      created_at
-      created_by
-      created_by_user {
-        firstName
-        lastName
-      }
-      updated_at
-      updated_by_user {
-        firstName
-        lastName
-      }
-      deleted
-      scope_of_work
-      status
-    }
-  }
-`);
+import { useListProjectsQuery } from "@/ui/projects/api";
 
 export default function ProjectsPage() {
   const { data, loading } = useListProjectsQuery({
