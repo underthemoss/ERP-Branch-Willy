@@ -71,9 +71,10 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
           name: data.name,
           notes: data.notes,
           parentPriceBookId: data.parentPriceBookId || undefined,
-          parentPriceBookPercentageFactor: data.parentPriceBookId
-            ? data.parentPriceBookPercentageFactor
-            : undefined,
+          parentPriceBookPercentageFactor:
+            data.parentPriceBookId && data.parentPriceBookPercentageFactor !== undefined
+              ? data.parentPriceBookPercentageFactor
+              : undefined,
           projectId: data.projectId || undefined,
           location: data.location || undefined,
           businessContactId: data.businessContactId || undefined,
@@ -143,6 +144,10 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
                     fullWidth
                     variant="outlined"
                     {...field}
+                    value={field.value === undefined ? "" : field.value}
+                    onChange={(e) =>
+                      field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))
+                    }
                   />
                 )}
               />

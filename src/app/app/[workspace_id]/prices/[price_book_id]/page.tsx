@@ -98,8 +98,8 @@ export default function PriceBook() {
                         Parent Price Book % Factor
                       </Typography>
                       <Typography>
-                        {priceBook.parentPriceBook
-                          ? `${priceBook.parentPriceBookPercentageFactor}%`
+                        {priceBook.parentPriceBook && priceBook.parentPriceBookPercentageFactor
+                          ? `${priceBook.parentPriceBookPercentageFactor * 100}%`
                           : "-"}
                       </Typography>
                     </Box>
