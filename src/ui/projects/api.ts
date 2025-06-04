@@ -21,6 +21,10 @@ graphql(`
         lastName
       }
       updated_at
+      updated_by_user {
+        firstName
+        lastName
+      }
       deleted
       scope_of_work
       status

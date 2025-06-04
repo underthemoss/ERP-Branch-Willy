@@ -1,7 +1,6 @@
 "use client";
 
-import { graphql } from "@/graphql";
-import { useListProjectsQuery } from "@/graphql/hooks";
+import { useListProjectsQuery } from "@/ui/projects/api";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
@@ -23,7 +22,6 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-import { useListProjectsQuery } from "@/ui/projects/api";
 
 export default function ProjectsPage() {
   const { data, loading } = useListProjectsQuery({
