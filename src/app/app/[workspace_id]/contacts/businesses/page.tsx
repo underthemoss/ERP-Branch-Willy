@@ -31,7 +31,7 @@ export default function BusinessesContactsPage() {
   const { data, loading } = useListContactsQuery({
     variables: {
       workspaceId: workspace_id,
-      page: { size: 10000 },
+      page: { size: 10_000 },
       contactType: ContactType.Business,
     },
     fetchPolicy: "cache-and-network",

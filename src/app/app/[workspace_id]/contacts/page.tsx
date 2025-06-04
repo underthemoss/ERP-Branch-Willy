@@ -38,7 +38,7 @@ export default function ContactsPage() {
     variables: {
       workspaceId: workspace_id,
       page: {
-        size: 1000,
+        size: 10_000,
       },
       contactType:
         contactTypeFilter === "All"
