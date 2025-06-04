@@ -643,9 +643,12 @@ type Query {
   listProjects: [Project]
 
   """
-  Get resource map entries filtered by tenant_id (from the calling user company id)
+  Get all resource map entries filtered by tenant_id (from the calling user company id)
   """
   listResourceMapEntries: [ResourceMapResource]
+
+  """List resource map entities by parent_id (with tenant scoping)"""
+  listResourceMapEntriesByParentId(parent_id: String!): [ResourceMapResource]
   listSalesOrders(limit: Int = 20, offset: Int = 0): SalesOrderListResult
 
   """

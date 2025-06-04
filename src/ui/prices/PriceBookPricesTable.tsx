@@ -45,22 +45,7 @@ const columns: GridColDef<RentalPriceFields>[] = [
     width: 260,
     renderCell: (params) => {
       const createdAt = params.row.createdAt ? new Date(params.row.createdAt).toLocaleString() : "";
-      const user =
-        params.row.createdByUser &&
-        (params.row.createdByUser.firstName || params.row.createdByUser.lastName)
-          ? `${params.row.createdByUser.firstName || ""} ${params.row.createdByUser.lastName || ""}`.trim()
-          : "";
-      return (
-        <span>
-          {createdAt}
-          {user && (
-            <>
-              {" "}
-              <span style={{ color: "#888" }}>by {user}</span>
-            </>
-          )}
-        </span>
-      );
+      return <span>{createdAt}</span>;
     },
   },
   {
@@ -69,22 +54,7 @@ const columns: GridColDef<RentalPriceFields>[] = [
     width: 260,
     renderCell: (params) => {
       const updatedAt = params.row.updatedAt ? new Date(params.row.updatedAt).toLocaleString() : "";
-      const user =
-        params.row.updatedByUser &&
-        (params.row.updatedByUser.firstName || params.row.updatedByUser.lastName)
-          ? `${params.row.updatedByUser.firstName || ""} ${params.row.updatedByUser.lastName || ""}`.trim()
-          : "";
-      return (
-        <span>
-          {updatedAt}
-          {user && (
-            <>
-              {" "}
-              <span style={{ color: "#888" }}>by {user}</span>
-            </>
-          )}
-        </span>
-      );
+      return <span>{updatedAt}</span>;
     },
   },
 ];

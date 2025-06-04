@@ -64,16 +64,6 @@ export const RentalPriceFieldsFragment = graphql(`
     pricePerMonthInCents
     createdAt
     updatedAt
-    createdByUser {
-      id
-      firstName
-      lastName
-    }
-    updatedByUser {
-      id
-      firstName
-      lastName
-    }
   }
 `);
 
