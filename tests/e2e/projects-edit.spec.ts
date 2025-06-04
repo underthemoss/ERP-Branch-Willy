@@ -47,7 +47,7 @@ test.describe("Project Edit Flow", () => {
 
     // Verify the updated details are shown
     await expect(
-      page.getByRole("heading", { name: updatedName })
+      page.getByRole("heading", { name: updatedName }),
     ).toBeVisible();
     await expect(page.getByText(updatedCode)).toBeVisible();
     await expect(page.getByText(updatedDescription)).toBeVisible();
