@@ -1,7 +1,5 @@
 import TreeViewIcon from "@mui/icons-material/AccountTree";
 import CloseIcon from "@mui/icons-material/Close";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import SearchIcon from "@mui/icons-material/Search";
 import { Chip } from "@mui/material";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
@@ -9,48 +7,8 @@ import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { TreeViewBaseItem, TreeViewSelectionPropagation } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 import * as React from "react";
-
-export const EMPLOYEES_DATASET: TreeViewBaseItem[] = [
-  {
-    id: "0",
-    label: "Sarah",
-  },
-  {
-    id: "1",
-    label: "Thomas",
-    children: [
-      { id: "2", label: "Robert" },
-      { id: "3", label: "Karen" },
-      { id: "4", label: "Nancy" },
-      { id: "5", label: "Daniel" },
-      { id: "6", label: "Christopher" },
-      { id: "7", label: "Donald" },
-    ],
-  },
-  {
-    id: "8",
-    label: "Mary",
-    children: [
-      {
-        id: "9",
-        label: "Jennifer",
-        children: [{ id: "10", label: "Anna" }],
-      },
-      { id: "11", label: "Michael" },
-      {
-        id: "12",
-        label: "Linda",
-        children: [
-          { id: "13", label: "Elizabeth" },
-          { id: "14", label: "William" },
-        ],
-      },
-    ],
-  },
-];
 
 type Item = { label: string; id: string; parentId: string; path: string[] };
 type ItemWithChildren = {
