@@ -633,7 +633,7 @@ type Query {
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
-  listPriceBookCategories(priceBookId: String!): [PimCategory!]!
+  listPriceBookCategories(priceBookId: String): [PimCategory!]!
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPriceNames(pimCategoryId: String, priceBookId: String): [String!]!
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult

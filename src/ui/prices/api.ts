@@ -65,6 +65,10 @@ export const RentalPriceFieldsFragment = graphql(`
     pricePerMonthInCents
     createdAt
     updatedAt
+    priceBook {
+      id
+      name
+    }
   }
 `);
 
@@ -80,11 +84,15 @@ export const SalePriceFieldsFragment = graphql(`
     unitCostInCents
     createdAt
     updatedAt
+    priceBook {
+      id
+      name
+    }
   }
 `);
 
 graphql(`
-  query ListPrices($filter: ListPricesFilter!, $page: ListPricesPage!) {
+  query ListPrices($filter: ListPricesFilter, $page: ListPricesPage!) {
     listPrices(filter: $filter, page: $page) {
       items {
         __typename
@@ -157,7 +165,7 @@ export function useDeletePriceBookByIdMutation(
 
 // ListPriceBookCategories query for category dropdown
 graphql(`
-  query ListPriceBookCategories($priceBookId: String!) {
+  query ListPriceBookCategories($priceBookId: String) {
     listPriceBookCategories(priceBookId: $priceBookId) {
       id
       name

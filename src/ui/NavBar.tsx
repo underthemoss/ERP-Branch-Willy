@@ -90,6 +90,15 @@ export const NavBar = () => {
       icon: <AttachMoneyIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/prices`,
       testId: "nav-prices",
+      subitems: [
+        {
+          text: "Price Books",
+          href: `/app/${currentWorkspace?.id}/prices/price-books`,
+          icon: <BusinessOutlinedIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/prices/price-books`,
+          testId: "nav-prices-price-books",
+        },
+      ],
     },
     {
       text: "Projects",
