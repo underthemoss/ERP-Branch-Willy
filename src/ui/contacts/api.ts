@@ -60,6 +60,7 @@ graphql(`
       }
       ... on PersonContact {
         ...PersonContactFields
+        resourceMapIds
       }
     }
   }
@@ -122,6 +123,7 @@ graphql(`
     $address: String
     $taxId: String!
     $website: String
+    $resourceMapIds: [ID!]
   ) {
     createBusinessContact(
       input: {
@@ -131,6 +133,7 @@ graphql(`
         address: $address
         taxId: $taxId
         website: $website
+        resourceMapIds: $resourceMapIds
       }
     ) {
       id
@@ -146,6 +149,7 @@ graphql(`
     $email: String!
     $role: String!
     $businessId: ID!
+    $resourceMapIds: [ID!]
   ) {
     createPersonContact(
       input: {
@@ -155,6 +159,7 @@ graphql(`
         email: $email
         role: $role
         businessId: $businessId
+        resourceMapIds: $resourceMapIds
       }
     ) {
       ...PersonContactFields

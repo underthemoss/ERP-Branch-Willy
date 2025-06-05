@@ -1,13 +1,14 @@
 "use client";
 
-import { useCreatePersonContactMutation, useListBusinessContactsQuery } from "@/ui/contacts/api";
+import { useCreatePersonContactMutation } from "@/ui/contacts/api";
+import ContactSelector from "@/ui/ContactSelector";
+import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
   Container,
-  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
@@ -18,37 +19,24 @@ export default function CreateEmployeePage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
 
-  const [form, setForm] = React.useState({
+  const [form, setForm] = React.useState<{
+    name: string;
+    phone: string;
+    email: string;
+    role: string;
+    businessId: string;
+    resourceMapIds: string[];
+  }>({
     name: "",
     phone: "",
     email: "",
     role: "",
     businessId: "",
+    resourceMapIds: [],
   });
   const [error, setError] = React.useState<string | null>(null);
 
   const [createEmployee, { loading }] = useCreatePersonContactMutation();
-
-  // Fetch businesses for the businessId select
-  const { data: businessesData } = useListBusinessContactsQuery({
-    variables: { workspaceId: workspace_id, page: { size: 10000 } },
-  });
-
-  // Type guard for BusinessContact
-  function isBusinessContact(b: { __typename?: string }): b is {
-    __typename: "BusinessContact";
-    id: string;
-    name: string;
-    profilePicture?: string | null;
-  } {
-    return b?.__typename === "BusinessContact";
-  }
-
-  const businessOptions =
-    businessesData?.listContacts?.items?.filter(isBusinessContact).map((b) => ({
-      id: b.id ?? "",
-      name: b.name ?? "",
-    })) ?? [];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({
@@ -80,6 +68,7 @@ export default function CreateEmployeePage() {
           email: form.email,
           role: form.role,
           businessId: form.businessId,
+          resourceMapIds: form.resourceMapIds,
         },
       });
       if (result.data?.createPersonContact?.id) {
@@ -133,22 +122,20 @@ export default function CreateEmployeePage() {
             required
             fullWidth
           />
-          <TextField
-            select
-            label="Business"
-            name="businessId"
-            value={form.businessId}
-            onChange={handleSelectChange}
-            required
-            fullWidth
-          >
-            <MenuItem value="">Select a business</MenuItem>
-            {businessOptions.map((b) => (
-              <MenuItem key={b.id} value={b.id}>
-                {b.name}
-              </MenuItem>
-            ))}
-          </TextField>
+          <ContactSelector
+            contactId={form.businessId}
+            onChange={(id) => setForm((prev) => ({ ...prev, businessId: id }))}
+            type="business"
+            workspaceId={workspace_id}
+          />
+          <ResourceMapSearchSelector
+            onSelectionChange={(ids: string[]) =>
+              setForm((prev) => ({ ...prev, resourceMapIds: ids }))
+            }
+            readonly={false}
+            selectedIds={form.resourceMapIds}
+          />
+
           {error && <Alert severity="error">{error}</Alert>}
           <Box display="flex" justifyContent="flex-end" gap={2}>
             <Button

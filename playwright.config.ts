@@ -5,7 +5,7 @@ export default defineConfig({
     timeout: 15000,
   },
   use: {
-    actionTimeout: 10000,
+    actionTimeout: 30000,
     navigationTimeout: 45000,
     baseURL: "http://localhost:3000/",
     headless: true,

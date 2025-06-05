@@ -6,6 +6,7 @@ import {
   useUpdateBusinessContactMutation,
   useUpdatePersonContactMutation,
 } from "@/ui/contacts/api";
+import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Alert,
   Box,
@@ -39,6 +40,7 @@ export default function EditContactPage() {
     email: "",
     role: "",
     businessId: "",
+    resourceMapIds: [] as string[],
   });
   const [updateEmployee, { loading: updatingPerson }] = useUpdatePersonContactMutation();
 
@@ -75,6 +77,7 @@ export default function EditContactPage() {
         email: data.getContactById.email ?? "",
         role: data.getContactById.role ?? "",
         businessId: data.getContactById.businessId ?? "",
+        resourceMapIds: data.getContactById.resourceMapIds ?? [],
       });
     } else if (data?.getContactById && data.getContactById.__typename === "BusinessContact") {
       setBusinessForm({
@@ -127,6 +130,7 @@ export default function EditContactPage() {
             email: personForm.email,
             role: personForm.role,
             businessId: personForm.businessId,
+            resourceMapIds: personForm.resourceMapIds,
           },
         },
       });
@@ -253,6 +257,13 @@ export default function EditContactPage() {
                 </MenuItem>
               ))}
             </TextField>
+            <ResourceMapSearchSelector
+              selectedIds={personForm.resourceMapIds}
+              onSelectionChange={(ids: string[]) =>
+                setPersonForm((prev) => ({ ...prev, resourceMapIds: ids }))
+              }
+              readonly={false}
+            />
             {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
             <Box display="flex" justifyContent="flex-end" gap={2}>
               <Button

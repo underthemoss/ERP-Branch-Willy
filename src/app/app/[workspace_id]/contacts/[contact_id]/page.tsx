@@ -1,6 +1,7 @@
 "use client";
 
-import { useDeleteContactMutation, useGetContactByIdQuery } from "@/ui/contacts/api";
+import { useDeleteContactMutation, useGetContactByIdQuery } from "@/graphql/hooks";
+import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Box,
   Button,
@@ -112,6 +113,15 @@ export default function ContactDisplayPage() {
                   <Typography>
                     <strong>Business ID:</strong> {contact.businessId || "—"}
                   </Typography>
+
+                  <Typography>
+                    <strong>Reporting Designations:</strong>
+                  </Typography>
+                  <ResourceMapSearchSelector
+                    onSelectionChange={() => {}}
+                    readonly={true}
+                    selectedIds={contact.resourceMapIds || []}
+                  />
                 </>
               )}
               {isBusiness && (
