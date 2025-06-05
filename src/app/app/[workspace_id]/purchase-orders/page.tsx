@@ -307,8 +307,17 @@ export default function PurchaseOrdersKanbanPage() {
   const [purchaseOrders, setPurchaseOrders] =
     React.useState<PurchaseOrder[]>(initialPurchaseOrders);
   const [statusFilter, setStatusFilter] = React.useState<PurchaseOrder["status"][]>([]);
+  const [requestedByFilter, setRequestedByFilter] = React.useState<string[]>([]);
+  const [priorityFilter, setPriorityFilter] = React.useState<PurchaseOrder["priority"][]>([]);
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [view, setView] = React.useState<"kanban" | "list">("kanban");
+
+  // Get unique requested_by values for filter dropdown
+  const requestedByOptions = React.useMemo(() => {
+    const set = new Set<string>();
+    purchaseOrders.forEach((po) => set.add(po.requested_by));
+    return Array.from(set).sort();
+  }, [purchaseOrders]);
 
   // Filtering logic (shared for both views)
   const filteredRows = React.useMemo(() => {
@@ -316,12 +325,18 @@ export default function PurchaseOrdersKanbanPage() {
     if (statusFilter.length > 0) {
       filtered = filtered.filter((row) => statusFilter.includes(row.status));
     }
+    if (requestedByFilter.length > 0) {
+      filtered = filtered.filter((row) => requestedByFilter.includes(row.requested_by));
+    }
+    if (priorityFilter.length > 0) {
+      filtered = filtered.filter((row) => priorityFilter.includes(row.priority));
+    }
     if (!searchTerm) return filtered;
     const lower = searchTerm.toLowerCase();
     return filtered.filter((row) =>
       Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
     );
-  }, [purchaseOrders, searchTerm, statusFilter]);
+  }, [purchaseOrders, searchTerm, statusFilter, requestedByFilter, priorityFilter]);
 
   // Kanban grouping
   const grouped = groupByStatus(filteredRows);
@@ -517,6 +532,76 @@ export default function PurchaseOrdersKanbanPage() {
             <MenuItem value="Open">Open</MenuItem>
             <MenuItem value="In Progress">In Progress</MenuItem>
             <MenuItem value="Closed">Closed</MenuItem>
+          </Select>
+          <Select
+            size="small"
+            multiple
+            displayEmpty
+            value={requestedByFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setRequestedByFilter(
+                typeof value === "string" ? (value === "" ? [] : [value]) : (value as string[]),
+              );
+            }}
+            renderValue={(selected) => {
+              if (!selected || (Array.isArray(selected) && selected.length === 0)) {
+                return "All Requesters";
+              }
+              return (selected as string[]).join(", ");
+            }}
+            sx={{ minWidth: 180 }}
+            data-testid="purchase-order-requestedby-filter"
+            MenuProps={{
+              MenuListProps: {
+                dense: true,
+              },
+            }}
+          >
+            <MenuItem value="">
+              <em>All Requesters</em>
+            </MenuItem>
+            {requestedByOptions.map((name) => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            size="small"
+            multiple
+            displayEmpty
+            value={priorityFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPriorityFilter(
+                typeof value === "string"
+                  ? value === ""
+                    ? []
+                    : [value as PurchaseOrder["priority"]]
+                  : (value as PurchaseOrder["priority"][]),
+              );
+            }}
+            renderValue={(selected) => {
+              if (!selected || (Array.isArray(selected) && selected.length === 0)) {
+                return "All Priorities";
+              }
+              return (selected as string[]).join(", ");
+            }}
+            sx={{ minWidth: 180 }}
+            data-testid="purchase-order-priority-filter"
+            MenuProps={{
+              MenuListProps: {
+                dense: true,
+              },
+            }}
+          >
+            <MenuItem value="">
+              <em>All Priorities</em>
+            </MenuItem>
+            <MenuItem value="High">High</MenuItem>
+            <MenuItem value="Medium">Medium</MenuItem>
+            <MenuItem value="Low">Low</MenuItem>
           </Select>
         </Box>
         {view === "list" ? (
