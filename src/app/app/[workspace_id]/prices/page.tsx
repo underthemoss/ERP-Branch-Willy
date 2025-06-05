@@ -24,10 +24,12 @@ import {
 } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import * as React from "react";
 
 export default function AllPrices() {
   const apiRef = useGridApiRef();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
   const [selectedPriceBook, setSelectedPriceBook] = React.useState<string>("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
@@ -96,11 +98,15 @@ export default function AllPrices() {
       renderCell: (params) => {
         const priceBookId = params.row.priceBookId;
         const priceBookName = params.value;
-        // Assuming workspace_id is available in the route, use a relative path
+        // Use workspace_id in the route
         return priceBookId ? (
-          <Link href={`/prices/price-books/${priceBookId}`} passHref legacyBehavior>
-            <a style={{ color: "#1976d2", textDecoration: "underline" }}>{priceBookName}</a>
-          </Link>
+          <Box display="flex" alignItems="center" height="100%">
+            <Link href={`/app/${workspace_id}/prices/price-books/${priceBookId}`}>
+              <Typography color="primary" sx={{ textDecoration: "underline" }}>
+                {priceBookName}
+              </Typography>
+            </Link>
+          </Box>
         ) : (
           priceBookName
         );
