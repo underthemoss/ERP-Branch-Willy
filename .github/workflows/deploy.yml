@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   build-and-push:
-    # runs-on: ubuntu-latest
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    # runs-on: self-hosted
     env:
       ECR_REGISTRY: 696398453447.dkr.ecr.us-west-2.amazonaws.com
       ECR_REPOSITORY: es-erp-stage
