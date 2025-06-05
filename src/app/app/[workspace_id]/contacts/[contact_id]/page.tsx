@@ -266,15 +266,9 @@ export default function ContactDisplayPage() {
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <ResourceMapSearchSelector
-                onSelectionChange={() => {}}
                 readonly={true}
-                selectedIds={
-                  isPerson
-                    ? contact.resourceMapIds || []
-                    : isBusiness
-                      ? (contact.resource_map_entries?.map((e: any) => e.path) || [])
-                      : []
-                }
+                onSelectionChange={() => {}}
+                selectedIds={isPerson && contact.resourceMapIds ? contact.resourceMapIds : []}
               />
             </Paper>
 

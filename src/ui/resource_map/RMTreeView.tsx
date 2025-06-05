@@ -1,12 +1,12 @@
 import TreeViewIcon from "@mui/icons-material/AccountTree";
 import CloseIcon from "@mui/icons-material/Close";
 import { Chip } from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 import * as React from "react";
@@ -20,7 +20,7 @@ type ItemWithChildren = {
 };
 type ResourceMapSearchSelectorProps = {
   selectedIds: string[];
-  onSelectionChange: (ids: string[]) => void;
+  onSelectionChange: (ids: string[]) => Promise<void>;
   items: Item[];
   readonly: boolean;
 };
@@ -33,8 +33,8 @@ export function RMTreeView({
 }: ResourceMapSearchSelectorProps) {
   const [searchValue, setSearchValue] = React.useState("");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const handleSelectedItemsChange = (event: React.SyntheticEvent | null, ids: string[]) => {
-    onSelectionChange(ids);
+  const handleSelectedItemsChange = async (event: React.SyntheticEvent | null, ids: string[]) => {
+    await onSelectionChange(ids);
   };
 
   const buildTree = (item: Item, items: Item[]): ItemWithChildren => {
@@ -57,27 +57,34 @@ export function RMTreeView({
           .map(({ id, label, path }) => {
             const fullLabel = path.join(" > ");
             return (
-              <Tooltip
-                key={id}
-                title={fullLabel}
-                placement="bottom"
-                enterDelay={500}
-                arrow
-              >
+              <Tooltip key={id} title={fullLabel} placement="bottom" enterDelay={500} arrow>
                 <span>
                   <Chip
-                    label={fullLabel}
+                    label={
+                      <span
+                        style={{
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: 300,
+                        }}
+                      >
+                        {fullLabel}
+                      </span>
+                    }
                     sx={{
                       borderRadius: 1,
                       fontWeight: 500,
                       mr: 0.5,
                       mb: 0.5,
+                      maxWidth: "100%",
                     }}
                     color={"info"}
                     deleteIcon={readonly ? <></> : <CloseIcon sx={{ color: "#fff" }} />}
-                    onDelete={() => {
+                    onDelete={async () => {
                       const newSelected = selectedIds.filter((selectedId) => selectedId !== id);
-                      onSelectionChange(newSelected);
+                      await onSelectionChange(newSelected);
                     }}
                   />
                 </span>
