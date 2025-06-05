@@ -9,6 +9,7 @@ export {
   useListPricesQuery,
   useGetPriceBookByIdQuery,
   useCreateRentalPriceMutation,
+  useListPriceNamesQuery,
 } from "@/graphql/hooks";
 
 // Re-exporting types
@@ -169,5 +170,12 @@ graphql(`
     createRentalPrice(input: $input) {
       ...RentalPriceFields
     }
+  }
+`);
+
+// ListPriceNames query for class dropdown
+graphql(`
+  query ListPriceNames($priceBookId: String, $pimCategoryId: String) {
+    listPriceNames(priceBookId: $priceBookId, pimCategoryId: $pimCategoryId)
   }
 `);

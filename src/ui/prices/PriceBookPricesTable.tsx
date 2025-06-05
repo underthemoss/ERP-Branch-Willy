@@ -3,7 +3,11 @@
 import { PriceType } from "@/graphql/graphql";
 import type { ListPriceBookCategoriesQuery } from "@/graphql/graphql";
 import { useListPriceBookCategoriesQuery } from "@/graphql/hooks";
-import { useListPricesQuery, type RentalPriceFields } from "@/ui/prices/api";
+import {
+  useListPriceNamesQuery,
+  useListPricesQuery,
+  type RentalPriceFields,
+} from "@/ui/prices/api";
 import {
   Autocomplete,
   Box,
@@ -115,14 +119,22 @@ export function PricesTable() {
     }));
   }, [categoriesData]);
 
+  // Fetch class names for dropdown, only when a category is selected
+  const {
+    data: classNamesData,
+    loading: classNamesLoading,
+    error: classNamesError,
+  } = useListPriceNamesQuery({
+    variables: {
+      priceBookId: price_book_id,
+      pimCategoryId: selectedCategory,
+    },
+  });
+
   const allClasses = React.useMemo(() => {
-    if (!data?.listPrices?.items) return [];
-    const rentalPrices = data.listPrices.items.filter(
-      (item) => item.__typename === "RentalPrice",
-    ) as RentalPriceFields[];
-    const unique = Array.from(new Set(rentalPrices.map((item) => item.name).filter(Boolean)));
-    return unique.sort();
-  }, [data]);
+    if (!classNamesData?.listPriceNames) return [];
+    return classNamesData.listPriceNames.filter(Boolean).sort();
+  }, [classNamesData]);
 
   // Filter rows by selected class (category is now server-side)
   const rows = React.useMemo<RentalPriceFields[]>(() => {
@@ -197,12 +209,15 @@ export function PricesTable() {
           options={allClasses}
           value={selectedClass}
           onChange={(_, newValue) => setSelectedClass(newValue)}
+          loading={classNamesLoading}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Filter by Class"
               variant="outlined"
               placeholder="Type to search"
+              error={!!classNamesError}
+              helperText={classNamesError ? "Failed to load classes" : ""}
             />
           )}
           clearOnEscape
