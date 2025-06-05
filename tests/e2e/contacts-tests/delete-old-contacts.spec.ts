@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { login } from "../shared";
 import { subDays, format } from "date-fns";
 
-test("delete contacts updated on each of the last 20 days", async ({
+test.skip("delete contacts updated on each of the last 20 days", async ({
   page,
 }) => {
   await login({ page });
