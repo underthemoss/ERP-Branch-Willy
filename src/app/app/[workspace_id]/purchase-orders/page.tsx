@@ -11,6 +11,10 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -311,6 +315,7 @@ export default function PurchaseOrdersKanbanPage() {
   const [priorityFilter, setPriorityFilter] = React.useState<PurchaseOrder["priority"][]>([]);
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [view, setView] = React.useState<"kanban" | "list">("kanban");
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
 
   // Get unique requested_by values for filter dropdown
   const requestedByOptions = React.useMemo(() => {
@@ -452,7 +457,7 @@ export default function PurchaseOrdersKanbanPage() {
             variant="contained"
             color="primary"
             sx={{ textTransform: "none", fontWeight: 600 }}
-            disabled
+            onClick={() => setCreateDialogOpen(true)}
           >
             + Create Purchase Order
           </Button>
@@ -716,7 +721,121 @@ export default function PurchaseOrdersKanbanPage() {
             </Grid>
           </DragDropContext>
         )}
+        {/* Create Purchase Order Dialog */}
+        <CreatePurchaseOrderDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          onCreate={(newPO) => {
+            setPurchaseOrders((prev) => [
+              {
+                ...newPO,
+                id: `PO-${Math.floor(Math.random() * 9000 + 1000)}`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                created_by: newPO.requested_by,
+                updated_by: newPO.requested_by,
+                status: "Open",
+              },
+              ...prev,
+            ]);
+            setCreateDialogOpen(false);
+          }}
+        />
       </Container>
     </PageContainer>
+  );
+}
+
+// --- Create Purchase Order Dialog ---
+type CreatePurchaseOrderDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (
+    po: Omit<
+      PurchaseOrder,
+      "id" | "created_at" | "updated_at" | "created_by" | "updated_by" | "status"
+    >,
+  ) => void;
+};
+
+function CreatePurchaseOrderDialog({ open, onClose, onCreate }: CreatePurchaseOrderDialogProps) {
+  const [description, setDescription] = React.useState("");
+  const [vendor, setVendor] = React.useState("");
+  const [requestedBy, setRequestedBy] = React.useState("");
+  const [priority, setPriority] = React.useState<PurchaseOrder["priority"]>("Medium");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description || !vendor || !requestedBy) return;
+    onCreate({
+      description,
+      vendor,
+      requested_by: requestedBy,
+      priority,
+    } as any);
+    setDescription("");
+    setVendor("");
+    setRequestedBy("");
+    setPriority("Medium");
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <form onSubmit={handleSubmit}>
+        <DialogTitle>Create Purchase Order</DialogTitle>
+        <DialogContent>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label="Vendor"
+              value={vendor}
+              onChange={(e) => setVendor(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Requested By"
+              value={requestedBy}
+              onChange={(e) => setRequestedBy(e.target.value)}
+              required
+              fullWidth
+            />
+            <Select
+              label="Priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as PurchaseOrder["priority"])}
+              fullWidth
+              required
+              displayEmpty
+              sx={{ mt: 1 }}
+            >
+              <MenuItem value="High">High</MenuItem>
+              <MenuItem value="Medium">Medium</MenuItem>
+              <MenuItem value="Low">Low</MenuItem>
+            </Select>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={!description || !vendor || !requestedBy}
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 }
