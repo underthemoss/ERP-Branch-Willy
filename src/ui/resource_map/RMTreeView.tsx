@@ -6,6 +6,7 @@ import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 import * as React from "react";
@@ -19,7 +20,7 @@ type ItemWithChildren = {
 };
 type ResourceMapSearchSelectorProps = {
   selectedIds: string[];
-  onSelectionChange: (ids: string[]) => void;
+  onSelectionChange: (ids: string[]) => Promise<void>;
   items: Item[];
   readonly: boolean;
 };
@@ -32,8 +33,8 @@ export function RMTreeView({
 }: ResourceMapSearchSelectorProps) {
   const [searchValue, setSearchValue] = React.useState("");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const handleSelectedItemsChange = (event: React.SyntheticEvent | null, ids: string[]) => {
-    onSelectionChange(ids);
+  const handleSelectedItemsChange = async (event: React.SyntheticEvent | null, ids: string[]) => {
+    await onSelectionChange(ids);
   };
 
   const buildTree = (item: Item, items: Item[]): ItemWithChildren => {
@@ -54,24 +55,40 @@ export function RMTreeView({
           .map((id) => items.find((i) => i.id === id)!)
           .filter(Boolean)
           .map(({ id, label, path }) => {
+            const fullLabel = path.join(" > ");
             return (
-              <Chip
-                key={id}
-                label={path.join(" > ")}
-                sx={{
-                  borderRadius: 1,
-
-                  fontWeight: 500,
-                  mr: 0.5,
-                  mb: 0.5,
-                }}
-                color={"info"}
-                deleteIcon={readonly ? <></> : <CloseIcon sx={{ color: "#fff" }} />}
-                onDelete={() => {
-                  const newSelected = selectedIds.filter((selectedId) => selectedId !== id);
-                  onSelectionChange(newSelected);
-                }}
-              />
+              <Tooltip key={id} title={fullLabel} placement="bottom" enterDelay={500} arrow>
+                <span>
+                  <Chip
+                    label={
+                      <span
+                        style={{
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: 300,
+                        }}
+                      >
+                        {fullLabel}
+                      </span>
+                    }
+                    sx={{
+                      borderRadius: 1,
+                      fontWeight: 500,
+                      mr: 0.5,
+                      mb: 0.5,
+                      maxWidth: "100%",
+                    }}
+                    color={"info"}
+                    deleteIcon={readonly ? <></> : <CloseIcon sx={{ color: "#fff" }} />}
+                    onDelete={async () => {
+                      const newSelected = selectedIds.filter((selectedId) => selectedId !== id);
+                      await onSelectionChange(newSelected);
+                    }}
+                  />
+                </span>
+              </Tooltip>
             );
           })}
         {!readonly && (

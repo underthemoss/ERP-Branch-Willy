@@ -1,5 +1,6 @@
 import { graphql } from "@/graphql";
 import { useListResourceMapEntriesQuery } from "@/graphql/hooks";
+import LinearProgress from "@mui/material/LinearProgress";
 import _ from "lodash";
 import * as React from "react";
 import { RMTreeView } from "./RMTreeView";
@@ -20,7 +21,7 @@ export const ListResourceMapEntriesQuery = graphql(`
 `);
 type ResourceMapSearchSelectorProps = {
   selectedIds: string[];
-  onSelectionChange: (ids: string[]) => void;
+  onSelectionChange: (ids: string[]) => void | Promise<void>;
   readonly: boolean;
 };
 
@@ -29,6 +30,7 @@ export default function ResourceMapSearchSelector({
   onSelectionChange,
   readonly,
 }: ResourceMapSearchSelectorProps) {
+  const [showLoader, setShowLoader] = React.useState(false);
   const { data, loading } = useListResourceMapEntriesQuery({
     fetchPolicy: "cache-and-network",
   });
@@ -44,11 +46,18 @@ export default function ResourceMapSearchSelector({
     })) || [];
 
   return (
-    <RMTreeView
-      readonly={readonly}
-      items={items}
-      onSelectionChange={onSelectionChange}
-      selectedIds={selectedIds}
-    />
+    <>
+      {showLoader && <LinearProgress />}
+      <RMTreeView
+        readonly={readonly}
+        items={items}
+        onSelectionChange={async (ids) => {
+          setShowLoader(true);
+          await onSelectionChange(ids);
+          setShowLoader(false);
+        }}
+        selectedIds={selectedIds}
+      />
+    </>
   );
 }
