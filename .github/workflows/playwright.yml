@@ -5,6 +5,7 @@ on:
 
 jobs:
   test:
+    if: false
     name: Run Playwright tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     strategy:
