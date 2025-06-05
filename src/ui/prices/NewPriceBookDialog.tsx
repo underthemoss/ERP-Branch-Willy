@@ -84,7 +84,7 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
 
     if (response.data?.createPriceBook?.id) {
       onClose();
-      router.push(`/app/${workspace_id}/prices/${response.data.createPriceBook.id}`);
+      router.push(`/app/${workspace_id}/prices/price-books/${response.data.createPriceBook.id}`);
     }
   };
 

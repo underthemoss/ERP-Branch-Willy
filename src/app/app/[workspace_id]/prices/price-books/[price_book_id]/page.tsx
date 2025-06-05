@@ -225,7 +225,7 @@ export default function PriceBook() {
                               color="text.secondary"
                               sx={{ ml: 1, display: "inline" }}
                             >
-                              ({`${priceBook.parentPriceBookPercentageFactor * 100}%`})
+                              (x{`${priceBook.parentPriceBookPercentageFactor}`})
                             </Typography>
                           ) : null}
                         </Box>
@@ -357,7 +357,7 @@ export default function PriceBook() {
           try {
             await deletePriceBook({ variables: { id: price_book_id as string } });
             setDeleteDialogOpen(false);
-            router.push(`/app/${workspace_id}/prices`);
+            router.push(`/app/${workspace_id}/prices/price-books`);
           } catch (err) {
             setDeleting(false);
             alert("Failed to delete price book.");
