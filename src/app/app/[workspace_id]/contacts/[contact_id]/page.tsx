@@ -27,7 +27,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 // --- GraphQL queries and mutations for this component ---
-export const CONTACT_DISPLAY_PAGE_GET_CONTACT_BY_ID = graphql(`
+graphql(`
   query ContactDisplayPage_GetContactById($id: ID!) {
     getContactById(id: $id) {
       __typename
@@ -64,7 +64,7 @@ export const CONTACT_DISPLAY_PAGE_GET_CONTACT_BY_ID = graphql(`
   }
 `);
 
-export const CONTACT_DISPLAY_PAGE_DELETE_CONTACT = graphql(`
+graphql(`
   mutation ContactDisplayPage_DeleteContact($id: ID!) {
     deleteContactById(id: $id)
   }
