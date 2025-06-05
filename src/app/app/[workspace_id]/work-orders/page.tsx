@@ -1,27 +1,51 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Grid";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Tooltip from "@mui/material/Tooltip";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
+import TableRowsIcon from "@mui/icons-material/TableRows";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Select,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
 import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
-import { PageContainer } from "@toolpad/core/PageContainer";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { PageContainer } from "@toolpad/core/PageContainer";
 import * as React from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
-// Mock data for work orders
-const mockWorkOrders = [
+type WorkOrder = {
+  id: string;
+  description: string;
+  location: string;
+  assigned_to: string;
+  status: "Open" | "In Progress" | "Closed";
+  priority: "High" | "Medium" | "Low";
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+const initialWorkOrders: WorkOrder[] = [
   {
     id: "WO-2001",
     description: "Routine maintenance on CAT 320 Excavator",
@@ -39,7 +63,7 @@ const mockWorkOrders = [
     description: "Move Genie S-65 Boom Lift to Broadway Apartments",
     location: "Equipment Yard",
     assigned_to: "Maria Lopez",
-    status: "Closed",
+    status: "In Progress",
     priority: "Medium",
     created_by: "John Doe",
     updated_by: "Maria Lopez",
@@ -63,7 +87,7 @@ const mockWorkOrders = [
     description: "Replace hydraulic hoses on Bobcat Skid Steer",
     location: "Boone Hospital Parking Garage",
     assigned_to: "Lisa Green",
-    status: "Open",
+    status: "In Progress",
     priority: "Medium",
     created_by: "Michael Brown",
     updated_by: "Lisa Green",
@@ -111,7 +135,7 @@ const mockWorkOrders = [
     description: "Inspect and lubricate tower crane cables",
     location: "Downtown Office Tower",
     assigned_to: "Sarah Lee",
-    status: "Open",
+    status: "In Progress",
     priority: "High",
     created_by: "Michael Brown",
     updated_by: "Sarah Lee",
@@ -147,7 +171,7 @@ const mockWorkOrders = [
     description: "Replace air filters on all site compressors",
     location: "Mizzou Science Building Renovation",
     assigned_to: "Alex Johnson",
-    status: "Open",
+    status: "In Progress",
     priority: "High",
     created_by: "Jane Smith",
     updated_by: "Alex Johnson",
@@ -183,7 +207,7 @@ const mockWorkOrders = [
     description: "Move scissor lift to Columbia Public Library",
     location: "Equipment Yard",
     assigned_to: "Lisa Green",
-    status: "Open",
+    status: "In Progress",
     priority: "Medium",
     created_by: "Michael Brown",
     updated_by: "Lisa Green",
@@ -231,7 +255,7 @@ const mockWorkOrders = [
     description: "Deliver rebar tying wire and cutters",
     location: "Boone Hospital Expansion",
     assigned_to: "Sarah Lee",
-    status: "Open",
+    status: "In Progress",
     priority: "High",
     created_by: "Michael Brown",
     updated_by: "Sarah Lee",
@@ -264,15 +288,35 @@ const mockWorkOrders = [
   },
 ];
 
-type WorkOrderRow = (typeof mockWorkOrders)[number];
+const statusColumns = [
+  { key: "Open", label: "Open", color: "success" },
+  { key: "In Progress", label: "In Progress", color: "warning" },
+  { key: "Closed", label: "Closed", color: "default" },
+];
 
-export default function WorkOrdersPage() {
-  const [statusFilter, setStatusFilter] = React.useState("All Statuses");
-  const [searchTerm, setSearchTerm] = React.useState("");
+function groupByStatus(
+  workOrders: WorkOrder[]
+): { [K in WorkOrder["status"]]: WorkOrder[] } {
+  const grouped: { [K in WorkOrder["status"]]: WorkOrder[] } = {
+    Open: [],
+    "In Progress": [],
+    Closed: [],
+  };
+  for (const wo of workOrders) {
+    grouped[wo.status].push(wo);
+  }
+  return grouped;
+}
 
-  // Filtering logic
+export default function WorkOrdersKanbanPage() {
+  const [workOrders, setWorkOrders] = React.useState<WorkOrder[]>(initialWorkOrders);
+  const [statusFilter, setStatusFilter] = React.useState<string>("All Statuses");
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [view, setView] = React.useState<"kanban" | "list">("kanban");
+
+  // Filtering logic (shared for both views)
   const filteredRows = React.useMemo(() => {
-    let filtered = mockWorkOrders;
+    let filtered = workOrders;
     if (statusFilter !== "All Statuses") {
       filtered = filtered.filter((row) => row.status === statusFilter);
     }
@@ -281,8 +325,45 @@ export default function WorkOrdersPage() {
     return filtered.filter((row) =>
       Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
     );
-  }, [searchTerm, statusFilter]);
+  }, [workOrders, searchTerm, statusFilter]);
 
+  // Kanban grouping
+  const grouped = groupByStatus(filteredRows);
+
+  function onDragEnd(result: DropResult) {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+    // Find the work order
+    const wo = workOrders.find((w) => w.id === draggableId);
+    if (!wo) return;
+
+    // Remove from old status
+    const newWorkOrders = workOrders.filter((w) => w.id !== draggableId);
+
+    // Insert into new status at destination.index
+    const updatedWO = { ...wo, status: destination.droppableId as WorkOrder["status"] };
+    const destList = newWorkOrders.filter((w) => w.status === destination.droppableId);
+    destList.splice(destination.index, 0, updatedWO);
+
+    // Rebuild the full list, preserving order in other columns
+    const rebuilt: WorkOrder[] = [];
+    for (const col of statusColumns) {
+      if (col.key === destination.droppableId) {
+        rebuilt.push(...destList);
+      } else {
+        rebuilt.push(...newWorkOrders.filter((w) => w.status === col.key));
+      }
+    }
+    setWorkOrders(rebuilt);
+  }
+
+  // Table columns
   const columns: GridColDef[] = [
     { field: "id", headerName: "Order #", width: 120 },
     { field: "description", headerName: "Description", flex: 2, minWidth: 180 },
@@ -310,6 +391,8 @@ export default function WorkOrdersPage() {
       renderCell: (params) =>
         params.value === "Open" ? (
           <Chip label="Open" color="success" size="small" sx={{ fontWeight: 600 }} />
+        ) : params.value === "In Progress" ? (
+          <Chip label="In Progress" color="warning" size="small" sx={{ fontWeight: 600 }} />
         ) : (
           <Chip label="Closed" color="default" size="small" sx={{ fontWeight: 600 }} />
         ),
@@ -354,7 +437,7 @@ export default function WorkOrdersPage() {
 
   return (
     <PageContainer>
-      <Container maxWidth="lg">
+      <Container maxWidth="xl">
         <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={1}>
           <Typography variant="h1">Work Orders</Typography>
           <Button
@@ -370,6 +453,20 @@ export default function WorkOrdersPage() {
           View, manage, and organize your work orders.
         </Typography>
         <Box mb={2} display="flex" gap={2} alignItems="center">
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            onChange={(_, val) => val && setView(val)}
+            size="small"
+            sx={{ mr: 2 }}
+          >
+            <ToggleButton value="kanban" data-testid="toggle-kanban">
+              <ViewKanbanIcon />
+            </ToggleButton>
+            <ToggleButton value="list" data-testid="toggle-list">
+              <TableRowsIcon />
+            </ToggleButton>
+          </ToggleButtonGroup>
           <TextField
             placeholder="Search work orders"
             variant="outlined"
@@ -406,32 +503,116 @@ export default function WorkOrdersPage() {
           >
             <MenuItem value="All Statuses">All Statuses</MenuItem>
             <MenuItem value="Open">Open</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
             <MenuItem value="Closed">Closed</MenuItem>
           </Select>
         </Box>
-        <Box sx={{ height: 600 }}>
-          <div data-testid="work-order-list" style={{ height: "100%" }}>
-            <DataGridPremium
-              columns={columns}
-              rows={filteredRows}
-              loading={false}
-              disableRowSelectionOnClick
-              hideFooter
-              getRowId={(row: WorkOrderRow) => row.id}
-              initialState={{
-                pinnedColumns: { left: ["id"] },
-              }}
-              sx={{
-                cursor: "pointer",
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "#f5f5f5",
-                },
-              }}
-              getRowClassName={() => "work-order-list-item"}
-              // No row click for now
-            />
-          </div>
-        </Box>
+        {view === "list" ? (
+          <Box sx={{ height: 600 }}>
+            <div data-testid="work-order-list" style={{ height: "100%" }}>
+              <DataGridPremium
+                columns={columns}
+                rows={filteredRows}
+                loading={false}
+                disableRowSelectionOnClick
+                hideFooter
+                getRowId={(row: WorkOrder) => row.id}
+                initialState={{
+                  pinnedColumns: { left: ["id"] },
+                }}
+                sx={{
+                  cursor: "pointer",
+                  "& .MuiDataGrid-row:hover": {
+                    backgroundColor: "#f5f5f5",
+                  },
+                }}
+                getRowClassName={() => "work-order-list-item"}
+                // No row click for now
+              />
+            </div>
+          </Box>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Grid container spacing={3}>
+              {statusColumns.map((col) => (
+                <Grid size={{ xs: 12, md: 4 }} key={col.key}>
+                  <Paper elevation={3} sx={{ p: 2, minHeight: 600, bgcolor: "#f8f9fa" }}>
+                    <Typography variant="h6" mb={2}>
+                      {col.label}
+                    </Typography>
+                    <Droppable droppableId={col.key}>
+                      {(provided, snapshot) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          sx={{
+                            minHeight: 550,
+                            transition: "background 0.2s",
+                            background: snapshot.isDraggingOver ? "#e3f2fd" : undefined,
+                          }}
+                        >
+                          {grouped[col.key as WorkOrder["status"]].map((wo: WorkOrder, idx: number) => (
+                            <Draggable draggableId={wo.id} index={idx} key={wo.id}>
+                              {(provided, snapshot) => (
+                                <Card
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  sx={{
+                                    mb: 2,
+                                    borderLeft: `6px solid ${
+                                      wo.priority === "High"
+                                        ? "#d32f2f"
+                                        : wo.priority === "Medium"
+                                        ? "#ed6c02"
+                                        : "#1976d2"
+                                    }`,
+                                    boxShadow: snapshot.isDragging ? 6 : 2,
+                                    opacity: snapshot.isDragging ? 0.8 : 1,
+                                  }}
+                                >
+                                  <CardContent>
+                                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                                      <Typography variant="subtitle1" fontWeight={600}>
+                                        {wo.description}
+                                      </Typography>
+                                      <Chip
+                                        label={wo.priority}
+                                        color={
+                                          wo.priority === "High"
+                                            ? "error"
+                                            : wo.priority === "Medium"
+                                            ? "warning"
+                                            : "primary"
+                                        }
+                                        size="small"
+                                        sx={{ fontWeight: 600 }}
+                                      />
+                                    </Box>
+                                    <Typography variant="body2" color="text.secondary" mt={1}>
+                                      <strong>Location:</strong> {wo.location}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      <strong>Assigned To:</strong> {wo.assigned_to}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {wo.id}
+                                    </Typography>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </Box>
+                      )}
+                    </Droppable>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </DragDropContext>
+        )}
       </Container>
     </PageContainer>
   );
