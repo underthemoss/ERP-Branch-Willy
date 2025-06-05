@@ -163,3 +163,11 @@ graphql(`
     }
   }
 `);
+
+graphql(`
+  mutation CreateRentalPrice($input: CreateRentalPriceInput!) {
+    createRentalPrice(input: $input) {
+      ...RentalPriceFields
+    }
+  }
+`);
