@@ -13,7 +13,7 @@ export default defineConfig({
   timeout: 60000,
   retries: 2,
   webServer: {
-    command: "npm run dev",
+    command: "npm run build && npm run start",
     port: 3000,
     timeout: 120000,
     stderr: "pipe",
