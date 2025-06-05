@@ -24,10 +24,12 @@ import {
 } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import * as React from "react";
 
 export default function AllPrices() {
   const apiRef = useGridApiRef();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
   const [selectedPriceBook, setSelectedPriceBook] = React.useState<string>("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
@@ -96,18 +98,20 @@ export default function AllPrices() {
       renderCell: (params) => {
         const priceBookId = params.row.priceBookId;
         const priceBookName = params.value;
-        // Assuming workspace_id is available in the route, use a relative path
+        // Use workspace_id in the route
         return priceBookId ? (
-          <Link href={`/prices/price-books/${priceBookId}`} passHref legacyBehavior>
-            <a style={{ color: "#1976d2", textDecoration: "underline" }}>{priceBookName}</a>
-          </Link>
+          <Box display="flex" alignItems="center" height="100%">
+            <Link href={`/app/${workspace_id}/prices/price-books/${priceBookId}`}>
+              <Typography color="primary" sx={{ textDecoration: "underline" }}>
+                {priceBookName}
+              </Typography>
+            </Link>
+          </Box>
         ) : (
           priceBookName
         );
       },
     },
-    { field: "type", headerName: "Type", width: 120 },
-    { field: "priceType", headerName: "Price Type", width: 120 },
     {
       field: "pricePerDayInCents",
       headerName: "Price/Day",
@@ -132,8 +136,18 @@ export default function AllPrices() {
       width: 120,
       valueFormatter: (value: number) => (value != null ? `$${(value / 100).toFixed(2)}` : ""),
     },
-    { field: "createdAt", headerName: "Created At", width: 180 },
-    { field: "updatedAt", headerName: "Updated At", width: 180 },
+    {
+      field: "createdAt",
+      headerName: "Created At",
+      width: 180,
+      valueFormatter: (value: string) => (value ? new Date(value).toLocaleString() : ""),
+    },
+    {
+      field: "updatedAt",
+      headerName: "Updated At",
+      width: 180,
+      valueFormatter: (value: string) => (value ? new Date(value).toLocaleString() : ""),
+    },
   ];
 
   // Row grouping model: group by PIM Category, then Name, then Price Book (by id)
