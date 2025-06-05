@@ -78,7 +78,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
   const { data, loading, error } = useContactSelectorListQuery({
     variables: {
       workspaceId,
-      page: { number: 1, size: 50 },
+      page: { number: 1, size: 1000 },
       contactType: getContactType(type),
     },
     fetchPolicy: "cache-and-network",

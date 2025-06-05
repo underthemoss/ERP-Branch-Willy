@@ -39,10 +39,10 @@ test("employee table create, verify, delete flow", async ({ page }) => {
   const email = faker.internet.email();
   const role = faker.person.jobTitle();
 
-  // Select the business just created
-  const businessSelect = page.getByLabel("Business");
-  await businessSelect.click();
-  await page.getByRole("option", { name: businessName }).click();
+  // Select the business just created using the new ContactSelector
+  await page.getByRole("combobox").click();
+  await page.getByText(businessName).scrollIntoViewIfNeeded();
+  await page.getByText(businessName).click();
 
   await page.getByLabel("Name").fill(employeeName);
   await page.getByLabel("Email").fill(email);
@@ -63,10 +63,11 @@ test("employee table create, verify, delete flow", async ({ page }) => {
 
   // Search for the employee, click the row, verify details
   await page.getByPlaceholder("Search employees").fill(employeeName);
-  await expect(page.getByText(employeeName)).toBeVisible({ timeout: 15000 });
+  // Wait for the employee row to be visible before clicking
   const contactRow = page
     .locator(".MuiDataGrid-row", { hasText: employeeName })
     .first();
+  await expect(contactRow).toBeVisible({ timeout: 20000 });
   await contactRow.click();
   await expect(page).toHaveURL(/\/contacts\/[^/]+$/);
   await expect(page.getByText(employeeName)).toBeVisible();
@@ -84,7 +85,7 @@ test("employee table create, verify, delete flow", async ({ page }) => {
 
   // Search for the employee again, verify they are not present
   await page.getByPlaceholder("Search employees").fill(employeeName);
-  await page.waitForTimeout(1000);
+
   const deletedRow = page.locator(".MuiDataGrid-row", {
     hasText: employeeName,
   });

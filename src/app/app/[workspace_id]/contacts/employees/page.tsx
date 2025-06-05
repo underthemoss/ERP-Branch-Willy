@@ -28,7 +28,9 @@ export default function EmployeesContactsPage() {
   const { data, loading } = useListContactsQuery({
     variables: {
       workspaceId: workspace_id,
-      page: {},
+      page: {
+        size: 10_000,
+      },
       contactType: ContactType.Person,
     },
     fetchPolicy: "cache-and-network",

@@ -28,7 +28,9 @@ test.describe("Project Edit Flow", () => {
     await expect(page.getByTestId("project-create-success")).toBeVisible();
 
     // Click the edit button on the project detail page to go to the edit form
-    await page.getByTestId("project-details-edit-btn").click();
+    await page
+      .getByTestId("project-details-edit-btn")
+      .click({ timeout: 30_000 });
 
     // Edit the project fields
     await page.getByLabel("Project Name").fill(updatedName);

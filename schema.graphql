@@ -182,6 +182,8 @@ type BusinessContact {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [String!]
+  resource_map_entries: [ResourceMapResource!]!
   taxId: String
   updatedAt: DateTime!
   website: String
@@ -353,6 +355,7 @@ type ListPriceBooksResult {
 }
 
 input ListPricesFilter {
+  name: String
   pimCategoryId: String
   priceBookId: String
   priceType: PriceType
@@ -421,6 +424,8 @@ type PersonContact {
   notes: String
   phone: String
   profilePicture: String
+  resourceMapIds: [String!]
+  resource_map_entries: [ResourceMapResource!]!
   role: String
   updatedAt: DateTime!
   workspaceId: String!
@@ -628,7 +633,9 @@ type Query {
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(page: ListPimProductsPage): ListPimProductsResult
+  listPriceBookCategories(priceBookId: String!): [PimCategory!]!
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
+  listPriceNames(pimCategoryId: String, priceBookId: String): [String!]!
   listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
 
   """
