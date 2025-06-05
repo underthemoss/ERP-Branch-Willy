@@ -1,36 +1,31 @@
 "use client";
 
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Grid";
-import Chip from "@mui/material/Chip";
-import Container from "@mui/material/Container";
-import Paper from "@mui/material/Paper";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import Tooltip from "@mui/material/Tooltip";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
-import TableRowsIcon from "@mui/icons-material/TableRows";
+import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
+import TableRowsIcon from "@mui/icons-material/TableRows";
+import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
 import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import * as React from "react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
 
 type WorkOrder = {
   id: string;
@@ -294,9 +289,7 @@ const statusColumns = [
   { key: "Closed", label: "Closed", color: "default" },
 ];
 
-function groupByStatus(
-  workOrders: WorkOrder[]
-): { [K in WorkOrder["status"]]: WorkOrder[] } {
+function groupByStatus(workOrders: WorkOrder[]): { [K in WorkOrder["status"]]: WorkOrder[] } {
   const grouped: { [K in WorkOrder["status"]]: WorkOrder[] } = {
     Open: [],
     "In Progress": [],
@@ -310,15 +303,15 @@ function groupByStatus(
 
 export default function WorkOrdersKanbanPage() {
   const [workOrders, setWorkOrders] = React.useState<WorkOrder[]>(initialWorkOrders);
-  const [statusFilter, setStatusFilter] = React.useState<string>("All Statuses");
+  const [statusFilter, setStatusFilter] = React.useState<WorkOrder["status"][]>([]);
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [view, setView] = React.useState<"kanban" | "list">("kanban");
 
   // Filtering logic (shared for both views)
   const filteredRows = React.useMemo(() => {
     let filtered = workOrders;
-    if (statusFilter !== "All Statuses") {
-      filtered = filtered.filter((row) => row.status === statusFilter);
+    if (statusFilter.length > 0) {
+      filtered = filtered.filter((row) => statusFilter.includes(row.status));
     }
     if (!searchTerm) return filtered;
     const lower = searchTerm.toLowerCase();
@@ -333,10 +326,7 @@ export default function WorkOrdersKanbanPage() {
   function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result;
     if (!destination) return;
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
     // Find the work order
@@ -491,9 +481,26 @@ export default function WorkOrdersKanbanPage() {
           />
           <Select
             size="small"
+            multiple
+            displayEmpty
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ minWidth: 140 }}
+            onChange={(e) => {
+              const value = e.target.value;
+              setStatusFilter(
+                typeof value === "string"
+                  ? value === ""
+                    ? []
+                    : [value as WorkOrder["status"]]
+                  : (value as WorkOrder["status"][]),
+              );
+            }}
+            renderValue={(selected) => {
+              if (!selected || (Array.isArray(selected) && selected.length === 0)) {
+                return "All Statuses";
+              }
+              return (selected as string[]).join(", ");
+            }}
+            sx={{ minWidth: 180 }}
             data-testid="work-order-status-filter"
             MenuProps={{
               MenuListProps: {
@@ -501,7 +508,9 @@ export default function WorkOrdersKanbanPage() {
               },
             }}
           >
-            <MenuItem value="All Statuses">All Statuses</MenuItem>
+            <MenuItem value="">
+              <em>All Statuses</em>
+            </MenuItem>
             <MenuItem value="Open">Open</MenuItem>
             <MenuItem value="In Progress">In Progress</MenuItem>
             <MenuItem value="Closed">Closed</MenuItem>
@@ -551,58 +560,64 @@ export default function WorkOrdersKanbanPage() {
                             background: snapshot.isDraggingOver ? "#e3f2fd" : undefined,
                           }}
                         >
-                          {grouped[col.key as WorkOrder["status"]].map((wo: WorkOrder, idx: number) => (
-                            <Draggable draggableId={wo.id} index={idx} key={wo.id}>
-                              {(provided, snapshot) => (
-                                <Card
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  sx={{
-                                    mb: 2,
-                                    borderLeft: `6px solid ${
-                                      wo.priority === "High"
-                                        ? "#d32f2f"
-                                        : wo.priority === "Medium"
-                                        ? "#ed6c02"
-                                        : "#1976d2"
-                                    }`,
-                                    boxShadow: snapshot.isDragging ? 6 : 2,
-                                    opacity: snapshot.isDragging ? 0.8 : 1,
-                                  }}
-                                >
-                                  <CardContent>
-                                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                                      <Typography variant="subtitle1" fontWeight={600}>
-                                        {wo.description}
+                          {grouped[col.key as WorkOrder["status"]].map(
+                            (wo: WorkOrder, idx: number) => (
+                              <Draggable draggableId={wo.id} index={idx} key={wo.id}>
+                                {(provided, snapshot) => (
+                                  <Card
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    sx={{
+                                      mb: 2,
+                                      borderLeft: `6px solid ${
+                                        wo.priority === "High"
+                                          ? "#d32f2f"
+                                          : wo.priority === "Medium"
+                                            ? "#ed6c02"
+                                            : "#1976d2"
+                                      }`,
+                                      boxShadow: snapshot.isDragging ? 6 : 2,
+                                      opacity: snapshot.isDragging ? 0.8 : 1,
+                                    }}
+                                  >
+                                    <CardContent>
+                                      <Box
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                      >
+                                        <Typography variant="subtitle1" fontWeight={600}>
+                                          {wo.description}
+                                        </Typography>
+                                        <Chip
+                                          label={wo.priority}
+                                          color={
+                                            wo.priority === "High"
+                                              ? "error"
+                                              : wo.priority === "Medium"
+                                                ? "warning"
+                                                : "primary"
+                                          }
+                                          size="small"
+                                          sx={{ fontWeight: 600 }}
+                                        />
+                                      </Box>
+                                      <Typography variant="body2" color="text.secondary" mt={1}>
+                                        <strong>Location:</strong> {wo.location}
                                       </Typography>
-                                      <Chip
-                                        label={wo.priority}
-                                        color={
-                                          wo.priority === "High"
-                                            ? "error"
-                                            : wo.priority === "Medium"
-                                            ? "warning"
-                                            : "primary"
-                                        }
-                                        size="small"
-                                        sx={{ fontWeight: 600 }}
-                                      />
-                                    </Box>
-                                    <Typography variant="body2" color="text.secondary" mt={1}>
-                                      <strong>Location:</strong> {wo.location}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      <strong>Assigned To:</strong> {wo.assigned_to}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {wo.id}
-                                    </Typography>
-                                  </CardContent>
-                                </Card>
-                              )}
-                            </Draggable>
-                          ))}
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Assigned To:</strong> {wo.assigned_to}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {wo.id}
+                                      </Typography>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </Draggable>
+                            ),
+                          )}
                           {provided.placeholder}
                         </Box>
                       )}
