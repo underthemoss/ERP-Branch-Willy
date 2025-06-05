@@ -1,6 +1,7 @@
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import BuildIcon from "@mui/icons-material/Build";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -69,6 +70,13 @@ export const NavBar = () => {
       icon: <DescriptionOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
       testId: "nav-purchase-order",
+    },
+    {
+      text: "Work Orders",
+      href: `/app/${currentWorkspace?.id}/work-orders`,
+      icon: <BuildIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/work-orders`,
+      testId: "nav-work-orders",
     },
     {
       text: "Transactions",
