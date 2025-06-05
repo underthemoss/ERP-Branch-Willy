@@ -4,11 +4,11 @@ import {
   useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
 } from "@/graphql/hooks";
 
-// Re-exporting other hooks, that do not need any modifications
 export {
   useListPriceBooksQuery,
   useListPricesQuery,
   useGetPriceBookByIdQuery,
+  useCreateRentalPriceMutation,
 } from "@/graphql/hooks";
 
 // Re-exporting types
@@ -153,3 +153,21 @@ export function useDeletePriceBookByIdMutation(
     refetchQueries: ["ListPriceBooks"],
   });
 }
+
+// ListPriceBookCategories query for category dropdown
+graphql(`
+  query ListPriceBookCategories($priceBookId: String!) {
+    listPriceBookCategories(priceBookId: $priceBookId) {
+      id
+      name
+    }
+  }
+`);
+
+graphql(`
+  mutation CreateRentalPrice($input: CreateRentalPriceInput!) {
+    createRentalPrice(input: $input) {
+      ...RentalPriceFields
+    }
+  }
+`);

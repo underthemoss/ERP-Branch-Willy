@@ -1,11 +1,26 @@
 "use client";
 
 import { PriceType } from "@/graphql/graphql";
+import type { ListPriceBookCategoriesQuery } from "@/graphql/graphql";
+import { useListPriceBookCategoriesQuery } from "@/graphql/hooks";
 import { useListPricesQuery, type RentalPriceFields } from "@/ui/prices/api";
-import { Autocomplete, Box, TextField, Typography } from "@mui/material";
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { DataGridPro, DataGridProProps, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
+import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
+import { AddNewPriceDialog } from "./AddNewPriceDialog";
 
 function formatCentsToUSD(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -66,12 +81,22 @@ export function PricesTable() {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
 
-  // Fetch prices (no category filter in query)
+  // Fetch categories for dropdown
+  const {
+    data: categoriesData,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useListPriceBookCategoriesQuery({
+    variables: { priceBookId: price_book_id },
+  });
+
+  // Fetch prices, filter by selected category (server-side)
   const { data, loading, error } = useListPricesQuery({
     variables: {
       filter: {
         priceBookId: price_book_id,
         priceType: PriceType.Rental,
+        ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
       },
       page: {
         size: 100,
@@ -79,24 +104,27 @@ export function PricesTable() {
     },
   });
 
-  // Extract unique categories and classes from prices
+  // Use fetched categories for dropdown
   const allCategories = React.useMemo(() => {
-    if (!data?.listPrices?.items) return [];
-    const rentalPrices = data.listPrices.items.filter((item) => item.__typename === "RentalPrice");
-    const unique = Array.from(
-      new Set(rentalPrices.map((item) => item.pimCategoryName).filter(Boolean)),
-    );
-    return unique.sort();
-  }, [data]);
+    if (!categoriesData?.listPriceBookCategories) return [];
+    return (
+      categoriesData.listPriceBookCategories as ListPriceBookCategoriesQuery["listPriceBookCategories"]
+    ).map((cat: { id: string; name: string }) => ({
+      id: cat.id,
+      name: cat.name,
+    }));
+  }, [categoriesData]);
 
   const allClasses = React.useMemo(() => {
     if (!data?.listPrices?.items) return [];
-    const rentalPrices = data.listPrices.items.filter((item) => item.__typename === "RentalPrice");
+    const rentalPrices = data.listPrices.items.filter(
+      (item) => item.__typename === "RentalPrice",
+    ) as RentalPriceFields[];
     const unique = Array.from(new Set(rentalPrices.map((item) => item.name).filter(Boolean)));
     return unique.sort();
   }, [data]);
 
-  // Filter rows by selected category and class
+  // Filter rows by selected class (category is now server-side)
   const rows = React.useMemo<RentalPriceFields[]>(() => {
     if (loading) return [];
     if (error) {
@@ -107,34 +135,62 @@ export function PricesTable() {
       console.warn("No prices found or data is undefined");
       return [];
     }
-    let rentalRows = data.listPrices.items.filter((item) => item.__typename === "RentalPrice");
-    if (selectedCategory) {
-      rentalRows = rentalRows.filter((item) => item.pimCategoryName === selectedCategory);
-    }
+    let rentalRows = data.listPrices.items.filter(
+      (item) => item.__typename === "RentalPrice",
+    ) as RentalPriceFields[];
     if (selectedClass) {
       rentalRows = rentalRows.filter((item) => item.name === selectedClass);
     }
     return rentalRows;
-  }, [data, loading, error, selectedCategory, selectedClass]);
+  }, [data, loading, error, selectedClass]);
+
+  // State for Add Price dialog
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
 
   return (
     <Box>
-      {/* Filters */}
-      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
+      {/* Add Price Button and Filters - aligned in a single row */}
+      <Box mb={2} display="flex" alignItems="center" gap={2} flexWrap="wrap">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setAddDialogOpen(true)}
+          sx={{ height: 40 }}
+        >
+          Add Price
+        </Button>
         <Autocomplete
           options={allCategories}
-          value={selectedCategory}
-          onChange={(_, newValue) => setSelectedCategory(newValue)}
+          getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
+          value={allCategories.find((cat) => cat.id === selectedCategory) || null}
+          onChange={(_, newValue) => {
+            setSelectedCategory(newValue ? newValue.id : null);
+          }}
+          loading={categoriesLoading}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Filter by Category"
               variant="outlined"
               placeholder="Type to search"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {categoriesLoading ? <span style={{ marginRight: 8 }}>Loading...</span> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+              error={!!categoriesError}
+              helperText={categoriesError ? "Failed to load categories" : ""}
             />
           )}
           clearOnEscape
-          isOptionEqualToValue={(option, value) => option === value}
+          isOptionEqualToValue={(option, value) =>
+            (typeof option === "string" ? option : option.id) ===
+            (typeof value === "string" ? value : value?.id)
+          }
           sx={{ minWidth: 220 }}
         />
         <Autocomplete
@@ -154,6 +210,13 @@ export function PricesTable() {
           sx={{ minWidth: 220 }}
         />
       </Box>
+      {/* Add Price Dialog */}
+      <AddNewPriceDialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        priceBookId={price_book_id}
+        onSuccess={() => setAddDialogOpen(false)}
+      />
       {loading && <Typography>Loading prices...</Typography>}
       {error && <Typography color="error">Error: {error.message}</Typography>}
       <div style={{ height: 600, width: "100%" }}>
