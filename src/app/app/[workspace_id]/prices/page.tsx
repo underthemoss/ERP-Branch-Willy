@@ -112,8 +112,6 @@ export default function AllPrices() {
         );
       },
     },
-    { field: "type", headerName: "Type", width: 120 },
-    { field: "priceType", headerName: "Price Type", width: 120 },
     {
       field: "pricePerDayInCents",
       headerName: "Price/Day",
@@ -138,8 +136,18 @@ export default function AllPrices() {
       width: 120,
       valueFormatter: (value: number) => (value != null ? `$${(value / 100).toFixed(2)}` : ""),
     },
-    { field: "createdAt", headerName: "Created At", width: 180 },
-    { field: "updatedAt", headerName: "Updated At", width: 180 },
+    {
+      field: "createdAt",
+      headerName: "Created At",
+      width: 180,
+      valueFormatter: (value: string) => (value ? new Date(value).toLocaleString() : ""),
+    },
+    {
+      field: "updatedAt",
+      headerName: "Updated At",
+      width: 180,
+      valueFormatter: (value: string) => (value ? new Date(value).toLocaleString() : ""),
+    },
   ];
 
   // Row grouping model: group by PIM Category, then Name, then Price Book (by id)
