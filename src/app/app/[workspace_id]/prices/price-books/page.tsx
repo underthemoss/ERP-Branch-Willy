@@ -15,9 +15,10 @@ export default function Prices() {
   const { data, loading, error } = useListPriceBooksQuery({
     variables: {
       page: {
-        size: 10,
+        size: 100,
       },
     },
+    fetchPolicy: "cache-and-network",
   });
   const router = useRouter();
   const { workspace_id } = useParams<{ workspace_id: string }>();
