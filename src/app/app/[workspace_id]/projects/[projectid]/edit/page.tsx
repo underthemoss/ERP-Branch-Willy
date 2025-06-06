@@ -13,6 +13,7 @@ import {
   useProjectDropdownOptionsQuery,
   useUpdateProjectMutation,
 } from "@/graphql/hooks";
+import { ProjectSelector } from "@/ui/ProjectSelector";
 import ClearIcon from "@mui/icons-material/Clear";
 import {
   Alert,
@@ -53,6 +54,7 @@ graphql(`
       deleted
       scope_of_work
       status
+      parent_project
       project_contacts {
         contact_id
         relation_to_project
@@ -127,6 +129,7 @@ export default function EditProjectPage() {
   const [scopeOfWork, setScopeOfWork] = useState<ScopeOfWorkEnum[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<SelectedContact[]>([]);
   const [contactSearch, setContactSearch] = useState("");
+  const [parentProjectId, setParentProjectId] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -171,6 +174,7 @@ export default function EditProjectPage() {
           ? (project.scope_of_work.filter(Boolean) as ScopeOfWorkEnum[])
           : [],
       );
+      setParentProjectId(project.parent_project || "");
       if (Array.isArray(project.project_contacts)) {
         const hydrated = project.project_contacts
           .filter(
@@ -222,6 +226,7 @@ export default function EditProjectPage() {
             project_code: projectCode,
             deleted: project?.deleted ?? false,
             description: description.trim() ? description : undefined,
+            parent_project: parentProjectId || undefined,
             status: status || undefined,
             scope_of_work: scopeOfWork.length > 0 ? scopeOfWork : undefined,
             project_contacts: selectedContacts.map((c) => ({
@@ -299,6 +304,13 @@ export default function EditProjectPage() {
           multiline
           minRows={2}
         />
+        {/* Parent Project Selector */}
+        <Box mt={2} mb={1}>
+          <Typography variant="subtitle1" mb={0.5}>
+            Parent Project (optional)
+          </Typography>
+          <ProjectSelector projectId={parentProjectId} onChange={setParentProjectId} />
+        </Box>
         {/* Contact selection */}
         <Autocomplete
           options={allContacts.filter((c) => !selectedContacts.some((sel) => sel.id === c.id))}

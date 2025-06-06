@@ -12,6 +12,7 @@ import {
   useListContactsQuery,
   useProjectDropdownOptionsQuery,
 } from "@/graphql/hooks";
+import { ProjectSelector } from "@/ui/ProjectSelector";
 import ClearIcon from "@mui/icons-material/Clear";
 import {
   Alert,
@@ -35,7 +36,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 graphql(`
@@ -73,10 +74,22 @@ export default function CreateProjectPage() {
   const [name, setName] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [description, setDescription] = useState("");
+  const [parentProjectId, setParentProjectId] = useState<string>("");
   const [status, setStatus] = useState<ProjectStatusEnum | "">("");
   const [scopeOfWork, setScopeOfWork] = useState<ScopeOfWorkEnum[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<SelectedContact[]>([]);
   const [contactSearch, setContactSearch] = useState("");
+
+  const searchParams = useSearchParams();
+  // Set initial parent project from search param if present
+  React.useEffect(() => {
+    const param = searchParams?.get("parent_project");
+    if (param && !parentProjectId) {
+      setParentProjectId(param);
+    }
+    // Only run on mount or if searchParams changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const { data: dropdownData, loading: dropdownLoading } = useProjectDropdownOptionsQuery({
     fetchPolicy: "cache-and-network",
@@ -143,6 +156,7 @@ export default function CreateProjectPage() {
             project_code: projectCode,
             deleted: false,
             description: description.trim() ? description : undefined,
+            parent_project: parentProjectId || undefined,
             status: status || undefined,
             scope_of_work: scopeOfWork.length > 0 ? scopeOfWork : undefined,
             project_contacts: selectedContacts.map((c) => ({
@@ -209,6 +223,13 @@ export default function CreateProjectPage() {
           multiline
           minRows={2}
         />
+        {/* Parent Project Selector */}
+        <Box mt={2} mb={1}>
+          <Typography variant="subtitle1" mb={0.5}>
+            Parent Project (optional)
+          </Typography>
+          <ProjectSelector projectId={parentProjectId} onChange={setParentProjectId} />
+        </Box>
         {/* Contact selection */}
         <Autocomplete
           options={allContacts.filter((c) => !selectedContacts.some((sel) => sel.id === c.id))}

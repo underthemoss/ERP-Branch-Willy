@@ -1,6 +1,7 @@
 "use client";
 
-import { useListProjectsQuery } from "@/ui/projects/api";
+import { graphql } from "@/graphql";
+import { useListTopLevelProjectsQuery } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
@@ -23,8 +24,35 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
+graphql(`
+  query listTopLevelProjects {
+    listTopLevelProjects {
+      id
+      name
+      project_code
+      description
+      company {
+        name
+      }
+      created_at
+      created_by_user {
+        firstName
+        lastName
+      }
+      updated_at
+      updated_by_user {
+        firstName
+        lastName
+      }
+      deleted
+      scope_of_work
+      status
+    }
+  }
+`);
+
 export default function ProjectsPage() {
-  const { data, loading } = useListProjectsQuery({
+  const { data, loading } = useListTopLevelProjectsQuery({
     fetchPolicy: "cache-and-network",
   });
 
@@ -33,7 +61,7 @@ export default function ProjectsPage() {
 
   const rows = React.useMemo(() => {
     return (
-      data?.listProjects?.map((project) => ({
+      data?.listTopLevelProjects?.map((project) => ({
         id: project?.id ?? "",
         name: project?.name ?? "",
         project_code: project?.project_code ?? "",

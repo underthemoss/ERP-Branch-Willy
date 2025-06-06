@@ -29,6 +29,7 @@ import {
   Typography,
 } from "@mui/material";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -244,6 +245,28 @@ export default function ProjectDetailAltPage() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
+      {/* Go to parent project link */}
+      {project?.parent_project && parentData?.getProjectById && (
+        <Box mb={3}>
+          <Link
+            href={`/app/${workspace_id}/projects/${project.parent_project}`}
+            style={{ textDecoration: "none" }}
+          >
+            <Typography
+              variant="body1"
+              color="primary"
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
+            >
+              ↑ Go to parent project: {parentData.getProjectById.name}
+            </Typography>
+          </Link>
+        </Box>
+      )}
       {loading && (
         <Typography variant="body1" color="text.secondary">
           Loading project details...
@@ -459,6 +482,31 @@ export default function ProjectDetailAltPage() {
                 )}
               </Box>
             </Paper>
+
+            {/* Sub Projects Section (moved to bottom) */}
+            <Paper elevation={2} sx={{ p: 2, mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Sub Projects
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box display="flex" flexWrap="wrap" gap={2}>
+                {project.sub_projects &&
+                  project.sub_projects.length > 0 &&
+                  project.sub_projects
+                    .filter(Boolean)
+                    .map(
+                      (child) =>
+                        child && (
+                          <ChildProjectCard
+                            key={child.id}
+                            project={child}
+                            workspaceId={workspace_id}
+                          />
+                        ),
+                    )}
+                <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
+              </Box>
+            </Paper>
           </Grid>
 
           {/* Sidebar */}
@@ -583,6 +631,154 @@ export default function ProjectDetailAltPage() {
         errorMsg={errorMsg}
       />
     </Container>
+  );
+}
+
+/** Child Project Card styled to match the provided screenshot */
+function ChildProjectCard({ project, workspaceId }: { project: any; workspaceId: string }) {
+  return (
+    <Link
+      href={`/app/${workspaceId}/projects/${project.id}`}
+      style={{ textDecoration: "none", display: "block" }}
+      tabIndex={0}
+    >
+      <Paper
+        elevation={4}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 260,
+          maxWidth: 340,
+          p: 2.5,
+          borderRadius: 3,
+          boxShadow: "0 4px 24px 0 rgba(30, 34, 40, 0.10)",
+          border: "1.5px solid #e3e8ef",
+          position: "relative",
+          bgcolor: "#fff",
+          overflow: "hidden",
+          transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
+          cursor: "pointer",
+          "&:hover, &:focus": {
+            boxShadow: "0 8px 32px 0 rgba(30, 34, 40, 0.16)",
+            borderColor: "#1976d2",
+            background: "#f5faff",
+          },
+        }}
+      >
+        {/* Left accent bar */}
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 6,
+            bgcolor: "#1976d2",
+            borderTopLeftRadius: 12,
+            borderBottomLeftRadius: 12,
+          }}
+        />
+        <Box sx={{ pl: 2, pr: 0.5, pt: 0.5, pb: 0.5, position: "relative" }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+              sx={{ fontSize: 17, lineHeight: 1.2, pr: 1 }}
+              noWrap
+            >
+              {project.name}
+            </Typography>
+            {project.status && (
+              <Chip
+                label={project.status}
+                size="small"
+                color="info"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: 13,
+                  px: 1,
+                  height: 22,
+                  bgcolor: "#1976d2",
+                  color: "#fff",
+                  ml: 1,
+                }}
+              />
+            )}
+          </Box>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            <b>Vendor:</b> {project.company?.name ?? "—"}
+          </Typography>
+          <Typography variant="body2">
+            <b>Requested By:</b> {"—"}
+          </Typography>
+          <Typography variant="body2">{project.project_code}</Typography>
+        </Box>
+      </Paper>
+    </Link>
+  );
+}
+
+/** Add Sub Project Card (compact, with text) */
+function AddSubProjectCard({ workspaceId, parentId }: { workspaceId: string; parentId: string }) {
+  return (
+    <Link
+      href={`/app/${workspaceId}/projects/create-project?parent_project=${parentId}`}
+      style={{ textDecoration: "none", display: "block" }}
+      tabIndex={0}
+    >
+      <Paper
+        elevation={2}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: 180,
+          maxWidth: 220,
+          p: 1.2,
+          borderRadius: 3,
+          border: "2px dashed #1976d2",
+          bgcolor: "#f5faff",
+          color: "#1976d2",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px 0 rgba(30, 34, 40, 0.08)",
+          transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
+          "&:hover, &:focus": {
+            borderColor: "#1565c0",
+            background: "#e3f2fd",
+            boxShadow: "0 4px 16px 0 rgba(30, 34, 40, 0.12)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            fontSize: 28,
+            fontWeight: 700,
+            color: "#1976d2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: "#e3f2fd",
+            mb: 0.5,
+          }}
+        >
+          +
+        </Box>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.2, fontSize: 16 }}>
+          Add Sub Project
+        </Typography>
+        <Typography
+          variant="body2"
+          color="inherit"
+          sx={{ opacity: 0.8, fontSize: 13, textAlign: "center" }}
+        >
+          Create a new sub project under this project
+        </Typography>
+      </Paper>
+    </Link>
   );
 }
 
