@@ -13,10 +13,8 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  CircularProgress,
+  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -25,13 +23,15 @@ import {
   Divider,
   Grid,
   IconButton,
+  Paper,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import * as React from "react";
 
+// --- GraphQL queries and mutations for this component ---
 graphql(`
   query getProjectByIdForDisplay($id: String!) {
     getProjectById(id: $id) {
@@ -92,12 +92,12 @@ graphql(`
   }
 `);
 
-export default function ProjectDetailPage() {
+export default function ProjectDetailAltPage() {
   const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deleteProject, { loading: deleting }] = useDeleteProjectMutation();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
   const { data, loading, error } = useGetProjectByIdForDisplayQuery({
     variables: { id: projectid ?? "" },
@@ -125,11 +125,25 @@ export default function ProjectDetailPage() {
 
   const project = data?.getProjectById;
 
+  // Helper to format ISO date strings
+  function formatDate(dateString?: string | null) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   const handleDelete = async () => {
     if (!project?.id) return;
     try {
       await deleteProject({ variables: { id: project.id } });
-      setOpen(false);
+      setDeleteDialogOpen(false);
       router.push(`/app/${project.companyId}/projects`);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to delete project.");
@@ -137,184 +151,166 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <Box mt={6} mx="auto" maxWidth={600}>
-      <Typography variant="h4" mb={3} fontWeight={600}>
-        Project Details
-      </Typography>
+    <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
       {loading && (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-          <CircularProgress />
-        </Box>
+        <Typography variant="body1" color="text.secondary">
+          Loading project details...
+        </Typography>
       )}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error.message}
-        </Alert>
-      )}
-      {!loading && !error && !project && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+      {(error || !project) && !loading && (
+        <Typography variant="body1" color="error">
           Project not found.
-        </Alert>
+        </Typography>
       )}
       {project && (
-        <Card elevation={3} data-testid="project-details">
-          <CardContent>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="h5" component="h1" fontWeight={700} gutterBottom>
-                  {project.name}
-                </Typography>
-                <Divider />
+        <Grid container spacing={3}>
+          {/* Main Content */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            {/* Top Card: Project Overview */}
+            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+              <Grid container alignItems="center" justifyContent="space-between">
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="h4" gutterBottom>
+                      {project.name}
+                    </Typography>
+                    <Chip
+                      label={project.deleted ? "Deleted" : "Active"}
+                      color={project.deleted ? "default" : "success"}
+                      sx={{ fontWeight: 600, fontSize: "1rem" }}
+                    />
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    sx={{ mr: 1 }}
+                    data-testid="edit-project"
+                    startIcon={<EditIcon />}
+                    onClick={() => router.push(`/app/${workspace_id}/projects/${project.id}/edit`)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    data-testid="delete-project"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    Delete
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Project Code
-                </Typography>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Typography variant="body1" fontWeight={500}>
+              <Divider sx={{ my: 2 }} />
+              <Box display="flex" flexDirection="column" gap={1.5}>
+                {/* Project Code */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ minWidth: 100, flexShrink: 0 }}
+                  >
+                    Project Code:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500} sx={{ mr: 0.5 }}>
                     {project.project_code}
                   </Typography>
-                  <IconButton
-                    size="small"
-                    aria-label="Copy Project Code"
-                    data-testid="project-details-copy-code"
-                    onClick={() => {
-                      navigator.clipboard.writeText(project.project_code);
-                    }}
-                  >
-                    <ContentCopyIcon fontSize="small" />
-                  </IconButton>
+                  <Tooltip title="Copy Project Code" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Project Code"
+                      data-testid="project-details-copy-code"
+                      onClick={() => {
+                        navigator.clipboard.writeText(project.project_code);
+                      }}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Description
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {project.description || "—"}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Company
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  {project.company?.name ?? "—"}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Status
-                </Typography>
-                <Chip
-                  label={project.deleted ? "Deleted" : "Active"}
-                  color={project.deleted ? "default" : "success"}
-                  size="small"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Created
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  {project.created_by_user
-                    ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
-                    : "—"}{" "}
-                  <Tooltip
-                    title={format(parseISO(project.created_at), "MMMM d, yyyy, h:mm a")}
-                    arrow
-                    placement="top"
+                {/* Company */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ minWidth: 100, flexShrink: 0 }}
                   >
-                    <span style={{ cursor: "pointer" }} data-testid="project-details-created-at">
-                      {formatDistanceToNow(parseISO(project.created_at), { addSuffix: true })}
-                    </span>
-                  </Tooltip>
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Updated
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  {project.updated_by_user
-                    ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
-                    : "—"}{" "}
-                  <Tooltip
-                    title={format(parseISO(project.updated_at), "MMMM d, yyyy, h:mm a")}
-                    arrow
-                    placement="top"
+                    Company:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {project.company?.name ?? "—"}
+                  </Typography>
+                </Box>
+                {/* Status */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ minWidth: 100, flexShrink: 0 }}
                   >
-                    <span style={{ cursor: "pointer" }} data-testid="project-details-updated-at">
-                      {formatDistanceToNow(parseISO(project.updated_at), { addSuffix: true })}
-                    </span>
-                  </Tooltip>
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12 }}></Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Scope of Work
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
-                  {project.scope_of_work && project.scope_of_work.length > 0 ? (
-                    project.scope_of_work.filter(Boolean).map((code) => (
-                      <Tooltip
-                        key={code as string}
-                        title={scopeOfWorkDescMap[code as string] || ""}
-                        arrow
-                      >
-                        <Chip
-                          label={code as string}
-                          size="small"
-                          sx={{
-                            fontFamily: "monospace",
-                            fontWeight: 600,
-                            bgcolor: "primary.light",
-                            color: "primary.contrastText",
-                            letterSpacing: 0.5,
-                          }}
-                        />
-                      </Tooltip>
-                    ))
+                    Status:
+                  </Typography>
+                  {project.status ? (
+                    <Tooltip title={statusDescMap[project.status] || ""} arrow>
+                      <Chip
+                        label={project.status}
+                        size="small"
+                        sx={{
+                          fontFamily: "monospace",
+                          fontWeight: 600,
+                          bgcolor: "info.light",
+                          color: "info.contrastText",
+                          letterSpacing: 0.5,
+                        }}
+                      />
+                    </Tooltip>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" fontWeight={500}>
                       —
                     </Typography>
                   )}
                 </Box>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Project Status
+              </Box>
+            </Paper>
+
+            {/* Details Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Project Details
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Typography>
+                  <strong>Description:</strong> {project.description || "—"}
                 </Typography>
-                {project.status ? (
-                  <Tooltip title={statusDescMap[project.status] || ""} arrow>
-                    <Chip
-                      label={project.status}
-                      size="small"
-                      sx={{
-                        fontFamily: "monospace",
-                        fontWeight: 600,
-                        bgcolor: "info.light",
-                        color: "info.contrastText",
-                        letterSpacing: 0.5,
-                      }}
-                    />
-                  </Tooltip>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    —
-                  </Typography>
-                )}
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Divider />
-              </Grid>
-              {/* Project Contacts Section */}
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Project Contacts
+                <Typography>
+                  <strong>Scope of Work:</strong>{" "}
+                  {project.scope_of_work && project.scope_of_work.length > 0
+                    ? project.scope_of_work.filter(Boolean).map((code) => (
+                        <Tooltip
+                          key={code as string}
+                          title={scopeOfWorkDescMap[code as string] || ""}
+                          arrow
+                        >
+                          <Chip
+                            label={code as string}
+                            size="small"
+                            sx={{
+                              fontFamily: "monospace",
+                              fontWeight: 600,
+                              bgcolor: "primary.light",
+                              color: "primary.contrastText",
+                              letterSpacing: 0.5,
+                              mr: 0.5,
+                            }}
+                          />
+                        </Tooltip>
+                      ))
+                    : "—"}
+                </Typography>
+                <Typography>
+                  <strong>Project Contacts:</strong>
                 </Typography>
                 {project.project_contacts && project.project_contacts.length > 0 ? (
                   <Box>
@@ -369,88 +365,170 @@ export default function ProjectDetailPage() {
                     No contacts assigned.
                   </Typography>
                 )}
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Divider />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Box display="flex" alignItems="center" gap={1} mt={1} justifyContent="flex-end">
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Sidebar */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            {/* Metadata Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Metadata
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Project ID:
+                    Project ID
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                    {project.id}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    aria-label="Copy Project ID"
-                    data-testid="project-details-copy-id"
-                    onClick={() => {
-                      navigator.clipboard.writeText(project.id);
-                    }}
-                  >
-                    <ContentCopyIcon fontSize="small" />
-                  </IconButton>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" fontWeight="bold">
+                      {project.id}
+                    </Typography>
+                    <Tooltip title="Copy Project ID" arrow>
+                      <IconButton
+                        size="small"
+                        aria-label="Copy Project ID"
+                        data-testid="project-details-copy-id"
+                        onClick={() => {
+                          navigator.clipboard.writeText(project.id);
+                        }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Box>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
-      {project && (
-        <Box display="flex" justifyContent="flex-end" alignItems="center" gap={1} mt={2}>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<EditIcon />}
-            onClick={() => router.push(`/app/${workspace_id}/projects/${project.id}/edit`)}
-            data-testid="project-details-edit-btn"
-            aria-label="Edit Project"
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => setOpen(true)}
-            disabled={deleting}
-            data-testid="project-details-delete-btn"
-          >
-            Delete
-          </Button>
-          <Dialog
-            open={open}
-            onClose={() => setOpen(false)}
-            aria-labelledby="delete-project-dialog-title"
-          >
-            <DialogTitle id="delete-project-dialog-title">Delete Project</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Are you sure you want to delete this project? This action cannot be undone.
-              </DialogContentText>
-              {errorMsg && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  {errorMsg}
-                </Alert>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpen(false)} disabled={deleting}>
-                Cancel
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {project.created_by_user
+                      ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
+                      : "—"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(project.created_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {project.updated_by_user
+                      ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
+                      : "—"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(project.updated_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {project.deleted ? "Deleted" : "Active"}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            {/* Stubbed Help/Support Card */}
+            <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
+              <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-block",
+                    width: 24,
+                    height: 24,
+                    bgcolor: "#ffe082",
+                    borderRadius: "50%",
+                    mr: 1,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ?
+                </Box>
+                Need help with this project?
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Our team would be happy to help you with any kind of problem you might have!
+              </Typography>
+              <Button variant="contained" color="warning" size="small" disabled>
+                Get Help (stub)
               </Button>
-              <Button
-                onClick={handleDelete}
-                color="error"
-                variant="contained"
-                disabled={deleting}
-                data-testid="project-details-confirm-delete-btn"
-              >
-                {deleting ? "Deleting..." : "Delete"}
+            </Paper>
+
+            {/* Stubbed Quick Links */}
+            <Paper elevation={1} sx={{ p: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Quick Links
+              </Typography>
+              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                Invite Team (stub)
               </Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
+              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                View All Projects (stub)
+              </Button>
+              <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
+                Upgrade Plan (stub)
+              </Button>
+            </Paper>
+          </Grid>
+        </Grid>
       )}
-    </Box>
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        deleting={deleting}
+        errorMsg={errorMsg}
+      />
+    </Container>
+  );
+}
+
+// Add the confirmation dialog at the end of the component
+function DeleteConfirmationDialog({
+  open,
+  onClose,
+  onConfirm,
+  deleting,
+  errorMsg,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  deleting?: boolean;
+  errorMsg?: string | null;
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Delete Project</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Are you sure you want to delete this project? This action cannot be undone.
+        </DialogContentText>
+        {errorMsg && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {errorMsg}
+          </Alert>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit" disabled={deleting}>
+          Cancel
+        </Button>
+        <Button onClick={onConfirm} color="error" variant="contained" disabled={deleting}>
+          {deleting ? "Deleting..." : "Delete"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
