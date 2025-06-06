@@ -37,11 +37,13 @@ export default function AllPrices() {
   // Fetch all price books
   const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
     variables: { page: { number: 1, size: 100 } },
+    fetchPolicy: "cache-and-network",
   });
 
   // Fetch all PIM categories, filtered by selected price book if set
   const { data: categoriesData, loading: categoriesLoading } = useListPriceBookCategoriesQuery({
     variables: { priceBookId: selectedPriceBook || undefined },
+    fetchPolicy: "cache-and-network",
   });
 
   // Fetch all price names (classes), filtered by selected price book and PIM category if set
@@ -50,6 +52,7 @@ export default function AllPrices() {
       priceBookId: selectedPriceBook || undefined,
       pimCategoryId: selectedCategory || undefined,
     },
+    fetchPolicy: "cache-and-network",
   });
 
   // Fetch all prices, filtered by selected PIM category and class if set
@@ -62,6 +65,7 @@ export default function AllPrices() {
       },
       page: { number: 1, size: 1000 },
     },
+    fetchPolicy: "cache-and-network",
   });
 
   // Transform data to grid rows

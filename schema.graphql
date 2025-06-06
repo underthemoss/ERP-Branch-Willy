@@ -395,9 +395,27 @@ type Mutation {
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
+  updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
+  updateBusinessName(id: ID!, name: String!): BusinessContact
+  updateBusinessPhone(id: ID!, phone: String!): BusinessContact
+  updateBusinessTaxId(id: ID!, taxId: String!): BusinessContact
+  updateBusinessWebsite(id: ID!, website: String!): BusinessContact
+  updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
+  updatePersonEmail(email: String!, id: ID!): PersonContact
+  updatePersonName(id: ID!, name: String!): PersonContact
+  updatePersonPhone(id: ID!, phone: String!): PersonContact
+  updatePersonResourceMap(id: ID!, resourceMapIds: [ID!]!): PersonContact
+  updatePersonRole(id: ID!, role: String!): PersonContact
   updateProject(id: String, input: ProjectInput): Project
+  updateProjectCode(id: String!, project_code: String!): Project
+  updateProjectContacts(id: String!, project_contacts: [ProjectContactInput!]!): Project
+  updateProjectDescription(description: String, id: String!): Project
+  updateProjectName(id: String!, name: String!): Project
+  updateProjectParentProject(id: String!, parent_project: String): Project
+  updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
+  updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
 }
 
 type PaginationInfo {
@@ -510,6 +528,7 @@ type Project {
   description: String
   id: String!
   name: String!
+  parent_project: String
   project_code: String!
 
   """
@@ -526,6 +545,9 @@ type Project {
   Project status. Allowed values: CONCEPT_OPPORTUNITY, BIDDING_TENDERING, PRE_CONSTRUCTION, MOBILIZATION, ACTIVE_CONSTRUCTION, SUBSTANTIAL_COMPLETION, CLOSE_OUT, WARRANTY_MAINTENANCE, ARCHIVED_CLOSED
   """
   status: ProjectStatusEnum
+
+  """List of sub-projects (children) for this project."""
+  sub_projects: [Project]
   updated_at: String!
   updated_by: String!
   updated_by_user: User
@@ -569,6 +591,9 @@ input ProjectInput {
   deleted: Boolean!
   description: String
   name: String!
+
+  """Optional referential id to a parent project"""
+  parent_project: String
   project_code: String!
 
   """
@@ -648,6 +673,7 @@ type Query {
   """
   listProjectStatusCodes: [ProjectStatusCode]
   listProjects: [Project]
+  listProjectsByParentProjectId(parent_project: String!): [Project]
 
   """
   Get all resource map entries filtered by tenant_id (from the calling user company id)
@@ -662,6 +688,9 @@ type Query {
   Lists all possible scope_of_work codes and their descriptions, including recommended usage and stage meaning.
   """
   listScopeOfWorkCodes: [ScopeOfWorkCode]
+
+  """Lists all top-level projects (where parent_project is null)."""
+  listTopLevelProjects: [Project]
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkspaces: ListWorkspacesResult!
 }

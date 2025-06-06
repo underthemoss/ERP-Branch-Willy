@@ -46,7 +46,9 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
       page: { number: 1, size: 100 },
     },
   });
-  const { data: projectsData, loading: projectsLoading } = useListProjectsQuery();
+  const { data: projectsData, loading: projectsLoading } = useListProjectsQuery({
+    fetchPolicy: "cache-and-network",
+  });
 
   const { control, handleSubmit, setValue, watch } = useForm<NewPriceBookFields>({
     defaultValues: {

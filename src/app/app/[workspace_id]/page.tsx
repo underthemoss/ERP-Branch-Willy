@@ -66,6 +66,7 @@ export default function DashboardMainSection() {
         number: 1,
       },
     },
+    fetchPolicy: "cache-and-network",
   });
 
   return (
