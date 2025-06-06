@@ -61,3 +61,5 @@ pgtyped.prod.json
 
 /diff.patch
 /review.md
+*storybook.log
+storybook-static

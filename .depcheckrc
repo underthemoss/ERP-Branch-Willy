@@ -5,4 +5,5 @@ ignores:
   - "@parcel/watcher"
   - "@ianvs/prettier-plugin-sort-imports"
   - prettier-plugin-packagejson
+  - "@storybook/addon-onboarding"
 skip-missing: true
