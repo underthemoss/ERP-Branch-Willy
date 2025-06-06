@@ -58,7 +58,8 @@ export default function EditContactPage() {
 
   // Fetch businesses for the businessId select (for PersonContact)
   const { data: businessesData } = useListBusinessContactsQuery({
-    variables: { workspaceId: workspace_id, page: {} },
+    variables: { workspaceId: workspace_id, page: { size: 1000 } },
+    fetchPolicy: "cache-and-network",
   });
   const businessOptions =
     businessesData?.listContacts?.items
