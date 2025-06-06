@@ -256,64 +256,6 @@ export default function ProjectDetailAltPage() {
       )}
       {project && (
         <Grid container spacing={3}>
-          {/* Project Hierarchy Section */}
-          <Grid size={{ xs: 12 }}>
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Project Hierarchy
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box display="flex" flexDirection="column" gap={2}>
-                {/* Parent Project */}
-                {parentProjectId && parentData?.getProjectById ? (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Parent Project
-                    </Typography>
-                    <ProjectKanbanCard
-                      project={{
-                        ...parentData.getProjectById,
-                        status: parentData.getProjectById.status
-                          ? String(parentData.getProjectById.status)
-                          : undefined,
-                      }}
-                      onClick={() =>
-                        router.push(
-                          `/app/${workspace_id}/projects/${parentData.getProjectById?.id}`,
-                        )
-                      }
-                    />
-                  </Box>
-                ) : null}
-                {/* Sub Projects */}
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Sub-Projects
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={2}>
-                    {project.sub_projects && project.sub_projects.filter(Boolean).length > 0 ? (
-                      project.sub_projects
-                        .filter((sub): sub is NonNullable<typeof sub> => !!sub)
-                        .map((sub) => (
-                          <ProjectKanbanCard
-                            key={sub.id}
-                            project={{
-                              ...sub,
-                              status: sub.status ? String(sub.status) : undefined,
-                            }}
-                            onClick={() => router.push(`/app/${workspace_id}/projects/${sub.id}`)}
-                          />
-                        ))
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No sub-projects.
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
           {/* Main Content */}
           <Grid size={{ xs: 12, md: 8 }}>
             {/* Top Card: Project Overview */}
