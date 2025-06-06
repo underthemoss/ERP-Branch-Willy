@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import {
   useDeleteProjectMutation,
+  useGetProjectBasicQuery,
   useGetProjectByIdForDisplayQuery,
   useProjectCodeDescriptionsQuery,
 } from "@/graphql/hooks";
@@ -57,6 +58,17 @@ graphql(`
       deleted
       scope_of_work
       status
+      parent_project
+      sub_projects {
+        id
+        name
+        project_code
+        status
+        deleted
+        company {
+          name
+        }
+      }
       project_contacts {
         contact_id
         relation_to_project
@@ -68,6 +80,20 @@ graphql(`
             profilePicture
           }
         }
+      }
+    }
+  }
+
+  # For fetching parent project details
+  query getProjectBasic($id: String!) {
+    getProjectById(id: $id) {
+      id
+      name
+      project_code
+      status
+      deleted
+      company {
+        name
       }
     }
   }
@@ -92,6 +118,63 @@ graphql(`
   }
 `);
 
+function ProjectKanbanCard({
+  project,
+  onClick,
+}: {
+  project: {
+    id: string;
+    name: string;
+    project_code: string;
+    status?: string | null;
+    deleted?: boolean | null;
+    company?: { name?: string | null } | null;
+  };
+  onClick?: () => void;
+}) {
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 2,
+        mb: 2,
+        bgcolor: "#f8f9fa",
+        border: project.deleted ? "1px solid #ccc" : "1.5px solid #1976d2",
+        cursor: onClick ? "pointer" : "default",
+        transition: "box-shadow 0.2s",
+        "&:hover": onClick ? { boxShadow: 8 } : undefined,
+        minWidth: 220,
+        maxWidth: 340,
+      }}
+      onClick={onClick}
+      data-testid="project-kanban-card"
+    >
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+        <Typography variant="subtitle1" fontWeight={600} noWrap>
+          {project.name}
+        </Typography>
+        <Chip
+          label={project.deleted ? "Deleted" : project.status || "Active"}
+          color={project.deleted ? "default" : "info"}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            fontFamily: "monospace",
+            letterSpacing: 0.5,
+            ml: 1,
+          }}
+        />
+      </Box>
+      <Typography variant="body2" color="text.secondary" noWrap>
+        Code: <b>{project.project_code}</b>
+      </Typography>
+      <Typography variant="body2" color="text.secondary" noWrap>
+        Company: {project.company?.name ?? "—"}
+      </Typography>
+    </Paper>
+  );
+}
+
 export default function ProjectDetailAltPage() {
   const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
@@ -105,7 +188,9 @@ export default function ProjectDetailAltPage() {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: codeDescData } = useProjectCodeDescriptionsQuery();
+  const { data: codeDescData } = useProjectCodeDescriptionsQuery({
+    fetchPolicy: "cache-and-network",
+  });
 
   const scopeOfWorkDescMap = codeDescData?.listScopeOfWorkCodes
     ? Object.fromEntries(
@@ -124,6 +209,13 @@ export default function ProjectDetailAltPage() {
     : {};
 
   const project = data?.getProjectById;
+
+  // Fetch parent project if needed
+  const parentProjectId = project?.parent_project;
+  const { data: parentData } = useGetProjectBasicQuery({
+    variables: { id: parentProjectId ?? "" },
+    skip: !parentProjectId,
+  });
 
   // Helper to format ISO date strings
   function formatDate(dateString?: string | null) {
@@ -164,6 +256,64 @@ export default function ProjectDetailAltPage() {
       )}
       {project && (
         <Grid container spacing={3}>
+          {/* Project Hierarchy Section */}
+          <Grid size={{ xs: 12 }}>
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Project Hierarchy
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box display="flex" flexDirection="column" gap={2}>
+                {/* Parent Project */}
+                {parentProjectId && parentData?.getProjectById ? (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                      Parent Project
+                    </Typography>
+                    <ProjectKanbanCard
+                      project={{
+                        ...parentData.getProjectById,
+                        status: parentData.getProjectById.status
+                          ? String(parentData.getProjectById.status)
+                          : undefined,
+                      }}
+                      onClick={() =>
+                        router.push(
+                          `/app/${workspace_id}/projects/${parentData.getProjectById?.id}`,
+                        )
+                      }
+                    />
+                  </Box>
+                ) : null}
+                {/* Sub Projects */}
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                    Sub-Projects
+                  </Typography>
+                  <Box display="flex" flexWrap="wrap" gap={2}>
+                    {project.sub_projects && project.sub_projects.filter(Boolean).length > 0 ? (
+                      project.sub_projects
+                        .filter((sub): sub is NonNullable<typeof sub> => !!sub)
+                        .map((sub) => (
+                          <ProjectKanbanCard
+                            key={sub.id}
+                            project={{
+                              ...sub,
+                              status: sub.status ? String(sub.status) : undefined,
+                            }}
+                            onClick={() => router.push(`/app/${workspace_id}/projects/${sub.id}`)}
+                          />
+                        ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No sub-projects.
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
           {/* Main Content */}
           <Grid size={{ xs: 12, md: 8 }}>
             {/* Top Card: Project Overview */}
