@@ -86,6 +86,13 @@ export const NavBar = () => {
       testId: "nav-transactions",
     },
     {
+      text: "Invoices",
+      href: `/app/${currentWorkspace?.id}/invoices`,
+      icon: <ReceiptLongIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/invoices`,
+      testId: "nav-invoices",
+    },
+    {
       text: "Assignments",
       href: `/app/${currentWorkspace?.id}/assignments`,
       icon: <PostAddIcon fontSize="small" />,
