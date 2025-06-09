@@ -270,7 +270,7 @@ export const ProductDetailsStep: React.FC<{
           <Tab label="Service Product" value="SERVICE" />
         </Tabs>
         <PimCategoriesTreeView
-          onItemSelected={(categoryId) => setValue("categoryId", categoryId)}
+          onItemSelected={(item) => setValue("categoryId", item.id ?? undefined)}
         />
         {productType === "PHYSICAL" ? renderPhysicalFields() : renderServiceFields()}
         <Box mt={3} display="flex" justifyContent="space-between">

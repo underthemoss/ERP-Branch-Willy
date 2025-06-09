@@ -247,11 +247,13 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
   );
 });
 
-export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: string) => void }) {
+export function PimCategoriesTreeView(props: {
+  onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
+}) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchInput, setSearchInput] = React.useState<string>("");
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = React.useState<
+  const [selectedItem, setSelectedItem] = React.useState<
     PimCategoryFields | PimProductFields | null
   >(null);
   const apiRef = useTreeViewApiRef();
@@ -304,8 +306,8 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         const product =
           productsData?.listPimProducts?.items.find((p) => p.id === productId) || null;
         if (product) {
-          setSelectedCategory(product);
-          props.onItemSelected(productId);
+          setSelectedItem(product);
+          props.onItemSelected(product);
           return product;
         }
         return;
@@ -330,8 +332,8 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         return;
       }
 
-      setSelectedCategory(category);
-      props.onItemSelected(itemId);
+      setSelectedItem(category);
+      props.onItemSelected(category);
       return category;
     },
     [data?.listPimCategories?.items, productsData?.listPimProducts?.items, props],
@@ -365,7 +367,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
   }, [items, pimSearch, apiRef, handleCategorySelected]);
 
   const handleClearSelection = () => {
-    setSelectedCategory(null);
+    setSelectedItem(null);
     setPimSearch(undefined);
     setSearchInput("");
     setExpandedItems([]);
@@ -373,7 +375,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
 
   return (
     <Stack spacing={2}>
-      {selectedCategory && (
+      {selectedItem && (
         <Paper variant="outlined" sx={{ p: 2, position: "relative" }}>
           <Box
             sx={{
@@ -384,37 +386,37 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
             }}
           >
             <Typography variant="h6">
-              {"name" in selectedCategory ? selectedCategory.name : "Product"}
+              {"name" in selectedItem ? selectedItem.name : "Product"}
             </Typography>
             <IconButton onClick={handleClearSelection} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
 
-          {"path" in selectedCategory && selectedCategory.path && (
+          {"path" in selectedItem && selectedItem.path && (
             <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>
-              {selectedCategory.path}
+              {selectedItem.path}
             </Typography>
           )}
 
-          {"id" in selectedCategory && (
+          {"id" in selectedItem && (
             <Link
               href={
-                "productId" in selectedCategory
-                  ? `/products/${selectedCategory.id}`
-                  : `/categories/${selectedCategory.id}`
+                "productId" in selectedItem
+                  ? `/products/${selectedItem.id}`
+                  : `/categories/${selectedItem.id}`
               }
               target="_blank"
               sx={{ textDecoration: "none" }}
             >
-              {"productId" in selectedCategory ? "View Product →" : "View Category →"}
+              {"productId" in selectedItem ? "View Product →" : "View Category →"}
             </Link>
           )}
 
           {/* Optionally render more product/category details here */}
         </Paper>
       )}
-      {!selectedCategory && (
+      {!selectedItem && (
         <Box>
           <TextField
             fullWidth

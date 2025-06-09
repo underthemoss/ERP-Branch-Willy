@@ -26,7 +26,7 @@ export function AddNewPriceDialog({
   onSuccess,
 }: AddNewPriceDialogProps) {
   const [formCategoryId, setFormCategoryId] = React.useState<string | null>(null);
-  const [formCategoryName, setFormCategoryName] = React.useState<string | null>(null);
+  const [productSelected, setProductSelected] = React.useState<boolean>(false);
   const [formClass, setFormClass] = React.useState("");
   const [formDay, setFormDay] = React.useState("");
   const [formWeek, setFormWeek] = React.useState("");
@@ -76,7 +76,6 @@ export function AddNewPriceDialog({
 
   const handleClose = () => {
     setFormCategoryId(null);
-    setFormCategoryName(null);
     setFormClass("");
     setFormDay("");
     setFormWeek("");
@@ -91,9 +90,14 @@ export function AddNewPriceDialog({
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <PimCategoriesTreeView
-            onItemSelected={(categoryId: string, categoryName?: string) => {
-              setFormCategoryId(categoryId);
-              setFormCategoryName(categoryName || null);
+            onItemSelected={(item) => {
+              if (item.__typename === "PimCategory") {
+                setFormCategoryId(item.id ?? null);
+              } else if (item.__typename === "PimProduct") {
+                setFormCategoryId(item.pim_category_platform_id ?? null);
+                setFormClass(item.name ?? "");
+                setProductSelected(true);
+              }
             }}
           />
           <TextField
@@ -102,6 +106,7 @@ export function AddNewPriceDialog({
             onChange={(e) => setFormClass(e.target.value)}
             required
             fullWidth
+            disabled={productSelected}
           />
           <TextField
             label="Day Price"
