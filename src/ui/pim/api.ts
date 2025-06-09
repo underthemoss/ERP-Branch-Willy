@@ -13,6 +13,7 @@ graphql(`
     id
     name
     pim_category_path
+    pim_category_platform_id
   }
 `);
 
@@ -21,12 +22,13 @@ graphql(`
     id
     name
     path
+    has_products
   }
 `);
 
 graphql(`
-  query ListPimProducts($page: ListPimProductsPage) {
-    listPimProducts(page: $page) {
+  query ListPimProducts($page: ListPimProductsPage, $filter: ListPimProductsFilter) {
+    listPimProducts(page: $page, filter: $filter) {
       page {
         number
         size

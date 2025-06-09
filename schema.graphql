@@ -235,6 +235,7 @@ input CreatePriceBookInput {
 input CreateRentalPriceInput {
   name: String!
   pimCategoryId: String!
+  pimProductId: ID
   priceBookId: ID
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
@@ -245,6 +246,7 @@ input CreateSalePriceInput {
   discounts: JSON!
   name: String!
   pimCategoryId: String!
+  pimProductId: ID
   priceBookId: ID
   unitCostInCents: Int!
 }
@@ -332,6 +334,10 @@ input ListPimCategoriesPage {
 type ListPimCategoriesResult {
   items: [PimCategory!]!
   page: PaginationInfo!
+}
+
+input ListPimProductsFilter {
+  pimCategoryPlatformId: ID
 }
 
 input ListPimProductsPage {
@@ -481,6 +487,7 @@ type PimProduct {
   name: String
   pim_category_id: String
   pim_category_path: String
+  pim_category_platform_id: String
   pim_product_id: String
   sku: String
   tenant_id: String
@@ -657,7 +664,7 @@ type Query {
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
-  listPimProducts(page: ListPimProductsPage): ListPimProductsResult
+  listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
   listPriceBookCategories(priceBookId: String): [PimCategory!]!
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
   listPriceNames(pimCategoryId: String, priceBookId: String): [String!]!
@@ -712,6 +719,8 @@ type RentalPrice {
   pimCategoryId: String!
   pimCategoryName: String!
   pimCategoryPath: String!
+  pimProduct: PimProduct
+  pimProductId: ID
   priceBook: PriceBook
   priceBookId: ID
   pricePerDayInCents: Int!
