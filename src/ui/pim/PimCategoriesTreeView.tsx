@@ -73,7 +73,7 @@ function getTreeItems(
       if (!currentLevel[category]) {
         currentLevel[category] = {
           id: `${id}-${index}`,
-          label: `Category: ${category}`,
+          label: category,
           children: {},
           path: partialPath,
           nodeType: "category",
@@ -86,7 +86,7 @@ function getTreeItems(
     currentLevel[name] = {
       id: id!,
       path: normalizeString(path),
-      label: `Category: ${name}`,
+      label: name,
       children: {},
       nodeType: "category",
     };
@@ -137,7 +137,7 @@ function getTreeItems(
       if (!currentLevel[category]) {
         currentLevel[category] = {
           id: nodeId,
-          label: category === "__products__" ? "Products" : `Category: ${category}`,
+          label: category === "__products__" ? "Products" : category,
           children: {},
           path: undefined, // unknown
           nodeType: "category",
@@ -151,9 +151,8 @@ function getTreeItems(
     currentLevel[name] = {
       id: `product-${id}`,
       path: normalizeString(pim_category_path),
-      label: `Product: ${name}`,
+      label: name,
       nodeType: "product",
-      productId: id,
     };
   });
 
@@ -164,12 +163,11 @@ function getTreeItems(
 
 function flattenTree(map: TreeViewNode): PimCategoryTreeViewItem[] {
   return Object.values(map).map((node) => {
-    const { id, label, nodeType, productId, children } = node;
+    const { id, label, nodeType, children } = node;
     return {
       id,
       label,
       nodeType,
-      productId,
       path: normalizeString(node.path),
       children: children ? flattenTree(children) : undefined,
     };
@@ -385,33 +383,31 @@ export function PimCategoriesTreeView(props: {
               justifyContent: "space-between",
             }}
           >
-            <Typography variant="h6">
-              {"name" in selectedItem ? selectedItem.name : "Product"}
-            </Typography>
+            <Typography variant="h6">{selectedItem.name}</Typography>
             <IconButton onClick={handleClearSelection} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
 
-          {"path" in selectedItem && selectedItem.path && (
-            <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>
-              {selectedItem.path}
-            </Typography>
-          )}
+          <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>
+            {selectedItem.__typename === "PimProduct"
+              ? selectedItem.pim_category_path
+              : selectedItem.__typename === "PimCategory"
+                ? selectedItem.path
+                : ""}
+          </Typography>
 
-          {"id" in selectedItem && (
-            <Link
-              href={
-                "productId" in selectedItem
-                  ? `/products/${selectedItem.id}`
-                  : `/categories/${selectedItem.id}`
-              }
-              target="_blank"
-              sx={{ textDecoration: "none" }}
-            >
-              {"productId" in selectedItem ? "View Product →" : "View Category →"}
-            </Link>
-          )}
+          <Link
+            href={
+              selectedItem.__typename === "PimProduct"
+                ? `/products/${selectedItem.id}`
+                : `/categories/${selectedItem.id}`
+            }
+            target="_blank"
+            sx={{ textDecoration: "none" }}
+          >
+            {selectedItem.__typename === "PimProduct" ? "View Product →" : "View Category →"}
+          </Link>
 
           {/* Optionally render more product/category details here */}
         </Paper>

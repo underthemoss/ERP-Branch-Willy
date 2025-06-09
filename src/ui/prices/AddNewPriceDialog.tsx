@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import * as React from "react";
+import { PimProductFields } from "../pim/api";
 import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
 import { useCreateRentalPriceMutation } from "./api";
 
@@ -26,7 +27,7 @@ export function AddNewPriceDialog({
   onSuccess,
 }: AddNewPriceDialogProps) {
   const [formCategoryId, setFormCategoryId] = React.useState<string | null>(null);
-  const [productSelected, setProductSelected] = React.useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
   const [formClass, setFormClass] = React.useState("");
   const [formDay, setFormDay] = React.useState("");
   const [formWeek, setFormWeek] = React.useState("");
@@ -66,6 +67,7 @@ export function AddNewPriceDialog({
             pricePerDayInCents: parseDollarToCents(formDay),
             pricePerWeekInCents: parseDollarToCents(formWeek),
             pricePerMonthInCents: parseDollarToCents(formMonth),
+            pimProductId: selectedProduct?.id ?? null,
           },
         },
       });
@@ -96,18 +98,19 @@ export function AddNewPriceDialog({
               } else if (item.__typename === "PimProduct") {
                 setFormCategoryId(item.pim_category_platform_id ?? null);
                 setFormClass(item.name ?? "");
-                setProductSelected(true);
+                setSelectedProduct(item);
               }
             }}
           />
-          <TextField
-            label="Class"
-            value={formClass}
-            onChange={(e) => setFormClass(e.target.value)}
-            required
-            fullWidth
-            disabled={productSelected}
-          />
+          {!selectedProduct && (
+            <TextField
+              label="Class"
+              value={formClass}
+              onChange={(e) => setFormClass(e.target.value)}
+              required
+              fullWidth
+            />
+          )}
           <TextField
             label="Day Price"
             value={formDay}
