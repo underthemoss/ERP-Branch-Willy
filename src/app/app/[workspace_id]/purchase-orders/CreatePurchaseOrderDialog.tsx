@@ -2,6 +2,7 @@
 import { graphql } from "@/graphql";
 import { useCreatePurchaseOrderMutation } from "@/graphql/hooks";
 import ContactSelector from "@/ui/ContactSelector";
+import ProjectSelector from "@/ui/ProjectSelector";
 import {
   Box,
   Button,
@@ -40,6 +41,7 @@ export const CreatePurchaseOrderDialog: React.FC<CreatePurchaseOrderDialogProps>
   const [buyerContactId, setBuyerContactId] = useState<string>("");
   const [sellerContactId, setSellerContactId] = useState<string>("");
   const [requestorContactId, setRequestorContactId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const [createPurchaseOrder, { loading }] = useCreatePurchaseOrderMutation();
@@ -64,6 +66,9 @@ export const CreatePurchaseOrderDialog: React.FC<CreatePurchaseOrderDialogProps>
         buyer_contact_id: buyerContactId,
         seller_contact_id: sellerContactId,
       };
+      if (projectId) {
+        input.project_id = projectId;
+      }
       if (requestorContactId) {
         input.requester_contact_id = requestorContactId;
       }
@@ -127,6 +132,13 @@ export const CreatePurchaseOrderDialog: React.FC<CreatePurchaseOrderDialogProps>
               onChange={setRequestorContactId}
               workspaceId={workspaceId}
             />
+          </Box>
+          <Box>
+            <Typography fontWeight={600}>Project</Typography>
+            <Typography variant="body2" color="text.secondary" mb={1}>
+              The project this PO is for. Optional.
+            </Typography>
+            <ProjectSelector projectId={projectId} onChange={setProjectId} />
           </Box>
           {error && (
             <Typography color="error" sx={{ mt: 1 }}>

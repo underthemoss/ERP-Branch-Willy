@@ -668,6 +668,8 @@ type PurchaseOrder {
   line_items: [PurchaseOrderLineItem]
   po_issue_date: String
   po_number: String
+  project: Project
+  project_id: String
   requester_contact: Contact
   requester_contact_id: String
   seller_contact: Contact
@@ -681,6 +683,7 @@ input PurchaseOrderInput {
   buyer_contact_id: String
   buyer_project_id: String
   po_issue_date: String
+  project_id: String
   requester_contact_id: String
   seller_contact_id: String
 }
