@@ -58,7 +58,6 @@ export function EmployeeContactForm({ onClose }: Pick<DialogProps, "onClose">) {
   const notifications = useNotifications();
 
   const onSubmit = async (data: EmployeeFormData) => {
-    console.log("Form data:", data);
     try {
       await createPersonContact({
         variables: {

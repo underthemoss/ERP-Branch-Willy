@@ -10,7 +10,6 @@ export default function Page() {
   const { user } = useAuth0();
   const { data, loading } = useFetchWorkspacesQuery();
   useEffect(() => {
-    debugger;
     if (!loading && data?.listWorkspaces?.items.length) {
       redirect(`/app/${data?.listWorkspaces?.items[0].id}`);
     }

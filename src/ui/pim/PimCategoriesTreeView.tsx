@@ -156,8 +156,6 @@ function getTreeItems(
     };
   });
 
-  console.log("treeItemsMap", treeItemsMap);
-
   return flattenTree(treeItemsMap);
 }
 

@@ -55,8 +55,6 @@ const DashboardMainSection: React.FC<{ children: React.ReactNode }> = ({ childre
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const p = usePathname();
 
-  console.log("p: ", p);
-
   return (
     <Box
       className="dashboard-layout"

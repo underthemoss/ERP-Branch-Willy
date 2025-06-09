@@ -35,7 +35,6 @@ export const NavBar = () => {
   const { user } = useAuth0();
   const pathname = usePathname();
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
-  console.log("pathname", pathname);
   const workspaces =
     data?.listWorkspaces?.items.map((d) => {
       return {
