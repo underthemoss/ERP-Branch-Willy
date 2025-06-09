@@ -100,16 +100,16 @@ interface CustomLabelProps {
   searchTerm?: string;
 }
 
-function CustomLabel({ children, className, searchTerm }: CustomLabelProps) {
-  if (!searchTerm) {
+function CustomLabel({ children, className, searchTerm = "" }: CustomLabelProps) {
+  const index = children.toLowerCase().indexOf(searchTerm.toLowerCase());
+
+  if (!searchTerm || index === -1) {
     return (
       <div className={className}>
         <Typography>{children}</Typography>
       </div>
     );
   }
-
-  const index = children.toLowerCase().indexOf(searchTerm.toLowerCase());
 
   return (
     <div className={className}>
@@ -144,6 +144,7 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
 
 export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: string) => void }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
+  const [searchInput, setSearchInput] = React.useState<string>("");
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = React.useState<PimCategoryFields | null>(null);
   const apiRef = useTreeViewApiRef();
@@ -158,7 +159,11 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
 
   const items = React.useMemo(() => {
     const pimItems = data?.listPimCategories?.items || [];
-    return getTreeItems(pimItems, pimSearch);
+    // Only filter if at least 3 chars, otherwise show all
+    if (pimSearch && pimSearch.length >= 3) {
+      return getTreeItems(pimItems, pimSearch);
+    }
+    return getTreeItems(pimItems, undefined);
   }, [data?.listPimCategories?.items, pimSearch]);
 
   const handleCategorySelected = React.useCallback(
@@ -189,8 +194,20 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
     [data?.listPimCategories?.items, props],
   );
 
+  // Debounce search input and update pimSearch only if >= 3 chars
   React.useEffect(() => {
-    if (pimSearch) {
+    const handler = setTimeout(() => {
+      if (searchInput && searchInput.length >= 3) {
+        setPimSearch(searchInput.toLowerCase());
+      } else {
+        setPimSearch(undefined);
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  React.useEffect(() => {
+    if (pimSearch && pimSearch.length >= 3) {
       // check if the search term is a valid category ID
       const isCategory = handleCategorySelected(pimSearch);
       if (isCategory) {
@@ -207,6 +224,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
   const handleClearSelection = () => {
     setSelectedCategory(null);
     setPimSearch(undefined);
+    setSearchInput("");
     setExpandedItems([]);
   };
 
@@ -245,12 +263,19 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         <Box>
           <TextField
             fullWidth
-            placeholder="Search categories"
+            placeholder="Enter at least 3 characters to search categories"
             sx={{ mb: 2 }}
-            onChange={(e) => setPimSearch(e.target.value.toLowerCase())}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            slotProps={{
+              htmlInput: {
+                minLength: 3,
+              },
+            }}
           />
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Search for a category by name or use the tree view to navigate through them.
+            Enter at least 3 characters to search for a category by name or use the tree view to
+            navigate through them.
           </Typography>
           <Box>
             {loading && <Typography>Loading...</Typography>}
