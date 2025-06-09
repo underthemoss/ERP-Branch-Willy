@@ -118,9 +118,7 @@ export const CreatePurchaseOrderDialog: React.FC<CreatePurchaseOrderDialogProps>
             </Box>
           </Box>
           <Box>
-            <Typography fontWeight={600}>
-              Requestor Contact
-            </Typography>
+            <Typography fontWeight={600}>Requestor Contact</Typography>
             <Typography variant="body2" color="text.secondary" mb={1}>
               The contact who is requesting the purchase. Optional.
             </Typography>
