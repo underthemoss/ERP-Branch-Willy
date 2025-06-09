@@ -17,6 +17,8 @@ This is a NextJs app router project.
 
 This project uses prettier. After finishing a task, always run `npm run prettier:fix`
 
+Unless told otherwise default to "use client" on UI files.
+
 ### Coding Standards for MUI components
 
 When using MUI GRID, this is the correct syntax
