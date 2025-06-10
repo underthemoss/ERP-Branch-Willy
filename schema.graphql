@@ -267,6 +267,24 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type File {
+  created_at: String!
+  created_by: String!
+  created_by_user: User
+  deleted: Boolean!
+  file_key: String!
+  file_name: String!
+  file_size: Int!
+  id: String!
+  metadata: JSON
+  mime_type: String!
+  parent_entity_id: String!
+  updated_at: String!
+  updated_by: String!
+  updated_by_user: User
+  url: String!
+}
+
 type HasuraClaims {
   x_hasura_allowed_roles: [String]
   x_hasura_default_role: String
@@ -394,6 +412,7 @@ type ListWorkspacesResult {
 }
 
 type Mutation {
+  addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createPersonContact(input: PersonContactInput!): PersonContact
@@ -409,6 +428,7 @@ type Mutation {
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
+  removeFileFromEntity(file_id: String!): File!
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updateBusinessName(id: ID!, name: String!): BusinessContact
@@ -430,6 +450,7 @@ type Mutation {
   updateProjectParentProject(id: String!, parent_project: String): Project
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
+  updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
 }
 
 type PaginationInfo {
@@ -664,6 +685,7 @@ type PurchaseOrder {
   created_at: String
   created_by: String
   created_by_user: User
+  files: [File]
   id: String!
   line_items: [PurchaseOrderLineItem]
   po_issue_date: String
@@ -689,7 +711,7 @@ input PurchaseOrderInput {
 }
 
 type PurchaseOrderLineItem {
-  id: String
+  id: String!
   po_pim_id: String
   po_quantity: Int
 }
@@ -719,10 +741,12 @@ type Query {
   """Get a single resource map entry by id, with tenant check"""
   getResourceMapEntry(id: String!): ResourceMapResource
   getSalesOrderById(id: String): SalesOrder
+  getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
+  listFilesByEntityId(parent_entity_id: String!): [File!]!
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
   listPriceBookCategories(priceBookId: String): [PimCategory!]!
@@ -964,6 +988,17 @@ enum ServiceTransactionTypes {
   MAINTENANCE
 }
 
+type SignedUploadUrl {
+  key: String!
+  url: String!
+}
+
+enum SupportedContentType {
+  APPLICATION_PDF
+  IMAGE_JPEG
+  IMAGE_PNG
+}
+
 union Transaction = RentalTransaction | SaleTransaction | ServiceTransaction
 
 input TransactionInput {
@@ -1021,6 +1056,12 @@ input UpdatePersonContactInput {
   profilePicture: String
   resourceMapIds: [ID!]
   role: String
+}
+
+input UpdatePurchaseOrderLineItemInput {
+  id: String!
+  po_pim_id: String
+  po_quantity: Int
 }
 
 type User {
