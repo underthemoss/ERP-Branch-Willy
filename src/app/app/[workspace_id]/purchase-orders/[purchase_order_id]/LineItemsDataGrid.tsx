@@ -1,7 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
+import { useLineItemsDataGrid_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import * as React from "react";
@@ -11,8 +11,8 @@ export interface LineItemsDataGridProps {
   purchaseOrderId: string;
 }
 
-const PURCHASE_ORDER_DISPLAY_QUERY = graphql(`
-  query PurchaseOrderDisplayPage_GetPurchaseOrderById($id: String!) {
+const LINE_ITEMS_QUERY = graphql(`
+  query LineItemsDataGrid_GetPurchaseOrderById($id: String!) {
     getPurchaseOrderById(id: $id) {
       id
       line_items {
@@ -25,7 +25,7 @@ const PURCHASE_ORDER_DISPLAY_QUERY = graphql(`
 `);
 
 export const LineItemsDataGrid: React.FC<LineItemsDataGridProps> = ({ purchaseOrderId }) => {
-  const { data, loading, error, refetch } = usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery({
+  const { data, loading, error, refetch } = useLineItemsDataGrid_GetPurchaseOrderByIdQuery({
     variables: { id: purchaseOrderId },
     fetchPolicy: "cache-and-network",
   });
