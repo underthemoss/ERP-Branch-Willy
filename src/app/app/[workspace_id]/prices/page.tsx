@@ -1,7 +1,9 @@
 "use client";
 
-import { useListPriceBooksQuery, useListPricesQuery } from "@/ui/prices/api";
+import { PriceType } from "@/graphql/graphql";
+import { useListPricesQuery } from "@/ui/prices/api";
 import {
+  Autocomplete,
   Box,
   Button,
   FormControl,
@@ -9,6 +11,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import {
@@ -28,13 +31,20 @@ export default function AllPrices() {
   const [selectedPriceBook, setSelectedPriceBook] = React.useState<string>("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
+  const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
 
-  // Fetch all prices, filtered by selected PIM category and class if set
+  const priceTypeOptions = [
+    { label: "Rental", value: PriceType.Rental },
+    { label: "Sale", value: PriceType.Sale },
+  ];
+
+  // Fetch all prices, filtered by selected PIM category, class, and price type if set
   const { data, loading, error } = useListPricesQuery({
     variables: {
       ...(selectedPriceBook ? { priceBookId: selectedPriceBook } : {}),
       ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
       ...(selectedClass ? { name: selectedClass } : {}),
+      ...(selectedPriceTypes.length === 1 ? { priceType: selectedPriceTypes[0] } : {}),
       shouldListPriceBooks: true,
       page: { number: 1, size: 1000 },
     },
@@ -147,7 +157,7 @@ export default function AllPrices() {
             Collapse All
           </Button>
         </Box>
-        <Box display="flex" alignItems="center" gap={2}>
+        <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
           <FormControl sx={{ minWidth: 240 }}>
             <InputLabel id="price-book-label">Price Book</InputLabel>
             <Select
@@ -212,6 +222,20 @@ export default function AllPrices() {
               ))}
             </Select>
           </FormControl>
+          <Autocomplete
+            multiple
+            options={priceTypeOptions}
+            getOptionLabel={(option) => option.label}
+            value={priceTypeOptions.filter((opt) => selectedPriceTypes.includes(opt.value))}
+            onChange={(_, newValue) => {
+              setSelectedPriceTypes(newValue.map((opt) => opt.value));
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Filter by type" variant="outlined" />
+            )}
+            disableCloseOnSelect
+            sx={{ minWidth: 180 }}
+          />
         </Box>
         {error && (
           <Box>
