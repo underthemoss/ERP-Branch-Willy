@@ -66,7 +66,6 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
   const parentPriceBookId = useWatch({ control, name: "parentPriceBookId" });
 
   const onSubmit: SubmitHandler<NewPriceBookFields> = async (data) => {
-    console.log("data:", data);
     const response = await createPriceBook({
       variables: {
         input: {

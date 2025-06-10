@@ -1,6 +1,7 @@
 import { graphql } from "@/graphql";
 import {
   useCreatePriceBookMutation as _useCreatePriceBookMutation,
+  useCreateRentalPriceMutation as _useCreateRentalPriceMutation,
   useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
 } from "@/graphql/hooks";
 
@@ -8,7 +9,6 @@ export {
   useListPriceBooksQuery,
   useListPricesQuery,
   useGetPriceBookByIdQuery,
-  useCreateRentalPriceMutation,
   useListPriceNamesQuery,
 } from "@/graphql/hooks";
 
@@ -180,6 +180,15 @@ graphql(`
     }
   }
 `);
+
+export function useCreateRentalPriceMutation(
+  options?: Parameters<typeof _useCreateRentalPriceMutation>[0],
+) {
+  return _useCreateRentalPriceMutation({
+    ...options,
+    refetchQueries: ["ListPrices", "ListPriceBookCategories", "ListPriceNames"],
+  });
+}
 
 // ListPriceNames query for class dropdown
 graphql(`

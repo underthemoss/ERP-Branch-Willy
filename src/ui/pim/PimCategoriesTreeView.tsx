@@ -10,24 +10,51 @@ import { useTreeViewApiRef } from "@mui/x-tree-view/hooks";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 import * as React from "react";
-import { PimCategoryFields, useListPimCategoriesQuery } from "./api";
+import {
+  PimCategoryFields,
+  PimProductFields,
+  useListPimCategoriesQuery,
+  useListPimProductsQuery,
+} from "./api";
 
 type TreeViewNode = Record<
   string,
-  { id: string; label: string; path: string; children?: TreeViewNode }
+  {
+    id: string;
+    label: string;
+    path: string | null | undefined;
+    nodeType: "category" | "product";
+    children?: TreeViewNode;
+    productId?: string;
+  }
 >;
 
-type PimCategoryTreeViewItem = TreeViewBaseItem<{ id: string; label: string; path: string }>;
+type PimCategoryTreeViewItem = TreeViewBaseItem<{
+  id: string;
+  label: string;
+  path: string | undefined;
+  nodeType: "category" | "product";
+  productId?: string;
+}>;
+
+function normalizeString(val: unknown): string | undefined {
+  return typeof val === "string" ? val : undefined;
+}
 
 function getTreeItems(
   pimCategories: PimCategoryFields[],
+  pimProducts: PimProductFields[],
   searchTerm?: string,
 ): PimCategoryTreeViewItem[] {
   const treeItemsMap: TreeViewNode = {};
 
+  // Build category tree
   pimCategories.forEach((category) => {
     const { id, name, path } = category;
-    const categoryPath = path!.split("|").filter(Boolean);
+    const categoryPath = (path || "")
+      .split("|")
+      .map((s) => (s ?? "").trim())
+      .filter((s) => !!s);
 
     if (
       searchTerm &&
@@ -41,23 +68,91 @@ function getTreeItems(
     let currentLevel = treeItemsMap;
     let partialPath = "";
     categoryPath.forEach((category, index) => {
-      partialPath += "|category"; // accumulate the path
+      if (!category || typeof category !== "string") return;
+      partialPath += "|category";
       if (!currentLevel[category]) {
         currentLevel[category] = {
-          id: `${id}-${index}`, // avoid conficts, but will be replaced in the next step
+          id: `${id}-${index}`,
           label: category,
           children: {},
           path: partialPath,
+          nodeType: "category",
         };
       }
       currentLevel = currentLevel[category].children as TreeViewNode;
     });
 
+    if (!name || typeof name !== "string") return;
     currentLevel[name] = {
       id: id!,
-      path: path!,
-      label: name!,
+      path: normalizeString(path),
+      label: name,
       children: {},
+      nodeType: "category",
+    };
+  });
+
+  // Add products under their parent category
+  pimProducts.forEach((product) => {
+    const { id, name, pim_category_path } = product;
+    if (!pim_category_path) return;
+
+    // Filter by search term
+    if (
+      searchTerm &&
+      name?.toLowerCase().includes(searchTerm) === false &&
+      id?.toLowerCase().includes(searchTerm) === false
+    ) {
+      return;
+    }
+
+    const categoryPath = (pim_category_path || "")
+      .split("|")
+      .map((s) => (s ?? "").trim())
+      .filter((s) => !!s);
+
+    // Find the parent category object by matching the full path
+    let parentCategoryId = "root";
+    if (categoryPath.length > 0) {
+      const parentPath = "|" + categoryPath.join("|") + "|";
+      const parentCategory = pimCategories.find((cat) => cat.path === parentPath);
+      if (parentCategory && parentCategory.id) {
+        parentCategoryId = parentCategory.id;
+      } else {
+        // fallback: use the full path string to guarantee uniqueness
+        parentCategoryId = "root:" + parentPath;
+      }
+    }
+    const extendedPath = [...categoryPath, "__products__"];
+    let currentLevel = treeItemsMap;
+    extendedPath.forEach((category, index) => {
+      if (!category || typeof category !== "string") return;
+      // For the products group node, use a unique id based on parent category id
+      let nodeId: string;
+      if (category === "__products__") {
+        nodeId = `products:${parentCategoryId}`;
+      } else {
+        nodeId = `catpath:${categoryPath.slice(0, index + 1).join("|")}`;
+      }
+      if (!currentLevel[category]) {
+        currentLevel[category] = {
+          id: nodeId,
+          label: category === "__products__" ? "Products" : category,
+          children: {},
+          path: undefined, // unknown
+          nodeType: "category",
+        };
+      }
+      currentLevel = currentLevel[category].children as TreeViewNode;
+    });
+
+    // Add product as a leaf node
+    if (!name || typeof name !== "string") return;
+    currentLevel[name] = {
+      id: `product-${id}`,
+      path: normalizeString(pim_category_path),
+      label: name,
+      nodeType: "product",
     };
   });
 
@@ -65,10 +160,16 @@ function getTreeItems(
 }
 
 function flattenTree(map: TreeViewNode): PimCategoryTreeViewItem[] {
-  return Object.values(map).map((node) => ({
-    ...node,
-    children: node.children ? flattenTree(node.children) : undefined,
-  }));
+  return Object.values(map).map((node) => {
+    const { id, label, nodeType, children } = node;
+    return {
+      id,
+      label,
+      nodeType,
+      path: normalizeString(node.path),
+      children: children ? flattenTree(children) : undefined,
+    };
+  });
 }
 
 function getExpandedNodeIdsForSearch(items: PimCategoryTreeViewItem[], search: string): string[] {
@@ -142,11 +243,15 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
   );
 });
 
-export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: string) => void }) {
+export function PimCategoriesTreeView(props: {
+  onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
+}) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchInput, setSearchInput] = React.useState<string>("");
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = React.useState<PimCategoryFields | null>(null);
+  const [selectedItem, setSelectedItem] = React.useState<
+    PimCategoryFields | PimProductFields | null
+  >(null);
   const apiRef = useTreeViewApiRef();
   const { data, loading, error } = useListPimCategoriesQuery({
     variables: {
@@ -156,20 +261,56 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
       },
     },
   });
+  const {
+    data: productsData,
+    loading: productsLoading,
+    error: productsError,
+  } = useListPimProductsQuery({
+    variables: {
+      page: {
+        number: 0,
+        size: 5000,
+      },
+    },
+  });
 
   const items = React.useMemo(() => {
+    if (loading || productsLoading) {
+      return [];
+    }
+
     const pimItems = data?.listPimCategories?.items || [];
+    const productItems = productsData?.listPimProducts?.items || [];
     // Only filter if at least 3 chars, otherwise show all
     if (pimSearch && pimSearch.length >= 3) {
-      return getTreeItems(pimItems, pimSearch);
+      return getTreeItems(pimItems, productItems, pimSearch);
     }
-    return getTreeItems(pimItems, undefined);
-  }, [data?.listPimCategories?.items, pimSearch]);
+    return getTreeItems(pimItems, productItems, undefined);
+  }, [
+    data?.listPimCategories?.items,
+    productsData?.listPimProducts?.items,
+    pimSearch,
+    loading,
+    productsLoading,
+  ]);
 
   const handleCategorySelected = React.useCallback(
     (itemId: string) => {
-      const category = data?.listPimCategories?.items.find((c) => c.id === itemId);
+      // Handle product selection
+      if (itemId.startsWith("product-")) {
+        const productId = itemId.replace("product-", "");
+        const product =
+          productsData?.listPimProducts?.items.find((p) => p.id === productId) || null;
+        if (product) {
+          setSelectedItem(product);
+          props.onItemSelected(product);
+          return product;
+        }
+        return;
+      }
 
+      // Handle category selection
+      const category = data?.listPimCategories?.items.find((c) => c.id === itemId);
       if (!category) {
         return;
       }
@@ -187,11 +328,11 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
         return;
       }
 
-      setSelectedCategory(category);
-      props.onItemSelected(itemId);
+      setSelectedItem(category);
+      props.onItemSelected(category);
       return category;
     },
-    [data?.listPimCategories?.items, props],
+    [data?.listPimCategories?.items, productsData?.listPimProducts?.items, props],
   );
 
   // Debounce search input and update pimSearch only if >= 3 chars
@@ -222,7 +363,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
   }, [items, pimSearch, apiRef, handleCategorySelected]);
 
   const handleClearSelection = () => {
-    setSelectedCategory(null);
+    setSelectedItem(null);
     setPimSearch(undefined);
     setSearchInput("");
     setExpandedItems([]);
@@ -230,7 +371,7 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
 
   return (
     <Stack spacing={2}>
-      {selectedCategory && (
+      {selectedItem && (
         <Paper variant="outlined" sx={{ p: 2, position: "relative" }}>
           <Box
             sx={{
@@ -240,26 +381,36 @@ export function PimCategoriesTreeView(props: { onItemSelected: (categoryId: stri
               justifyContent: "space-between",
             }}
           >
-            <Typography variant="h6">{selectedCategory.name}</Typography>
+            <Typography variant="h6">{selectedItem.name}</Typography>
             <IconButton onClick={handleClearSelection} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
 
           <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>
-            {selectedCategory.path}
+            {selectedItem.__typename === "PimProduct"
+              ? selectedItem.pim_category_path
+              : selectedItem.__typename === "PimCategory"
+                ? selectedItem.path
+                : ""}
           </Typography>
 
           <Link
-            href={`/categories/${selectedCategory.id}`}
+            href={
+              selectedItem.__typename === "PimProduct"
+                ? `/products/${selectedItem.id}`
+                : `/categories/${selectedItem.id}`
+            }
             target="_blank"
             sx={{ textDecoration: "none" }}
           >
-            View Category →
+            {selectedItem.__typename === "PimProduct" ? "View Product →" : "View Category →"}
           </Link>
+
+          {/* Optionally render more product/category details here */}
         </Paper>
       )}
-      {!selectedCategory && (
+      {!selectedItem && (
         <Box>
           <TextField
             fullWidth

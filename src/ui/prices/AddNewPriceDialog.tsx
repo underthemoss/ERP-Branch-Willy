@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import * as React from "react";
+import { PimProductFields } from "../pim/api";
 import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
 import { useCreateRentalPriceMutation } from "./api";
 
@@ -26,7 +27,7 @@ export function AddNewPriceDialog({
   onSuccess,
 }: AddNewPriceDialogProps) {
   const [formCategoryId, setFormCategoryId] = React.useState<string | null>(null);
-  const [formCategoryName, setFormCategoryName] = React.useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
   const [formClass, setFormClass] = React.useState("");
   const [formDay, setFormDay] = React.useState("");
   const [formWeek, setFormWeek] = React.useState("");
@@ -66,6 +67,7 @@ export function AddNewPriceDialog({
             pricePerDayInCents: parseDollarToCents(formDay),
             pricePerWeekInCents: parseDollarToCents(formWeek),
             pricePerMonthInCents: parseDollarToCents(formMonth),
+            pimProductId: selectedProduct?.id ?? null,
           },
         },
       });
@@ -76,7 +78,6 @@ export function AddNewPriceDialog({
 
   const handleClose = () => {
     setFormCategoryId(null);
-    setFormCategoryName(null);
     setFormClass("");
     setFormDay("");
     setFormWeek("");
@@ -91,18 +92,25 @@ export function AddNewPriceDialog({
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <PimCategoriesTreeView
-            onItemSelected={(categoryId: string, categoryName?: string) => {
-              setFormCategoryId(categoryId);
-              setFormCategoryName(categoryName || null);
+            onItemSelected={(item) => {
+              if (item.__typename === "PimCategory") {
+                setFormCategoryId(item.id ?? null);
+              } else if (item.__typename === "PimProduct") {
+                setFormCategoryId(item.pim_category_platform_id ?? null);
+                setFormClass(item.name ?? "");
+                setSelectedProduct(item);
+              }
             }}
           />
-          <TextField
-            label="Class"
-            value={formClass}
-            onChange={(e) => setFormClass(e.target.value)}
-            required
-            fullWidth
-          />
+          {!selectedProduct && (
+            <TextField
+              label="Class"
+              value={formClass}
+              onChange={(e) => setFormClass(e.target.value)}
+              required
+              fullWidth
+            />
+          )}
           <TextField
             label="Day Price"
             value={formDay}
