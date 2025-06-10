@@ -22,6 +22,9 @@ const columns: GridColDef[] = [
     field: "name",
     headerName: "Class",
     width: 230,
+    renderCell: ({ row }) => {
+      return row.name || <span>&mdash;</span>;
+    },
   },
   // Rental columns
   {
