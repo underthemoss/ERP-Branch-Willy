@@ -1,12 +1,9 @@
 "use client";
 
-import { useListPriceBookCategoriesQuery } from "@/graphql/hooks";
+import { PriceType } from "@/graphql/graphql";
+import { useListPricesQuery } from "@/ui/prices/api";
 import {
-  useListPriceBooksQuery,
-  useListPriceNamesQuery,
-  useListPricesQuery,
-} from "@/ui/prices/api";
-import {
+  Autocomplete,
   Box,
   Button,
   FormControl,
@@ -14,6 +11,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import {
@@ -33,36 +31,21 @@ export default function AllPrices() {
   const [selectedPriceBook, setSelectedPriceBook] = React.useState<string>("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
+  const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
 
-  // Fetch all price books
-  const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
-    variables: { page: { number: 1, size: 100 } },
-    fetchPolicy: "cache-and-network",
-  });
+  const priceTypeOptions = [
+    { label: "Rental", value: PriceType.Rental },
+    { label: "Sale", value: PriceType.Sale },
+  ];
 
-  // Fetch all PIM categories, filtered by selected price book if set
-  const { data: categoriesData, loading: categoriesLoading } = useListPriceBookCategoriesQuery({
-    variables: { priceBookId: selectedPriceBook || undefined },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch all price names (classes), filtered by selected price book and PIM category if set
-  const { data: classNamesData, loading: classNamesLoading } = useListPriceNamesQuery({
-    variables: {
-      priceBookId: selectedPriceBook || undefined,
-      pimCategoryId: selectedCategory || undefined,
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch all prices, filtered by selected PIM category and class if set
+  // Fetch all prices, filtered by selected PIM category, class, and price type if set
   const { data, loading, error } = useListPricesQuery({
     variables: {
-      filter: {
-        ...(selectedPriceBook ? { priceBookId: selectedPriceBook } : {}),
-        ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
-        ...(selectedClass ? { name: selectedClass } : {}),
-      },
+      ...(selectedPriceBook ? { priceBookId: selectedPriceBook } : {}),
+      ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
+      ...(selectedClass ? { name: selectedClass } : {}),
+      ...(selectedPriceTypes.length === 1 ? { priceType: selectedPriceTypes[0] } : {}),
+      shouldListPriceBooks: true,
       page: { number: 1, size: 1000 },
     },
     fetchPolicy: "cache-and-network",
@@ -90,6 +73,8 @@ export default function AllPrices() {
       };
     });
   }, [data]);
+
+  console.log("rows:", rows);
 
   // Define columns
   const columns: GridColDef[] = [
@@ -172,7 +157,7 @@ export default function AllPrices() {
             Collapse All
           </Button>
         </Box>
-        <Box display="flex" alignItems="center" gap={2}>
+        <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
           <FormControl sx={{ minWidth: 240 }}>
             <InputLabel id="price-book-label">Price Book</InputLabel>
             <Select
@@ -184,12 +169,12 @@ export default function AllPrices() {
                 setSelectedCategory("");
                 setSelectedClass("");
               }}
-              disabled={priceBooksLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Price Books</em>
               </MenuItem>
-              {priceBooksData?.listPriceBooks?.items?.map((book: any) => (
+              {data?.listPriceBooks?.items?.map((book: any) => (
                 <MenuItem key={book.id} value={book.id}>
                   {book.name}
                 </MenuItem>
@@ -206,12 +191,12 @@ export default function AllPrices() {
                 setSelectedCategory(e.target.value);
                 setSelectedClass(""); // Reset class when category changes
               }}
-              disabled={categoriesLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Categories</em>
               </MenuItem>
-              {categoriesData?.listPriceBookCategories?.map((cat: any) => (
+              {data?.listPriceBookCategories?.map((cat: any) => (
                 <MenuItem key={cat.id} value={cat.id}>
                   {cat.name}
                 </MenuItem>
@@ -225,18 +210,32 @@ export default function AllPrices() {
               value={selectedClass}
               label="Class"
               onChange={(e) => setSelectedClass(e.target.value)}
-              disabled={classNamesLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Classes</em>
               </MenuItem>
-              {classNamesData?.listPriceNames?.map((className: string) => (
+              {data?.listPriceNames?.map((className: string) => (
                 <MenuItem key={className} value={className}>
                   {className}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+          <Autocomplete
+            multiple
+            options={priceTypeOptions}
+            getOptionLabel={(option) => option.label}
+            value={priceTypeOptions.filter((opt) => selectedPriceTypes.includes(opt.value))}
+            onChange={(_, newValue) => {
+              setSelectedPriceTypes(newValue.map((opt) => opt.value));
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Filter by type" variant="outlined" />
+            )}
+            disableCloseOnSelect
+            sx={{ minWidth: 180 }}
+          />
         </Box>
         {error && (
           <Box>

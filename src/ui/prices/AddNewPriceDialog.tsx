@@ -1,17 +1,21 @@
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   InputAdornment,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import * as React from "react";
+import { Controller, useForm } from "react-hook-form";
 import { PimProductFields } from "../pim/api";
 import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
-import { useCreateRentalPriceMutation } from "./api";
+import { useCreateRentalPriceMutation, useCreateSalePriceMutation } from "./api";
 
 interface AddNewPriceDialogProps {
   open: boolean;
@@ -28,13 +32,40 @@ export function AddNewPriceDialog({
 }: AddNewPriceDialogProps) {
   const [formCategoryId, setFormCategoryId] = React.useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
-  const [formClass, setFormClass] = React.useState("");
-  const [formDay, setFormDay] = React.useState("");
-  const [formWeek, setFormWeek] = React.useState("");
-  const [formMonth, setFormMonth] = React.useState("");
-  const [formError, setFormError] = React.useState<string | null>(null);
 
-  const [createRentalPrice, { loading: creating }] = useCreateRentalPriceMutation({
+  // react-hook-form setup
+  const {
+    control,
+    register,
+    handleSubmit: rhfHandleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      class: "",
+      day: "",
+      week: "",
+      month: "",
+      unitCost: "",
+    },
+  });
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [priceType, setPriceType] = React.useState<"rental" | "sale">("rental");
+
+  const [createRentalPrice, { loading: creatingRental }] = useCreateRentalPriceMutation({
+    onCompleted: () => {
+      handleClose();
+      if (onSuccess) onSuccess();
+    },
+    onError: (err: Error) => {
+      setFormError(err.message);
+    },
+    refetchQueries: ["ListPrices"],
+  });
+
+  const [createSalePrice, { loading: creatingSale }] = useCreateSalePriceMutation({
     onCompleted: () => {
       handleClose();
       if (onSuccess) onSuccess();
@@ -50,108 +81,203 @@ export function AddNewPriceDialog({
     return isNaN(num) ? 0 : Math.round(num * 100);
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // react-hook-form submit handler
+  const onFormSubmit = async (data: any) => {
     setFormError(null);
-    if (!formCategoryId || !formClass) {
+    if (!formCategoryId || !data.class) {
       setFormError("Category and Class are required.");
       return;
     }
-    try {
-      await createRentalPrice({
-        variables: {
-          input: {
-            name: formClass,
-            pimCategoryId: formCategoryId,
-            priceBookId,
-            pricePerDayInCents: parseDollarToCents(formDay),
-            pricePerWeekInCents: parseDollarToCents(formWeek),
-            pricePerMonthInCents: parseDollarToCents(formMonth),
-            pimProductId: selectedProduct?.id ?? null,
+    if (priceType === "rental") {
+      try {
+        await createRentalPrice({
+          variables: {
+            input: {
+              name: data.class,
+              pimCategoryId: formCategoryId,
+              priceBookId,
+              pricePerDayInCents: parseDollarToCents(data.day),
+              pricePerWeekInCents: parseDollarToCents(data.week),
+              pricePerMonthInCents: parseDollarToCents(data.month),
+              pimProductId: selectedProduct?.id ?? null,
+            },
           },
-        },
-      });
-    } catch (err: any) {
-      setFormError(err.message);
+        });
+      } catch (err: any) {
+        setFormError(err.message);
+      }
+    } else if (priceType === "sale") {
+      if (!data.unitCost) {
+        setFormError("Unit Cost is required.");
+        return;
+      }
+      try {
+        await createSalePrice({
+          variables: {
+            input: {
+              name: data.class,
+              pimCategoryId: formCategoryId,
+              priceBookId,
+              unitCostInCents: parseDollarToCents(data.unitCost),
+              pimProductId: selectedProduct?.id ?? null,
+              discounts: [],
+            },
+          },
+        });
+      } catch (err: any) {
+        setFormError(err.message);
+      }
     }
   };
 
   const handleClose = () => {
     setFormCategoryId(null);
-    setFormClass("");
-    setFormDay("");
-    setFormWeek("");
-    setFormMonth("");
     setFormError(null);
+    setSelectedProduct(null);
+    setPriceType("rental");
+    reset();
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Rental Price</DialogTitle>
-      <form onSubmit={handleSubmit}>
+      <DialogTitle>Add Price</DialogTitle>
+      <form onSubmit={rhfHandleSubmit(onFormSubmit)}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <PimCategoriesTreeView
             onItemSelected={(item) => {
               if (item.__typename === "PimCategory") {
                 setFormCategoryId(item.id ?? null);
+                setSelectedProduct(null);
+                setValue("class", "");
               } else if (item.__typename === "PimProduct") {
                 setFormCategoryId(item.pim_category_platform_id ?? null);
-                setFormClass(item.name ?? "");
+                setValue("class", item.name ?? "");
                 setSelectedProduct(item);
               }
             }}
           />
           {!selectedProduct && (
-            <TextField
-              label="Class"
-              value={formClass}
-              onChange={(e) => setFormClass(e.target.value)}
-              required
-              fullWidth
+            <Controller
+              name="class"
+              control={control}
+              rules={{ required: "Class is required" }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Class"
+                  required
+                  fullWidth
+                  error={!!errors.class}
+                  helperText={errors.class?.message}
+                />
+              )}
             />
           )}
-          <TextField
-            label="Day Price"
-            value={formDay}
-            onChange={(e) => setFormDay(e.target.value)}
-            required
-            fullWidth
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              inputMode: "decimal",
-            }}
-          />
-          <TextField
-            label="Week Price"
-            value={formWeek}
-            onChange={(e) => setFormWeek(e.target.value)}
-            required
-            fullWidth
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              inputMode: "decimal",
-            }}
-          />
-          <TextField
-            label="4-Week Price"
-            value={formMonth}
-            onChange={(e) => setFormMonth(e.target.value)}
-            required
-            fullWidth
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              inputMode: "decimal",
-            }}
-          />
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+            <Tabs
+              value={priceType}
+              onChange={(_, v) => setPriceType(v)}
+              aria-label="Price Type Tabs"
+            >
+              <Tab label="Rental" value="rental" />
+              <Tab label="Sale" value="sale" />
+            </Tabs>
+          </Box>
+          {priceType === "rental" ? (
+            <>
+              <Controller
+                name="day"
+                control={control}
+                rules={{ required: "Day Price is required" }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Day Price"
+                    required
+                    fullWidth
+                    error={!!errors.day}
+                    helperText={errors.day?.message}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      inputMode: "decimal",
+                    }}
+                  />
+                )}
+              />
+              <Controller
+                name="week"
+                control={control}
+                rules={{ required: "Week Price is required" }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Week Price"
+                    required
+                    fullWidth
+                    error={!!errors.week}
+                    helperText={errors.week?.message}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      inputMode: "decimal",
+                    }}
+                  />
+                )}
+              />
+              <Controller
+                name="month"
+                control={control}
+                rules={{ required: "4-Week Price is required" }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="4-Week Price"
+                    required
+                    fullWidth
+                    error={!!errors.month}
+                    helperText={errors.month?.message}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      inputMode: "decimal",
+                    }}
+                  />
+                )}
+              />
+            </>
+          ) : (
+            <Controller
+              name="unitCost"
+              control={control}
+              rules={{ required: "Unit Cost is required" }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Unit Cost"
+                  required
+                  fullWidth
+                  error={!!errors.unitCost}
+                  helperText={errors.unitCost?.message}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    inputMode: "decimal",
+                  }}
+                />
+              )}
+            />
+          )}
           {formError && <Typography color="error">{formError}</Typography>}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} disabled={creating}>
+          <Button onClick={handleClose} disabled={creatingRental || creatingSale}>
             Cancel
           </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={creating}>
-            {creating ? "Saving..." : "Save"}
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={creatingRental || creatingSale}
+          >
+            {creatingRental || creatingSale ? "Saving..." : "Save"}
           </Button>
         </DialogActions>
       </form>

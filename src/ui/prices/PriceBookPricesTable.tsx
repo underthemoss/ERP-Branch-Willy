@@ -1,26 +1,9 @@
 "use client";
 
 import { PriceType } from "@/graphql/graphql";
-import type { ListPriceBookCategoriesQuery } from "@/graphql/graphql";
-import { useListPriceBookCategoriesQuery } from "@/graphql/hooks";
-import {
-  useListPriceNamesQuery,
-  useListPricesQuery,
-  type RentalPriceFields,
-} from "@/ui/prices/api";
-import {
-  Autocomplete,
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  InputAdornment,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { DataGridPro, DataGridProProps, GridColDef } from "@mui/x-data-grid-pro";
+import { useListPricesQuery, type RentalPriceFields, type SalePriceFields } from "@/ui/prices/api";
+import { Autocomplete, Box, Button, TextField, Typography } from "@mui/material";
+import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
@@ -33,30 +16,62 @@ function formatCentsToUSD(cents: number): string {
   }).format(cents / 100);
 }
 
-const columns: GridColDef<RentalPriceFields>[] = [
+const columns: GridColDef[] = [
   { field: "pimCategoryName", headerName: "Category", width: 230 },
   {
     field: "name",
     headerName: "Class",
     width: 230,
   },
+  // Rental columns
   {
     field: "pricePerDayInCents",
     headerName: "Day",
     type: "number",
-    valueGetter: formatCentsToUSD,
+    renderCell: (params) => {
+      const { row } = params;
+      if (row.__typename === "RentalPrice" && row.pricePerDayInCents != null) {
+        return formatCentsToUSD(row.pricePerDayInCents);
+      }
+      return <span>&mdash;</span>;
+    },
   },
   {
     field: "pricePerWeekInCents",
     headerName: "Week",
     type: "number",
-    valueGetter: formatCentsToUSD,
+    renderCell: (params) => {
+      const { row } = params;
+      if (row.__typename === "RentalPrice" && row.pricePerWeekInCents != null) {
+        return formatCentsToUSD(row.pricePerWeekInCents);
+      }
+      return <span>&mdash;</span>;
+    },
   },
   {
     field: "pricePerMonthInCents",
     headerName: "4-Week",
     type: "number",
-    valueGetter: formatCentsToUSD,
+    renderCell: (params) => {
+      const { row } = params;
+      if (row.__typename === "RentalPrice" && row.pricePerMonthInCents != null) {
+        return formatCentsToUSD(row.pricePerMonthInCents);
+      }
+      return <span>&mdash;</span>;
+    },
+  },
+  // Sale column
+  {
+    field: "unitCostInCents",
+    headerName: "Unit Cost",
+    type: "number",
+    renderCell: (params) => {
+      const { row } = params;
+      if (row.__typename === "SalePrice" && row.unitCostInCents != null) {
+        return formatCentsToUSD(row.unitCostInCents);
+      }
+      return <span>&mdash;</span>;
+    },
   },
   {
     field: "created",
@@ -84,24 +99,21 @@ export function PricesTable() {
   // State for selected category and class
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
+  const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
 
-  // Fetch categories for dropdown
-  const {
-    data: categoriesData,
-    loading: categoriesLoading,
-    error: categoriesError,
-  } = useListPriceBookCategoriesQuery({
-    variables: { priceBookId: price_book_id },
-  });
+  const priceTypeOptions = [
+    { label: "Rental", value: PriceType.Rental },
+    { label: "Sale", value: PriceType.Sale },
+  ];
 
-  // Fetch prices, filter by selected category (server-side)
+  // Fetch prices, filter by selected category and price type (server-side)
   const { data, loading, error } = useListPricesQuery({
     variables: {
-      filter: {
-        priceBookId: price_book_id,
-        priceType: PriceType.Rental,
-        ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
-      },
+      priceBookId: price_book_id,
+      ...(selectedClass ? { name: selectedClass } : {}),
+      ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
+      ...(selectedPriceTypes.length === 1 ? { priceType: selectedPriceTypes[0] } : {}),
+      shouldListPriceBooks: false, // We don't need price books here
       page: {
         size: 100,
       },
@@ -110,34 +122,20 @@ export function PricesTable() {
 
   // Use fetched categories for dropdown
   const allCategories = React.useMemo(() => {
-    if (!categoriesData?.listPriceBookCategories) return [];
-    return (
-      categoriesData.listPriceBookCategories as ListPriceBookCategoriesQuery["listPriceBookCategories"]
-    ).map((cat: { id: string; name: string }) => ({
+    if (!data?.listPriceBookCategories) return [];
+    return data.listPriceBookCategories.map((cat: { id: string; name: string }) => ({
       id: cat.id,
       name: cat.name,
     }));
-  }, [categoriesData]);
-
-  // Fetch class names for dropdown, only when a category is selected
-  const {
-    data: classNamesData,
-    loading: classNamesLoading,
-    error: classNamesError,
-  } = useListPriceNamesQuery({
-    variables: {
-      priceBookId: price_book_id,
-      pimCategoryId: selectedCategory,
-    },
-  });
+  }, [data]);
 
   const allClasses = React.useMemo(() => {
-    if (!classNamesData?.listPriceNames) return [];
-    return classNamesData.listPriceNames.filter(Boolean).sort();
-  }, [classNamesData]);
+    if (!data?.listPriceNames) return [];
+    return data.listPriceNames.filter(Boolean).sort();
+  }, [data]);
 
   // Filter rows by selected class (category is now server-side)
-  const rows = React.useMemo<RentalPriceFields[]>(() => {
+  const rows = React.useMemo<(RentalPriceFields | SalePriceFields)[]>(() => {
     if (loading) return [];
     if (error) {
       console.error("Error loading prices:", error);
@@ -147,13 +145,14 @@ export function PricesTable() {
       console.warn("No prices found or data is undefined");
       return [];
     }
-    let rentalRows = data.listPrices.items.filter(
-      (item) => item.__typename === "RentalPrice",
-    ) as RentalPriceFields[];
+    // Include both RentalPrice and SalePrice
+    let allRows = data.listPrices.items.filter(
+      (item) => item.__typename === "RentalPrice" || item.__typename === "SalePrice",
+    ) as (RentalPriceFields | SalePriceFields)[];
     if (selectedClass) {
-      rentalRows = rentalRows.filter((item) => item.name === selectedClass);
+      allRows = allRows.filter((item) => item.name === selectedClass);
     }
-    return rentalRows;
+    return allRows;
   }, [data, loading, error, selectedClass]);
 
   // State for Add Price dialog
@@ -178,24 +177,15 @@ export function PricesTable() {
           onChange={(_, newValue) => {
             setSelectedCategory(newValue ? newValue.id : null);
           }}
-          loading={categoriesLoading}
+          loading={loading}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Filter by Category"
               variant="outlined"
               placeholder="Type to search"
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {categoriesLoading ? <span style={{ marginRight: 8 }}>Loading...</span> : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-              error={!!categoriesError}
-              helperText={categoriesError ? "Failed to load categories" : ""}
+              error={!!error}
+              helperText={error ? "Failed to load categories" : ""}
             />
           )}
           clearOnEscape
@@ -209,20 +199,34 @@ export function PricesTable() {
           options={allClasses}
           value={selectedClass}
           onChange={(_, newValue) => setSelectedClass(newValue)}
-          loading={classNamesLoading}
+          loading={loading}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Filter by Class"
               variant="outlined"
               placeholder="Type to search"
-              error={!!classNamesError}
-              helperText={classNamesError ? "Failed to load classes" : ""}
+              error={!!error}
+              helperText={error ? "Failed to load classes" : ""}
             />
           )}
           clearOnEscape
           isOptionEqualToValue={(option, value) => option === value}
           sx={{ minWidth: 220 }}
+        />
+        <Autocomplete
+          multiple
+          options={priceTypeOptions}
+          getOptionLabel={(option) => option.label}
+          value={priceTypeOptions.filter((opt) => selectedPriceTypes.includes(opt.value))}
+          onChange={(_, newValue) => {
+            setSelectedPriceTypes(newValue.map((opt) => opt.value));
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Filter by type" variant="outlined" />
+          )}
+          disableCloseOnSelect
+          sx={{ minWidth: 180 }}
         />
       </Box>
       {/* Add Price Dialog */}
@@ -232,10 +236,10 @@ export function PricesTable() {
         priceBookId={price_book_id}
         onSuccess={() => setAddDialogOpen(false)}
       />
-      {loading && <Typography>Loading prices...</Typography>}
+      {/* {loading && <Typography>Loading prices...</Typography>} */}
       {error && <Typography color="error">Error: {error.message}</Typography>}
       <div style={{ height: 600, width: "100%" }}>
-        <DataGridPro rows={rows} columns={columns} />
+        <DataGridPro rows={rows} columns={columns} loading={loading} />
       </div>
     </Box>
   );
