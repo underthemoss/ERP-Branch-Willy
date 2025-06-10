@@ -1,8 +1,9 @@
 "use client";
 
 import { graphql } from "@/graphql";
-// --- Types for generated hook (will be generated after codegen) ---
 import { usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
+import FilesTable from "@/ui/FilesTable";
+import FileUpload from "@/ui/FileUpload";
 import {
   Box,
   Button,
@@ -113,6 +114,7 @@ function formatDate(dateString?: string | null) {
 export default function PurchaseOrderDisplayPage() {
   const params = useParams<{ purchase_order_id: string }>();
   const purchaseOrderId = params?.purchase_order_id;
+  const [filesTableKey, setFilesTableKey] = React.useState(0);
 
   const { data, loading, error } = usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery({
     variables: { id: purchaseOrderId },
@@ -315,6 +317,24 @@ export default function PurchaseOrderDisplayPage() {
               {/* Line Items Section */}
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <LineItemsDataGrid purchaseOrderId={purchaseOrderId} />
+              </Paper>
+
+              {/* File Upload Card */}
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Attached Files
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
+                <FilesTable
+                  entityId={purchaseOrderId}
+                  key={filesTableKey + "-" + purchaseOrderId}
+                />
+                <FileUpload
+                  onUploadSuccess={() => {
+                    setFilesTableKey((k) => k + 1);
+                  }}
+                  entityId={purchaseOrderId}
+                />
               </Paper>
             </Grid>
 
