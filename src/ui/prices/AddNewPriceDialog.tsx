@@ -36,10 +36,8 @@ export function AddNewPriceDialog({
   // react-hook-form setup
   const {
     control,
-    register,
     handleSubmit: rhfHandleSubmit,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm({
@@ -84,8 +82,8 @@ export function AddNewPriceDialog({
   // react-hook-form submit handler
   const onFormSubmit = async (data: any) => {
     setFormError(null);
-    if (!formCategoryId || !data.class) {
-      setFormError("Category and Class are required.");
+    if (!formCategoryId) {
+      setFormError("Category is required.");
       return;
     }
     if (priceType === "rental") {
@@ -161,12 +159,11 @@ export function AddNewPriceDialog({
             <Controller
               name="class"
               control={control}
-              rules={{ required: "Class is required" }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   label="Class"
-                  required
+                  placeholder="Assoicated Attributes, e.g. weight class or a dimension"
                   fullWidth
                   error={!!errors.class}
                   helperText={errors.class?.message}
