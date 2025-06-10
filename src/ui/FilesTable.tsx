@@ -24,6 +24,11 @@ graphql(`
       url
       created_at
       created_by
+      created_by_user {
+        id
+        firstName
+        lastName
+      }
       updated_at
       updated_by
       deleted
@@ -155,6 +160,13 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
       align: "right",
       headerAlign: "right",
       valueGetter: (value) => (value ? formatFileSize(value) : "-"),
+    },
+    {
+      field: "created_by_user",
+      headerName: "Created By",
+      flex: 1,
+      minWidth: 180,
+      valueGetter: (value: any) => `${value.firstName} ${value.lastName}`,
     },
     {
       field: "created_at",
