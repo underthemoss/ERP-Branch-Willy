@@ -2,6 +2,7 @@ import { graphql } from "@/graphql";
 import {
   useCreatePriceBookMutation as _useCreatePriceBookMutation,
   useCreateRentalPriceMutation as _useCreateRentalPriceMutation,
+  useCreateSalePriceMutation as _useCreateSalePriceMutation,
   useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
 } from "@/graphql/hooks";
 
@@ -181,10 +182,27 @@ graphql(`
   }
 `);
 
+graphql(`
+  mutation CreateSalePrice($input: CreateSalePriceInput!) {
+    createSalePrice(input: $input) {
+      ...SalePriceFields
+    }
+  }
+`);
+
 export function useCreateRentalPriceMutation(
   options?: Parameters<typeof _useCreateRentalPriceMutation>[0],
 ) {
   return _useCreateRentalPriceMutation({
+    ...options,
+    refetchQueries: ["ListPrices", "ListPriceBookCategories", "ListPriceNames"],
+  });
+}
+
+export function useCreateSalePriceMutation(
+  options?: Parameters<typeof _useCreateSalePriceMutation>[0],
+) {
+  return _useCreateSalePriceMutation({
     ...options,
     refetchQueries: ["ListPrices", "ListPriceBookCategories", "ListPriceNames"],
   });
