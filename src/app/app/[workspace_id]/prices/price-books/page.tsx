@@ -75,14 +75,16 @@ export default function Prices() {
     }));
   }, [data]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
         Price Books
       </Typography>
+      {error?.message && (
+        <Typography color="error" gutterBottom>
+          Error loading price books: {error.message}
+        </Typography>
+      )}
       <Box sx={{ height: 500, width: "100%", mb: 2 }}>
         <DataGridPro
           rows={rows}

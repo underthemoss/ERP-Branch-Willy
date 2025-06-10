@@ -10,7 +10,6 @@ export {
   useListPriceBooksQuery,
   useListPricesQuery,
   useGetPriceBookByIdQuery,
-  useListPriceNamesQuery,
 } from "@/graphql/hooks";
 
 // Re-exporting types
@@ -93,8 +92,23 @@ export const SalePriceFieldsFragment = graphql(`
 `);
 
 graphql(`
-  query ListPrices($filter: ListPricesFilter, $page: ListPricesPage!) {
-    listPrices(filter: $filter, page: $page) {
+  query ListPrices(
+    $page: ListPricesPage!
+    $priceBookId: String
+    $pimCategoryId: String
+    $name: String
+    $priceType: PriceType
+    $shouldListPriceBooks: Boolean!
+  ) {
+    listPrices(
+      filter: {
+        priceBookId: $priceBookId
+        pimCategoryId: $pimCategoryId
+        name: $name
+        priceType: $priceType
+      }
+      page: $page
+    ) {
       items {
         __typename
         ... on RentalPrice {
@@ -103,6 +117,22 @@ graphql(`
         ... on SalePrice {
           ...SalePriceFields
         }
+      }
+    }
+    listPriceBookCategories(priceBookId: $priceBookId) {
+      id
+      name
+    }
+    listPriceNames(priceBookId: $priceBookId, pimCategoryId: $pimCategoryId)
+    listPriceBooks(page: { size: 200 }) @include(if: $shouldListPriceBooks) {
+      items {
+        ...PriceBookFields
+      }
+      page {
+        number
+        size
+        totalItems
+        totalPages
       }
     }
   }
@@ -164,16 +194,6 @@ export function useDeletePriceBookByIdMutation(
   });
 }
 
-// ListPriceBookCategories query for category dropdown
-graphql(`
-  query ListPriceBookCategories($priceBookId: String) {
-    listPriceBookCategories(priceBookId: $priceBookId) {
-      id
-      name
-    }
-  }
-`);
-
 graphql(`
   mutation CreateRentalPrice($input: CreateRentalPriceInput!) {
     createRentalPrice(input: $input) {
@@ -195,7 +215,7 @@ export function useCreateRentalPriceMutation(
 ) {
   return _useCreateRentalPriceMutation({
     ...options,
-    refetchQueries: ["ListPrices", "ListPriceBookCategories", "ListPriceNames"],
+    refetchQueries: ["ListPrices"],
   });
 }
 
@@ -204,13 +224,6 @@ export function useCreateSalePriceMutation(
 ) {
   return _useCreateSalePriceMutation({
     ...options,
-    refetchQueries: ["ListPrices", "ListPriceBookCategories", "ListPriceNames"],
+    refetchQueries: ["ListPrices"],
   });
 }
-
-// ListPriceNames query for class dropdown
-graphql(`
-  query ListPriceNames($priceBookId: String, $pimCategoryId: String) {
-    listPriceNames(priceBookId: $priceBookId, pimCategoryId: $pimCategoryId)
-  }
-`);

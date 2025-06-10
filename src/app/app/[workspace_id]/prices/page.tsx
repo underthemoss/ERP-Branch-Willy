@@ -1,11 +1,6 @@
 "use client";
 
-import { useListPriceBookCategoriesQuery } from "@/graphql/hooks";
-import {
-  useListPriceBooksQuery,
-  useListPriceNamesQuery,
-  useListPricesQuery,
-} from "@/ui/prices/api";
+import { useListPriceBooksQuery, useListPricesQuery } from "@/ui/prices/api";
 import {
   Box,
   Button,
@@ -34,35 +29,13 @@ export default function AllPrices() {
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
 
-  // Fetch all price books
-  const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
-    variables: { page: { number: 1, size: 100 } },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch all PIM categories, filtered by selected price book if set
-  const { data: categoriesData, loading: categoriesLoading } = useListPriceBookCategoriesQuery({
-    variables: { priceBookId: selectedPriceBook || undefined },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch all price names (classes), filtered by selected price book and PIM category if set
-  const { data: classNamesData, loading: classNamesLoading } = useListPriceNamesQuery({
-    variables: {
-      priceBookId: selectedPriceBook || undefined,
-      pimCategoryId: selectedCategory || undefined,
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
   // Fetch all prices, filtered by selected PIM category and class if set
   const { data, loading, error } = useListPricesQuery({
     variables: {
-      filter: {
-        ...(selectedPriceBook ? { priceBookId: selectedPriceBook } : {}),
-        ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
-        ...(selectedClass ? { name: selectedClass } : {}),
-      },
+      ...(selectedPriceBook ? { priceBookId: selectedPriceBook } : {}),
+      ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
+      ...(selectedClass ? { name: selectedClass } : {}),
+      shouldListPriceBooks: true,
       page: { number: 1, size: 1000 },
     },
     fetchPolicy: "cache-and-network",
@@ -90,6 +63,8 @@ export default function AllPrices() {
       };
     });
   }, [data]);
+
+  console.log("rows:", rows);
 
   // Define columns
   const columns: GridColDef[] = [
@@ -184,12 +159,12 @@ export default function AllPrices() {
                 setSelectedCategory("");
                 setSelectedClass("");
               }}
-              disabled={priceBooksLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Price Books</em>
               </MenuItem>
-              {priceBooksData?.listPriceBooks?.items?.map((book: any) => (
+              {data?.listPriceBooks?.items?.map((book: any) => (
                 <MenuItem key={book.id} value={book.id}>
                   {book.name}
                 </MenuItem>
@@ -206,12 +181,12 @@ export default function AllPrices() {
                 setSelectedCategory(e.target.value);
                 setSelectedClass(""); // Reset class when category changes
               }}
-              disabled={categoriesLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Categories</em>
               </MenuItem>
-              {categoriesData?.listPriceBookCategories?.map((cat: any) => (
+              {data?.listPriceBookCategories?.map((cat: any) => (
                 <MenuItem key={cat.id} value={cat.id}>
                   {cat.name}
                 </MenuItem>
@@ -225,12 +200,12 @@ export default function AllPrices() {
               value={selectedClass}
               label="Class"
               onChange={(e) => setSelectedClass(e.target.value)}
-              disabled={classNamesLoading}
+              disabled={loading}
             >
               <MenuItem value="">
                 <em>All Classes</em>
               </MenuItem>
-              {classNamesData?.listPriceNames?.map((className: string) => (
+              {data?.listPriceNames?.map((className: string) => (
                 <MenuItem key={className} value={className}>
                   {className}
                 </MenuItem>
