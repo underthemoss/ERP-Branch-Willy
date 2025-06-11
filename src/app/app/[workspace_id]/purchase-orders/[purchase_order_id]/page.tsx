@@ -238,7 +238,7 @@ export default function PurchaseOrderDisplayPage() {
                 <Grid container alignItems="center" justifyContent="space-between">
                   <Grid size={{ xs: 12, md: 8 }}>
                     <Typography variant="h4" gutterBottom>
-                      Purchase Order #{po.po_number || po.id}
+                      Purchase Order
                     </Typography>
                     {overviewFields.map((field) => (
                       <Typography
