@@ -484,13 +484,8 @@ export default function ProjectDetailAltPage() {
               </Box>
             </Paper>
 
-            {/* Notes Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={project.id} entityType="Project" />
-            </Paper>
-
             {/* Sub Projects Section (moved to bottom) */}
-            <Paper elevation={2} sx={{ p: 2, mt: 3 }}>
+            <Paper elevation={2} sx={{ p: 2, mt: 3, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Sub Projects
               </Typography>
@@ -512,6 +507,10 @@ export default function ProjectDetailAltPage() {
                     )}
                 <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
               </Box>
+            </Paper>
+            {/* Notes Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <NotesSection entityId={project.id} />
             </Paper>
           </Grid>
 

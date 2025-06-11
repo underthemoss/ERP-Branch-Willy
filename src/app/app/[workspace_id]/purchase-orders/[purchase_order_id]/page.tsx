@@ -4,6 +4,7 @@ import { graphql } from "@/graphql";
 import { usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
 import FilesTable from "@/ui/FilesTable";
 import FileUpload from "@/ui/FileUpload";
+import NotesSection from "@/ui/notes/NotesSection";
 import {
   Box,
   Button,
@@ -335,6 +336,10 @@ export default function PurchaseOrderDisplayPage() {
                   }}
                   entityId={purchaseOrderId}
                 />
+              </Paper>
+              {/* Notes Section */}
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <NotesSection entityId={po.id} />
               </Paper>
             </Grid>
 

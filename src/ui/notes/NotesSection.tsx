@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   IconButton,
   Stack,
   Typography,
@@ -31,10 +32,9 @@ import Note from "./Note";
 
 interface NotesSectionProps {
   entityId: string;
-  entityType?: string;
 }
 
-const NotesSection: React.FC<NotesSectionProps> = ({ entityId, entityType = "Entity" }) => {
+const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -207,7 +207,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, entityType = "Ent
       <Typography variant="h6" sx={{ mb: 2 }}>
         Comments
       </Typography>
-
+      <Divider sx={{ mb: 2 }} />
       {/* Comments list */}
       {sortedNotes.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
