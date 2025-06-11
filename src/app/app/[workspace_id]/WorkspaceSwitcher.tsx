@@ -3,7 +3,6 @@
 import { graphql } from "@/graphql";
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { CustomDialog } from "@/ui/CustomDialog";
-import { useAuth0 } from "@auth0/auth0-react";
 import AddIcon from "@mui/icons-material/Add";
 import {
   Avatar,
