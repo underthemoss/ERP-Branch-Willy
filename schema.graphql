@@ -262,6 +262,12 @@ input CreateSalePriceInput {
   unitCostInCents: Int!
 }
 
+input CreateSalesOrderLineItemInput {
+  sales_order_id: String!
+  so_pim_id: String
+  so_quantity: Int
+}
+
 """
 A date string, such as 2007-12-03, compliant with the `full-date` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
@@ -433,6 +439,7 @@ type Mutation {
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
   createSalePrice(input: CreateSalePriceInput!): SalePrice
   createSalesOrder(input: SalesOrderInput): SalesOrder
+  createSalesOrderLineItem(input: CreateSalesOrderLineItemInput): SalesOrderLineItem
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
   deleteNote(id: String!): Note
@@ -463,6 +470,7 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
 }
 
 type Note {
@@ -945,6 +953,7 @@ type SalesOrder {
   created_by: String!
   created_by_user: User
   id: String!
+  line_items: [SalesOrderLineItem]
   order_id: String!
   project: Project
   project_id: String
@@ -958,6 +967,18 @@ input SalesOrderInput {
   buyer_id: String!
   project_id: String
   purchase_order_number: String!
+}
+
+type SalesOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  id: String!
+  so_pim_id: String
+  so_pim_product: PimProduct
+  so_quantity: Int
+  updated_at: String
+  updated_by: String
 }
 
 type SalesOrderListResult {
@@ -1104,6 +1125,12 @@ input UpdatePurchaseOrderLineItemInput {
   id: String!
   po_pim_id: String
   po_quantity: Int
+}
+
+input UpdateSalesOrderLineItemInput {
+  id: String!
+  so_pim_id: String
+  so_quantity: Int
 }
 
 type User {

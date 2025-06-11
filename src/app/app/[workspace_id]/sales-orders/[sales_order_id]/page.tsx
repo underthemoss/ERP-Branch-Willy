@@ -7,6 +7,7 @@ import NotesSection from "@/ui/notes/NotesSection";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
+import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";
 
 const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
@@ -153,7 +154,10 @@ export default function SalesOrderDetailPage() {
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Typography variant="h4" gutterBottom>
-                    Sales Order #{salesOrder.order_id}
+                    Sales Order
+                  </Typography>
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    Purchase Order Number: {salesOrder.order_id}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Purchase Order Number: {salesOrder.purchase_order_number}
@@ -319,19 +323,9 @@ export default function SalesOrderDetailPage() {
               </Grid>
             </Grid>
 
-            {/* Stubbed Order Items Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Order Items
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              {/* Replace with real items table if available */}
-              <Typography color="text.secondary" sx={{ mb: 1 }}>
-                No items found for this order.
-              </Typography>
-              <Button variant="outlined" size="small" disabled>
-                Add Item (stub)
-              </Button>
+            {/* Order Items Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
+              <SalesOrderLineItemsDataGrid salesOrderId={salesOrder.id} />
             </Paper>
             {/* File Upload Card */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
