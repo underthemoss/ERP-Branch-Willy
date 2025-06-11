@@ -25,3 +25,11 @@ a {
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none; /* Standard syntax */
 }
+
+@media print {
+  .navbar,
+  .topbar,
+  .sidebar {
+    display: none !important;
+  }
+}

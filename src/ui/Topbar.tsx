@@ -74,6 +74,7 @@ export const Topbar = function () {
 
   return (
     <Box
+      className="topbar"
       sx={{
         display: "flex",
         flexWrap: "wrap",

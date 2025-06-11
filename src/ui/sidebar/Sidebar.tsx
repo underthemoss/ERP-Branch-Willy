@@ -36,6 +36,7 @@ export function Sidebar() {
 
   return (
     <Box
+      className="sidebar"
       sx={{
         bgcolor: "white",
         width: isSidebarOpen ? "500px" : "0px",
