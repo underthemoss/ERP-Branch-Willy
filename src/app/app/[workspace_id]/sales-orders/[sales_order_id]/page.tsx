@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useGetSalesOrderByIdQuery } from "@/graphql/hooks";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
@@ -331,6 +332,14 @@ export default function SalesOrderDetailPage() {
               <Button variant="outlined" size="small" disabled>
                 Add Item (stub)
               </Button>
+            </Paper>
+            {/* File Upload Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Attached Files
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <AttachedFilesSection entityId={salesOrder.id} />
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>

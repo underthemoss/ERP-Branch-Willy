@@ -2,8 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
-import FilesTable from "@/ui/FilesTable";
-import FileUpload from "@/ui/FileUpload";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import {
   Box,
@@ -115,8 +114,6 @@ function formatDate(dateString?: string | null) {
 export default function PurchaseOrderDisplayPage() {
   const params = useParams<{ purchase_order_id: string }>();
   const purchaseOrderId = params?.purchase_order_id;
-  const [filesTableKey, setFilesTableKey] = React.useState(0);
-
   const { data, loading, error } = usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery({
     variables: { id: purchaseOrderId },
     fetchPolicy: "cache-and-network",
@@ -326,16 +323,7 @@ export default function PurchaseOrderDisplayPage() {
                   Attached Files
                 </Typography>
                 <Divider sx={{ mb: 1 }} />
-                <FilesTable
-                  entityId={purchaseOrderId}
-                  key={filesTableKey + "-" + purchaseOrderId}
-                />
-                <FileUpload
-                  onUploadSuccess={() => {
-                    setFilesTableKey((k) => k + 1);
-                  }}
-                  entityId={purchaseOrderId}
-                />
+                <AttachedFilesSection entityId={purchaseOrderId} />
               </Paper>
               {/* Notes Section */}
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>

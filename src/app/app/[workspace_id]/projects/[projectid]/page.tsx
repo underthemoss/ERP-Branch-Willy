@@ -7,6 +7,7 @@ import {
   useGetProjectByIdForDisplayQuery,
   useProjectCodeDescriptionsQuery,
 } from "@/graphql/hooks";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
@@ -507,6 +508,14 @@ export default function ProjectDetailAltPage() {
                     )}
                 <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
               </Box>
+            </Paper>
+            {/* Attached Files Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Attached Files
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <AttachedFilesSection entityId={project.id} />
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
