@@ -7,6 +7,7 @@ import {
   useGetProjectByIdForDisplayQuery,
   useProjectCodeDescriptionsQuery,
 } from "@/graphql/hooks";
+import NotesSection from "@/ui/notes/NotesSection";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -484,7 +485,7 @@ export default function ProjectDetailAltPage() {
             </Paper>
 
             {/* Sub Projects Section (moved to bottom) */}
-            <Paper elevation={2} sx={{ p: 2, mt: 3 }}>
+            <Paper elevation={2} sx={{ p: 2, mt: 3, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Sub Projects
               </Typography>
@@ -506,6 +507,10 @@ export default function ProjectDetailAltPage() {
                     )}
                 <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
               </Box>
+            </Paper>
+            {/* Notes Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <NotesSection entityId={project.id} />
             </Paper>
           </Grid>
 

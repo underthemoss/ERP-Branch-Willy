@@ -5,6 +5,7 @@ import {
   useContactDisplayPage_DeleteContactMutation,
   useContactDisplayPage_GetContactByIdQuery,
 } from "@/graphql/hooks";
+import NotesSection from "@/ui/notes/NotesSection";
 import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Box,
@@ -198,6 +199,10 @@ export default function ContactDisplayPage() {
                   <strong>Notes:</strong> {contact.notes || "—"}
                 </Typography>
               </Box>
+            </Paper>
+            {/* Notes Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <NotesSection entityId={contact.id} />
             </Paper>
           </Grid>
 

@@ -273,6 +273,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 scalar DateTime
 
 type File {
+  comments: [Note!]!
   created_at: String!
   created_by: String!
   created_by_user: User
@@ -420,6 +421,7 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
+  createNote(input: NoteInput!): Note
 
   """Generate and save a PDF for an entity by path and entity_id"""
   createPdfFromPageAndAttachToEntityId(entity_id: String!, path: String!): CreatePdfResult
@@ -433,6 +435,7 @@ type Mutation {
   createSalesOrder(input: SalesOrderInput): SalesOrder
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
+  deleteNote(id: String!): Note
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
@@ -443,6 +446,7 @@ type Mutation {
   updateBusinessPhone(id: ID!, phone: String!): BusinessContact
   updateBusinessTaxId(id: ID!, taxId: String!): BusinessContact
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
+  updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
   updatePersonEmail(email: String!, id: ID!): PersonContact
@@ -459,6 +463,30 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+}
+
+type Note {
+  _id: String!
+  company_id: String!
+  created_at: DateTime!
+  created_by: String!
+  created_by_user: User
+  deleted: Boolean!
+  parent_entity_id: String!
+  sub_notes: [Note!]!
+  updated_at: DateTime!
+  updated_by: String!
+  value: JSON!
+}
+
+input NoteInput {
+  parent_entity_id: String!
+  value: JSON!
+}
+
+input NoteUpdateInput {
+  id: String!
+  value: JSON!
 }
 
 type PaginationInfo {
@@ -537,6 +565,7 @@ union Price = RentalPrice | SalePrice
 type PriceBook {
   businessContact: BusinessContact
   businessContactId: ID
+  comments: [Note!]!
   companyId: String!
   createdAt: DateTime!
   createdBy: String!
@@ -563,6 +592,7 @@ enum PriceType {
 }
 
 type Project {
+  comments: [Note!]!
   company: Company
   companyId: String!
   created_at: String!
@@ -689,6 +719,7 @@ type PurchaseOrder {
   buyer_contact: Contact
   buyer_contact_id: String
   buyer_project_id: String
+  comments: [Note!]!
   company_id: String
   created_at: String
   created_by: String
@@ -756,6 +787,7 @@ type Query {
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
+  listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
   listPriceBookCategories(priceBookId: String): [PimCategory!]!
@@ -907,6 +939,7 @@ type SaleTransaction implements BaseTransaction {
 type SalesOrder {
   buyer: Contact
   buyer_id: String!
+  comments: [Note!]!
   company_id: String!
   created_at: String!
   created_by: String!
