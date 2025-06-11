@@ -2,7 +2,8 @@
 
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { redirect } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { JwtOverrideProvider } from "./JwtOverrideContext";
 
 const AuthWall: React.FC<{
   children: React.ReactNode;
@@ -33,16 +34,34 @@ export const Auth0ClientProvider: React.FC<{
   audience: string;
   children: React.ReactNode;
 }> = ({ children, clientId, domain, redirect, audience }) => {
+  // Parse JWT from URL hash: #jwt=...
+  const jwt = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const hash = window.location.hash;
+    if (!hash) return null;
+    const match = hash.match(/jwt=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }, []);
+
+  if (jwt) {
+    // If JWT is present in hash, provide it and skip Auth0 logic
+    console.log("here");
+    return <JwtOverrideProvider jwt={jwt}>{children}</JwtOverrideProvider>;
+  }
+
+  // Otherwise, proceed with Auth0Provider/AuthWall and provide null JWT
   return (
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        redirect_uri: redirect,
-        audience,
-      }}
-    >
-      <AuthWall>{children}</AuthWall>
-    </Auth0Provider>
+    <JwtOverrideProvider jwt={null}>
+      <Auth0Provider
+        domain={domain}
+        clientId={clientId}
+        authorizationParams={{
+          redirect_uri: redirect,
+          audience,
+        }}
+      >
+        <AuthWall>{children}</AuthWall>
+      </Auth0Provider>
+    </JwtOverrideProvider>
   );
 };
