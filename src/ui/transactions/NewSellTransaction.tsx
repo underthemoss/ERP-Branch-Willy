@@ -160,7 +160,6 @@ export const ProductDetailsStep: React.FC<{
   });
 
   const onSubmit = (data: TransactionFormData) => {
-    console.log("ProductDetailsStep form data:", data);
     onCreate(data);
   };
 
@@ -312,7 +311,6 @@ export const NewSellTransaction: React.FC<{
   });
 
   const handleNext = (stepData: Partial<TransactionFormData>) => {
-    console.log("Step data:", stepData);
     setFormData((prev) => ({ ...prev, ...stepData }));
     setActiveStep((prev) => (prev + 1) as TransactionStep);
   };
@@ -324,7 +322,6 @@ export const NewSellTransaction: React.FC<{
       ...formData,
       ...productData,
     };
-    console.log("Creating transaction with data:", newFormData);
 
     setFormData(newFormData);
     // await api call here

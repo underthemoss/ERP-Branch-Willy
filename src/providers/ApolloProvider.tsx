@@ -20,7 +20,6 @@ export const ApolloClientProvider: React.FC<{
 
     const authLink = setContext(async (_, { headers }) => {
       const token = jwtOverride ? jwtOverride : await getAccessTokenSilently({ cacheMode: "on" });
-      console.log(token);
       return {
         headers: {
           ...headers,

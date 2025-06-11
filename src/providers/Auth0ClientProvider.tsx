@@ -45,7 +45,7 @@ export const Auth0ClientProvider: React.FC<{
 
   if (jwt) {
     // If JWT is present in hash, provide it and skip Auth0 logic
-    console.log("here");
+
     return <JwtOverrideProvider jwt={jwt}>{children}</JwtOverrideProvider>;
   }
 

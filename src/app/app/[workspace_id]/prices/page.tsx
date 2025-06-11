@@ -74,8 +74,6 @@ export default function AllPrices() {
     });
   }, [data]);
 
-  console.log("rows:", rows);
-
   // Define columns
   const columns: GridColDef[] = [
     { field: "pimCategoryName", headerName: "PIM Category", width: 200 },
