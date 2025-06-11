@@ -19,6 +19,13 @@ const LINE_ITEMS_QUERY = graphql(`
         id
         po_pim_id
         po_quantity
+        pim_product {
+          name
+          model
+          sku
+          manufacturer_part_number
+          year
+        }
       }
     }
   }
@@ -35,21 +42,62 @@ export const LineItemsDataGrid: React.FC<LineItemsDataGridProps> = ({ purchaseOr
   const lineItems =
     data?.getPurchaseOrderById?.line_items
       ?.filter(
-        (item): item is { id: string; po_pim_id: string; po_quantity: number } =>
-          !!item && !!item.id && !!item.po_pim_id && typeof item.po_quantity === "number",
+        (
+          item,
+        ): item is {
+          id: string;
+          po_pim_id: string;
+          po_quantity: number;
+          pim_product?: {
+            name?: string | null;
+            model?: string | null;
+            sku?: string | null;
+            manufacturer_part_number?: string | null;
+            year?: string | null;
+          } | null;
+        } => !!item && !!item.id && !!item.po_pim_id && typeof item.po_quantity === "number",
       )
       .map((item) => ({
         id: item.id,
         po_pim_id: item.po_pim_id,
         po_quantity: item.po_quantity,
+        pim_product_name: item.pim_product?.name ?? "",
+        pim_product_model: item.pim_product?.model ?? "",
+        pim_product_sku: item.pim_product?.sku ?? "",
+        pim_product_manufacturer_part_number: item.pim_product?.manufacturer_part_number ?? "",
+        pim_product_year: item.pim_product?.year ?? "",
       })) ?? [];
 
   const columns: GridColDef[] = [
     {
-      field: "po_pim_id",
-      headerName: "PIM ID",
+      field: "pim_product_name",
+      headerName: "Product Name",
       flex: 1,
-      minWidth: 200,
+      minWidth: 180,
+    },
+    {
+      field: "pim_product_model",
+      headerName: "Model",
+      flex: 1,
+      minWidth: 120,
+    },
+    {
+      field: "pim_product_sku",
+      headerName: "SKU",
+      flex: 1,
+      minWidth: 120,
+    },
+    {
+      field: "pim_product_manufacturer_part_number",
+      headerName: "Mfr Part #",
+      flex: 1,
+      minWidth: 140,
+    },
+    {
+      field: "pim_product_year",
+      headerName: "Year",
+      flex: 0.5,
+      minWidth: 80,
     },
     {
       field: "po_quantity",

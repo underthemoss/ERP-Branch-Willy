@@ -219,6 +219,11 @@ enum ContactType {
   PERSON
 }
 
+type CreatePdfResult {
+  error_message: String
+  success: Boolean!
+}
+
 input CreatePriceBookInput {
   businessContactId: ID
   isDefault: Boolean
@@ -415,6 +420,9 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
+
+  """Generate and save a PDF for an entity by path and entity_id"""
+  createPdfFromPageAndAttachToEntityId(entity_id: String!, path: String!): CreatePdfResult
   createPersonContact(input: PersonContactInput!): PersonContact
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
@@ -712,6 +720,7 @@ input PurchaseOrderInput {
 
 type PurchaseOrderLineItem {
   id: String!
+  pim_product: PimProduct
   po_pim_id: String
   po_quantity: Int
 }
