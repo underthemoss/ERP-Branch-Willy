@@ -6,7 +6,7 @@ import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import * as React from "react";
-import CreateSOLineItemDialog from "./CreateSOLineItemDialog";
+import CreateRentalLineItemDialog from "./CreateRentalLineItemDialog";
 
 // --- GQL Query (for codegen) ---
 graphql(`
@@ -31,17 +31,17 @@ graphql(`
 
 export interface SalesOrderLineItemsDataGridProps {
   salesOrderId: string;
+  onAddNewItem?: () => void;
 }
 
 export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridProps> = ({
   salesOrderId,
+  onAddNewItem,
 }) => {
   const { data, loading, error, refetch } = useSalesOrderLineItemsDataGrid_GetSalesOrderByIdQuery({
     variables: { id: salesOrderId },
     fetchPolicy: "cache-and-network",
   });
-
-  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
 
   const lineItems =
     data?.getSalesOrderById?.line_items
@@ -139,12 +139,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
               Manage each line item’s transaction type, details, and fulfillment requirements here.
             </Typography>
-            <Button
-              variant="contained"
-              size="medium"
-              onClick={() => setAddDialogOpen(true)}
-              sx={{ minWidth: 160 }}
-            >
+            <Button variant="contained" size="medium" onClick={onAddNewItem} sx={{ minWidth: 160 }}>
               Add New Item
             </Button>
           </Box>
@@ -168,7 +163,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
             <Button
               variant="outlined"
               size="small"
-              onClick={() => setAddDialogOpen(true)}
+              onClick={onAddNewItem}
               sx={{ mt: 1, alignSelf: "flex-start" }}
             >
               Add Item
@@ -176,15 +171,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
           </>
         )}
       </Box>
-      <CreateSOLineItemDialog
-        open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
-        salesOrderId={salesOrderId}
-        onSuccess={() => {
-          setAddDialogOpen(false);
-          refetch();
-        }}
-      />
+      {/* Dialog for adding items is now handled by parent */}
     </Box>
   );
 };

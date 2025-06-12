@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
 import { Box, Button, Paper, Typography } from "@mui/material";
+import * as React from "react";
+import CreateRentalLineItemDialog from "./CreateRentalLineItemDialog";
+import CreateSaleLineItemDialog from "./CreateSaleLineItemDialog";
+import CreateTransferLineItemDialog from "./CreateTransferLineItemDialog";
 import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";
-import TransactionTypeSelectDialog, { TransactionType } from "@/ui/TransactionTypeSelectDialog";
-import CreateSOLineItemDialog from "./CreateSOLineItemDialog";
-import CreateSaleLineItemDialog from "@/ui/CreateSaleLineItemDialog";
-import CreateTransferLineItemDialog from "@/ui/CreateTransferLineItemDialog";
+import TransactionTypeSelectDialog, { TransactionType } from "./TransactionTypeSelectDialog";
 
 interface OrderItemsSectionProps {
   salesOrderId: string;
@@ -34,35 +34,23 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
         onClose={() => setTypeDialogOpen(false)}
         onSelect={handleTypeSelect}
       />
-      <CreateSOLineItemDialog
+      <CreateRentalLineItemDialog
         open={rentalDialogOpen}
         onClose={() => setRentalDialogOpen(false)}
         salesOrderId={salesOrderId}
         onSuccess={() => setRentalDialogOpen(false)}
       />
-      <CreateSaleLineItemDialog
-        open={saleDialogOpen}
-        onClose={() => setSaleDialogOpen(false)}
-      />
+      <CreateSaleLineItemDialog open={saleDialogOpen} onClose={() => setSaleDialogOpen(false)} />
       <CreateTransferLineItemDialog
         open={transferDialogOpen}
         onClose={() => setTransferDialogOpen(false)}
       />
 
       <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" gutterBottom>
-            Order Items
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => setTypeDialogOpen(true)}
-            sx={{ ml: 2 }}
-          >
-            Add New Item
-          </Button>
-        </Box>
-        <SalesOrderLineItemsDataGrid salesOrderId={salesOrderId} />
+        <SalesOrderLineItemsDataGrid
+          salesOrderId={salesOrderId}
+          onAddNewItem={() => setTypeDialogOpen(true)}
+        />
       </Paper>
     </>
   );

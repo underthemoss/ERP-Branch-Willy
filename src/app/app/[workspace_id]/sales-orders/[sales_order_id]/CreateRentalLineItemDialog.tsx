@@ -33,14 +33,14 @@ graphql(`
   }
 `);
 
-interface CreateSOLineItemDialogProps {
+interface CreateRentalLineItemDialogProps {
   open: boolean;
   onClose: () => void;
   salesOrderId: string;
   onSuccess: () => void;
 }
 
-export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
+export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProps> = ({
   open,
   onClose,
   salesOrderId,
@@ -377,4 +377,4 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
   );
 };
 
-export default CreateSOLineItemDialog;
+export default CreateRentalLineItemDialog;
