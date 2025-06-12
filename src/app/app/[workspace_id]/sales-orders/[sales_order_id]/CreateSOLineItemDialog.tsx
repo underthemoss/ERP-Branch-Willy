@@ -46,11 +46,8 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
   salesOrderId,
   onSuccess,
 }) => {
-  // Multistep state
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
-  const [transactionType, setTransactionType] = useState<"rental" | "sale" | "transfer" | null>(
-    null,
-  );
+  // Multistep state for rental wizard
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Step 1: Product selection
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -82,8 +79,7 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
     setSoPimId("");
     setQuantity("");
     setError(null);
-    setStep(0);
-    setTransactionType(null);
+    setStep(1);
     setSelectedCategory(null);
     setSelectedProduct(null);
     setSearchTerm("");
@@ -125,36 +121,7 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
     }
   };
 
-  // Transaction type options
-  const transactionOptions: {
-    key: "rental" | "sale" | "transfer";
-    label: string;
-    description: string;
-    icon: React.ReactNode;
-    disabled: boolean;
-  }[] = [
-    {
-      key: "rental",
-      label: "Rental",
-      description: "Rent the asset at a daily, weekly, or monthly rate.",
-      icon: <AutorenewIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
-      disabled: false,
-    },
-    {
-      key: "sale",
-      label: "Sale",
-      description: "Sell outright — ownership passes to the buyer.",
-      icon: <SellOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
-      disabled: false,
-    },
-    {
-      key: "transfer",
-      label: "Transfer",
-      description: "Reassign the asset internally for tracking purposes",
-      icon: <KeyOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
-      disabled: true,
-    },
-  ];
+  // (No transaction type selection here; this is the rental wizard only)
 
   // Mock data for product categories and products
   const mockCategories = [
@@ -197,75 +164,6 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      {/* Step 0: Transaction type */}
-      {step === 0 && (
-        <>
-          <DialogTitle sx={{ pb: 0 }}>Add new item</DialogTitle>
-          <DialogContent sx={{ pt: 1, pb: 0 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Start by selecting the line-item’s transaction type; you’ll specify products and
-              fulfillment after.
-            </Typography>
-            <Stack spacing={2}>
-              {transactionOptions.map((opt) => (
-                <Paper
-                  key={opt.key}
-                  variant="outlined"
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    p: 2,
-                    opacity: opt.disabled ? 0.5 : 1,
-                    cursor: opt.disabled ? "not-allowed" : "pointer",
-                    borderColor: opt.disabled ? "grey.300" : "primary.light",
-                    "&:hover": !opt.disabled ? { boxShadow: 2, borderColor: "primary.main" } : {},
-                  }}
-                  onClick={
-                    opt.disabled
-                      ? undefined
-                      : () => {
-                          setTransactionType(opt.key as "rental" | "sale");
-                          setStep(1);
-                        }
-                  }
-                  tabIndex={opt.disabled ? -1 : 0}
-                  aria-disabled={opt.disabled}
-                >
-                  <Box sx={{ mr: 2 }}>{opt.icon}</Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography fontWeight={600}>{opt.label}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {opt.description}
-                    </Typography>
-                  </Box>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    disabled={opt.disabled}
-                    sx={{
-                      color: "grey.500",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <ArrowForwardIosIcon />
-                  </IconButton>
-                </Paper>
-              ))}
-            </Stack>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 2, display: "block", textAlign: "left" }}
-            >
-              Feature not yet available—internal transfers are on the roadmap.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-          </DialogActions>
-        </>
-      )}
-
       {/* Step 1: Select product */}
       {step === 1 && (
         <>

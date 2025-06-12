@@ -7,7 +7,7 @@ import NotesSection from "@/ui/notes/NotesSection";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";
+import OrderItemsSection from "./OrderItemsSection";
 
 const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
@@ -133,6 +133,8 @@ export default function SalesOrderDetailPage() {
     });
   }
 
+  // (Order items section is now modularized)
+
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
       {loading && (
@@ -197,9 +199,7 @@ export default function SalesOrderDetailPage() {
             {/* Buyer & Project Info moved to sidebar */}
 
             {/* Order Items Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
-              <SalesOrderLineItemsDataGrid salesOrderId={salesOrder.id} />
-            </Paper>
+            <OrderItemsSection salesOrderId={salesOrder.id} />
             {/* File Upload Card */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
