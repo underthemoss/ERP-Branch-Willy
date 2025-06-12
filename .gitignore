@@ -63,3 +63,5 @@ pgtyped.prod.json
 /review.md
 *storybook.log
 storybook-static
+
+./release_note.md

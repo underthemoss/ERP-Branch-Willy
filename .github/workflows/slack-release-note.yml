@@ -24,19 +24,17 @@ jobs:
           node-version: 22
           cache: "npm"
 
-      - name: Create diff
-        run: |
-          git diff ${{ github.event.before }}..${{ github.sha }} > diff.patch
-
-      - name: Install Codex
-        run: npm i -g @openai/codex
-
-      - name: Generate release notes with Codex
+      - name: Update changelog via Codex
         run: |
           npm install -g @openai/codex
-          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          codex -a auto-edit --quiet "Generate user facing release notes, be brief. Use slack compatible markdown format. Read the diff here diff.patch and write the release notes to release_notes.md"
-
+          export OPENAI_API_KEY="${{ secrets.OPENAI_KEY }}"
+          codex -a auto-edit --quiet " \
+          - Create a release_note.md file. It should have text summarising the changes made in last commit to this branch, nothing else. \
+          - Only include user facing changes, not dev tasks like CI/CD or refactoring. \
+          - These release notes should be brief and customer facing type information only \
+          - Include the authors name and a date and time. \
+          - Use emojiis. \
+          - Don't prompt me for confirmation, just do it."
       - name: Post to Slack
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -45,7 +43,7 @@ jobs:
             const https = require('https');
             const fs = require('fs');
             const url = process.env.SLACK_WEBHOOK;
-            const content = fs.readFileSync('release_notes.md', 'utf8');
+            const content = fs.readFileSync('release_note.md', 'utf8');
             const data = JSON.stringify({ content, channel: 'C0912S17B9B' });
             const req = https.request(url, {
               method: 'POST',
