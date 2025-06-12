@@ -49,7 +49,19 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
-          NOTES=$(jq -Rs . < release_notes.txt)
-          curl -X POST "$SLACK_WEBHOOK" \
-            -H 'Content-Type: application/json' \
-            -d '{"content": '"$NOTES"', "channel": "C0912S17B9B"}'
+          node -e "
+            const https = require('https');
+            const fs = require('fs');
+            const url = process.env.SLACK_WEBHOOK;
+            const content = fs.readFileSync('release_notes.txt', 'utf8');
+            const data = JSON.stringify({ content, channel: 'C0912S17B9B' });
+            const req = https.request(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Content-Length': data.length }
+            }, res => {
+              res.on('data', d => process.stdout.write(d));
+            });
+            req.on('error', error => { console.error(error); process.exit(1); });
+            req.write(data);
+            req.end();
+          "
