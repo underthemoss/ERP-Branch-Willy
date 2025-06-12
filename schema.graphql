@@ -893,6 +893,7 @@ type RentalSalesOrderLineItem {
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int
   price_per_week_in_cents: Int
+  so_pim_category: PimCategory
   so_pim_id: String
   so_pim_product: PimProduct
   so_quantity: Int
@@ -967,6 +968,7 @@ type SaleSalesOrderLineItem {
   id: String!
   lineitem_type: LineItemType!
   price_id: String
+  so_pim_category: PimCategory
   so_pim_id: String
   so_pim_product: PimProduct
   so_quantity: Int

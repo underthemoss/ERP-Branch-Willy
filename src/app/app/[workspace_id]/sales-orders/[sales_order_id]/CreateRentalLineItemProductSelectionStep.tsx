@@ -26,9 +26,14 @@ const CreateRentalLineItemProductSelectionStep: React.FC<ProductSelectionStepPro
         Search and select a product to add to this sales order.
       </Typography>
       <PimCategoriesTreeView
-        onItemSelected={({ id }) => {
-          setSoPimId(id || "");
-          if (id) {
+        onItemSelected={(val) => {
+          console.log(val);
+          if (val.__typename === "PimProduct") {
+            setSoPimId(val.id || "");
+            onContinue();
+          }
+          if (val.__typename === "PimCategory") {
+            setSoPimId(val.id || "");
             onContinue();
           }
         }}

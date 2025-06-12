@@ -19,6 +19,15 @@ graphql(`
           so_quantity
           so_pim_product {
             name
+            model
+            sku
+            manufacturer_part_number
+            year
+          }
+          so_pim_category {
+            id
+            name
+            description
           }
           price_per_day_in_cents
           price_per_week_in_cents
@@ -60,34 +69,40 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
 
   const columns: GridColDef[] = [
     {
-      field: "pim_product_name",
+      field: "so_pim_product.name",
       headerName: "Product Name",
       flex: 1,
       minWidth: 180,
+      valueGetter: (_, row) => row.so_pim_product?.name ?? row.so_pim_category?.name ?? "-",
     },
     {
-      field: "pim_product_model",
+      field: "so_pim_product.model",
       headerName: "Model",
       flex: 1,
       minWidth: 120,
+      valueGetter: (_, row) => row.so_pim_product?.model ?? row.so_pim_category?.name ?? "-",
     },
     {
-      field: "pim_product_sku",
+      field: "so_pim_product.sku",
       headerName: "SKU",
       flex: 1,
       minWidth: 120,
+      valueGetter: (_, row) => row.so_pim_product?.sku ?? row.so_pim_category?.name ?? "-",
     },
     {
-      field: "pim_product_manufacturer_part_number",
+      field: "so_pim_product.manufacturer_part_number",
       headerName: "Mfr Part #",
       flex: 1,
       minWidth: 140,
+      valueGetter: (_, row) =>
+        row.so_pim_product?.manufacturer_part_number ?? row.so_pim_category?.name ?? "-",
     },
     {
-      field: "pim_product_year",
+      field: "so_pim_product.year",
       headerName: "Year",
       flex: 0.5,
       minWidth: 80,
+      valueGetter: (_, row) => row.so_pim_product?.year ?? row.so_pim_category?.name ?? "-",
     },
     {
       field: "so_quantity",

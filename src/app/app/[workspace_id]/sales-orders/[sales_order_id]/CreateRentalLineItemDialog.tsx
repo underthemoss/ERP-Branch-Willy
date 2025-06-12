@@ -74,14 +74,10 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
   const [error, setError] = useState<string | null>(null);
 
   // Step 1: Product Selection State
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
   const [soPimId, setSoPimId] = useState<string>("");
 
   // Step 2: Pricing State
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState<number | "">("");
 
   // Step 3: Fulfillment State
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"Delivery" | "Pickup">("Delivery");
@@ -113,12 +109,8 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
 
   const handleClose = () => {
     setSoPimId("");
-    setQuantity("");
     setError(null);
     setStep(1);
-    setSelectedCategory(null);
-    setSelectedProduct(null);
-    setSearchTerm("");
     setSelectedPrice(0);
     setFulfillmentMethod("Delivery");
     setDeliveryLocation("3274 Doe Meadow Drive, Annapolis Junction, MD 20701");
@@ -141,7 +133,7 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
         variables: {
           input: {
             sales_order_id: salesOrderId,
-            so_pim_id: soPimId || selectedProduct || "mock-product-id",
+            so_pim_id: soPimId,
             so_quantity: 1, // Default to 1 for now
             price_id: selectedPrice?.toString() || null,
             price_per_day_in_cents: selectedRentalPrice?.pricePerDayInCents || null,
@@ -159,45 +151,6 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
   };
 
   // (No transaction type selection here; this is the rental wizard only)
-
-  // Mock data for product categories and products
-  const mockCategories = [
-    {
-      name: "Earthmoving equipment",
-      products: [
-        "Articulated Wheel Loaders",
-        "Backhoes",
-        "Track Skid Loaders",
-        "Wheeled Skid Loaders",
-        "Compact Wheel Loaders",
-        "Electric Mini Excavators",
-        "Medium Track Excavators",
-      ],
-    },
-    {
-      name: "Aerial Work Platforms",
-      products: ["Articulating Boom Lifts", "Atrium Lifts", "Track Skid Loaders"],
-    },
-  ];
-
-  // Mock data for pricing
-  const mockPricing = [
-    {
-      id: 1,
-      label: "323 - Tier 4 / Stage V",
-      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
-    },
-    {
-      id: 2,
-      label: "323 - Tier 4 / Stage V",
-      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
-    },
-    {
-      id: 3,
-      label: "323 - Tier 4 / Stage V",
-      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
-    },
-  ];
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth={step === 2 ? "md" : "sm"} fullWidth>
