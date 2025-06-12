@@ -28,6 +28,9 @@ jobs:
         run: |
           git diff ${{ github.event.before }}..${{ github.sha }} > diff.patch
 
+      - name: Install Codex
+        run: npm i -g @openai/codex
+
       - name: Generate release notes with Codex
         run: |
           npx codex --quiet "Generate user facing release notes. Use slack compatible markdown format.  Ignore CI/CD, refactorings, and other dev tasks, ignoring means output nothing, no text, empty." < diff.patch > release_notes.txt
