@@ -1,0 +1,56 @@
+name: Release Notes
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Determine previous tag
+        id: tags
+        run: |
+          current="${GITHUB_REF_NAME}"
+          previous=$(git tag --list 'v*' --sort=-v:refname | grep -v "^$current$" | head -n 1)
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+
+      - name: Create diff
+        run: |
+          git diff ${{ steps.tags.outputs.previous }}..${{ steps.tags.outputs.current }} > diff.patch
+
+      - name: Generate release notes with Codex
+        run: |
+          npx codex --quiet "Generate user facing release notes. Ignore CI/CD, refactorings, and other dev tasks." < diff.patch > release_notes.txt
+
+      - name: Post to Slack
+        if: >-
+          ${{ steps.tags.outputs.previous }} != '' &&
+          $(wc -c < release_notes.txt) -gt 0
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          NOTES=$(jq -Rs . < release_notes.txt)
+          curl -X POST "$SLACK_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"content": '"$NOTES"', "channel": "C0912S17B9B"}'
