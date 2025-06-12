@@ -28,7 +28,8 @@ jobs:
         run: |
           npm install -g @openai/codex
           export OPENAI_API_KEY="${{ secrets.OPENAI_KEY }}"
-          codex -a auto-edit --quiet "Create a release_note.md file. It should have text summarising the changes made in last commit to this branch, nothing else. Only include user facing changes, not dev tasks like CI CD or refactoring. These release notes should be brief and customer facing type information only. Include the authors name and a date and time. Use emojiis. Don't prompt me for confirmation, just do it."
+          ODEX_QUIET_MODE=1
+          npx codex -a auto-edit --quiet "Create a release_note.md file. It should have text summarising the changes made in last commit to this branch, nothing else. Only include user facing changes, not dev tasks like CI CD or refactoring. These release notes should be brief and customer facing type information only. Include the authors name and a date and time. Use emojiis. Don't prompt me for confirmation, just do it."
       - name: Post to Slack
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
