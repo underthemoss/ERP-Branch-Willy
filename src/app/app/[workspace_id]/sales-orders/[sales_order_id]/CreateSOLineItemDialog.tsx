@@ -1,8 +1,12 @@
-// "use client";
+"use client";
 
 import { graphql } from "@/graphql";
 import { useCreateSalesOrderLineItemMutation } from "@/graphql/hooks";
 import { PimProductsTreeView } from "@/ui/pim/PimProductsTreeView";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
 import {
   Box,
   Button,
@@ -10,6 +14,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  Paper,
+  Stack,
   TextField,
   Typography,
 } from "@mui/material";
@@ -39,6 +46,32 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
   salesOrderId,
   onSuccess,
 }) => {
+  // Multistep state
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
+  const [transactionType, setTransactionType] = useState<"rental" | "sale" | "transfer" | null>(
+    null,
+  );
+
+  // Step 1: Product selection
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Step 2: Pricing
+  const [selectedPrice, setSelectedPrice] = useState<number | null>(0);
+
+  // Step 3: Fulfillment
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<"Delivery" | "Pickup">("Delivery");
+  const [deliveryLocation, setDeliveryLocation] = useState<string>(
+    "3274 Doe Meadow Drive, Annapolis Junction, MD 20701",
+  );
+  const [deliveryCharge, setDeliveryCharge] = useState<string>("0.00");
+  const [deliveryDate, setDeliveryDate] = useState<string>("");
+  const [daysRented, setDaysRented] = useState<string>("");
+
+  // Step 4: Notes
+  const [deliveryNotes, setDeliveryNotes] = useState<string>("");
+
   const [soPimId, setSoPimId] = useState<string>("");
   const [quantity, setQuantity] = useState<number | "">("");
   const [error, setError] = useState<string | null>(null);
@@ -49,27 +82,39 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
     setSoPimId("");
     setQuantity("");
     setError(null);
+    setStep(0);
+    setTransactionType(null);
+    setSelectedCategory(null);
+    setSelectedProduct(null);
+    setSearchTerm("");
+    setSelectedPrice(0);
+    setFulfillmentMethod("Delivery");
+    setDeliveryLocation("3274 Doe Meadow Drive, Annapolis Junction, MD 20701");
+    setDeliveryCharge("0.00");
+    setDeliveryDate("");
+    setDaysRented("");
+    setDeliveryNotes("");
     onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!soPimId) {
-      setError("Please select a product.");
-      return;
-    }
-    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
-      setError("Please enter a valid quantity.");
-      return;
-    }
+    // Only validate on last step
+    if (step !== 4) return;
+    // TODO: Add validation for required fields if needed
     try {
+      // TODO: Pass all collected data to mutation if needed
       await createLineItem({
         variables: {
           input: {
-            so_pim_id: soPimId,
-            so_quantity: Number(quantity),
+            so_pim_id: soPimId || selectedProduct || "mock-product-id",
+            so_quantity: 1, // Default to 1 for now
             sales_order_id: salesOrderId,
+            // transaction_type: transactionType, // Uncomment if needed in schema
+            // price: selectedPrice,
+            // fulfillment: { ... }
+            // notes: deliveryNotes,
           },
         },
       });
@@ -80,49 +125,356 @@ export const CreateSOLineItemDialog: React.FC<CreateSOLineItemDialogProps> = ({
     }
   };
 
+  // Transaction type options
+  const transactionOptions: {
+    key: "rental" | "sale" | "transfer";
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+    disabled: boolean;
+  }[] = [
+    {
+      key: "rental",
+      label: "Rental",
+      description: "Rent the asset at a daily, weekly, or monthly rate.",
+      icon: <AutorenewIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
+      disabled: false,
+    },
+    {
+      key: "sale",
+      label: "Sale",
+      description: "Sell outright — ownership passes to the buyer.",
+      icon: <SellOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
+      disabled: false,
+    },
+    {
+      key: "transfer",
+      label: "Transfer",
+      description: "Reassign the asset internally for tracking purposes",
+      icon: <KeyOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
+      disabled: true,
+    },
+  ];
+
+  // Mock data for product categories and products
+  const mockCategories = [
+    {
+      name: "Earthmoving equipment",
+      products: [
+        "Articulated Wheel Loaders",
+        "Backhoes",
+        "Track Skid Loaders",
+        "Wheeled Skid Loaders",
+        "Compact Wheel Loaders",
+        "Electric Mini Excavators",
+        "Medium Track Excavators",
+      ],
+    },
+    {
+      name: "Aerial Work Platforms",
+      products: ["Articulating Boom Lifts", "Atrium Lifts", "Track Skid Loaders"],
+    },
+  ];
+
+  // Mock data for pricing
+  const mockPricing = [
+    {
+      id: 1,
+      label: "323 - Tier 4 / Stage V",
+      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
+    },
+    {
+      id: 2,
+      label: "323 - Tier 4 / Stage V",
+      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
+    },
+    {
+      id: 3,
+      label: "323 - Tier 4 / Stage V",
+      prices: { "1 Day": "$55", "1 week": "$136", "4 weeks": "$375" },
+    },
+  ];
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Sales Order Line Item</DialogTitle>
-      <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <Box>
-            <Typography fontWeight={600}>
-              Product <span style={{ color: "#d32f2f" }}>*</span>
+      {/* Step 0: Transaction type */}
+      {step === 0 && (
+        <>
+          <DialogTitle sx={{ pb: 0 }}>Add new item</DialogTitle>
+          <DialogContent sx={{ pt: 1, pb: 0 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Start by selecting the line-item’s transaction type; you’ll specify products and
+              fulfillment after.
             </Typography>
-            <Typography variant="body2" color="text.secondary" mb={1}>
-              Select a product to add to this sales order.
+            <Stack spacing={2}>
+              {transactionOptions.map((opt) => (
+                <Paper
+                  key={opt.key}
+                  variant="outlined"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    p: 2,
+                    opacity: opt.disabled ? 0.5 : 1,
+                    cursor: opt.disabled ? "not-allowed" : "pointer",
+                    borderColor: opt.disabled ? "grey.300" : "primary.light",
+                    "&:hover": !opt.disabled ? { boxShadow: 2, borderColor: "primary.main" } : {},
+                  }}
+                  onClick={
+                    opt.disabled
+                      ? undefined
+                      : () => {
+                          setTransactionType(opt.key as "rental" | "sale");
+                          setStep(1);
+                        }
+                  }
+                  tabIndex={opt.disabled ? -1 : 0}
+                  aria-disabled={opt.disabled}
+                >
+                  <Box sx={{ mr: 2 }}>{opt.icon}</Box>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography fontWeight={600}>{opt.label}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {opt.description}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    disabled={opt.disabled}
+                    sx={{
+                      color: "grey.500",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <ArrowForwardIosIcon />
+                  </IconButton>
+                </Paper>
+              ))}
+            </Stack>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 2, display: "block", textAlign: "left" }}
+            >
+              Feature not yet available—internal transfers are on the roadmap.
             </Typography>
-            <PimProductsTreeView onProductSelected={setSoPimId} />
-          </Box>
-          <Box>
-            <Typography fontWeight={600}>
-              Quantity <span style={{ color: "#d32f2f" }}>*</span>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 1: Select product */}
+      {step === 1 && (
+        <>
+          <DialogTitle>Select a Product Category</DialogTitle>
+          <DialogContent sx={{ pt: 1, pb: 0 }}>
+            <TextField
+              fullWidth
+              placeholder="Search for equipment"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{ mb: 2 }}
+              size="small"
+            />
+            <Stack spacing={2}>
+              {mockCategories.map((cat) => (
+                <Box key={cat.name} sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                    {cat.name}
+                  </Typography>
+                  <Stack spacing={1}>
+                    {cat.products
+                      .filter((p) => p.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .map((product) => (
+                        <Paper
+                          key={product}
+                          variant="outlined"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            p: 2,
+                            cursor: "pointer",
+                            borderColor: selectedProduct === product ? "primary.main" : "grey.300",
+                            boxShadow: selectedProduct === product ? 2 : 0,
+                          }}
+                          onClick={() => setSelectedProduct(product)}
+                        >
+                          <Box sx={{ flexGrow: 1 }}>{product}</Box>
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            sx={{
+                              color: "grey.500",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <ArrowForwardIosIcon />
+                          </IconButton>
+                        </Paper>
+                      ))}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button variant="contained" onClick={() => setStep(2)} disabled={!selectedProduct}>
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 2: Select price */}
+      {step === 2 && (
+        <>
+          <DialogTitle>Select pricing</DialogTitle>
+          <DialogContent sx={{ pt: 1, pb: 0 }}>
+            <Box sx={{ display: "flex", mb: 2, fontWeight: 600 }}>
+              <Box sx={{ flex: 2 }}>Pricing Tier</Box>
+              <Box sx={{ flex: 1, textAlign: "center" }}>1 Day</Box>
+              <Box sx={{ flex: 1, textAlign: "center" }}>1 week</Box>
+              <Box sx={{ flex: 1, textAlign: "center" }}>4 weeks</Box>
+            </Box>
+            <Stack spacing={1}>
+              {mockPricing.map((tier, idx) => (
+                <Paper
+                  key={tier.id}
+                  variant="outlined"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    p: 2,
+                    borderColor: selectedPrice === idx ? "primary.main" : "grey.300",
+                    boxShadow: selectedPrice === idx ? 2 : 0,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedPrice(idx)}
+                >
+                  <Box sx={{ flex: 2 }}>
+                    <input
+                      type="radio"
+                      checked={selectedPrice === idx}
+                      onChange={() => setSelectedPrice(idx)}
+                      style={{ marginRight: 8 }}
+                    />
+                    {tier.label}
+                  </Box>
+                  <Box sx={{ flex: 1, textAlign: "center" }}>{tier.prices["1 Day"]}</Box>
+                  <Box sx={{ flex: 1, textAlign: "center" }}>{tier.prices["1 week"]}</Box>
+                  <Box sx={{ flex: 1, textAlign: "center" }}>{tier.prices["4 weeks"]}</Box>
+                </Paper>
+              ))}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={() => setStep(3)}
+              disabled={selectedPrice === null}
+            >
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 3: Fulfillment details */}
+      {step === 3 && (
+        <>
+          <DialogTitle>Fulfillment Details</DialogTitle>
+          <DialogContent sx={{ pt: 1, pb: 0 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Complete the fields to record a sale. For ownership transfers, check the box to skip
+              lease terms.
             </Typography>
             <TextField
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))}
-              inputProps={{ min: 1 }}
+              select
+              label="Fulfillment Method"
+              value={fulfillmentMethod}
+              onChange={(e) => setFulfillmentMethod(e.target.value as "Delivery" | "Pickup")}
+              SelectProps={{ native: true }}
               fullWidth
-              required
-              placeholder="Enter quantity"
+              sx={{ mb: 2 }}
+            >
+              <option value="Delivery">Delivery</option>
+              <option value="Pickup">Pickup</option>
+            </TextField>
+            <TextField
+              label="Delivery Location"
+              value={deliveryLocation}
+              onChange={(e) => setDeliveryLocation(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
             />
-          </Box>
-          {error && (
-            <Typography color="error" sx={{ mt: 1 }}>
-              {error}
+            <TextField
+              label="Delivery Charge"
+              value={deliveryCharge}
+              onChange={(e) => setDeliveryCharge(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: <span style={{ marginRight: 4 }}>$</span>,
+                inputProps: { min: 0 },
+              }}
+            />
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="Delivery date"
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => setDeliveryDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                label="Days Rented"
+                value={daysRented}
+                onChange={(e) => setDaysRented(e.target.value)}
+                sx={{ flex: 1 }}
+                placeholder="# of days"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button variant="contained" onClick={() => setStep(4)}>
+              Continue
+            </Button>
+          </DialogActions>
+        </>
+      )}
+
+      {/* Step 4: Delivery notes */}
+      {step === 4 && (
+        <form onSubmit={handleSubmit}>
+          <DialogTitle>Delivery Contact & Notes</DialogTitle>
+          <DialogContent sx={{ pt: 1, pb: 0 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Contact + special instructions for the driver.
             </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? "Adding..." : "Add Item"}
-          </Button>
-        </DialogActions>
-      </form>
+            <TextField
+              multiline
+              minRows={4}
+              fullWidth
+              placeholder="Jordan Smith — 512-555-0123. Use east gate off 5th St, unload near staging area."
+              value={deliveryNotes}
+              onChange={(e) => setDeliveryNotes(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary">
+              Finish
+            </Button>
+          </DialogActions>
+        </form>
+      )}
     </Dialog>
   );
 };

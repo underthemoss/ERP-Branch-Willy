@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useSalesOrderLineItemsDataGrid_GetSalesOrderByIdQuery } from "@/graphql/hooks";
+import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import * as React from "react";
@@ -117,30 +118,64 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
         Order Items
       </Typography>
       <Box sx={{ width: "100%", mb: 2 }}>
-        <DataGrid
-          rows={lineItems}
-          columns={columns}
-          loading={loading}
-          disableRowSelectionOnClick
-          autoHeight
-          getRowId={(row) => row.id}
-          hideFooter
-          sx={{ backgroundColor: "background.paper" }}
-        />
-        {error && (
-          <Typography color="error" sx={{ mt: 1 }}>
-            Error loading order items: {error.message}
-          </Typography>
+        {lineItems.length === 0 && !loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 6,
+              minHeight: 320,
+              textAlign: "center",
+              background: "background.paper",
+              borderRadius: 2,
+            }}
+          >
+            <EmptyStateListViewIcon style={{ width: 104, height: 101, marginBottom: 24 }} />
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Items in the order will show here
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
+              Manage each line item’s transaction type, details, and fulfillment requirements here.
+            </Typography>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={() => setAddDialogOpen(true)}
+              sx={{ minWidth: 160 }}
+            >
+              Add New Item
+            </Button>
+          </Box>
+        ) : (
+          <>
+            <DataGrid
+              rows={lineItems}
+              columns={columns}
+              loading={loading}
+              disableRowSelectionOnClick
+              autoHeight
+              getRowId={(row) => row.id}
+              hideFooter
+              sx={{ backgroundColor: "background.paper" }}
+            />
+            {error && (
+              <Typography color="error" sx={{ mt: 1 }}>
+                Error loading order items: {error.message}
+              </Typography>
+            )}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setAddDialogOpen(true)}
+              sx={{ mt: 1, alignSelf: "flex-start" }}
+            >
+              Add Item
+            </Button>
+          </>
         )}
       </Box>
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => setAddDialogOpen(true)}
-        sx={{ mt: 1, alignSelf: "flex-start" }}
-      >
-        Add Item
-      </Button>
       <CreateSOLineItemDialog
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
