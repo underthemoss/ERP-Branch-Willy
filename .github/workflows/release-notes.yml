@@ -32,8 +32,17 @@ jobs:
         run: |
           npx codex --quiet "Generate user facing release notes. Use slack compatible markdown format.  Ignore CI/CD, refactorings, and other dev tasks, ignoring means output nothing, no text, empty." < diff.patch > release_notes.txt
 
+      - name: Check if release notes exist
+        id: check_notes
+        run: |
+          if [ -s release_notes.txt ]; then
+            echo "has_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_notes=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Post to Slack
-        if: $(wc -c < release_notes.txt) -gt 0
+        if: steps.check_notes.outputs.has_notes == 'true'
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
