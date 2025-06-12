@@ -1,9 +1,9 @@
 name: Release Notes
 
 on:
-  create:
-    types: [tag]
-
+  push:
+    tags:
+      - 'v*'
 permissions:
   contents: read
 
