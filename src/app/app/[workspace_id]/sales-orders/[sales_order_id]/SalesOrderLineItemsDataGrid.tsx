@@ -1,7 +1,7 @@
 // "use client";
 
 import { graphql } from "@/graphql";
-import { useSalesOrderLineItemsDataGrid_GetSalesOrderByIdQuery } from "@/graphql/hooks";
+import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
@@ -10,19 +10,32 @@ import CreateRentalLineItemDialog from "./CreateRentalLineItemDialog";
 
 // --- GQL Query (for codegen) ---
 graphql(`
-  query SalesOrderLineItemsDataGrid_GetSalesOrderById($id: String!) {
-    getSalesOrderById(id: $id) {
-      id
+  query SalesOrderLineItems($salesOrderId: String!) {
+    getSalesOrderById(id: $salesOrderId) {
       line_items {
-        id
-        so_pim_id
-        so_quantity
-        so_pim_product {
-          name
-          model
-          sku
-          manufacturer_part_number
-          year
+        ... on RentalSalesOrderLineItem {
+          id
+          so_pim_id
+          so_quantity
+          so_pim_product {
+            name
+          }
+          price_per_day_in_cents
+          price_per_week_in_cents
+          price_per_month_in_cents
+          created_at
+          updated_at
+        }
+        ... on SaleSalesOrderLineItem {
+          id
+          so_pim_id
+          so_quantity
+          so_pim_product {
+            name
+          }
+          unit_cost_in_cents
+          created_at
+          updated_at
         }
       }
     }
@@ -38,39 +51,12 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
   salesOrderId,
   onAddNewItem,
 }) => {
-  const { data, loading, error, refetch } = useSalesOrderLineItemsDataGrid_GetSalesOrderByIdQuery({
-    variables: { id: salesOrderId },
+  const { data, loading, error, refetch } = useSalesOrderLineItemsQuery({
+    variables: { salesOrderId },
     fetchPolicy: "cache-and-network",
   });
 
-  const lineItems =
-    data?.getSalesOrderById?.line_items
-      ?.filter(
-        (
-          item,
-        ): item is {
-          id: string;
-          so_pim_id: string;
-          so_quantity: number;
-          so_pim_product?: {
-            name?: string | null;
-            model?: string | null;
-            sku?: string | null;
-            manufacturer_part_number?: string | null;
-            year?: string | null;
-          } | null;
-        } => !!item && !!item.id && !!item.so_pim_id && typeof item.so_quantity === "number",
-      )
-      .map((item) => ({
-        id: item.id,
-        so_pim_id: item.so_pim_id,
-        so_quantity: item.so_quantity,
-        pim_product_name: item.so_pim_product?.name ?? "",
-        pim_product_model: item.so_pim_product?.model ?? "",
-        pim_product_sku: item.so_pim_product?.sku ?? "",
-        pim_product_manufacturer_part_number: item.so_pim_product?.manufacturer_part_number ?? "",
-        pim_product_year: item.so_pim_product?.year ?? "",
-      })) ?? [];
+  const lineItems = data?.getSalesOrderById?.line_items || [];
 
   const columns: GridColDef[] = [
     {
@@ -137,7 +123,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               Items in the order will show here
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-              Manage each line item’s transaction type, details, and fulfillment requirements here.
+              Manage each line item&apos;s transaction type, details, and fulfillment requirements
+              here.
             </Typography>
             <Button variant="contained" size="medium" onClick={onAddNewItem} sx={{ minWidth: 160 }}>
               Add New Item

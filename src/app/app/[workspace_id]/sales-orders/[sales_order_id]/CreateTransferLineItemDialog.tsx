@@ -24,8 +24,21 @@ const CreateTransferLineItemDialog: React.FC<CreateTransferLineItemDialogProps> 
         Transfer line item wizard coming soon.
       </Typography>
     </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose}>Close</Button>
+    <DialogActions
+      sx={{
+        bgcolor: "grey.100",
+        borderTop: 1,
+        borderColor: "divider",
+        px: 3,
+        py: 1.5,
+        display: "flex",
+        justifyContent: "space-between",
+      }}
+    >
+      <Button onClick={onClose} color="inherit">
+        Close
+      </Button>
+      <span />
     </DialogActions>
   </Dialog>
 );

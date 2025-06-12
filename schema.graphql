@@ -253,6 +253,17 @@ input CreateRentalPriceInput {
   pricePerWeekInCents: Int!
 }
 
+input CreateRentalSalesOrderLineItemInput {
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  sales_order_id: String!
+  so_pim_id: String
+  so_quantity: Int
+  unit_cost_in_cents: Int
+}
+
 input CreateSalePriceInput {
   discounts: JSON
   name: String
@@ -262,10 +273,12 @@ input CreateSalePriceInput {
   unitCostInCents: Int!
 }
 
-input CreateSalesOrderLineItemInput {
+input CreateSaleSalesOrderLineItemInput {
+  price_id: String
   sales_order_id: String!
   so_pim_id: String
   so_quantity: Int
+  unit_cost_in_cents: Int
 }
 
 """
@@ -330,6 +343,11 @@ type JWTPayload {
   permissions: [String]
   scope: String
   sub: String
+}
+
+enum LineItemType {
+  RENTAL
+  SALE
 }
 
 input ListAssetsPage {
@@ -437,9 +455,10 @@ type Mutation {
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
   createPurchaseOrderLineItem(input: CreatePurchaseOrderLineItemInput): PurchaseOrderLineItem
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
+  createRentalSalesOrderLineItem(input: CreateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   createSalePrice(input: CreateSalePriceInput!): SalePrice
+  createSaleSalesOrderLineItem(input: CreateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   createSalesOrder(input: SalesOrderInput): SalesOrder
-  createSalesOrderLineItem(input: CreateSalesOrderLineItemInput): SalesOrderLineItem
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
   deleteNote(id: String!): Note
@@ -864,6 +883,23 @@ type RentalPrice {
   updatedAt: DateTime!
 }
 
+type RentalSalesOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  id: String!
+  lineitem_type: LineItemType!
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  so_pim_id: String
+  so_pim_product: PimProduct
+  so_quantity: Int
+  updated_at: String
+  updated_by: String
+}
+
 type RentalTransaction implements BaseTransaction {
   assetId: ID
   comments: [Comment!]
@@ -924,6 +960,21 @@ type SalePrice {
   updatedAt: DateTime!
 }
 
+type SaleSalesOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  id: String!
+  lineitem_type: LineItemType!
+  price_id: String
+  so_pim_id: String
+  so_pim_product: PimProduct
+  so_quantity: Int
+  unit_cost_in_cents: Int
+  updated_at: String
+  updated_by: String
+}
+
 type SaleTransaction implements BaseTransaction {
   comments: [Comment!]
   createdAt: DateTime
@@ -969,17 +1020,7 @@ input SalesOrderInput {
   purchase_order_number: String!
 }
 
-type SalesOrderLineItem {
-  company_id: String
-  created_at: String
-  created_by: String
-  id: String!
-  so_pim_id: String
-  so_pim_product: PimProduct
-  so_quantity: Int
-  updated_at: String
-  updated_by: String
-}
+union SalesOrderLineItem = RentalSalesOrderLineItem | SaleSalesOrderLineItem
 
 type SalesOrderListResult {
   items: [SalesOrder!]!
@@ -1129,8 +1170,14 @@ input UpdatePurchaseOrderLineItemInput {
 
 input UpdateSalesOrderLineItemInput {
   id: String!
+  lineitem_type: LineItemType
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
   so_pim_id: String
   so_quantity: Int
+  unit_cost_in_cents: Int
 }
 
 type User {
