@@ -1,15 +1,15 @@
 name: Release Notes
 
 on:
-  push:
-    tags:
-      - "v*"
+  create:
+    types: [tag]
 
 permissions:
   contents: read
 
 jobs:
   generate:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,9 +23,6 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
 
       - name: Determine previous tag
         id: tags
@@ -41,7 +38,7 @@ jobs:
 
       - name: Generate release notes with Codex
         run: |
-          npx codex --quiet "Generate user facing release notes. Ignore CI/CD, refactorings, and other dev tasks." < diff.patch > release_notes.txt
+          npx codex --quiet "Generate user facing release notes. Use slack compatible markdown format.  Ignore CI/CD, refactorings, and other dev tasks, ignoring means output nothing, no text, empty." < diff.patch > release_notes.txt
 
       - name: Post to Slack
         if: >-
