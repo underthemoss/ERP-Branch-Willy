@@ -33,19 +33,11 @@ jobs:
 
       - name: Generate release notes with Codex
         run: |
-          npx codex --quiet "Generate user facing release notes. Use slack compatible markdown format.  Ignore CI/CD, refactorings, and other dev tasks, ignoring means output nothing, no text, empty." < diff.patch > release_notes.txt
+          npx codex --quiet --approval-mode full-auto "Generate user facing release notes, be brief. Use slack compatible markdown format. Read the diff here diff.patch and write the release notes to release_notes.md"
 
-      - name: Check if release notes exist
-        id: check_notes
-        run: |
-          if [ -s release_notes.txt ]; then
-            echo "has_notes=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_notes=false" >> "$GITHUB_OUTPUT"
-          fi
+ 
 
       - name: Post to Slack
-        if: steps.check_notes.outputs.has_notes == 'true'
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
@@ -53,7 +45,7 @@ jobs:
             const https = require('https');
             const fs = require('fs');
             const url = process.env.SLACK_WEBHOOK;
-            const content = fs.readFileSync('release_notes.txt', 'utf8');
+            const content = fs.readFileSync('release_notes.md', 'utf8');
             const data = JSON.stringify({ content, channel: 'C0912S17B9B' });
             const req = https.request(url, {
               method: 'POST',
