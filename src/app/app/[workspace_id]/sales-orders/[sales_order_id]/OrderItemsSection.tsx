@@ -2,7 +2,7 @@
 
 import { Box, Button, Paper, Typography } from "@mui/material";
 import * as React from "react";
-import CreateRentalLineItemDialog from "./CreateRentalLineItemDialog";
+import CreateRentalLineItemDialog from "./CreateRentalLineItem/CreateRentalLineItemDialog";
 import CreateSaleLineItemDialog from "./CreateSaleLineItemDialog";
 import CreateTransferLineItemDialog from "./CreateTransferLineItemDialog";
 import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";

@@ -6,7 +6,6 @@ import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import * as React from "react";
-import CreateRentalLineItemDialog from "./CreateRentalLineItemDialog";
 
 // --- GQL Query (for codegen) ---
 graphql(`
