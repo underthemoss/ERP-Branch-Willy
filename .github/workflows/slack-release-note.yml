@@ -11,6 +11,9 @@ jobs:
   generate:
     # if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    container:
+      image: node:22
+      options: --tty
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
