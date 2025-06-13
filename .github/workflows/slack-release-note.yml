@@ -31,7 +31,7 @@ jobs:
         run: |
           npm install -g @openai/codex
           export OPENAI_API_KEY="${{ secrets.OPENAI_KEY }}"
-          codex -a auto-edit --quiet "Generate user facing release notes for the last commit, be brief. Use slack compatible markdown format. Write notes to release_note.md"
+          CODEX_QUIET_MODE=1 CI=1 codex -q -a auto-edit "Generate user facing release notes for the last commit, be brief. Use slack compatible markdown format. Write notes to release_note.md"
 
       - name: Post to Slack
         env:
