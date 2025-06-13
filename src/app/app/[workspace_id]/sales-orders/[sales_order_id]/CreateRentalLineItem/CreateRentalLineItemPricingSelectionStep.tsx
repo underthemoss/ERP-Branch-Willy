@@ -1,5 +1,11 @@
 "use client";
 
+import { graphql } from "@/graphql";
+import {
+  useGetPricesCreateDialogQuery,
+  useGetSalesOrderRentalLineItemByIdCreateDialogQuery,
+  useUpdateRentalSalesOrderLineCreateDialogMutation,
+} from "@/graphql/hooks";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import {
   Box,
@@ -17,82 +23,82 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useState } from "react";
-
-// Import or define the types and utilities
-type PriceInCents = {
-  pricePerDayInCents: number | null;
-  pricePerWeekInCents: number | null;
-  pricePerMonthInCents: number | null;
-};
+import { useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
 const formatCentsToUSD = (cents: number | null): string => {
-  if (cents == null) return "";
+  if (cents === null || cents === undefined) return "";
   return (cents / 100).toFixed(2);
 };
 
+type PriceOption = {
+  id: string;
+  name: string;
+  pricePerDayInCents?: number;
+  pricePerWeekInCents?: number;
+  pricePerMonthInCents?: number;
+  priceBook?: {
+    id: string;
+    name: string;
+  } | null;
+};
+
 export interface PricingSelectionStepProps {
-  soPimId: string;
-  pricesLoading: boolean;
-  rentalPrices: any[];
-  selectedPrice: number | null;
-  setSelectedPrice: (idx: number) => void;
-  workspace_id: string;
-  onCancel: () => void;
-  onContinue: () => void;
-  onBack: () => void;
-  customPrices: PriceInCents;
-  setCustomPrices: (prices: PriceInCents) => void;
+  lineItemId: string;
+  Footer: CreateRentalLineItemFooter;
 }
 
 const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps> = ({
-  soPimId,
-  pricesLoading,
-  rentalPrices,
-  selectedPrice,
-  setSelectedPrice,
-  workspace_id,
-  onCancel,
-  onContinue,
-  onBack,
-  customPrices,
-  setCustomPrices,
+  lineItemId,
+  Footer,
 }) => {
-  // Update custom prices when a regular pricing option is selected
-  const handlePriceSelection = (idx: number) => {
-    setSelectedPrice(idx);
-    if (idx < rentalPrices.length) {
-      const selectedRegularPrice = rentalPrices[idx];
-      setCustomPrices({
-        pricePerDayInCents: selectedRegularPrice.pricePerDayInCents,
-        pricePerWeekInCents: selectedRegularPrice.pricePerWeekInCents,
-        pricePerMonthInCents: selectedRegularPrice.pricePerMonthInCents,
-      });
-    }
-  };
+  const params = useParams();
+  const workspace_id = params?.workspace_id as string;
+  const [updateLineItem, { loading: mutationLoading }] =
+    useUpdateRentalSalesOrderLineCreateDialogMutation();
+  const { data, loading, error, refetch } = useGetSalesOrderRentalLineItemByIdCreateDialogQuery({
+    variables: { id: lineItemId },
+    fetchPolicy: "cache-and-network",
+  });
 
-  const handleCustomPriceChange =
-    (field: keyof PriceInCents) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      // Only allow numbers and decimal points
-      if (/^\d*\.?\d*$/.test(value)) {
-        const cents = value ? Math.round(parseFloat(value) * 100) : null;
-        setCustomPrices({
-          ...customPrices,
-          [field]: cents,
-        });
-      }
-    };
+  const { data: pricesData, loading: pricesLoading } = useGetPricesCreateDialogQuery({
+    variables: {},
+    fetchPolicy: "cache-and-network",
+  });
 
-  const customPriceOption = {
+  const [selectedPrice, setSelectedPrice] = useState("");
+
+  const prices = pricesData?.listPrices?.items || [];
+
+  const item =
+    data?.getSalesOrderLineItemById?.__typename === "RentalSalesOrderLineItem"
+      ? data.getSalesOrderLineItemById
+      : null;
+  useEffect(() => {
+    setSelectedPrice(item?.price_id || "");
+  }, [data]);
+
+  const customPrice: PriceOption = {
     id: "custom",
     name: "Custom Price",
-    pricePerDayInCents: customPrices.pricePerDayInCents,
-    pricePerWeekInCents: customPrices.pricePerWeekInCents,
-    pricePerMonthInCents: customPrices.pricePerMonthInCents,
   };
 
-  const allPrices = [...rentalPrices, customPriceOption];
+  const rentalPrices: PriceOption[] = [
+    ...prices
+      ?.map((p) => (p.__typename === "RentalPrice" ? p : null))
+      .filter(Boolean)
+      .filter((p) => p?.pimCategoryId === item?.so_pim_id || p?.pimProductId === item?.so_pim_id)
+      .map((p) => ({
+        id: p?.id || "",
+        name: p?.id || "",
+        priceBook: p?.priceBook || undefined,
+        pricePerDayInCents: p?.pricePerDayInCents,
+        pricePerWeekInCents: p?.pricePerWeekInCents,
+        pricePerMonthInCents: p?.pricePerMonthInCents,
+      })),
+    customPrice,
+  ];
 
   return (
     <>
@@ -106,182 +112,88 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
           <Box sx={{ flex: 1, textAlign: "center" }}>4 weeks</Box>
         </Box>
         <Stack spacing={1}>
-          {soPimId ? (
-            pricesLoading ? (
-              <Typography>Loading prices...</Typography>
-            ) : allPrices.length === 0 ? (
-              <Typography>No prices found for this product.</Typography>
-            ) : (
-              <>
-                {rentalPrices.map((price, idx: number) => (
-                  <Paper
-                    key={price.id}
-                    variant="outlined"
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      p: 2,
-                      borderColor: selectedPrice === idx ? "primary.main" : "grey.300",
-                      boxShadow: selectedPrice === idx ? 2 : 0,
-                      cursor: "pointer",
-                    }}
-                    onClick={() => handlePriceSelection(idx)}
-                  >
-                    <Box sx={{ flex: 2 }}>
-                      <input
-                        type="radio"
-                        checked={selectedPrice === idx}
-                        onChange={() => handlePriceSelection(idx)}
-                        style={{ marginRight: 8 }}
-                      />
-                      {price.name}
-                    </Box>
-                    <Box sx={{ flex: 1, textAlign: "center" }}>
-                      {price.priceBook?.id && price.priceBook?.name ? (
-                        <a
-                          href={`/app/${workspace_id}/prices/price-books/${price.priceBook.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#1976d2",
-                            textDecoration: "underline",
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {price.priceBook.name}
-                          <OpenInNewIcon fontSize="inherit" sx={{ ml: 0.5, fontSize: 16 }} />
-                        </a>
-                      ) : (
-                        price.priceBook?.name || "-"
-                      )}
-                    </Box>
-                    <Box sx={{ flex: 1, textAlign: "center" }}>
-                      {price.pricePerDayInCents != null
-                        ? `$${formatCentsToUSD(price.pricePerDayInCents)}`
-                        : "-"}
-                    </Box>
-                    <Box sx={{ flex: 1, textAlign: "center" }}>
-                      {price.pricePerWeekInCents != null
-                        ? `$${formatCentsToUSD(price.pricePerWeekInCents)}`
-                        : "-"}
-                    </Box>
-                    <Box sx={{ flex: 1, textAlign: "center" }}>
-                      {price.pricePerMonthInCents != null
-                        ? `$${formatCentsToUSD(price.pricePerMonthInCents)}`
-                        : "-"}
-                    </Box>
-                  </Paper>
-                ))}
-                {rentalPrices.length > 0 && (
-                  <Divider sx={{ my: 2 }}>
-                    {/* <Typography variant="body2" color="text.secondary">
-                      Custom Pricing
-                    </Typography> */}
-                  </Divider>
-                )}
+          <>
+            {rentalPrices.map((price) => {
+              const isSelected = selectedPrice === price.id;
+              return (
                 <Paper
-                  key={customPriceOption.id}
+                  key={price.id}
                   variant="outlined"
                   sx={{
                     display: "flex",
                     alignItems: "center",
                     p: 2,
-                    borderColor:
-                      selectedPrice === rentalPrices.length ? "primary.main" : "grey.300",
-                    boxShadow: selectedPrice === rentalPrices.length ? 2 : 0,
+                    borderColor: isSelected ? "primary.main" : "grey.300",
+                    boxShadow: isSelected ? 2 : 0,
                     cursor: "pointer",
-                    opacity: selectedPrice !== rentalPrices.length ? 0.7 : 1,
                   }}
-                  onClick={() => setSelectedPrice(rentalPrices.length)}
+                  onClick={() => setSelectedPrice(price.id)}
                 >
                   <Box sx={{ flex: 2 }}>
                     <input
                       type="radio"
-                      checked={selectedPrice === rentalPrices.length}
-                      onChange={() => setSelectedPrice(rentalPrices.length)}
+                      checked={isSelected}
+                      onChange={() => setSelectedPrice(price.id)}
                       style={{ marginRight: 8 }}
                     />
-                    {customPriceOption.name}
-                  </Box>
-                  <Box sx={{ flex: 1, textAlign: "center" }}>-</Box>
-                  <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <FormControl size="small" sx={{ width: "100px" }}>
-                      <OutlinedInput
-                        value={formatCentsToUSD(customPrices.pricePerDayInCents)}
-                        onChange={handleCustomPriceChange("pricePerDayInCents")}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder="0.00"
-                        disabled={selectedPrice !== rentalPrices.length}
-                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
-                        size="small"
-                      />
-                    </FormControl>
+                    {price.name}
                   </Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <FormControl size="small" sx={{ width: "100px" }}>
-                      <OutlinedInput
-                        value={formatCentsToUSD(customPrices.pricePerWeekInCents)}
-                        onChange={handleCustomPriceChange("pricePerWeekInCents")}
+                    {price.priceBook?.id && price.priceBook?.name ? (
+                      <a
+                        href={`/app/${workspace_id}/prices/price-books/${price.priceBook.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#1976d2",
+                          textDecoration: "underline",
+                          display: "inline-flex",
+                          alignItems: "center",
+                        }}
                         onClick={(e) => e.stopPropagation()}
-                        placeholder="0.00"
-                        disabled={selectedPrice !== rentalPrices.length}
-                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
-                        size="small"
-                      />
-                    </FormControl>
+                      >
+                        {price.priceBook.name}
+                        <OpenInNewIcon fontSize="inherit" sx={{ ml: 0.5, fontSize: 16 }} />
+                      </a>
+                    ) : (
+                      price.priceBook?.name || "-"
+                    )}
                   </Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <FormControl size="small" sx={{ width: "100px" }}>
-                      <OutlinedInput
-                        value={formatCentsToUSD(customPrices.pricePerMonthInCents)}
-                        onChange={handleCustomPriceChange("pricePerMonthInCents")}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder="0.00"
-                        disabled={selectedPrice !== rentalPrices.length}
-                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
-                        size="small"
-                      />
-                    </FormControl>
+                    {price.pricePerDayInCents != null
+                      ? `$${formatCentsToUSD(price.pricePerDayInCents)}`
+                      : "-"}
+                  </Box>
+                  <Box sx={{ flex: 1, textAlign: "center" }}>
+                    {price.pricePerWeekInCents != null
+                      ? `$${formatCentsToUSD(price.pricePerWeekInCents)}`
+                      : "-"}
+                  </Box>
+                  <Box sx={{ flex: 1, textAlign: "center" }}>
+                    {price.pricePerMonthInCents != null
+                      ? `$${formatCentsToUSD(price.pricePerMonthInCents)}`
+                      : "-"}
                   </Box>
                 </Paper>
-              </>
-            )
-          ) : (
-            <Typography>Select a product to see pricing.</Typography>
-          )}
+              );
+            })}
+          </>
         </Stack>
       </DialogContent>
-      <DialogActions
-        sx={{
-          bgcolor: "grey.100",
-          borderTop: 1,
-          borderColor: "divider",
-          px: 3,
-          py: 1.5,
-          display: "flex",
-          justifyContent: "space-between",
-          mt: 3,
+      <Footer
+        loading={loading || mutationLoading}
+        nextEnabled={!!selectedPrice}
+        onNextClick={async () => {
+          if (selectedPrice === "custom") {
+          } else {
+            await updateLineItem({
+              variables: { input: { id: lineItemId, price_id: selectedPrice } },
+            });
+          }
+
+          await refetch();
         }}
-      >
-        <Button onClick={onCancel} color="inherit">
-          Cancel
-        </Button>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button onClick={onBack} color="inherit">
-            Back
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={onContinue}
-            disabled={selectedPrice === null}
-          >
-            Continue
-          </Button>
-        </Box>
-      </DialogActions>
+      />
     </>
   );
 };

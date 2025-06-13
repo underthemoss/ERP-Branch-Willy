@@ -12,46 +12,57 @@ interface OrderItemsSectionProps {
   salesOrderId: string;
 }
 
+type DialogState = "none" | "type" | "rental" | "sale" | "transfer";
 const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) => {
   // Dialog state for add item flow
-  const [typeDialogOpen, setTypeDialogOpen] = React.useState(false);
-  const [rentalDialogOpen, setRentalDialogOpen] = React.useState(false);
-  const [saleDialogOpen, setSaleDialogOpen] = React.useState(false);
-  const [transferDialogOpen, setTransferDialogOpen] = React.useState(false);
+  const [openDialog, setOpenDialog] = React.useState<DialogState>("none");
+  const [lineItemId, setLineItemId] = React.useState<string | null>(null);
 
-  const handleTypeSelect = (type: TransactionType) => {
-    setTypeDialogOpen(false);
-    if (type === "rental") setRentalDialogOpen(true);
-    else if (type === "sale") setSaleDialogOpen(true);
-    else if (type === "transfer") setTransferDialogOpen(true);
+  const handleTypeSelect = (type: TransactionType, lineItemId?: string) => {
+    if (type === "rental" && lineItemId) {
+      setLineItemId(lineItemId);
+      setOpenDialog("rental");
+    } else if (type === "sale") setOpenDialog("sale");
+    else if (type === "transfer") setOpenDialog("transfer");
+    else setOpenDialog("none");
   };
 
   return (
     <>
       {/* Dialogs for add item flow */}
       <TransactionTypeSelectDialog
-        open={typeDialogOpen}
-        onClose={() => setTypeDialogOpen(false)}
+        open={openDialog === "type"}
+        onClose={() => setOpenDialog("none")}
         onSelect={handleTypeSelect}
+        salesOrderId={salesOrderId}
       />
       <CreateRentalLineItemDialog
-        key={`${salesOrderId}-${rentalDialogOpen}-${saleDialogOpen}-${transferDialogOpen}`}
-        open={rentalDialogOpen}
-        onClose={() => setRentalDialogOpen(false)}
-        salesOrderId={salesOrderId}
-        onSuccess={() => setRentalDialogOpen(false)}
+        key={`${salesOrderId}-${openDialog}-rental`}
+        open={openDialog === "rental"}
+        onClose={() => {
+          setOpenDialog("none");
+          setLineItemId(null);
+        }}
+        lineItemId={lineItemId || ""}
+        onSuccess={() => {
+          setOpenDialog("none");
+          setLineItemId(null);
+        }}
       />
-      <CreateSaleLineItemDialog open={saleDialogOpen} onClose={() => setSaleDialogOpen(false)} />
+      <CreateSaleLineItemDialog
+        open={openDialog === "sale"}
+        onClose={() => setOpenDialog("none")}
+      />
       <CreateTransferLineItemDialog
-        open={transferDialogOpen}
-        onClose={() => setTransferDialogOpen(false)}
+        open={openDialog === "transfer"}
+        onClose={() => setOpenDialog("none")}
       />
 
       <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
         <SalesOrderLineItemsDataGrid
-          key={`${salesOrderId}-${rentalDialogOpen}-${saleDialogOpen}-${transferDialogOpen}`}
+          key={`${salesOrderId}-${openDialog}`}
           salesOrderId={salesOrderId}
-          onAddNewItem={() => setTypeDialogOpen(true)}
+          onAddNewItem={() => setOpenDialog("type")}
         />
       </Paper>
     </>

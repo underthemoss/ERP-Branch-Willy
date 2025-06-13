@@ -254,6 +254,12 @@ input CreateRentalPriceInput {
 }
 
 input CreateRentalSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  lineitem_status: LineItemStatus
+  off_rent_date: String
   price_id: String
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int
@@ -274,6 +280,7 @@ input CreateSalePriceInput {
 }
 
 input CreateSaleSalesOrderLineItemInput {
+  lineitem_status: LineItemStatus
   price_id: String
   sales_order_id: String!
   so_pim_id: String
@@ -290,6 +297,11 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+enum DeliveryMethod {
+  DELIVERY
+  PICKUP
+}
 
 type File {
   comments: [Note!]!
@@ -343,6 +355,11 @@ type JWTPayload {
   permissions: [String]
   scope: String
   sub: String
+}
+
+enum LineItemStatus {
+  DRAFT
+  SUBMITTED
 }
 
 enum LineItemType {
@@ -489,6 +506,7 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
 }
 
@@ -808,6 +826,7 @@ type Query {
   """Get a single resource map entry by id, with tenant check"""
   getResourceMapEntry(id: String!): ResourceMapResource
   getSalesOrderById(id: String): SalesOrder
+  getSalesOrderLineItemById(id: String): SalesOrderLineItem
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
@@ -887,8 +906,14 @@ type RentalSalesOrderLineItem {
   company_id: String
   created_at: String
   created_by: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
   id: String!
+  lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
+  off_rent_date: String
   price_id: String
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int
@@ -966,6 +991,7 @@ type SaleSalesOrderLineItem {
   created_at: String
   created_by: String
   id: String!
+  lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
   price_id: String
   so_pim_category: PimCategory
@@ -1170,9 +1196,32 @@ input UpdatePurchaseOrderLineItemInput {
   po_quantity: Int
 }
 
-input UpdateSalesOrderLineItemInput {
+input UpdateRentalSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
   id: String!
+  lineitem_status: LineItemStatus
+  off_rent_date: String
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  so_pim_id: String
+  so_quantity: Int
+  unit_cost_in_cents: Int
+}
+
+input UpdateSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: LineItemStatus
   lineitem_type: LineItemType
+  off_rent_date: String
   price_id: String
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int

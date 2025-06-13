@@ -33,6 +33,7 @@ graphql(`
           price_per_month_in_cents
           created_at
           updated_at
+          lineitem_status
         }
         ... on SaleSalesOrderLineItem {
           id

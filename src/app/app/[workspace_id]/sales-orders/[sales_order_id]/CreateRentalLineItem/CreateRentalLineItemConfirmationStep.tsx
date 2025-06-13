@@ -1,5 +1,8 @@
 "use client";
 
+import { graphql } from "@/graphql";
+import { RentalSalesOrderLineItem, SalesOrderLineItem } from "@/graphql/graphql";
+import { useGetSalesOrderRentalLineItemByIdCreateDialogQuery } from "@/graphql/hooks";
 import {
   Box,
   Button,
@@ -15,198 +18,162 @@ import {
 } from "@mui/material";
 import React from "react";
 
+/* Removed duplicate GetSalesOrderLineItemById query definition; now defined in api.ts */
+
 export interface ConfirmationStepProps {
-  productName: string;
-  priceTier: string;
-  priceBookName?: string;
-  pricePerDay?: string;
-  pricePerWeek?: string;
-  pricePerMonth?: string;
-  fulfillmentMethod: "Delivery" | "Pickup";
-  deliveryLocation: string;
-  deliveryCharge: string;
-  deliveryDate: string;
-  offRentDate: string;
-  deliveryNotes: string;
-  rentalCostBreakdown?: string[];
+  lineItemId: string;
   onCancel: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: () => void;
   onBack: () => void;
 }
 
 const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
-  productName,
-  priceTier,
-  priceBookName,
-  pricePerDay,
-  pricePerWeek,
-  pricePerMonth,
-  fulfillmentMethod,
-  deliveryLocation,
-  deliveryCharge,
-  deliveryDate,
-  offRentDate,
-  deliveryNotes,
-  rentalCostBreakdown,
+  lineItemId,
   onCancel,
   onSubmit,
   onBack,
-}) => (
-  <form onSubmit={onSubmit}>
-    <DialogTitle sx={{ pb: 0 }}>
-      <Typography variant="h5" fontWeight={700}>
-        Review & Confirm Rental Line Item
-      </Typography>
-    </DialogTitle>
-    <DialogContent sx={{ pt: 0, pb: 0 }}>
-      <Card elevation={0} sx={{ mb: 2, bgcolor: "background.paper", borderRadius: 2 }}>
-        <CardContent>
-          <Stack spacing={3}>
-            {/* Product Section */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Product
-              </Typography>
-              <Typography variant="h6" fontWeight={700} color="primary.main">
-                {productName}
-              </Typography>
-            </Box>
-            <Divider />
-            {/* Pricing Section */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Pricing
-              </Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Typography variant="body1" fontWeight={500}>
-                  Tier:
-                </Typography>
-                <Typography variant="body1">{priceTier}</Typography>
-              </Stack>
-              {priceBookName && (
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Price Book:
-                  </Typography>
-                  <Typography variant="body1">{priceBookName}</Typography>
-                </Stack>
-              )}
-              <Stack direction="row" spacing={4} mt={1}>
-                <Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    1 Day
-                  </Typography>
-                  <Typography variant="body1">{pricePerDay || "-"}</Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    1 Week
-                  </Typography>
-                  <Typography variant="body1">{pricePerWeek || "-"}</Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    4 Weeks
-                  </Typography>
-                  <Typography variant="body1">{pricePerMonth || "-"}</Typography>
-                </Stack>
-              </Stack>
-              {rentalCostBreakdown && rentalCostBreakdown.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" color="primary" fontWeight={600}>
-                    Rental Cost Breakdown
-                  </Typography>
-                  {rentalCostBreakdown.map((line, index) => (
-                    <Typography
-                      key={index}
-                      variant={line.toLowerCase().includes("total cost") ? "h6" : "body2"}
-                      fontWeight={line.toLowerCase().includes("total cost") ? 700 : 400}
-                      color={line.toLowerCase().includes("total cost") ? "success.main" : undefined}
-                      sx={{ pl: 1 }}
-                    >
-                      {line}
-                    </Typography>
-                  ))}
-                </Box>
-              )}
-            </Box>
-            <Divider />
-            {/* Fulfillment Section */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Fulfillment
-              </Typography>
-              <Stack spacing={0.5}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Method:
-                  </Typography>
-                  <Typography variant="body1">{fulfillmentMethod}</Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Location:
-                  </Typography>
-                  <Typography variant="body1">{deliveryLocation}</Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Charge:
-                  </Typography>
-                  <Typography variant="body1">${deliveryCharge}</Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Delivery Date:
-                  </Typography>
-                  <Typography variant="body1">{deliveryDate}</Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="body1" fontWeight={500}>
-                    Off Rent Date:
-                  </Typography>
-                  <Typography variant="body1">{offRentDate}</Typography>
-                </Stack>
-              </Stack>
-            </Box>
-            <Divider />
-            {/* Delivery Notes Section */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Delivery Notes
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {deliveryNotes || "-"}
-              </Typography>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
-    </DialogContent>
-    <DialogActions
-      sx={{
-        bgcolor: "grey.100",
-        borderTop: 1,
-        borderColor: "divider",
-        px: 3,
-        py: 1.5,
-        display: "flex",
-        justifyContent: "space-between",
+}) => {
+  // Use the generated hook for fetching a single line item by ID
+  const { data, loading, error } = useGetSalesOrderRentalLineItemByIdCreateDialogQuery({
+    variables: { id: lineItemId },
+    fetchPolicy: "cache-and-network",
+  });
+  const lineItem = data?.getSalesOrderLineItemById as RentalSalesOrderLineItem | null;
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography>Loading line item details...</Typography>
+      </Box>
+    );
+  }
+
+  if (error || !lineItem) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography color="error">
+          {error ? `Error loading line item: ${error.message}` : "Line item not found"}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
       }}
     >
-      <Button onClick={onCancel} color="inherit">
-        Cancel
-      </Button>
-      <Box sx={{ display: "flex", gap: 1 }}>
-        <Button onClick={onBack} color="inherit">
-          Back
+      <DialogTitle>Confirm Line Item Details</DialogTitle>
+      <DialogContent sx={{ pt: 1, pb: 0 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Please review the line item details before submitting.
+        </Typography>
+        <Box sx={{ display: "grid", gap: 2 }}>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Product
+            </Typography>
+            <Typography variant="body1">
+              {lineItem?.so_pim_product?.name ?? lineItem?.so_pim_category?.name}
+            </Typography>
+            {lineItem?.so_pim_product?.model && (
+              <Typography variant="body2" color="text.secondary">
+                Model: {lineItem?.so_pim_product.model}
+              </Typography>
+            )}
+            {lineItem?.so_pim_product?.sku && (
+              <Typography variant="body2" color="text.secondary">
+                SKU: {lineItem?.so_pim_product.sku}
+              </Typography>
+            )}
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Quantity
+            </Typography>
+            <Typography variant="body1">{lineItem?.so_quantity}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Pricing
+            </Typography>
+            {lineItem?.price_per_day_in_cents && (
+              <Typography variant="body2">
+                Daily Rate: ${(lineItem?.price_per_day_in_cents / 100).toFixed(2)}
+              </Typography>
+            )}
+            {lineItem?.price_per_week_in_cents && (
+              <Typography variant="body2">
+                Weekly Rate: ${(lineItem?.price_per_week_in_cents / 100).toFixed(2)}
+              </Typography>
+            )}
+            {lineItem?.price_per_month_in_cents && (
+              <Typography variant="body2">
+                Monthly Rate: ${(lineItem?.price_per_month_in_cents / 100).toFixed(2)}
+              </Typography>
+            )}
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Delivery Details
+            </Typography>
+            {lineItem?.delivery_location && (
+              <Typography variant="body2">Location: {lineItem?.delivery_location}</Typography>
+            )}
+            {lineItem?.delivery_date && (
+              <Typography variant="body2">
+                Date: {new Date(lineItem?.delivery_date).toLocaleDateString()}
+              </Typography>
+            )}
+            {lineItem?.delivery_method && (
+              <Typography variant="body2">Method: {lineItem?.delivery_method}</Typography>
+            )}
+            {lineItem?.delivery_charge_in_cents && (
+              <Typography variant="body2">
+                Delivery Charge: ${(lineItem?.delivery_charge_in_cents / 100).toFixed(2)}
+              </Typography>
+            )}
+          </Box>
+          {lineItem?.off_rent_date && (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Off-Rent Date
+              </Typography>
+              <Typography variant="body2">
+                {new Date(lineItem?.off_rent_date).toLocaleDateString()}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions
+        sx={{
+          bgcolor: "grey.100",
+          borderTop: 1,
+          borderColor: "divider",
+          px: 3,
+          mt: 3,
+          py: 1.5,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button onClick={onCancel} color="inherit">
+          Cancel
         </Button>
-        <Button type="submit" variant="contained" color="primary">
-          Confirm
-        </Button>
-      </Box>
-    </DialogActions>
-  </form>
-);
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button onClick={onBack} color="inherit">
+            Back
+          </Button>
+          <Button type="submit" variant="contained" color="primary">
+            Submit
+          </Button>
+        </Box>
+      </DialogActions>
+    </form>
+  );
+};
 
 export default CreateRentalLineItemConfirmationStep;
