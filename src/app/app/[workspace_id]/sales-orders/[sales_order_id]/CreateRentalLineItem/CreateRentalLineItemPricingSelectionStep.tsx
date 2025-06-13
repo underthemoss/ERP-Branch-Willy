@@ -27,6 +27,30 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
+type CustomPriceInputProps = {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+};
+
+const CustomPriceInput: React.FC<CustomPriceInputProps> = ({ value, onChange, placeholder }) => (
+  <TextField
+    size="small"
+    value={value}
+    onChange={(e) => {
+      const val = e.target.value.replace(/[^0-9.]/g, "");
+      onChange(val);
+    }}
+    sx={{ maxWidth: 120 }}
+    onBlur={(ev) => onChange(formatCentsToUSD(Number(ev.target.value) * 100))}
+    InputProps={{
+      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+      inputMode: "decimal",
+    }}
+    placeholder={placeholder || "0.00"}
+  />
+);
+
 const formatCentsToUSD = (cents: number | null): string => {
   if (cents === null || cents === undefined) return "";
   return (cents / 100).toFixed(2);
@@ -68,6 +92,9 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
   });
 
   const [selectedPrice, setSelectedPrice] = useState("");
+  const [customDay, setCustomDay] = useState("");
+  const [customWeek, setCustomWeek] = useState("");
+  const [customMonth, setCustomMonth] = useState("");
 
   const prices = pricesData?.listPrices?.items || [];
 
@@ -76,7 +103,20 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
       ? data.getSalesOrderLineItemById
       : null;
   useEffect(() => {
-    setSelectedPrice(item?.price_id || "");
+    const hasCustomPrice =
+      !!item?.price_per_day_in_cents &&
+      !!item?.price_per_week_in_cents &&
+      !!item?.price_per_month_in_cents;
+
+    console.log({ hasCustomPrice });
+    if (hasCustomPrice && !item.price_id) {
+      setSelectedPrice("custom");
+    } else {
+      setSelectedPrice(item?.price_id || "");
+    }
+    setCustomDay(formatCentsToUSD(Number(item?.price_per_day_in_cents?.toString()) || 0) || "");
+    setCustomWeek(formatCentsToUSD(Number(item?.price_per_week_in_cents?.toString()) || 0) || "");
+    setCustomMonth(formatCentsToUSD(Number(item?.price_per_month_in_cents?.toString()) || 0) || "");
   }, [data]);
 
   const customPrice: PriceOption = {
@@ -159,21 +199,49 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                       price.priceBook?.name || "-"
                     )}
                   </Box>
-                  <Box sx={{ flex: 1, textAlign: "center" }}>
-                    {price.pricePerDayInCents != null
-                      ? `$${formatCentsToUSD(price.pricePerDayInCents)}`
-                      : "-"}
-                  </Box>
-                  <Box sx={{ flex: 1, textAlign: "center" }}>
-                    {price.pricePerWeekInCents != null
-                      ? `$${formatCentsToUSD(price.pricePerWeekInCents)}`
-                      : "-"}
-                  </Box>
-                  <Box sx={{ flex: 1, textAlign: "center" }}>
-                    {price.pricePerMonthInCents != null
-                      ? `$${formatCentsToUSD(price.pricePerMonthInCents)}`
-                      : "-"}
-                  </Box>
+                  {price.id === "custom" && isSelected ? (
+                    <>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        <CustomPriceInput
+                          value={customDay}
+                          onChange={setCustomDay}
+                          placeholder="0.00"
+                        />
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        <CustomPriceInput
+                          value={customWeek}
+                          onChange={setCustomWeek}
+                          placeholder="0.00"
+                        />
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        <CustomPriceInput
+                          value={customMonth}
+                          onChange={setCustomMonth}
+                          placeholder="0.00"
+                        />
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        {price.pricePerDayInCents != null
+                          ? `$${formatCentsToUSD(price.pricePerDayInCents)}`
+                          : "-"}
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        {price.pricePerWeekInCents != null
+                          ? `$${formatCentsToUSD(price.pricePerWeekInCents)}`
+                          : "-"}
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        {price.pricePerMonthInCents != null
+                          ? `$${formatCentsToUSD(price.pricePerMonthInCents)}`
+                          : "-"}
+                      </Box>
+                    </>
+                  )}
                 </Paper>
               );
             })}
@@ -185,9 +253,28 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
         nextEnabled={!!selectedPrice}
         onNextClick={async () => {
           if (selectedPrice === "custom") {
+            await updateLineItem({
+              variables: {
+                input: {
+                  id: lineItemId,
+                  price_per_day_in_cents: Math.round(Number(customDay) * 100),
+                  price_per_month_in_cents: Math.round(Number(customMonth) * 100),
+                  price_per_week_in_cents: Math.round(Number(customWeek) * 100),
+                  price_id: "",
+                },
+              },
+            });
           } else {
             await updateLineItem({
-              variables: { input: { id: lineItemId, price_id: selectedPrice } },
+              variables: {
+                input: {
+                  id: lineItemId,
+                  price_id: selectedPrice,
+                  price_per_day_in_cents: null,
+                  price_per_month_in_cents: null,
+                  price_per_week_in_cents: null,
+                },
+              },
             });
           }
 

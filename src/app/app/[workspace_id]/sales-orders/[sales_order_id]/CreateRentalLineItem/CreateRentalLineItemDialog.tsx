@@ -53,12 +53,6 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
     onClose();
   };
 
-  const isNextEnabled = () => {
-    if (step === 1) {
-      return;
-    }
-  };
-
   const Footer: CreateRentalLineItemFooter = ({ nextEnabled, loading, onNextClick }) => {
     return (
       <DialogActions
