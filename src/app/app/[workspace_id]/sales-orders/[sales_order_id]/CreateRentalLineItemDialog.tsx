@@ -153,7 +153,11 @@ const formatCentsToUSD = (cents: number | null): string | undefined => {
   return `$${(cents / 100).toFixed(2)}`;
 };
 
-const getPriceFromRentalPrice = (rentalPrice: any, isCustom: boolean, customPrices: PriceInCents): PriceInCents => {
+const getPriceFromRentalPrice = (
+  rentalPrice: any,
+  isCustom: boolean,
+  customPrices: PriceInCents,
+): PriceInCents => {
   if (isCustom) {
     return customPrices;
   }
@@ -330,44 +334,45 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
       )}
 
       {/* Step 5: Confirmation */}
-      {step === 5 && (() => {
-        const isCustomPrice = selectedPrice === rentalPrices.length;
-        const selectedRentalPrice = rentalPrices[selectedPrice ?? 0];
-        const prices = getPriceFromRentalPrice(selectedRentalPrice, isCustomPrice, customPrices);
+      {step === 5 &&
+        (() => {
+          const isCustomPrice = selectedPrice === rentalPrices.length;
+          const selectedRentalPrice = rentalPrices[selectedPrice ?? 0];
+          const prices = getPriceFromRentalPrice(selectedRentalPrice, isCustomPrice, customPrices);
 
-        return (
-          <CreateRentalLineItemConfirmationStep
-            productName={selectedRentalPrice?.pimProduct?.name || ""}
-            priceTier={isCustomPrice ? "Custom Price" : selectedRentalPrice?.name || ""}
-            priceBookName={isCustomPrice ? undefined : selectedRentalPrice?.priceBook?.name}
-            pricePerDay={formatCentsToUSD(prices.pricePerDayInCents)}
-            pricePerWeek={formatCentsToUSD(prices.pricePerWeekInCents)}
-            pricePerMonth={formatCentsToUSD(prices.pricePerMonthInCents)}
-            fulfillmentMethod={fulfillmentMethod}
-            deliveryLocation={deliveryLocation}
-            deliveryCharge={deliveryCharge}
-            deliveryDate={formatDate(dateRange[0])}
-            offRentDate={formatDate(dateRange[1])}
-            deliveryNotes={deliveryNotes}
-            rentalCostBreakdown={(() => {
-              if (!dateRange[0] || !dateRange[1]) return undefined;
+          return (
+            <CreateRentalLineItemConfirmationStep
+              productName={selectedRentalPrice?.pimProduct?.name || ""}
+              priceTier={isCustomPrice ? "Custom Price" : selectedRentalPrice?.name || ""}
+              priceBookName={isCustomPrice ? undefined : selectedRentalPrice?.priceBook?.name}
+              pricePerDay={formatCentsToUSD(prices.pricePerDayInCents)}
+              pricePerWeek={formatCentsToUSD(prices.pricePerWeekInCents)}
+              pricePerMonth={formatCentsToUSD(prices.pricePerMonthInCents)}
+              fulfillmentMethod={fulfillmentMethod}
+              deliveryLocation={deliveryLocation}
+              deliveryCharge={deliveryCharge}
+              deliveryDate={formatDate(dateRange[0])}
+              offRentDate={formatDate(dateRange[1])}
+              deliveryNotes={deliveryNotes}
+              rentalCostBreakdown={(() => {
+                if (!dateRange[0] || !dateRange[1]) return undefined;
 
-              const result = calculateRentalCost({
-                pricePerDayInCents: prices.pricePerDayInCents,
-                pricePerWeekInCents: prices.pricePerWeekInCents,
-                pricePerMonthInCents: prices.pricePerMonthInCents,
-                startDate: dateRange[0],
-                endDate: dateRange[1],
-              });
+                const result = calculateRentalCost({
+                  pricePerDayInCents: prices.pricePerDayInCents,
+                  pricePerWeekInCents: prices.pricePerWeekInCents,
+                  pricePerMonthInCents: prices.pricePerMonthInCents,
+                  startDate: dateRange[0],
+                  endDate: dateRange[1],
+                });
 
-              return result.breakdown;
-            })()}
-            onCancel={handleClose}
-            onSubmit={handleSubmit}
-            onBack={() => setStep(4)}
-          />
-        );
-      })()}
+                return result.breakdown;
+              })()}
+              onCancel={handleClose}
+              onSubmit={handleSubmit}
+              onBack={() => setStep(4)}
+            />
+          );
+        })()}
     </Dialog>
   );
 };
