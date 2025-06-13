@@ -253,6 +253,23 @@ input CreateRentalPriceInput {
   pricePerWeekInCents: Int!
 }
 
+input CreateRentalSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  lineitem_status: LineItemStatus
+  off_rent_date: String
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  sales_order_id: String!
+  so_pim_id: String
+  so_quantity: Int
+  unit_cost_in_cents: Int
+}
+
 input CreateSalePriceInput {
   discounts: JSON
   name: String
@@ -262,10 +279,13 @@ input CreateSalePriceInput {
   unitCostInCents: Int!
 }
 
-input CreateSalesOrderLineItemInput {
+input CreateSaleSalesOrderLineItemInput {
+  lineitem_status: LineItemStatus
+  price_id: String
   sales_order_id: String!
   so_pim_id: String
   so_quantity: Int
+  unit_cost_in_cents: Int
 }
 
 """
@@ -277,6 +297,11 @@ scalar Date
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
 """
 scalar DateTime
+
+enum DeliveryMethod {
+  DELIVERY
+  PICKUP
+}
 
 type File {
   comments: [Note!]!
@@ -330,6 +355,16 @@ type JWTPayload {
   permissions: [String]
   scope: String
   sub: String
+}
+
+enum LineItemStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum LineItemType {
+  RENTAL
+  SALE
 }
 
 input ListAssetsPage {
@@ -437,9 +472,10 @@ type Mutation {
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
   createPurchaseOrderLineItem(input: CreatePurchaseOrderLineItemInput): PurchaseOrderLineItem
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
+  createRentalSalesOrderLineItem(input: CreateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   createSalePrice(input: CreateSalePriceInput!): SalePrice
+  createSaleSalesOrderLineItem(input: CreateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   createSalesOrder(input: SalesOrderInput): SalesOrder
-  createSalesOrderLineItem(input: CreateSalesOrderLineItemInput): SalesOrderLineItem
   createTransaction(input: TransactionInput!): Transaction
   deleteContactById(id: ID!): Boolean
   deleteNote(id: String!): Note
@@ -470,6 +506,7 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
 }
 
@@ -789,6 +826,7 @@ type Query {
   """Get a single resource map entry by id, with tenant check"""
   getResourceMapEntry(id: String!): ResourceMapResource
   getSalesOrderById(id: String): SalesOrder
+  getSalesOrderLineItemById(id: String): SalesOrderLineItem
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
@@ -864,6 +902,33 @@ type RentalPrice {
   updatedAt: DateTime!
 }
 
+type RentalSalesOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  created_by_user: User
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: LineItemStatus
+  lineitem_type: LineItemType!
+  off_rent_date: String
+  price: Price
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  so_pim_category: PimCategory
+  so_pim_id: String
+  so_pim_product: PimProduct
+  so_quantity: Int
+  updated_at: String
+  updated_by: String
+  updated_by_user: User
+}
+
 type RentalTransaction implements BaseTransaction {
   assetId: ID
   comments: [Comment!]
@@ -924,6 +989,26 @@ type SalePrice {
   updatedAt: DateTime!
 }
 
+type SaleSalesOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  created_by_user: User
+  id: String!
+  lineitem_status: LineItemStatus
+  lineitem_type: LineItemType!
+  price: Price
+  price_id: String
+  so_pim_category: PimCategory
+  so_pim_id: String
+  so_pim_product: PimProduct
+  so_quantity: Int
+  unit_cost_in_cents: Int
+  updated_at: String
+  updated_by: String
+  updated_by_user: User
+}
+
 type SaleTransaction implements BaseTransaction {
   comments: [Comment!]
   createdAt: DateTime
@@ -969,17 +1054,7 @@ input SalesOrderInput {
   purchase_order_number: String!
 }
 
-type SalesOrderLineItem {
-  company_id: String
-  created_at: String
-  created_by: String
-  id: String!
-  so_pim_id: String
-  so_pim_product: PimProduct
-  so_quantity: Int
-  updated_at: String
-  updated_by: String
-}
+union SalesOrderLineItem = RentalSalesOrderLineItem | SaleSalesOrderLineItem
 
 type SalesOrderListResult {
   items: [SalesOrder!]!
@@ -1127,10 +1202,39 @@ input UpdatePurchaseOrderLineItemInput {
   po_quantity: Int
 }
 
-input UpdateSalesOrderLineItemInput {
+input UpdateRentalSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
   id: String!
+  lineitem_status: LineItemStatus
+  off_rent_date: String
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
   so_pim_id: String
   so_quantity: Int
+  unit_cost_in_cents: Int
+}
+
+input UpdateSalesOrderLineItemInput {
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: LineItemStatus
+  lineitem_type: LineItemType
+  off_rent_date: String
+  price_id: String
+  price_per_day_in_cents: Int
+  price_per_month_in_cents: Int
+  price_per_week_in_cents: Int
+  so_pim_id: String
+  so_quantity: Int
+  unit_cost_in_cents: Int
 }
 
 type User {

@@ -7,7 +7,7 @@ import NotesSection from "@/ui/notes/NotesSection";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";
+import OrderItemsSection from "./OrderItemsSection";
 
 const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
@@ -133,6 +133,8 @@ export default function SalesOrderDetailPage() {
     });
   }
 
+  // (Order items section is now modularized)
+
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
       {loading && (
@@ -155,9 +157,6 @@ export default function SalesOrderDetailPage() {
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Typography variant="h4" gutterBottom>
                     Sales Order
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Purchase Order Number: {salesOrder.order_id}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Purchase Order Number: {salesOrder.purchase_order_number}
@@ -194,139 +193,10 @@ export default function SalesOrderDetailPage() {
               </Box>
             </Paper>
 
-            {/* Buyer & Project Info */}
-            <Grid container spacing={3} alignItems="stretch">
-              <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Buyer Information
-                    </Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    {salesOrder.buyer ? (
-                      <Box>
-                        <Typography>
-                          Name: <b>{salesOrder.buyer.name}</b>
-                        </Typography>
-                        {"email" in salesOrder.buyer && salesOrder.buyer.email && (
-                          <Typography>Email: {salesOrder.buyer.email}</Typography>
-                        )}
-                        {"phone" in salesOrder.buyer && salesOrder.buyer.phone && (
-                          <Typography>Phone: {salesOrder.buyer.phone}</Typography>
-                        )}
-                        {"address" in salesOrder.buyer && salesOrder.buyer.address && (
-                          <Typography>Address: {salesOrder.buyer.address}</Typography>
-                        )}
-                        {"website" in salesOrder.buyer && salesOrder.buyer.website && (
-                          <Typography>Website: {salesOrder.buyer.website}</Typography>
-                        )}
-                        {"taxId" in salesOrder.buyer && salesOrder.buyer.taxId && (
-                          <Typography>Tax ID: {salesOrder.buyer.taxId}</Typography>
-                        )}
-                        {salesOrder.buyer.notes && (
-                          <Typography>Notes: {salesOrder.buyer.notes}</Typography>
-                        )}
-                      </Box>
-                    ) : (
-                      <Typography color="text.secondary">No buyer information</Typography>
-                    )}
-                  </Box>
-                  <Box sx={{ mt: 2, textAlign: "right" }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      disabled={!salesOrder.buyer_id}
-                      onClick={() => {
-                        if (salesOrder.buyer_id) {
-                          router.push(`/app/${workspace_id}/contacts/${salesOrder.buyer_id}`);
-                        }
-                      }}
-                    >
-                      View Buyer
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Project Information
-                    </Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    {salesOrder.project ? (
-                      <Box>
-                        <Typography>
-                          Name: <b>{salesOrder.project.name}</b>
-                        </Typography>
-                        <Typography>Code: {salesOrder.project.project_code}</Typography>
-                        <Typography>Description: {salesOrder.project.description}</Typography>
-                        <Typography>Company: {salesOrder.project.company?.name}</Typography>
-                        <Typography>Status: {salesOrder.project.status}</Typography>
-                        <Typography>
-                          Scope of Work: {salesOrder.project.scope_of_work?.join(", ")}
-                        </Typography>
-                        <Typography>Contacts:</Typography>
-                        <Box sx={{ pl: 2 }}>
-                          {(salesOrder.project.project_contacts ?? []).length ? (
-                            (salesOrder.project.project_contacts ?? []).map((pc: any) => (
-                              <Box key={pc.contact_id} sx={{ mb: 1 }}>
-                                <Typography>
-                                  {pc.relation_to_project}: {pc.contact?.name}
-                                </Typography>
-                              </Box>
-                            ))
-                          ) : (
-                            <Typography color="text.secondary">No contacts</Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Typography color="text.secondary">No project information</Typography>
-                    )}
-                  </Box>
-                  <Box sx={{ mt: 2, textAlign: "right" }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      disabled={!salesOrder.project_id}
-                      onClick={() => {
-                        if (salesOrder.project_id) {
-                          router.push(`/app/${workspace_id}/projects/${salesOrder.project_id}`);
-                        }
-                      }}
-                    >
-                      View Project
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
+            {/* Buyer & Project Info moved to sidebar */}
 
             {/* Order Items Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
-              <SalesOrderLineItemsDataGrid salesOrderId={salesOrder.id} />
-            </Paper>
+            <OrderItemsSection salesOrderId={salesOrder.id} />
             {/* File Upload Card */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
@@ -419,6 +289,127 @@ export default function SalesOrderDetailPage() {
                   </Typography>
                 </Box>
               </Stack>
+            </Paper>
+            {/* Buyer Information Card */}
+            <Paper
+              elevation={1}
+              sx={{
+                p: 2,
+                mb: 2,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Buyer Information
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
+                {salesOrder.buyer ? (
+                  <Box>
+                    <Typography>
+                      Name: <b>{salesOrder.buyer.name}</b>
+                    </Typography>
+                    {"email" in salesOrder.buyer && salesOrder.buyer.email && (
+                      <Typography>Email: {salesOrder.buyer.email}</Typography>
+                    )}
+                    {"phone" in salesOrder.buyer && salesOrder.buyer.phone && (
+                      <Typography>Phone: {salesOrder.buyer.phone}</Typography>
+                    )}
+                    {"address" in salesOrder.buyer && salesOrder.buyer.address && (
+                      <Typography>Address: {salesOrder.buyer.address}</Typography>
+                    )}
+                    {"website" in salesOrder.buyer && salesOrder.buyer.website && (
+                      <Typography>Website: {salesOrder.buyer.website}</Typography>
+                    )}
+                    {"taxId" in salesOrder.buyer && salesOrder.buyer.taxId && (
+                      <Typography>Tax ID: {salesOrder.buyer.taxId}</Typography>
+                    )}
+                    {salesOrder.buyer.notes && (
+                      <Typography>Notes: {salesOrder.buyer.notes}</Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography color="text.secondary">No buyer information</Typography>
+                )}
+              </Box>
+              <Box sx={{ mt: 2, textAlign: "right" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={!salesOrder.buyer_id}
+                  onClick={() => {
+                    if (salesOrder.buyer_id) {
+                      router.push(`/app/${workspace_id}/contacts/${salesOrder.buyer_id}`);
+                    }
+                  }}
+                >
+                  View Buyer
+                </Button>
+              </Box>
+            </Paper>
+            {/* Project Information Card */}
+            <Paper
+              elevation={1}
+              sx={{
+                p: 2,
+                mb: 3,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Project Information
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
+                {salesOrder.project ? (
+                  <Box>
+                    <Typography>
+                      Name: <b>{salesOrder.project.name}</b>
+                    </Typography>
+                    <Typography>Code: {salesOrder.project.project_code}</Typography>
+                    <Typography>Description: {salesOrder.project.description}</Typography>
+                    <Typography>Company: {salesOrder.project.company?.name}</Typography>
+                    <Typography>Status: {salesOrder.project.status}</Typography>
+                    <Typography>
+                      Scope of Work: {salesOrder.project.scope_of_work?.join(", ")}
+                    </Typography>
+                    <Typography>Contacts:</Typography>
+                    <Box sx={{ pl: 2 }}>
+                      {(salesOrder.project.project_contacts ?? []).length ? (
+                        (salesOrder.project.project_contacts ?? []).map((pc: any) => (
+                          <Box key={pc.contact_id} sx={{ mb: 1 }}>
+                            <Typography>
+                              {pc.relation_to_project}: {pc.contact?.name}
+                            </Typography>
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography color="text.secondary">No contacts</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ) : (
+                  <Typography color="text.secondary">No project information</Typography>
+                )}
+              </Box>
+              <Box sx={{ mt: 2, textAlign: "right" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={!salesOrder.project_id}
+                  onClick={() => {
+                    if (salesOrder.project_id) {
+                      router.push(`/app/${workspace_id}/projects/${salesOrder.project_id}`);
+                    }
+                  }}
+                >
+                  View Project
+                </Button>
+              </Box>
             </Paper>
 
             {/* Stubbed Help/Support Card */}
