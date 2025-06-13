@@ -906,6 +906,7 @@ type RentalSalesOrderLineItem {
   company_id: String
   created_at: String
   created_by: String
+  created_by_user: User
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String
@@ -914,6 +915,7 @@ type RentalSalesOrderLineItem {
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
   off_rent_date: String
+  price: Price
   price_id: String
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int
@@ -924,6 +926,7 @@ type RentalSalesOrderLineItem {
   so_quantity: Int
   updated_at: String
   updated_by: String
+  updated_by_user: User
 }
 
 type RentalTransaction implements BaseTransaction {
@@ -990,9 +993,11 @@ type SaleSalesOrderLineItem {
   company_id: String
   created_at: String
   created_by: String
+  created_by_user: User
   id: String!
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
+  price: Price
   price_id: String
   so_pim_category: PimCategory
   so_pim_id: String
@@ -1001,6 +1006,7 @@ type SaleSalesOrderLineItem {
   unit_cost_in_cents: Int
   updated_at: String
   updated_by: String
+  updated_by_user: User
 }
 
 type SaleTransaction implements BaseTransaction {
