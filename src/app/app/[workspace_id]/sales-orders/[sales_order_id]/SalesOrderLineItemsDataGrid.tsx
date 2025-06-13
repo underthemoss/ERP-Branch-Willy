@@ -386,7 +386,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               Items in the order will show here
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-              Manage each line item's transaction type, details, and fulfillment requirements here.
+              Manage each line item&apos;s transaction type, details, and fulfillment requirements
+              here.
             </Typography>
             <Button
               variant="contained"
