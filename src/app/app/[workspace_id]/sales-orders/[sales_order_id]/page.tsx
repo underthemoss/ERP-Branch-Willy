@@ -159,9 +159,6 @@ export default function SalesOrderDetailPage() {
                     Sales Order
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Purchase Order Number: {salesOrder.order_id}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Purchase Order Number: {salesOrder.purchase_order_number}
                   </Typography>
                 </Grid>
