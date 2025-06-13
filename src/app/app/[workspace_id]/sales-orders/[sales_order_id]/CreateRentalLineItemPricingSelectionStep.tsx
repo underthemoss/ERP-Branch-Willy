@@ -19,6 +19,18 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 
+// Import or define the types and utilities
+type PriceInCents = {
+  pricePerDayInCents: number | null;
+  pricePerWeekInCents: number | null;
+  pricePerMonthInCents: number | null;
+};
+
+const formatCentsToUSD = (cents: number | null): string => {
+  if (cents == null) return "";
+  return (cents / 100).toFixed(2);
+};
+
 export interface PricingSelectionStepProps {
   soPimId: string;
   pricesLoading: boolean;
@@ -29,12 +41,8 @@ export interface PricingSelectionStepProps {
   onCancel: () => void;
   onContinue: () => void;
   onBack: () => void;
-  customPrices: { pricePerDay: string; pricePerWeek: string; pricePerMonth: string };
-  setCustomPrices: (prices: {
-    pricePerDay: string;
-    pricePerWeek: string;
-    pricePerMonth: string;
-  }) => void;
+  customPrices: PriceInCents;
+  setCustomPrices: (prices: PriceInCents) => void;
 }
 
 const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps> = ({
@@ -56,30 +64,22 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     if (idx < rentalPrices.length) {
       const selectedRegularPrice = rentalPrices[idx];
       setCustomPrices({
-        pricePerDay:
-          selectedRegularPrice.pricePerDayInCents != null
-            ? (selectedRegularPrice.pricePerDayInCents / 100).toFixed(2)
-            : "",
-        pricePerWeek:
-          selectedRegularPrice.pricePerWeekInCents != null
-            ? (selectedRegularPrice.pricePerWeekInCents / 100).toFixed(2)
-            : "",
-        pricePerMonth:
-          selectedRegularPrice.pricePerMonthInCents != null
-            ? (selectedRegularPrice.pricePerMonthInCents / 100).toFixed(2)
-            : "",
+        pricePerDayInCents: selectedRegularPrice.pricePerDayInCents,
+        pricePerWeekInCents: selectedRegularPrice.pricePerWeekInCents,
+        pricePerMonthInCents: selectedRegularPrice.pricePerMonthInCents,
       });
     }
   };
 
   const handleCustomPriceChange =
-    (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof PriceInCents) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
       // Only allow numbers and decimal points
       if (/^\d*\.?\d*$/.test(value)) {
+        const cents = value ? Math.round(parseFloat(value) * 100) : null;
         setCustomPrices({
           ...customPrices,
-          [field]: value,
+          [field]: cents,
         });
       }
     };
@@ -87,15 +87,9 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
   const customPriceOption = {
     id: "custom",
     name: "Custom Price",
-    pricePerDayInCents: customPrices.pricePerDay
-      ? Math.round(parseFloat(customPrices.pricePerDay) * 100)
-      : null,
-    pricePerWeekInCents: customPrices.pricePerWeek
-      ? Math.round(parseFloat(customPrices.pricePerWeek) * 100)
-      : null,
-    pricePerMonthInCents: customPrices.pricePerMonth
-      ? Math.round(parseFloat(customPrices.pricePerMonth) * 100)
-      : null,
+    pricePerDayInCents: customPrices.pricePerDayInCents,
+    pricePerWeekInCents: customPrices.pricePerWeekInCents,
+    pricePerMonthInCents: customPrices.pricePerMonthInCents,
   };
 
   const allPrices = [...rentalPrices, customPriceOption];
@@ -165,17 +159,17 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                     </Box>
                     <Box sx={{ flex: 1, textAlign: "center" }}>
                       {price.pricePerDayInCents != null
-                        ? `$${(price.pricePerDayInCents / 100).toFixed(2)}`
+                        ? `$${formatCentsToUSD(price.pricePerDayInCents)}`
                         : "-"}
                     </Box>
                     <Box sx={{ flex: 1, textAlign: "center" }}>
                       {price.pricePerWeekInCents != null
-                        ? `$${(price.pricePerWeekInCents / 100).toFixed(2)}`
+                        ? `$${formatCentsToUSD(price.pricePerWeekInCents)}`
                         : "-"}
                     </Box>
                     <Box sx={{ flex: 1, textAlign: "center" }}>
                       {price.pricePerMonthInCents != null
-                        ? `$${(price.pricePerMonthInCents / 100).toFixed(2)}`
+                        ? `$${formatCentsToUSD(price.pricePerMonthInCents)}`
                         : "-"}
                     </Box>
                   </Paper>
@@ -215,8 +209,8 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                   <Box sx={{ flex: 1, textAlign: "center" }}>
                     <FormControl size="small" sx={{ width: "100px" }}>
                       <OutlinedInput
-                        value={customPrices.pricePerDay}
-                        onChange={handleCustomPriceChange("pricePerDay")}
+                        value={formatCentsToUSD(customPrices.pricePerDayInCents)}
+                        onChange={handleCustomPriceChange("pricePerDayInCents")}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="0.00"
                         disabled={selectedPrice !== rentalPrices.length}
@@ -228,8 +222,8 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                   <Box sx={{ flex: 1, textAlign: "center" }}>
                     <FormControl size="small" sx={{ width: "100px" }}>
                       <OutlinedInput
-                        value={customPrices.pricePerWeek}
-                        onChange={handleCustomPriceChange("pricePerWeek")}
+                        value={formatCentsToUSD(customPrices.pricePerWeekInCents)}
+                        onChange={handleCustomPriceChange("pricePerWeekInCents")}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="0.00"
                         disabled={selectedPrice !== rentalPrices.length}
@@ -241,8 +235,8 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                   <Box sx={{ flex: 1, textAlign: "center" }}>
                     <FormControl size="small" sx={{ width: "100px" }}>
                       <OutlinedInput
-                        value={customPrices.pricePerMonth}
-                        onChange={handleCustomPriceChange("pricePerMonth")}
+                        value={formatCentsToUSD(customPrices.pricePerMonthInCents)}
+                        onChange={handleCustomPriceChange("pricePerMonthInCents")}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="0.00"
                         disabled={selectedPrice !== rentalPrices.length}

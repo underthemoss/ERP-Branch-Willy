@@ -141,6 +141,29 @@ const calculateRentalCost = (
   return { totalCost, breakdown };
 };
 
+// Add utility types and functions for price handling
+type PriceInCents = {
+  pricePerDayInCents: number | null;
+  pricePerWeekInCents: number | null;
+  pricePerMonthInCents: number | null;
+};
+
+const formatCentsToUSD = (cents: number | null): string | undefined => {
+  if (cents == null) return undefined;
+  return `$${(cents / 100).toFixed(2)}`;
+};
+
+const getPriceFromRentalPrice = (rentalPrice: any, isCustom: boolean, customPrices: PriceInCents): PriceInCents => {
+  if (isCustom) {
+    return customPrices;
+  }
+  return {
+    pricePerDayInCents: rentalPrice?.pricePerDayInCents ?? null,
+    pricePerWeekInCents: rentalPrice?.pricePerWeekInCents ?? null,
+    pricePerMonthInCents: rentalPrice?.pricePerMonthInCents ?? null,
+  };
+};
+
 interface CreateRentalLineItemDialogProps {
   open: boolean;
   onClose: () => void;
@@ -163,10 +186,10 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
 
   // Step 2: Pricing State
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
-  const [customPrices, setCustomPrices] = useState({
-    pricePerDay: "",
-    pricePerWeek: "",
-    pricePerMonth: "",
+  const [customPrices, setCustomPrices] = useState<PriceInCents>({
+    pricePerDayInCents: null,
+    pricePerWeekInCents: null,
+    pricePerMonthInCents: null,
   });
 
   // Step 3: Fulfillment State
@@ -199,6 +222,11 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
     setError(null);
     setStep(1);
     setSelectedPrice(0);
+    setCustomPrices({
+      pricePerDayInCents: null,
+      pricePerWeekInCents: null,
+      pricePerMonthInCents: null,
+    });
     setFulfillmentMethod("Delivery");
     setDeliveryLocation("3274 Doe Meadow Drive, Annapolis Junction, MD 20701");
     setDeliveryCharge("0.00");
@@ -210,36 +238,24 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    // Only validate on last step
     if (step !== 5) return;
-    // TODO: Add validation for required fields if needed
+
     try {
-      const selectedRentalPrice =
-        selectedPrice === rentalPrices.length
-          ? null // Custom price selected
-          : rentalPrices[selectedPrice ?? 0]; // Use index to get the actual price object
+      const isCustomPrice = selectedPrice === rentalPrices.length;
+      const selectedRentalPrice = isCustomPrice ? null : rentalPrices[selectedPrice ?? 0];
+      const prices = getPriceFromRentalPrice(selectedRentalPrice, isCustomPrice, customPrices);
 
       await createLineItem({
         variables: {
           input: {
             sales_order_id: salesOrderId,
             so_pim_id: soPimId,
-            so_quantity: 1, // Default to 1 for now
-            price_id:
-              selectedPrice === rentalPrices.length ? null : selectedRentalPrice?.id || null,
-            price_per_day_in_cents:
-              selectedPrice === rentalPrices.length
-                ? parseFloat(customPrices.pricePerDay) * 100
-                : selectedRentalPrice?.pricePerDayInCents || null,
-            price_per_week_in_cents:
-              selectedPrice === rentalPrices.length
-                ? parseFloat(customPrices.pricePerWeek) * 100
-                : selectedRentalPrice?.pricePerWeekInCents || null,
-            price_per_month_in_cents:
-              selectedPrice === rentalPrices.length
-                ? parseFloat(customPrices.pricePerMonth) * 100
-                : selectedRentalPrice?.pricePerMonthInCents || null,
-            unit_cost_in_cents: null, // Optional field
+            so_quantity: 1,
+            price_id: isCustomPrice ? null : selectedRentalPrice?.id || null,
+            price_per_day_in_cents: prices.pricePerDayInCents,
+            price_per_week_in_cents: prices.pricePerWeekInCents,
+            price_per_month_in_cents: prices.pricePerMonthInCents,
+            unit_cost_in_cents: null,
           },
         },
       });
@@ -314,70 +330,44 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
       )}
 
       {/* Step 5: Confirmation */}
-      {step === 5 && (
-        <CreateRentalLineItemConfirmationStep
-          productName={(() => {
-            const price = rentalPrices[selectedPrice ?? 0];
-            return price?.pimProduct?.name || "";
-          })()}
-          priceTier={(() => {
-            if (selectedPrice === rentalPrices.length) return "Custom Price";
-            return rentalPrices[selectedPrice ?? 0]?.name || "";
-          })()}
-          priceBookName={(() => {
-            if (selectedPrice === rentalPrices.length) return undefined;
-            return rentalPrices[selectedPrice ?? 0]?.priceBook?.name;
-          })()}
-          pricePerDay={(() => {
-            if (selectedPrice === rentalPrices.length) return customPrices.pricePerDay;
-            const cents = rentalPrices[selectedPrice ?? 0]?.pricePerDayInCents;
-            return cents != null ? `$${(cents / 100).toFixed(2)}` : undefined;
-          })()}
-          pricePerWeek={(() => {
-            if (selectedPrice === rentalPrices.length) return customPrices.pricePerWeek;
-            const cents = rentalPrices[selectedPrice ?? 0]?.pricePerWeekInCents;
-            return cents != null ? `$${(cents / 100).toFixed(2)}` : undefined;
-          })()}
-          pricePerMonth={(() => {
-            if (selectedPrice === rentalPrices.length) return customPrices.pricePerMonth;
-            const cents = rentalPrices[selectedPrice ?? 0]?.pricePerMonthInCents;
-            return cents != null ? `$${(cents / 100).toFixed(2)}` : undefined;
-          })()}
-          fulfillmentMethod={fulfillmentMethod}
-          deliveryLocation={deliveryLocation}
-          deliveryCharge={deliveryCharge}
-          deliveryDate={formatDate(dateRange[0])}
-          offRentDate={formatDate(dateRange[1])}
-          deliveryNotes={deliveryNotes}
-          rentalCostBreakdown={(() => {
-            const selectedRentalPrice = rentalPrices[selectedPrice ?? 0];
-            if ((!selectedRentalPrice && !customPrices) || !dateRange[0] || !dateRange[1])
-              return undefined;
+      {step === 5 && (() => {
+        const isCustomPrice = selectedPrice === rentalPrices.length;
+        const selectedRentalPrice = rentalPrices[selectedPrice ?? 0];
+        const prices = getPriceFromRentalPrice(selectedRentalPrice, isCustomPrice, customPrices);
 
-            const result = calculateRentalCost({
-              pricePerDayInCents:
-                selectedPrice === rentalPrices.length
-                  ? parseFloat(customPrices.pricePerDay) * 100
-                  : selectedRentalPrice.pricePerDayInCents,
-              pricePerWeekInCents:
-                selectedPrice === rentalPrices.length
-                  ? parseFloat(customPrices.pricePerWeek) * 100
-                  : selectedRentalPrice.pricePerWeekInCents,
-              pricePerMonthInCents:
-                selectedPrice === rentalPrices.length
-                  ? parseFloat(customPrices.pricePerMonth) * 100
-                  : selectedRentalPrice.pricePerMonthInCents,
-              startDate: dateRange[0],
-              endDate: dateRange[1],
-            });
+        return (
+          <CreateRentalLineItemConfirmationStep
+            productName={selectedRentalPrice?.pimProduct?.name || ""}
+            priceTier={isCustomPrice ? "Custom Price" : selectedRentalPrice?.name || ""}
+            priceBookName={isCustomPrice ? undefined : selectedRentalPrice?.priceBook?.name}
+            pricePerDay={formatCentsToUSD(prices.pricePerDayInCents)}
+            pricePerWeek={formatCentsToUSD(prices.pricePerWeekInCents)}
+            pricePerMonth={formatCentsToUSD(prices.pricePerMonthInCents)}
+            fulfillmentMethod={fulfillmentMethod}
+            deliveryLocation={deliveryLocation}
+            deliveryCharge={deliveryCharge}
+            deliveryDate={formatDate(dateRange[0])}
+            offRentDate={formatDate(dateRange[1])}
+            deliveryNotes={deliveryNotes}
+            rentalCostBreakdown={(() => {
+              if (!dateRange[0] || !dateRange[1]) return undefined;
 
-            return result.breakdown;
-          })()}
-          onCancel={handleClose}
-          onSubmit={handleSubmit}
-          onBack={() => setStep(4)}
-        />
-      )}
+              const result = calculateRentalCost({
+                pricePerDayInCents: prices.pricePerDayInCents,
+                pricePerWeekInCents: prices.pricePerWeekInCents,
+                pricePerMonthInCents: prices.pricePerMonthInCents,
+                startDate: dateRange[0],
+                endDate: dateRange[1],
+              });
+
+              return result.breakdown;
+            })()}
+            onCancel={handleClose}
+            onSubmit={handleSubmit}
+            onBack={() => setStep(4)}
+          />
+        );
+      })()}
     </Dialog>
   );
 };
