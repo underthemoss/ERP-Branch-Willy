@@ -1,15 +1,26 @@
 "use client";
 
-import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Button,
   DialogActions,
   DialogContent,
   DialogTitle,
-  TextField,
+  FormControl,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  OutlinedInput,
+  Select,
   Typography,
 } from "@mui/material";
+import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
+import { MultiInputDateRangeField } from "@mui/x-date-pickers-pro/MultiInputDateRangeField";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 
 export interface FulfillmentDetailsStepProps {
@@ -19,10 +30,8 @@ export interface FulfillmentDetailsStepProps {
   setDeliveryLocation: (v: string) => void;
   deliveryCharge: string;
   setDeliveryCharge: (v: string) => void;
-  deliveryDate: string;
-  setDeliveryDate: (v: string) => void;
-  offRentDate: string;
-  setOffRentDate: (v: string) => void;
+  dateRange: [string | null, string | null]; // ISO strings
+  setDateRange: (v: [string | null, string | null]) => void;
   onCancel: () => void;
   onContinue: () => void;
   onBack: () => void;
@@ -35,98 +44,100 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
   setDeliveryLocation,
   deliveryCharge,
   setDeliveryCharge,
-  deliveryDate,
-  setDeliveryDate,
-  offRentDate,
-  setOffRentDate,
+  dateRange,
+  setDateRange,
   onCancel,
   onContinue,
   onBack,
-}) => (
-  <>
-    <DialogTitle>Fulfillment Details</DialogTitle>
-    <DialogContent sx={{ pt: 1, pb: 0 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Complete the fields to record a sale. For ownership transfers, check the box to skip lease
-        terms.
-      </Typography>
-      <TextField
-        select
-        label="Fulfillment Method"
-        value={fulfillmentMethod}
-        onChange={(e) => setFulfillmentMethod(e.target.value as "Delivery" | "Pickup")}
-        SelectProps={{ native: true }}
-        fullWidth
-        sx={{ mb: 2 }}
+}) => {
+  // Convert ISO strings to dayjs objects for the DateRangePicker
+  const internalDateRange: [Dayjs | null, Dayjs | null] = [
+    dateRange[0] ? dayjs(dateRange[0]) : null,
+    dateRange[1] ? dayjs(dateRange[1]) : null,
+  ];
+
+  // Convert dayjs objects back to ISO strings when date changes
+  const handleDateRangeChange = (newValue: [Dayjs | null, Dayjs | null]) => {
+    setDateRange([newValue[0]?.toISOString() ?? null, newValue[1]?.toISOString() ?? null]);
+  };
+
+  return (
+    <>
+      <DialogTitle>Fulfillment Details</DialogTitle>
+      <DialogContent sx={{ pt: 1, pb: 0 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Complete the fields to record a sale. For ownership transfers, check the box to skip lease
+          terms.
+        </Typography>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Fulfillment Method</InputLabel>
+          <Select
+            value={fulfillmentMethod}
+            onChange={(e) => setFulfillmentMethod(e.target.value as "Delivery" | "Pickup")}
+            label="Fulfillment Method"
+          >
+            <MenuItem value="Delivery">Delivery</MenuItem>
+            <MenuItem value="Pickup">Pickup</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Delivery Location</InputLabel>
+          <OutlinedInput
+            value={deliveryLocation}
+            onChange={(e) => setDeliveryLocation(e.target.value)}
+            label="Delivery Location"
+            startAdornment={<SearchIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />}
+          />
+        </FormControl>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Delivery Charge</InputLabel>
+          <OutlinedInput
+            value={deliveryCharge}
+            onChange={(e) => setDeliveryCharge(e.target.value)}
+            label="Delivery Charge"
+            startAdornment={<InputAdornment position="start">$</InputAdornment>}
+            endAdornment={<InputAdornment position="end">USD</InputAdornment>}
+            inputProps={{ min: 0 }}
+          />
+        </FormControl>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DateRangePicker
+            value={internalDateRange}
+            onChange={handleDateRangeChange}
+            slots={{ field: MultiInputDateRangeField }}
+            localeText={{
+              start: "Delivery Date",
+              end: "Off-Rent Date",
+            }}
+          />
+        </LocalizationProvider>
+      </DialogContent>
+      <DialogActions
+        sx={{
+          bgcolor: "grey.100",
+          borderTop: 1,
+          borderColor: "divider",
+          px: 3,
+          py: 1.5,
+          mt: 3,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
       >
-        <option value="Delivery">Delivery</option>
-        <option value="Pickup">Pickup</option>
-      </TextField>
-      <TextField
-        label="Delivery Location"
-        value={deliveryLocation}
-        onChange={(e) => setDeliveryLocation(e.target.value)}
-        fullWidth
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: <KeyOutlinedIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />,
-        }}
-      />
-      <TextField
-        label="Delivery Charge"
-        value={deliveryCharge}
-        onChange={(e) => setDeliveryCharge(e.target.value)}
-        fullWidth
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: <span style={{ marginRight: 4 }}>$</span>,
-          endAdornment: <span style={{ marginLeft: 4 }}>USD</span>,
-          inputProps: { min: 0 },
-        }}
-      />
-      <Box sx={{ display: "flex", gap: 2 }}>
-        <TextField
-          label="Delivery date"
-          type="date"
-          value={deliveryDate}
-          onChange={(e) => setDeliveryDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1 }}
-        />
-        <TextField
-          label="Off Rent Date"
-          type="date"
-          value={offRentDate}
-          onChange={(e) => setOffRentDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1 }}
-        />
-      </Box>
-    </DialogContent>
-    <DialogActions
-      sx={{
-        bgcolor: "grey.100",
-        borderTop: 1,
-        borderColor: "divider",
-        px: 3,
-        py: 1.5,
-        display: "flex",
-        justifyContent: "space-between",
-      }}
-    >
-      <Button onClick={onCancel} color="inherit">
-        Cancel
-      </Button>
-      <Box sx={{ display: "flex", gap: 1 }}>
-        <Button onClick={onBack} color="inherit">
-          Back
+        <Button onClick={onCancel} color="inherit">
+          Cancel
         </Button>
-        <Button variant="contained" color="primary" onClick={onContinue}>
-          Continue
-        </Button>
-      </Box>
-    </DialogActions>
-  </>
-);
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button onClick={onBack} color="inherit">
+            Back
+          </Button>
+          <Button variant="contained" color="primary" onClick={onContinue}>
+            Continue
+          </Button>
+        </Box>
+      </DialogActions>
+    </>
+  );
+};
 
 export default CreateRentalLineItemFulfillmentDetailsStep;

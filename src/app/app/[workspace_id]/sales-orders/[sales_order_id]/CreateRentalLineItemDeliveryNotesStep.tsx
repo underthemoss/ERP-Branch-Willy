@@ -47,6 +47,7 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
         borderTop: 1,
         borderColor: "divider",
         px: 3,
+        mt: 3,
         py: 1.5,
         display: "flex",
         justifyContent: "space-between",
@@ -60,7 +61,7 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
           Back
         </Button>
         <Button type="submit" variant="contained" color="primary">
-          Finish
+          Continue
         </Button>
       </Box>
     </DialogActions>

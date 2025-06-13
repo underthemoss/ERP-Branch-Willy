@@ -65,6 +65,13 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
     fetchPolicy: "cache-and-network",
   });
 
+  const handleAddNewItem = async () => {
+    if (onAddNewItem) {
+      await onAddNewItem();
+      refetch();
+    }
+  };
+
   const lineItems = data?.getSalesOrderById?.line_items || [];
 
   const columns: GridColDef[] = [
@@ -80,29 +87,28 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Model",
       flex: 1,
       minWidth: 120,
-      valueGetter: (_, row) => row.so_pim_product?.model ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row) => row.so_pim_product?.model ?? "-",
     },
     {
       field: "so_pim_product.sku",
       headerName: "SKU",
       flex: 1,
       minWidth: 120,
-      valueGetter: (_, row) => row.so_pim_product?.sku ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row) => row.so_pim_product?.sku ?? "-",
     },
     {
       field: "so_pim_product.manufacturer_part_number",
       headerName: "Mfr Part #",
       flex: 1,
       minWidth: 140,
-      valueGetter: (_, row) =>
-        row.so_pim_product?.manufacturer_part_number ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row) => row.so_pim_product?.manufacturer_part_number ?? "-",
     },
     {
       field: "so_pim_product.year",
       headerName: "Year",
       flex: 0.5,
       minWidth: 80,
-      valueGetter: (_, row) => row.so_pim_product?.year ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row) => row.so_pim_product?.year ?? "-",
     },
     {
       field: "so_quantity",
@@ -141,7 +147,12 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               Manage each line item&apos;s transaction type, details, and fulfillment requirements
               here.
             </Typography>
-            <Button variant="contained" size="medium" onClick={onAddNewItem} sx={{ minWidth: 160 }}>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={handleAddNewItem}
+              sx={{ minWidth: 160 }}
+            >
               Add New Item
             </Button>
           </Box>
@@ -165,7 +176,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
             <Button
               variant="outlined"
               size="small"
-              onClick={onAddNewItem}
+              onClick={handleAddNewItem}
               sx={{ mt: 1, alignSelf: "flex-start" }}
             >
               Add Item

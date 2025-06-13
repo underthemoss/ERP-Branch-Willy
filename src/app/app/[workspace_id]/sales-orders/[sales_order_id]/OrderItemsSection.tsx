@@ -35,6 +35,7 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
         onSelect={handleTypeSelect}
       />
       <CreateRentalLineItemDialog
+        key={`${salesOrderId}-${rentalDialogOpen}-${saleDialogOpen}-${transferDialogOpen}`}
         open={rentalDialogOpen}
         onClose={() => setRentalDialogOpen(false)}
         salesOrderId={salesOrderId}
@@ -48,6 +49,7 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
 
       <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
         <SalesOrderLineItemsDataGrid
+          key={`${salesOrderId}-${rentalDialogOpen}-${saleDialogOpen}-${transferDialogOpen}`}
           salesOrderId={salesOrderId}
           onAddNewItem={() => setTypeDialogOpen(true)}
         />

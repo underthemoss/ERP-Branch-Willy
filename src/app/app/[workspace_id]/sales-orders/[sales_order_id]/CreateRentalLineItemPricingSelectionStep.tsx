@@ -8,6 +8,10 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControl,
+  InputAdornment,
+  InputLabel,
+  OutlinedInput,
   Paper,
   Stack,
   TextField,
@@ -25,6 +29,12 @@ export interface PricingSelectionStepProps {
   onCancel: () => void;
   onContinue: () => void;
   onBack: () => void;
+  customPrices: { pricePerDay: string; pricePerWeek: string; pricePerMonth: string };
+  setCustomPrices: (prices: {
+    pricePerDay: string;
+    pricePerWeek: string;
+    pricePerMonth: string;
+  }) => void;
 }
 
 const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps> = ({
@@ -37,13 +47,9 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
   onCancel,
   onContinue,
   onBack,
+  customPrices,
+  setCustomPrices,
 }) => {
-  const [customPrices, setCustomPrices] = useState({
-    pricePerDay: "",
-    pricePerWeek: "",
-    pricePerMonth: "",
-  });
-
   // Update custom prices when a regular pricing option is selected
   const handlePriceSelection = (idx: number) => {
     setSelectedPrice(idx);
@@ -71,10 +77,10 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
       const value = event.target.value;
       // Only allow numbers and decimal points
       if (/^\d*\.?\d*$/.test(value)) {
-        setCustomPrices((prev) => ({
-          ...prev,
+        setCustomPrices({
+          ...customPrices,
           [field]: value,
-        }));
+        });
       }
     };
 
@@ -207,46 +213,43 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                   </Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>-</Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <TextField
-                      size="small"
-                      value={customPrices.pricePerDay}
-                      onChange={handleCustomPriceChange("pricePerDay")}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="0.00"
-                      disabled={selectedPrice !== rentalPrices.length}
-                      InputProps={{
-                        startAdornment: "$",
-                        sx: { width: "100px" },
-                      }}
-                    />
+                    <FormControl size="small" sx={{ width: "100px" }}>
+                      <OutlinedInput
+                        value={customPrices.pricePerDay}
+                        onChange={handleCustomPriceChange("pricePerDay")}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="0.00"
+                        disabled={selectedPrice !== rentalPrices.length}
+                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
+                        size="small"
+                      />
+                    </FormControl>
                   </Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <TextField
-                      size="small"
-                      value={customPrices.pricePerWeek}
-                      onChange={handleCustomPriceChange("pricePerWeek")}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="0.00"
-                      disabled={selectedPrice !== rentalPrices.length}
-                      InputProps={{
-                        startAdornment: "$",
-                        sx: { width: "100px" },
-                      }}
-                    />
+                    <FormControl size="small" sx={{ width: "100px" }}>
+                      <OutlinedInput
+                        value={customPrices.pricePerWeek}
+                        onChange={handleCustomPriceChange("pricePerWeek")}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="0.00"
+                        disabled={selectedPrice !== rentalPrices.length}
+                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
+                        size="small"
+                      />
+                    </FormControl>
                   </Box>
                   <Box sx={{ flex: 1, textAlign: "center" }}>
-                    <TextField
-                      size="small"
-                      value={customPrices.pricePerMonth}
-                      onChange={handleCustomPriceChange("pricePerMonth")}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="0.00"
-                      disabled={selectedPrice !== rentalPrices.length}
-                      InputProps={{
-                        startAdornment: "$",
-                        sx: { width: "100px" },
-                      }}
-                    />
+                    <FormControl size="small" sx={{ width: "100px" }}>
+                      <OutlinedInput
+                        value={customPrices.pricePerMonth}
+                        onChange={handleCustomPriceChange("pricePerMonth")}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="0.00"
+                        disabled={selectedPrice !== rentalPrices.length}
+                        startAdornment={<InputAdornment position="start">$</InputAdornment>}
+                        size="small"
+                      />
+                    </FormControl>
                   </Box>
                 </Paper>
               </>
