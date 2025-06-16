@@ -3,7 +3,7 @@
 import { Box, Button, Paper, Typography } from "@mui/material";
 import * as React from "react";
 import CreateRentalLineItemDialog from "./CreateRentalLineItem/CreateRentalLineItemDialog";
-import CreateSaleLineItemDialog from "./CreateSaleLineItemDialog";
+import CreateSaleLineItemDialog from "./CreateSaleLineItem/CreateSaleLineItemDialog";
 import CreateTransferLineItemDialog from "./CreateTransferLineItemDialog";
 import SalesOrderLineItemsDataGrid from "./SalesOrderLineItemsDataGrid";
 import TransactionTypeSelectDialog, { TransactionType } from "./TransactionTypeSelectDialog";
@@ -25,6 +25,10 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
     } else if (type === "sale") setOpenDialog("sale");
     else if (type === "transfer") setOpenDialog("transfer");
     else setOpenDialog("none");
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog("none");
   };
 
   return (
@@ -51,7 +55,9 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
       />
       <CreateSaleLineItemDialog
         open={openDialog === "sale"}
-        onClose={() => setOpenDialog("none")}
+        onClose={handleCloseDialog}
+        salesOrderId={salesOrderId}
+        onSuccess={() => {}}
       />
       <CreateTransferLineItemDialog
         open={openDialog === "transfer"}
