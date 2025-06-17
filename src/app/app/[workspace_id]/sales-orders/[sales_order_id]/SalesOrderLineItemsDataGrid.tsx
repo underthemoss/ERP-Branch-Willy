@@ -361,10 +361,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       disableColumnMenu: true,
       align: "center",
       renderCell: (params) => (
-        <DeleteLineItemButton
-          lineItemId={params.row.id}
-          onDeleted={refetch}
-        />
+        <DeleteLineItemButton lineItemId={params.row.id} onDeleted={refetch} />
       ),
     },
   ];

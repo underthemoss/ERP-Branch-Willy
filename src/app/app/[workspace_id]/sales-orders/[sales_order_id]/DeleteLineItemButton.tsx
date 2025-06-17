@@ -3,17 +3,26 @@
 import { useSoftDeleteSalesOrderLineItemMutation } from "@/graphql/hooks";
 import { SOFT_DELETE_SALES_ORDER_LINE_ITEM } from "@/graphql/mutations";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from "@mui/material";
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
 import * as React from "react";
-
-
 
 export interface DeleteLineItemButtonProps {
   lineItemId: string;
   onDeleted?: () => void;
 }
 
-export const DeleteLineItemButton: React.FC<DeleteLineItemButtonProps> = ({ lineItemId, onDeleted }) => {
+export const DeleteLineItemButton: React.FC<DeleteLineItemButtonProps> = ({
+  lineItemId,
+  onDeleted,
+}) => {
   const [open, setOpen] = React.useState(false);
   const [softDelete, { loading }] = useSoftDeleteSalesOrderLineItemMutation();
 
@@ -44,7 +53,12 @@ export const DeleteLineItemButton: React.FC<DeleteLineItemButtonProps> = ({ line
           <Button onClick={() => setOpen(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" disabled={loading} startIcon={loading ? <CircularProgress size={18} /> : null}>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={18} /> : null}
+          >
             Delete
           </Button>
         </DialogActions>
