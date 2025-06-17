@@ -86,6 +86,87 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
           }
         }
       }
+      line_items {
+        __typename
+        ... on RentalSalesOrderLineItem {
+          id
+          so_pim_id
+          so_quantity
+          so_pim_product {
+            name
+            model
+            sku
+            manufacturer_part_number
+            year
+          }
+          so_pim_category {
+            id
+            name
+            description
+          }
+          created_by_user {
+            firstName
+            lastName
+          }
+          updated_by_user {
+            firstName
+            lastName
+          }
+          price {
+            ... on RentalPrice {
+              priceBook {
+                name
+                id
+              }
+            }
+          }
+          calulate_price {
+            total_including_delivery_in_cents
+          }
+          price_id
+          price_per_day_in_cents
+          price_per_week_in_cents
+          price_per_month_in_cents
+          delivery_location
+          delivery_date
+          delivery_method
+          delivery_charge_in_cents
+          off_rent_date
+          created_at
+          updated_at
+          lineitem_status
+        }
+        ... on SaleSalesOrderLineItem {
+          id
+          so_pim_id
+          so_quantity
+          so_pim_product {
+            name
+            model
+            sku
+            manufacturer_part_number
+            year
+          }
+          so_pim_category {
+            id
+            name
+            description
+          }
+          created_by_user {
+            firstName
+            lastName
+          }
+          updated_by_user {
+            firstName
+            lastName
+          }
+          price_id
+          unit_cost_in_cents
+          created_at
+          updated_at
+          lineitem_status
+        }
+      }
       created_by_user {
         id
         firstName
@@ -101,65 +182,6 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
     }
   }
 `);
-
-// Example line items (replace with real data when available)
-const exampleLineItems = [
-  {
-    description: "Concrete - 4000 PSI (cubic yard)",
-    quantity: 30,
-    unitPrice: 135.0,
-    total: 4050.0,
-  },
-  { description: "Rebar #4 (ton)", quantity: 2, unitPrice: 900.0, total: 1800.0 },
-  { description: "Formwork (sq ft)", quantity: 1200, unitPrice: 2.5, total: 3000.0 },
-  { description: "Excavation (cubic yard)", quantity: 200, unitPrice: 18.0, total: 3600.0 },
-  { description: "Backfill (cubic yard)", quantity: 150, unitPrice: 15.0, total: 2250.0 },
-  { description: "Structural Steel (ton)", quantity: 5, unitPrice: 2200.0, total: 11000.0 },
-  { description: "Masonry Block (each)", quantity: 800, unitPrice: 2.1, total: 1680.0 },
-  { description: "Brick Veneer (sq ft)", quantity: 600, unitPrice: 8.0, total: 4800.0 },
-  { description: "Roof Trusses (each)", quantity: 20, unitPrice: 350.0, total: 7000.0 },
-  { description: "Roofing Shingles (sq ft)", quantity: 2500, unitPrice: 1.2, total: 3000.0 },
-  { description: "Labor - Framing Crew (hr)", quantity: 160, unitPrice: 45.0, total: 7200.0 },
-  { description: "Drywall 5/8in (sheet)", quantity: 300, unitPrice: 12.0, total: 3600.0 },
-  { description: "Drywall Installation (hr)", quantity: 80, unitPrice: 40.0, total: 3200.0 },
-  { description: "Paint - Interior (gallon)", quantity: 40, unitPrice: 35.0, total: 1400.0 },
-  { description: "Painting Labor (hr)", quantity: 60, unitPrice: 38.0, total: 2280.0 },
-  { description: "Insulation - Batt (sq ft)", quantity: 1800, unitPrice: 0.85, total: 1530.0 },
-  { description: "Windows - Double Pane (each)", quantity: 18, unitPrice: 320.0, total: 5760.0 },
-  { description: "Exterior Doors (each)", quantity: 6, unitPrice: 450.0, total: 2700.0 },
-  { description: "Interior Doors (each)", quantity: 20, unitPrice: 180.0, total: 3600.0 },
-  { description: "Flooring - Tile (sq ft)", quantity: 900, unitPrice: 4.5, total: 4050.0 },
-  { description: "Flooring - Carpet (sq ft)", quantity: 1200, unitPrice: 3.2, total: 3840.0 },
-  { description: "Flooring - Hardwood (sq ft)", quantity: 700, unitPrice: 7.0, total: 4900.0 },
-  { description: "Plumbing - PEX Pipe (ft)", quantity: 600, unitPrice: 1.1, total: 660.0 },
-  { description: "Plumbing Fixtures (set)", quantity: 8, unitPrice: 550.0, total: 4400.0 },
-  { description: "Water Heater (each)", quantity: 2, unitPrice: 950.0, total: 1900.0 },
-  { description: "HVAC Ductwork (ft)", quantity: 400, unitPrice: 5.0, total: 2000.0 },
-  { description: "HVAC Unit (each)", quantity: 2, unitPrice: 4200.0, total: 8400.0 },
-  { description: "Electrical Conduit (ft)", quantity: 700, unitPrice: 1.3, total: 910.0 },
-  { description: "Electrical Wiring (ft)", quantity: 1200, unitPrice: 0.9, total: 1080.0 },
-  { description: "Electrical Outlets (each)", quantity: 60, unitPrice: 18.0, total: 1080.0 },
-  { description: "Light Fixtures (each)", quantity: 30, unitPrice: 75.0, total: 2250.0 },
-  { description: "Switchgear Panel (each)", quantity: 2, unitPrice: 1200.0, total: 2400.0 },
-  { description: "Fire Sprinkler Heads (each)", quantity: 40, unitPrice: 32.0, total: 1280.0 },
-  { description: "Fire Alarm System (lump sum)", quantity: 1, unitPrice: 3500.0, total: 3500.0 },
-  { description: "Site Grading (sq ft)", quantity: 5000, unitPrice: 0.6, total: 3000.0 },
-  { description: "Concrete Sidewalk (sq ft)", quantity: 800, unitPrice: 4.0, total: 3200.0 },
-  { description: "Asphalt Paving (sq ft)", quantity: 2000, unitPrice: 2.2, total: 4400.0 },
-  { description: "Curb & Gutter (ft)", quantity: 300, unitPrice: 12.0, total: 3600.0 },
-  { description: "Landscaping - Sod (sq ft)", quantity: 2500, unitPrice: 1.1, total: 2750.0 },
-  { description: "Landscaping - Trees (each)", quantity: 12, unitPrice: 180.0, total: 2160.0 },
-  { description: "Fencing - Chain Link (ft)", quantity: 400, unitPrice: 9.0, total: 3600.0 },
-  { description: "Fencing - Wood (ft)", quantity: 300, unitPrice: 14.0, total: 4200.0 },
-  { description: "Temporary Power (lump sum)", quantity: 1, unitPrice: 1200.0, total: 1200.0 },
-  { description: "Portable Toilet (mo)", quantity: 4, unitPrice: 110.0, total: 440.0 },
-  { description: "Dumpster Rental (mo)", quantity: 3, unitPrice: 350.0, total: 1050.0 },
-  { description: "Site Security (mo)", quantity: 2, unitPrice: 800.0, total: 1600.0 },
-  { description: "General Conditions (lump sum)", quantity: 1, unitPrice: 5000.0, total: 5000.0 },
-  { description: "Project Management (hr)", quantity: 120, unitPrice: 65.0, total: 7800.0 },
-  { description: "Permits & Fees (lump sum)", quantity: 1, unitPrice: 2500.0, total: 2500.0 },
-  { description: "Final Cleaning (lump sum)", quantity: 1, unitPrice: 900.0, total: 900.0 },
-];
 
 function formatDate(dateString?: string | null) {
   if (!dateString) return "";
@@ -185,13 +207,67 @@ export default function SalesOrderPrintPage() {
 
   const { data, loading, error } = useGetSalesOrderByIdPrintQuery({
     variables: { id: sales_order_id },
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "no-cache",
   });
 
-  const salesOrder = data?.getSalesOrderById;
+  if (loading) return <>loading</>;
 
-  // Calculate totals
-  const subtotal = exampleLineItems.reduce((sum, item) => sum + item.total, 0);
+  type SalesOrderType = NonNullable<typeof data>["getSalesOrderById"];
+  type LineItemType = SalesOrderType extends { line_items?: (infer T)[] } ? T : any;
+
+  const salesOrder: SalesOrderType | undefined = data?.getSalesOrderById;
+
+  // Use real line items
+  const lineItems: LineItemType[] =
+    (salesOrder as SalesOrderType & { line_items?: LineItemType[] })?.line_items || [];
+
+  // Calculate totals from real data
+  function getLineItemTotal(item: any): number {
+    if (!item) return 0;
+    if (
+      item.__typename === "RentalSalesOrderLineItem" &&
+      item.calulate_price &&
+      typeof item.calulate_price.total_including_delivery_in_cents === "number"
+    ) {
+      return item.calulate_price.total_including_delivery_in_cents / 100;
+    }
+    if (
+      item.__typename === "SaleSalesOrderLineItem" &&
+      typeof item.unit_cost_in_cents === "number" &&
+      typeof item.so_quantity === "number"
+    ) {
+      return (item.unit_cost_in_cents * item.so_quantity) / 100;
+    }
+    return 0;
+  }
+
+  function getUnitPrice(item: any): number {
+    if (!item) return 0;
+    if (
+      item.__typename === "RentalSalesOrderLineItem" &&
+      typeof item.price_per_day_in_cents === "number"
+    ) {
+      // For print, show price per day if available
+      return item.price_per_day_in_cents / 100;
+    }
+    if (
+      item.__typename === "SaleSalesOrderLineItem" &&
+      typeof item.unit_cost_in_cents === "number"
+    ) {
+      return item.unit_cost_in_cents / 100;
+    }
+    return 0;
+  }
+
+  function getDescription(item: any): string {
+    if (!item) return "";
+    return item.so_pim_product?.name || item.so_pim_category?.name || "—";
+  }
+
+  const subtotal = lineItems.reduce(
+    (sum: number, item: LineItemType) => sum + getLineItemTotal(item),
+    0,
+  );
   const tax = subtotal * 0.08; // Example 8% tax
   const total = subtotal + tax;
 
@@ -473,14 +549,22 @@ export default function SalesOrderPrintPage() {
                 </tr>
               </thead>
               <tbody>
-                {exampleLineItems.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>{item.description}</td>
-                    <td>{item.quantity}</td>
-                    <td>{formatCurrency(item.unitPrice)}</td>
-                    <td>{formatCurrency(item.total)}</td>
+                {lineItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: "center", color: "#888" }}>
+                      No order items
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  lineItems.map((item: any, idx: number) => (
+                    <tr key={item.id || idx}>
+                      <td>{getDescription(item)}</td>
+                      <td>{item.so_quantity ?? "—"}</td>
+                      <td>{formatCurrency(getUnitPrice(item))}</td>
+                      <td>{formatCurrency(getLineItemTotal(item))}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -510,11 +594,6 @@ export default function SalesOrderPrintPage() {
           </div>
           <div style={{ clear: "both" }} />
           <div style={{ height: "60px" }} /> {/* Spacer for footer */}
-        </div>
-        <div className="print-footer">
-          This document is generated electronically and is valid without a signature. &nbsp;|&nbsp;
-          For questions, contact {seller?.name || "the seller"}. &nbsp;|&nbsp; ©{" "}
-          {new Date().getFullYear()} {seller?.name || ""}
         </div>
       </div>
       {loading && (

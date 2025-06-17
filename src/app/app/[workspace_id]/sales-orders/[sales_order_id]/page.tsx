@@ -1,13 +1,25 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useGetSalesOrderByIdQuery } from "@/graphql/hooks";
+import {
+  useCreatePdfFromPageAndAttachToEntityIdMutation,
+  useGetSalesOrderByIdQuery,
+} from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";
+
+export const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
+  mutation CreatePdfFromPageAndAttachToEntityId($entity_id: String!, $path: String!) {
+    createPdfFromPageAndAttachToEntityId(entity_id: $entity_id, path: $path) {
+      success
+      error_message
+    }
+  }
+`);
 
 const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
@@ -112,10 +124,15 @@ export default function SalesOrderDetailPage() {
   }>();
   const router = useRouter();
 
+  const [cachekey, setCacheKey] = React.useState(0);
+
   const { data, loading, error } = useGetSalesOrderByIdQuery({
     variables: { id: sales_order_id },
     fetchPolicy: "cache-and-network",
   });
+
+  const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
+    useCreatePdfFromPageAndAttachToEntityIdMutation();
 
   const salesOrder = data?.getSalesOrderById;
 
@@ -166,9 +183,38 @@ export default function SalesOrderDetailPage() {
                   <Button variant="contained" sx={{ mr: 1 }}>
                     Edit
                   </Button>
-                  <Button variant="outlined" color="secondary">
-                    Print
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    disabled={pdfLoading}
+                    onClick={async () => {
+                      if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
+                      await createPdf({
+                        variables: {
+                          entity_id: salesOrder.id,
+                          path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
+                        },
+                      });
+                      setCacheKey((k) => k + 1);
+                    }}
+                  >
+                    {pdfLoading ? "Generating PDF..." : "Print"}
                   </Button>
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
+                    <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
+                      PDF attached!
+                    </Typography>
+                  )}
+                  {pdfError && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfError.message}
+                    </Typography>
+                  )}
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.error_message && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfData.createPdfFromPageAndAttachToEntityId.error_message}
+                    </Typography>
+                  )}
                 </Grid>
               </Grid>
               <Divider sx={{ my: 2 }} />
@@ -203,7 +249,7 @@ export default function SalesOrderDetailPage() {
                 Attached Files
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection entityId={salesOrder.id} />
+              <AttachedFilesSection key={`files-${cachekey}`} entityId={salesOrder.id} />
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
