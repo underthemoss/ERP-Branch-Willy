@@ -38,7 +38,7 @@ jobs:
             const https = require('https');
             const fs = require('fs');
             const url = process.env.SLACK_WEBHOOK;
-            const content = fs.readFileSync('release_note.md', 'utf8');
+            const content = fs.readFileSync('release_note.md', 'utf8').toString();
             const data = JSON.stringify({ content, channel: 'C0912S17B9B' });
             const req = https.request(url, {
               method: 'POST',
