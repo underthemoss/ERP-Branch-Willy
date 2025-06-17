@@ -12,9 +12,9 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";
 
-export const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
-  mutation CreatePdfFromPageAndAttachToEntityId($entity_id: String!, $path: String!) {
-    createPdfFromPageAndAttachToEntityId(entity_id: $entity_id, path: $path) {
+const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
+  mutation CreatePdfFromPageAndAttachToEntityId($entity_id: String!, $path: String!, $file_name: String!) {
+    createPdfFromPageAndAttachToEntityId(entity_id: $entity_id, path: $path, file_name: $file_name) {
       success
       error_message
     }
@@ -189,10 +189,17 @@ export default function SalesOrderDetailPage() {
                     disabled={pdfLoading}
                     onClick={async () => {
                       if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
+                      // Format file name as sales-order-YYYY-MM-DD
+                      const today = new Date();
+                      const yyyy = today.getFullYear();
+                      const mm = String(today.getMonth() + 1).padStart(2, "0");
+                      const dd = String(today.getDate()).padStart(2, "0");
+                      const fileName = `sales-order-${yyyy}-${mm}-${dd}`;
                       await createPdf({
                         variables: {
                           entity_id: salesOrder.id,
                           path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
+                          file_name: fileName,
                         },
                       });
                       setCacheKey((k) => k + 1);

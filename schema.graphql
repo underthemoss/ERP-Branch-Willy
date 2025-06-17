@@ -520,7 +520,7 @@ type Mutation {
   createNote(input: NoteInput!): Note
 
   """Generate and save a PDF for an entity by path and entity_id"""
-  createPdfFromPageAndAttachToEntityId(entity_id: String!, path: String!): CreatePdfResult
+  createPdfFromPageAndAttachToEntityId(entity_id: String!, file_name: String, path: String!): CreatePdfResult
   createPersonContact(input: PersonContactInput!): PersonContact
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
