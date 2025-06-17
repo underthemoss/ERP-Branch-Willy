@@ -7,7 +7,8 @@ import {
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
-import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { Box, Button, Container, Divider, Grid, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";
@@ -281,13 +282,23 @@ export default function SalesOrderDetailPage() {
               </Typography>
               <Divider sx={{ mb: 1 }} />
               <Stack spacing={2}>
-                <Box>
+                <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" color="text.secondary">
                     ID
                   </Typography>
-                  <Typography variant="body2" fontWeight="bold">
+                  <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
                     {salesOrder.id}
                   </Typography>
+                  <Tooltip title="Copy Sales Order ID" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Sales Order ID"
+                      data-testid="sales-order-details-copy-id"
+                      onClick={() => navigator.clipboard.writeText(salesOrder.id)}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
