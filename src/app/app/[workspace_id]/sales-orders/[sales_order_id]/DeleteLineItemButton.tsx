@@ -1,7 +1,7 @@
 "use client";
 
+import { graphql } from "@/graphql";
 import { useSoftDeleteSalesOrderLineItemMutation } from "@/graphql/hooks";
-import { SOFT_DELETE_SALES_ORDER_LINE_ITEM } from "@/graphql/mutations";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Button,
@@ -13,6 +13,20 @@ import {
   IconButton,
 } from "@mui/material";
 import * as React from "react";
+
+// GQL mutation for soft deleting a sales order line item
+graphql(`
+  mutation SoftDeleteSalesOrderLineItem($id: String) {
+    softDeleteSalesOrderLineItem(id: $id) {
+      ... on RentalSalesOrderLineItem {
+        id
+      }
+      ... on SaleSalesOrderLineItem {
+        id
+      }
+    }
+  }
+`);
 
 export interface DeleteLineItemButtonProps {
   lineItemId: string;
