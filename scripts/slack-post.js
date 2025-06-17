@@ -8,15 +8,6 @@ const content = fs.readFileSync("release_note.md", "utf8").toString();
 const data = JSON.stringify({
   content,
   channel: "C0912S17B9B",
-  blocks: [
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: "*Release Notes*\n\n• :hammer_and_wrench: Fixed CI workflow to properly read and post release notes to Slack.",
-      },
-    },
-  ],
 });
 console.log(data);
 const req = https.request(
