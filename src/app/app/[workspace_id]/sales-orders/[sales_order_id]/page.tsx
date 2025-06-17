@@ -8,7 +8,18 @@ import {
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { Box, Button, Container, Divider, Grid, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";

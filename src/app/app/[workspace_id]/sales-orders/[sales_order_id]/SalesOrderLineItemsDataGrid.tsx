@@ -5,7 +5,8 @@ import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
-import { DataGrid, GridColDef, Toolbar } from "@mui/x-data-grid";
+import { LineChart } from "@mui/x-charts/LineChart";
+import { DataGridPro, GridColDef, Toolbar } from "@mui/x-data-grid-pro";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
 
@@ -48,8 +49,35 @@ graphql(`
             }
           }
           calulate_price {
+            strategy
+            rentalPeriod {
+              days28
+              days7
+              days1
+            }
+            details {
+              optimalSplit {
+                days28
+                days7
+                days1
+              }
+              plainText
+              rates {
+                pricePer28DaysInCents
+                pricePer7DaysInCents
+                pricePer1DayInCents
+              }
+            }
             total_including_delivery_in_cents
+            forecast {
+              days {
+                day
+                cost_in_cents
+                accumulative_cost_in_cents
+              }
+            }
           }
+
           price_id
           price_per_day_in_cents
           price_per_week_in_cents
@@ -436,7 +464,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
           </Box>
         ) : (
           <>
-            <DataGrid
+            <DataGridPro
               rows={lineItems}
               columns={columns}
               loading={loading}
@@ -523,6 +551,158 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                   );
                 },
               }}
+              getDetailPanelContent={({
+                row,
+              }: {
+                row: NonNullable<
+                  NonNullable<NonNullable<typeof data>["getSalesOrderById"]>["line_items"]
+                >[number];
+              }) =>
+                row?.__typename === "RentalSalesOrderLineItem" ? (
+                  <Box sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Rental Line Item Details
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Product:</strong> {row.so_pim_product?.name} (
+                      {row.so_pim_product?.model})
+                    </Typography>
+
+                    <Box sx={{ mt: 2 }}>
+                      {row.calulate_price?.details && (
+                        <>
+                          <Typography variant="body2">
+                            <strong>Rates:</strong>{" "}
+                            {row.calulate_price?.details.rates
+                              ? `28d: $${(row.calulate_price?.details.rates.pricePer28DaysInCents / 100).toFixed(2)}, 7d: $${(row.calulate_price?.details.rates.pricePer7DaysInCents / 100).toFixed(2)}, 1d: $${(row.calulate_price?.details.rates.pricePer1DayInCents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Optimal Split:</strong>{" "}
+                            {row.calulate_price?.details.optimalSplit
+                              ? `28d: ${row.calulate_price?.details.optimalSplit.days28}, 7d: ${row.calulate_price?.details.optimalSplit.days7}, 1d: ${row.calulate_price?.details.optimalSplit.days1}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Cost Summary:</strong>{" "}
+                            {row.calulate_price?.details.plainText ?? "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Sub total:</strong>{" "}
+                            {row.delivery_charge_in_cents &&
+                            row.calulate_price.total_including_delivery_in_cents
+                              ? `$${((row.calulate_price.total_including_delivery_in_cents - row.delivery_charge_in_cents) / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Delivery:</strong>{" "}
+                            {row.delivery_charge_in_cents
+                              ? `$${(row.delivery_charge_in_cents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Total (Incl. Delivery):</strong>{" "}
+                            {row.calulate_price?.total_including_delivery_in_cents
+                              ? `$${(row.calulate_price.total_including_delivery_in_cents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+
+                    <Typography variant="body2">
+                      <strong>Custom Price/Day:</strong>{" "}
+                      {row.price_per_day_in_cents
+                        ? `$${(row.price_per_day_in_cents / 100).toFixed(2)}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Custom Price/Week:</strong>{" "}
+                      {row.price_per_week_in_cents
+                        ? `$${(row.price_per_week_in_cents / 100).toFixed(2)}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Custom Price/Month:</strong>{" "}
+                      {row.price_per_month_in_cents
+                        ? `$${(row.price_per_month_in_cents / 100).toFixed(2)}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Delivery Method:</strong> {row.delivery_method ?? "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Delivery Location:</strong> {row.delivery_location ?? "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Delivery Date:</strong>{" "}
+                      {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Off-Rent Date:</strong>{" "}
+                      {row.off_rent_date ? new Date(row.off_rent_date).toLocaleDateString() : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Created By:</strong>{" "}
+                      {row.created_by_user
+                        ? `${row.created_by_user.firstName} ${row.created_by_user.lastName}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Updated By:</strong>{" "}
+                      {row.updated_by_user
+                        ? `${row.updated_by_user.firstName} ${row.updated_by_user.lastName}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Created At:</strong>{" "}
+                      {row.created_at ? new Date(row.created_at).toLocaleString() : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Updated At:</strong>{" "}
+                      {row.updated_at ? new Date(row.updated_at).toLocaleString() : "-"}
+                    </Typography>
+
+                    {(row.calulate_price?.forecast?.days?.length ?? 0) > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Cost Forecast
+                        </Typography>
+                        <LineChart
+                          height={220}
+                          series={[
+                            {
+                              data: row.calulate_price?.forecast?.days.map(
+                                (d: any) => d.accumulative_cost_in_cents / 100,
+                              ),
+                              label: "Accumulative Cost ($)",
+                              color: "#1976d2",
+                              showMark: false,
+                            },
+                          ]}
+                          xAxis={[
+                            {
+                              data: row.calulate_price?.forecast?.days.map((d: any) => d.day),
+                              label: "Day",
+                              valueFormatter: (v: number) => `Day ${v}`,
+                            },
+                          ]}
+                          yAxis={[
+                            {
+                              label: "Cost ($)",
+                              valueFormatter: (v: number) =>
+                                `$${v.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`,
+                            },
+                          ]}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                ) : null
+              }
             />
             <Button
               variant="outlined"
