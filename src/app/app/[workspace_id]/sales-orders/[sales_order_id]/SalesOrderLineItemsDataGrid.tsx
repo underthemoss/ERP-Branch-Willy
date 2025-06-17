@@ -5,7 +5,7 @@ import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, Toolbar } from "@mui/x-data-grid";
 import * as React from "react";
 
 // --- GQL Query (for codegen) ---
@@ -45,6 +45,9 @@ graphql(`
                 id
               }
             }
+          }
+          calulate_price {
+            total_including_delivery_in_cents
           }
           price_id
           price_per_day_in_cents
@@ -192,7 +195,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) =>
         typeof row.price_per_day_in_cents === "number"
-          ? `$${(row.price_per_day_in_cents / 100).toFixed(2)}`
+          ? `$${(row.price_per_day_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : "-",
     },
     {
@@ -202,7 +205,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) =>
         typeof row.price_per_week_in_cents === "number"
-          ? `$${(row.price_per_week_in_cents / 100).toFixed(2)}`
+          ? `$${(row.price_per_week_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : "-",
     },
     {
@@ -212,7 +215,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) =>
         typeof row.price_per_month_in_cents === "number"
-          ? `$${(row.price_per_month_in_cents / 100).toFixed(2)}`
+          ? `$${(row.price_per_month_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : "-",
     },
     {
@@ -222,7 +225,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) =>
         typeof row.unit_cost_in_cents === "number"
-          ? `$${(row.unit_cost_in_cents / 100).toFixed(2)}`
+          ? `$${(row.unit_cost_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : "-",
     },
     {
@@ -271,7 +274,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) =>
         typeof row.delivery_charge_in_cents === "number"
-          ? `$${(row.delivery_charge_in_cents / 100).toFixed(2)}`
+          ? `$${(row.delivery_charge_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : "-",
     },
     {
@@ -320,6 +323,26 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       minWidth: 140,
       flex: 1,
       valueGetter: (_, row) => (row.created_at ? new Date(row.created_at).toLocaleString() : "-"),
+    },
+    {
+      field: "line_item_total_incl_delivery",
+      headerName: "Line Item Price (Incl. Delivery)",
+      minWidth: 180,
+      flex: 1,
+      valueGetter: (_, row) => {
+        // Rental: use calulate_price.total_including_delivery_in_cents if present
+        if (
+          row.calulate_price &&
+          typeof row.calulate_price.total_including_delivery_in_cents === "number"
+        ) {
+          return `$${(row.calulate_price.total_including_delivery_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        // Sale: use unit_cost_in_cents if present
+        if (typeof row.unit_cost_in_cents === "number") {
+          return `$${(row.unit_cost_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        return "-";
+      },
     },
     {
       field: "updated_at",
@@ -407,8 +430,86 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               disableRowSelectionOnClick
               autoHeight
               getRowId={(row) => row.id}
-              hideFooter
               sx={{ backgroundColor: "background.paper" }}
+              initialState={{
+                columns: {
+                  columnVisibilityModel: {
+                    // Show only these columns by default
+                    "so_pim_product.name": true,
+                    so_quantity: true,
+                    line_item_total_incl_delivery: true,
+                    lineitem_status: true,
+                    delivery_method: true,
+                    // All others hidden by default
+                    id: false,
+                    so_pim_id: false,
+                    "so_pim_product.model": false,
+                    "so_pim_product.sku": false,
+                    "so_pim_product.manufacturer_part_number": false,
+                    "so_pim_product.year": false,
+                    "so_pim_category.name": false,
+                    "so_pim_category.description": false,
+                    "so_pim_category.id": false,
+                    "price.priceBook.name": false,
+                    "price.priceBook.id": false,
+                    price_per_day_in_cents: false,
+                    price_per_week_in_cents: false,
+                    price_per_month_in_cents: false,
+                    unit_cost_in_cents: false,
+                    price_id: false,
+                    delivery_location: false,
+                    delivery_charge_in_cents: false,
+                    delivery_date: false,
+                    off_rent_date: false,
+                    created_by_user: false,
+                    updated_by_user: false,
+                    created_at: false,
+                    updated_at: false,
+                  },
+                },
+              }}
+              slots={{
+                toolbar: Toolbar,
+                footer: () => {
+                  // todo: should do this on the BE. Calculate total price for all line items using type guards
+                  const totalCents = lineItems.reduce((sum, row) => {
+                    if (!row || typeof row !== "object") return sum;
+                    if (
+                      row.__typename === "RentalSalesOrderLineItem" &&
+                      row.calulate_price &&
+                      typeof row.calulate_price.total_including_delivery_in_cents === "number"
+                    ) {
+                      return sum + row.calulate_price.total_including_delivery_in_cents;
+                    }
+                    if (
+                      row.__typename === "SaleSalesOrderLineItem" &&
+                      typeof row.unit_cost_in_cents === "number"
+                    ) {
+                      return sum + row.unit_cost_in_cents;
+                    }
+                    return sum;
+                  }, 0);
+                  const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  return (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        px: 2,
+                        py: 1,
+                        background: "background.paper",
+                        borderTop: 1,
+                        borderColor: "divider",
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+                        Total: {totalFormatted}
+                      </Typography>
+                    </Box>
+                  );
+                },
+              }}
             />
             <Button
               variant="outlined"
