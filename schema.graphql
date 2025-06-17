@@ -538,6 +538,7 @@ type Mutation {
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
   removeFileFromEntity(file_id: String!): File!
+  softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updateBusinessName(id: ID!, name: String!): BusinessContact
@@ -964,6 +965,7 @@ type RentalSalesOrderLineItem {
   created_at: String
   created_by: String
   created_by_user: User
+  deleted_at: String
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String
@@ -977,6 +979,7 @@ type RentalSalesOrderLineItem {
   price_per_day_in_cents: Int
   price_per_month_in_cents: Int
   price_per_week_in_cents: Int
+  sales_order_id: String
   so_pim_category: PimCategory
   so_pim_id: String
   so_pim_product: PimProduct
@@ -1051,11 +1054,13 @@ type SaleSalesOrderLineItem {
   created_at: String
   created_by: String
   created_by_user: User
+  deleted_at: String
   id: String!
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
   price: Price
   price_id: String
+  sales_order_id: String
   so_pim_category: PimCategory
   so_pim_id: String
   so_pim_product: PimProduct

@@ -7,6 +7,7 @@ import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { DataGrid, GridColDef, Toolbar } from "@mui/x-data-grid";
 import * as React from "react";
+import DeleteLineItemButton from "./DeleteLineItemButton";
 
 // --- GQL Query (for codegen) ---
 graphql(`
@@ -350,6 +351,21 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       minWidth: 140,
       flex: 1,
       valueGetter: (_, row) => (row.updated_at ? new Date(row.updated_at).toLocaleString() : "-"),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      minWidth: 80,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      align: "center",
+      renderCell: (params) => (
+        <DeleteLineItemButton
+          lineItemId={params.row.id}
+          onDeleted={refetch}
+        />
+      ),
     },
   ];
 
