@@ -7,6 +7,7 @@ import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import { Box, Button, Typography } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { DataGridPro, GridColDef, Toolbar } from "@mui/x-data-grid-pro";
+import { addDays, format } from "date-fns";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
 
@@ -684,7 +685,10 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                             {
                               data: row.calulate_price?.forecast?.days.map((d: any) => d.day),
                               label: "Day",
-                              valueFormatter: (v: number) => `Day ${v}`,
+                              valueFormatter: (v: number) =>
+                                row.delivery_date
+                                  ? format(addDays(row.delivery_date, v), "d MMM")
+                                  : String(v),
                             },
                           ]}
                           yAxis={[
