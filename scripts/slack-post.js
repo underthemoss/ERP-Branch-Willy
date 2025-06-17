@@ -3,7 +3,7 @@ const fs = require("fs");
 const url = process.env.SLACK_WEBHOOK;
 
 if (!url) throw new Error("No slack endpoint provided");
-const content = fs.readFileSync("release_note.md", "utf8").toString();
+const content = fs.readFileSync("release_note.txt", "utf8").toString();
 
 const data = JSON.stringify({
   content,
@@ -16,7 +16,6 @@ const req = https.request(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Content-Length": data.length,
     },
   },
   (res) => {

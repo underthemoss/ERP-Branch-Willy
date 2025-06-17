@@ -64,4 +64,6 @@ pgtyped.prod.json
 *storybook.log
 storybook-static
 
-./release_note.md
+release_note.md
+
+release_note.txt
