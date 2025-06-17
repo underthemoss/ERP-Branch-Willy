@@ -305,8 +305,74 @@ export default function SalesOrderPrintPage() {
           justify-content: flex-start;
           overflow-y: auto;
         }
+        .print-watermark-tiles {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: 10000;
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          grid-template-rows: repeat(6, 1fr);
+          opacity: 1;
+          mix-blend-mode: multiply;
+        }
+        .print-watermark-tile {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2.8rem;
+          font-weight: 700;
+          color: #b0b0b0;
+          opacity: 0.18;
+          transform: rotate(-25deg);
+          user-select: none;
+          white-space: nowrap;
+        }
+        @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-main {
+            position: static !important;
+            width: 100vw !important;
+            min-height: 100vh !important;
+            height: auto !important;
+            z-index: 9999 !important;
+            background: #fff !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+          .print-watermark-tiles {
+            display: grid !important;
+          }
+          .print-content {
+            max-width: 794px !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+          }
+          .print-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100vw;
+            font-size: 0.95rem;
+            color: #666;
+            text-align: center;
+            padding: 8px 0;
+            background: #fff;
+            border-top: 1px solid #bbb;
+          }
+        }
         .print-content {
-          max-width: 794px;
+          padding: 40px;
+          padding-left:0px;
           width: 100%;
         }
         @media print {
@@ -404,6 +470,13 @@ export default function SalesOrderPrintPage() {
         `}
       </style>
       <div className="print-main">
+        <div className="print-watermark-tiles" aria-hidden="true">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <span className="print-watermark-tile" key={i}>
+              SAMPLE
+            </span>
+          ))}
+        </div>
         <div className="print-content">
           <div
             style={{

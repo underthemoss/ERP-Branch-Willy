@@ -13,8 +13,16 @@ import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";
 
 const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
-  mutation CreatePdfFromPageAndAttachToEntityId($entity_id: String!, $path: String!, $file_name: String!) {
-    createPdfFromPageAndAttachToEntityId(entity_id: $entity_id, path: $path, file_name: $file_name) {
+  mutation CreatePdfFromPageAndAttachToEntityId(
+    $entity_id: String!
+    $path: String!
+    $file_name: String!
+  ) {
+    createPdfFromPageAndAttachToEntityId(
+      entity_id: $entity_id
+      path: $path
+      file_name: $file_name
+    ) {
       success
       error_message
     }
