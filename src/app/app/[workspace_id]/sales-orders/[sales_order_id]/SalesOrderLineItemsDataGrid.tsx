@@ -15,6 +15,11 @@ import DeleteLineItemButton from "./DeleteLineItemButton";
 graphql(`
   query SalesOrderLineItems($salesOrderId: String!) {
     getSalesOrderById(id: $salesOrderId) {
+      pricing {
+        sub_total_in_cents
+        tax_total_in_cents
+        total_in_cents
+      }
       line_items {
         ... on RentalSalesOrderLineItem {
           id
@@ -513,31 +518,19 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               slots={{
                 toolbar: Toolbar,
                 footer: () => {
-                  // todo: should do this on the BE. Calculate total price for all line items using type guards
-                  const totalCents = lineItems.reduce((sum, row) => {
-                    if (!row || typeof row !== "object") return sum;
-                    if (
-                      row.__typename === "RentalSalesOrderLineItem" &&
-                      row.calulate_price &&
-                      typeof row.calulate_price.total_including_delivery_in_cents === "number"
-                    ) {
-                      return sum + row.calulate_price.total_including_delivery_in_cents;
-                    }
-                    if (
-                      row.__typename === "SaleSalesOrderLineItem" &&
-                      typeof row.unit_cost_in_cents === "number"
-                    ) {
-                      return sum + row.unit_cost_in_cents;
-                    }
-                    return sum;
-                  }, 0);
+                  const pricing = data?.getSalesOrderById?.pricing;
+                  const subTotalCents = pricing?.sub_total_in_cents ?? 0;
+                  const taxCents = pricing?.tax_total_in_cents ?? 0;
+                  const totalCents = pricing?.total_in_cents ?? 0;
+                  const subTotalFormatted = `$${(subTotalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  const taxFormatted = `$${(taxCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   return (
                     <Box
                       sx={{
                         display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
                         px: 2,
                         py: 1,
                         background: "background.paper",
@@ -545,6 +538,12 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                         borderColor: "divider",
                       }}
                     >
+                      <Typography variant="body2">
+                        Subtotal: {subTotalFormatted}
+                      </Typography>
+                      <Typography variant="body2">
+                        Tax: {taxFormatted}
+                      </Typography>
                       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
                         Total: {totalFormatted}
                       </Typography>

@@ -86,6 +86,11 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
           }
         }
       }
+      pricing {
+        sub_total_in_cents
+        tax_total_in_cents
+        total_in_cents
+      }
       line_items {
         __typename
         ... on RentalSalesOrderLineItem {
@@ -264,12 +269,10 @@ export default function SalesOrderPrintPage() {
     return item.so_pim_product?.name || item.so_pim_category?.name || "—";
   }
 
-  const subtotal = lineItems.reduce(
-    (sum: number, item: LineItemType) => sum + getLineItemTotal(item),
-    0,
-  );
-  const tax = subtotal * 0.08; // Example 8% tax
-  const total = subtotal + tax;
+  const pricing = salesOrder?.pricing;
+  const subtotal = (pricing?.sub_total_in_cents ?? 0) / 100;
+  const tax = (pricing?.tax_total_in_cents ?? 0) / 100;
+  const total = (pricing?.total_in_cents ?? 0) / 100;
 
   // Seller info (project.company)
   const seller =
