@@ -105,7 +105,6 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth={step === 2 ? "md" : "sm"} fullWidth>
-      <LinearProgress hidden={!loading} />
       {typeof lineItemId === "string" && (
         <>
           {/* Step 1: Select product */}
