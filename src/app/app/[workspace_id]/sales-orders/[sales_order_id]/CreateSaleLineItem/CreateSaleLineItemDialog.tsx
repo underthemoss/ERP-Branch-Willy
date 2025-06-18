@@ -1,5 +1,6 @@
 // "use client";
 
+import { useGetSalesOrderSaleLineItemByIdCreateDialogQuery } from "@/graphql/hooks";
 import { Box, Button, Dialog, DialogActions } from "@mui/material";
 import React, { useState } from "react";
 import CreateSaleLineItemConfirmationStep from "./CreateSaleLineItemConfirmationStep";
@@ -9,7 +10,7 @@ import CreateSaleLineItemProductSelectionStep from "./CreateSaleLineItemProductS
 interface CreateSaleLineItemDialogProps {
   open: boolean;
   onClose: () => void;
-  salesOrderId: string;
+  lineItemId: string;
   onSuccess: () => void;
 }
 
@@ -22,16 +23,16 @@ export type CreateSaleLineItemFooter = React.FC<{
 export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> = ({
   open,
   onClose,
-  salesOrderId,
+  lineItemId,
   onSuccess,
 }) => {
-  // Wizard navigation state
   const [step, setStep] = useState<number>(1);
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
-
+  const { data } = useGetSalesOrderSaleLineItemByIdCreateDialogQuery({
+    variables: { id: lineItemId },
+    fetchPolicy: "cache-and-network",
+  });
   const handleClose = () => {
     setStep(1);
-    setSelectedProductId("");
     onClose();
   };
 
@@ -66,7 +67,11 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
               if (onNextClick) {
                 await onNextClick();
               }
-              setStep((s) => s + 1);
+              if (step === 3) {
+                handleClose();
+              } else {
+                setStep((s) => s + 1);
+              }
             }}
           >
             Continue
@@ -78,36 +83,19 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      {typeof salesOrderId === "string" && (
+      {typeof lineItemId === "string" && (
         <>
           {/* Step 1: Select product */}
           {step === 1 && (
-            <CreateSaleLineItemProductSelectionStep
-              salesOrderId={salesOrderId}
-              Footer={Footer}
-              selectedProductId={selectedProductId}
-              setSelectedProductId={setSelectedProductId}
-              onContinue={() => setStep(2)}
-            />
+            <CreateSaleLineItemProductSelectionStep lineItemId={lineItemId} Footer={Footer} />
           )}
 
           {/* Step 2: Pricing */}
-          {step === 2 && (
-            <CreateSaleLineItemPricingStep
-              salesOrderId={salesOrderId}
-              Footer={Footer}
-              selectedProductId={selectedProductId}
-            />
-          )}
+          {step === 2 && <CreateSaleLineItemPricingStep lineItemId={lineItemId} Footer={Footer} />}
 
           {/* Step 3: Confirmation */}
           {step === 3 && (
-            <CreateSaleLineItemConfirmationStep
-              salesOrderId={salesOrderId}
-              onCancel={handleClose}
-              onSubmit={onSuccess}
-              onBack={() => setStep(2)}
-            />
+            <CreateSaleLineItemConfirmationStep lineItemId={lineItemId} Footer={Footer} />
           )}
         </>
       )}

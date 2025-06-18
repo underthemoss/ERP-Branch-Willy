@@ -925,6 +925,7 @@ type RentalPrice {
   parentPrice: Price
   parentPriceId: ID
   parentPriceIdPercentageFactor: Float
+  pimCategory: PimCategory
   pimCategoryId: String!
   pimCategoryName: String!
   pimCategoryPath: String!
@@ -1022,9 +1023,12 @@ type SalePrice {
   parentPrice: Price
   parentPriceId: ID
   parentPriceIdPercentageFactor: Float
+  pimCategory: PimCategory
   pimCategoryId: String!
   pimCategoryName: String!
   pimCategoryPath: String!
+  pimProduct: PimProduct
+  pimProductId: ID
   priceBook: PriceBook
   priceBookId: ID
   priceType: PriceType!

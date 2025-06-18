@@ -103,7 +103,17 @@ graphql(`
           so_quantity
           so_pim_product {
             name
+            model
+            sku
+            manufacturer_part_number
+            year
           }
+          so_pim_category {
+            id
+            name
+            description
+          }
+
           unit_cost_in_cents
           created_at
           updated_at

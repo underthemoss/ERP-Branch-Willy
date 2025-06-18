@@ -1,5 +1,8 @@
 import { graphql } from "@/graphql";
-import { useCreateInitialRentalSalesOrderLineItemMutation } from "@/graphql/hooks";
+import {
+  useCreateInitialRentalSalesOrderLineItemMutation,
+  useCreateSaleSalesOrderLineItemMutation,
+} from "@/graphql/hooks";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
@@ -20,13 +23,21 @@ import React from "react";
 
 export type TransactionType = "rental" | "sale" | "transfer";
 
-// GQL mutation declaration (for codegen)
+// GQL mutation declarations (for codegen)
 graphql(`
   mutation createInitialRentalSalesOrderLineItem($input: CreateRentalSalesOrderLineItemInput!) {
     createRentalSalesOrderLineItem(input: $input) {
       ... on RentalSalesOrderLineItem {
         id
       }
+    }
+  }
+`);
+
+graphql(`
+  mutation createSaleSalesOrderLineItem($input: CreateSaleSalesOrderLineItemInput!) {
+    createSaleSalesOrderLineItem(input: $input) {
+      id
     }
   }
 `);
@@ -74,12 +85,14 @@ const TransactionTypeSelectDialog: React.FC<TransactionTypeSelectDialogProps> = 
   onSelect,
   salesOrderId,
 }) => {
-  const [createLineItem, { loading }] = useCreateInitialRentalSalesOrderLineItemMutation();
+  const [createRentalLineItem, { loading: loadingRental }] =
+    useCreateInitialRentalSalesOrderLineItemMutation();
+  const [createSaleLineItem, { loading: loadingSale }] = useCreateSaleSalesOrderLineItemMutation();
 
   const handleTypeSelect = async (type: TransactionType) => {
     if (type === "rental") {
       try {
-        const result = await createLineItem({
+        const result = await createRentalLineItem({
           variables: {
             input: {
               sales_order_id: salesOrderId,
@@ -94,6 +107,25 @@ const TransactionTypeSelectDialog: React.FC<TransactionTypeSelectDialogProps> = 
         }
       } catch (err) {
         console.error("Failed to create rental line item:", err);
+        onClose();
+      }
+    } else if (type === "sale") {
+      try {
+        const result = await createSaleLineItem({
+          variables: {
+            input: {
+              sales_order_id: salesOrderId,
+              so_quantity: 1,
+            },
+          },
+        });
+
+        const lineItem = result.data?.createSaleSalesOrderLineItem;
+        if (lineItem && lineItem.id) {
+          onSelect(type, lineItem.id);
+        }
+      } catch (err) {
+        console.error("Failed to create sale line item:", err);
         onClose();
       }
     } else {

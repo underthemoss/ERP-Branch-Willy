@@ -22,8 +22,10 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
     if (type === "rental" && lineItemId) {
       setLineItemId(lineItemId);
       setOpenDialog("rental");
-    } else if (type === "sale") setOpenDialog("sale");
-    else if (type === "transfer") setOpenDialog("transfer");
+    } else if (type === "sale" && lineItemId) {
+      setOpenDialog("sale");
+      setLineItemId(lineItemId);
+    } else if (type === "transfer") setOpenDialog("transfer");
     else setOpenDialog("none");
   };
 
@@ -56,7 +58,7 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
       <CreateSaleLineItemDialog
         open={openDialog === "sale"}
         onClose={handleCloseDialog}
-        salesOrderId={salesOrderId}
+        lineItemId={lineItemId || ""}
         onSuccess={() => {}}
       />
       <CreateTransferLineItemDialog
