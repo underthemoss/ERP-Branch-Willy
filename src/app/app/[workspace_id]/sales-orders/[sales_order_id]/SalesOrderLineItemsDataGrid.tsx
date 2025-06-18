@@ -538,12 +538,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                         borderColor: "divider",
                       }}
                     >
-                      <Typography variant="body2">
-                        Subtotal: {subTotalFormatted}
-                      </Typography>
-                      <Typography variant="body2">
-                        Tax: {taxFormatted}
-                      </Typography>
+                      <Typography variant="body2">Subtotal: {subTotalFormatted}</Typography>
+                      <Typography variant="body2">Tax: {taxFormatted}</Typography>
                       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
                         Total: {totalFormatted}
                       </Typography>

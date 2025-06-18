@@ -2,7 +2,7 @@
 
 import { GetSalesOrderRentalLineItemByIdCreateDialogQuery } from "@/graphql/graphql";
 import { useUpdateRentalSalesOrderLineCreateDialogMutation } from "@/graphql/hooks";
-import { Box, Button, Dialog, DialogActions } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, LinearProgress } from "@mui/material";
 import React, { useState } from "react";
 import { useGetSalesOrderRentalLineItemByIdCreateDialogQuery } from "./api";
 import CreateRentalLineItemConfirmationStep from "./CreateRentalLineItemConfirmationStep";
@@ -36,8 +36,6 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
-  const [updateLineItem, { loading: mutationLoading }] =
-    useUpdateRentalSalesOrderLineCreateDialogMutation();
 
   const lineItem =
     data?.getSalesOrderLineItemById?.__typename === "RentalSalesOrderLineItem"
@@ -91,7 +89,11 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
               if (onNextClick) {
                 await onNextClick();
               }
-              setStep((s) => s + 1);
+              if (step === 5) {
+                handleClose();
+              } else {
+                setStep((s) => s + 1);
+              }
             }}
           >
             Continue
@@ -103,6 +105,7 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth={step === 2 ? "md" : "sm"} fullWidth>
+      <LinearProgress hidden={!loading} />
       {typeof lineItemId === "string" && (
         <>
           {/* Step 1: Select product */}
@@ -117,32 +120,17 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
 
           {/* Step 3: Fulfillment details */}
           {step === 3 && (
-            <CreateRentalLineItemFulfillmentDetailsStep
-              lineItemId={lineItemId}
-              onCancel={handleClose}
-              onContinue={() => setStep(4)}
-              onBack={() => setStep(2)}
-            />
+            <CreateRentalLineItemFulfillmentDetailsStep lineItemId={lineItemId} Footer={Footer} />
           )}
 
           {/* Step 4: Delivery notes */}
           {step === 4 && (
-            <CreateRentalLineItemDeliveryNotesStep
-              lineItemId={lineItemId}
-              onCancel={handleClose}
-              onSubmit={() => setStep(5)}
-              onBack={() => setStep(3)}
-            />
+            <CreateRentalLineItemDeliveryNotesStep lineItemId={lineItemId} Footer={Footer} />
           )}
 
           {/* Step 5: Confirmation */}
           {step === 5 && (
-            <CreateRentalLineItemConfirmationStep
-              lineItemId={lineItemId}
-              onCancel={handleClose}
-              onSubmit={onSuccess}
-              onBack={() => setStep(4)}
-            />
+            <CreateRentalLineItemConfirmationStep lineItemId={lineItemId} Footer={Footer} />
           )}
         </>
       )}

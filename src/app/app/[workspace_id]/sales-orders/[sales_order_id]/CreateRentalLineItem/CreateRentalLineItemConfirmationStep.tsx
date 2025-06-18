@@ -17,21 +17,19 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
-
 /* Removed duplicate GetSalesOrderLineItemById query definition; now defined in api.ts */
+
+import type { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
 export interface ConfirmationStepProps {
   lineItemId: string;
-  onCancel: () => void;
-  onSubmit: () => void;
-  onBack: () => void;
+  Footer: CreateRentalLineItemFooter;
 }
 
 const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
   lineItemId,
-  onCancel,
-  onSubmit,
-  onBack,
+
+  Footer,
 }) => {
   // Use the generated hook for fetching a single line item by ID
   const { data, loading, error } = useGetSalesOrderRentalLineItemByIdCreateDialogQuery({
@@ -62,7 +60,6 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit();
       }}
     >
       <DialogTitle>Confirm Line Item Details</DialogTitle>
@@ -148,30 +145,8 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
           )}
         </Box>
       </DialogContent>
-      <DialogActions
-        sx={{
-          bgcolor: "grey.100",
-          borderTop: 1,
-          borderColor: "divider",
-          px: 3,
-          mt: 3,
-          py: 1.5,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Button onClick={onCancel} color="inherit">
-          Cancel
-        </Button>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button onClick={onBack} color="inherit">
-            Back
-          </Button>
-          <Button type="submit" variant="contained" color="primary">
-            Submit
-          </Button>
-        </Box>
-      </DialogActions>
+
+      <Footer nextEnabled={true} loading={false} onNextClick={async () => {}} />
     </form>
   );
 };

@@ -15,19 +15,17 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
+import type { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
 export interface DeliveryNotesStepProps {
   lineItemId: string;
-  onCancel: () => void;
-  onSubmit: () => void;
-  onBack: () => void;
+  Footer: CreateRentalLineItemFooter;
 }
 
 const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = ({
   lineItemId,
-  onCancel,
-  onSubmit,
-  onBack,
+
+  Footer,
 }) => {
   const [deliveryNotes, setDeliveryNotes] = React.useState<string>("");
 
@@ -48,7 +46,6 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
           },
         },
       });
-      onSubmit();
     } catch (err) {
       // Optionally handle error
       console.error(err);
@@ -66,35 +63,18 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
           multiline
           minRows={4}
           fullWidth
-          placeholder="Jordan Smith — 512-555-0123. Use east gate off 5th St, unload near staging area."
+          placeholder=""
           value={deliveryNotes}
           onChange={(e) => setDeliveryNotes(e.target.value)}
         />
       </DialogContent>
-      <DialogActions
-        sx={{
-          bgcolor: "grey.100",
-          borderTop: 1,
-          borderColor: "divider",
-          px: 3,
-          mt: 3,
-          py: 1.5,
-          display: "flex",
-          justifyContent: "space-between",
+      <Footer
+        nextEnabled={true}
+        loading={mutationLoading}
+        onNextClick={async () => {
+          await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
         }}
-      >
-        <Button onClick={onCancel} color="inherit">
-          Cancel
-        </Button>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button onClick={onBack} color="inherit">
-            Back
-          </Button>
-          <Button type="submit" variant="contained" color="primary">
-            Continue
-          </Button>
-        </Box>
-      </DialogActions>
+      />
     </form>
   );
 };

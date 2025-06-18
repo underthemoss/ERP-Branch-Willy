@@ -27,23 +27,21 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs, { Dayjs } from "dayjs";
 import React from "react";
+import type { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
 export interface FulfillmentDetailsStepProps {
   lineItemId: string;
-  onCancel: () => void;
-  onContinue: () => void;
-  onBack: () => void;
+  Footer: CreateRentalLineItemFooter;
 }
 
 const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsStepProps> = ({
   lineItemId,
-  onCancel,
-  onContinue,
-  onBack,
+  Footer,
 }) => {
   const [fulfillmentMethod, setFulfillmentMethod] = React.useState<"DELIVERY" | "PICKUP">(
     "DELIVERY",
   );
+
   const [deliveryLocation, setDeliveryLocation] = React.useState<string>("");
   const [deliveryCharge, setDeliveryCharge] = React.useState<string>("0.00");
   const [dateRange, setDateRange] = React.useState<[string | null, string | null]>([null, null]);
@@ -99,7 +97,6 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
           },
         },
       });
-      onContinue();
     } catch (err) {
       console.error(err);
     }
@@ -157,30 +154,7 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
           />
         </LocalizationProvider>
       </DialogContent>
-      <DialogActions
-        sx={{
-          bgcolor: "grey.100",
-          borderTop: 1,
-          borderColor: "divider",
-          px: 3,
-          py: 1.5,
-          mt: 3,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Button onClick={onCancel} color="inherit">
-          Cancel
-        </Button>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button onClick={onBack} color="inherit">
-            Back
-          </Button>
-          <Button variant="contained" color="primary" onClick={handleContinue}>
-            Continue
-          </Button>
-        </Box>
-      </DialogActions>
+      <Footer nextEnabled={true} loading={mutationLoading} onNextClick={handleContinue} />
     </>
   );
 };
