@@ -1,6 +1,7 @@
 // "use client";
 
 import { graphql } from "@/graphql";
+import { SalesOrderLineItemsQuery } from "@/graphql/graphql";
 import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
@@ -116,6 +117,15 @@ graphql(`
             description
           }
 
+          price {
+            ... on SalePrice {
+              unitCostInCents
+              priceBook {
+                name
+                id
+              }
+            }
+          }
           unit_cost_in_cents
           created_at
           updated_at
@@ -129,6 +139,9 @@ export interface SalesOrderLineItemsDataGridProps {
   salesOrderId: string;
   onAddNewItem?: () => void;
 }
+type RowType = NonNullable<
+  NonNullable<NonNullable<SalesOrderLineItemsQuery["getSalesOrderById"]>["line_items"]>[number]
+>;
 
 export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridProps> = ({
   salesOrderId,
@@ -191,35 +204,36 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "PIM ID",
       minWidth: 120,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_id ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_id ?? "-",
     },
     {
       field: "so_pim_product.name",
       headerName: "Product Name",
       minWidth: 180,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_product?.name ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row: RowType) =>
+        row.so_pim_product?.name ?? row.so_pim_category?.name ?? "-",
     },
     {
       field: "so_pim_product.model",
       headerName: "Model",
       minWidth: 120,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_product?.model ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_product?.model ?? "-",
     },
     {
       field: "so_pim_product.sku",
       headerName: "SKU",
       minWidth: 120,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_product?.sku ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_product?.sku ?? "-",
     },
     {
       field: "so_pim_product.manufacturer_part_number",
       headerName: "Mfr Part #",
       minWidth: 140,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_product?.manufacturer_part_number ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_product?.manufacturer_part_number ?? "-",
     },
 
     {
@@ -227,28 +241,28 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Year",
       minWidth: 80,
       flex: 0.5,
-      valueGetter: (_, row) => row.so_pim_product?.year ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_product?.year ?? "-",
     },
     {
       field: "so_pim_category.name",
       headerName: "Category Name",
       minWidth: 140,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_category?.name ?? "-",
     },
     {
       field: "so_pim_category.description",
       headerName: "Category Description",
       minWidth: 180,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_category?.description ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_category?.description ?? "-",
     },
     {
       field: "so_pim_category.id",
       headerName: "Category ID",
       minWidth: 120,
       flex: 1,
-      valueGetter: (_, row) => row.so_pim_category?.id ?? "-",
+      valueGetter: (_, row: RowType) => row.so_pim_category?.id ?? "-",
     },
 
     // Pricing
@@ -257,63 +271,11 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Price Book Name",
       minWidth: 160,
       flex: 1,
-      valueGetter: (_, row) => row.price?.priceBook?.name ?? "-",
-    },
-    {
-      field: "price.priceBook.id",
-      headerName: "Price Book ID",
-      minWidth: 120,
-      flex: 1,
-      valueGetter: (_, row) => row.price?.priceBook?.id ?? "-",
-    },
-    {
-      field: "price_per_day_in_cents",
-      headerName: "Price/Day",
-      minWidth: 100,
-      flex: 1,
-      valueGetter: (_, row) =>
-        typeof row.price_per_day_in_cents === "number"
-          ? `$${(row.price_per_day_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      valueGetter: (_, row: RowType) =>
+        row.__typename === "RentalSalesOrderLineItem" && row.price?.__typename === "RentalPrice"
+          ? row.price?.priceBook?.name
           : "-",
     },
-    {
-      field: "price_per_week_in_cents",
-      headerName: "Price/Week",
-      minWidth: 100,
-      flex: 1,
-      valueGetter: (_, row) =>
-        typeof row.price_per_week_in_cents === "number"
-          ? `$${(row.price_per_week_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          : "-",
-    },
-    {
-      field: "price_per_month_in_cents",
-      headerName: "Price/Month",
-      minWidth: 110,
-      flex: 1,
-      valueGetter: (_, row) =>
-        typeof row.price_per_month_in_cents === "number"
-          ? `$${(row.price_per_month_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          : "-",
-    },
-    {
-      field: "unit_cost_in_cents",
-      headerName: "Unit Cost",
-      minWidth: 100,
-      flex: 1,
-      valueGetter: (_, row) =>
-        typeof row.unit_cost_in_cents === "number"
-          ? `$${(row.unit_cost_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          : "-",
-    },
-    {
-      field: "price_id",
-      headerName: "Price ID",
-      minWidth: 120,
-      flex: 1,
-      valueGetter: (_, row) => row.price_id ?? "-",
-    },
-
     // Quantities and status
     {
       field: "so_quantity",
@@ -407,17 +369,25 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Line Item Price (Incl. Delivery)",
       minWidth: 180,
       flex: 1,
-      valueGetter: (_, row) => {
+      valueGetter: (_, row: RowType) => {
         // Rental: use calulate_price.total_including_delivery_in_cents if present
         if (
+          row.__typename === "RentalSalesOrderLineItem" &&
           row.calulate_price &&
           typeof row.calulate_price.total_including_delivery_in_cents === "number"
         ) {
           return `$${(row.calulate_price.total_including_delivery_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         // Sale: use unit_cost_in_cents if present
-        if (typeof row.unit_cost_in_cents === "number") {
-          return `$${(row.unit_cost_in_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (row.__typename === "SaleSalesOrderLineItem") {
+          const quantity = row.so_quantity || 1;
+          const priceBookUnitPrice =
+            row.price?.__typename === "SalePrice" && row.price.unitCostInCents;
+          const customUnitProce = row.unit_cost_in_cents;
+          const unitPrice = priceBookUnitPrice || customUnitProce;
+          if (!unitPrice) return "-";
+          const total = unitPrice * quantity;
+          return `$${(total / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         return "-";
       },

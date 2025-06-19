@@ -1,12 +1,21 @@
 "use client";
 
+import { UpdateSalesOrderLineItemInput } from "@/graphql/graphql";
 import {
   useGetPricesSaleCreateDialogQuery,
   useGetSalesOrderSaleLineItemByIdCreateDialogQuery,
   useUpdateSaleSalesOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { Box, Divider, MenuItem, Select, Typography } from "@mui/material";
+import {
+  Box,
+  Divider,
+  InputAdornment,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useParams } from "next/navigation";
 import React, { useEffect } from "react";
 import { CreateSaleLineItemFooter } from "./CreateSaleLineItemDialog";
@@ -16,6 +25,41 @@ interface Props {
   Footer: CreateSaleLineItemFooter;
 }
 
+type CustomPriceInputProps = {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+};
+
+const CustomPriceInput: React.FC<CustomPriceInputProps> = ({ value, onChange, placeholder }) => (
+  <TextField
+    size="small"
+    value={value}
+    onChange={(e) => {
+      const val = e.target.value.replace(/[^0-9.]/g, "");
+      onChange(val);
+    }}
+    sx={{ maxWidth: 120 }}
+    onBlur={(ev) => onChange(formatCentsToUSD(Number(ev.target.value) * 100))}
+    InputProps={{
+      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+      inputMode: "decimal",
+    }}
+    placeholder={placeholder || "0.00"}
+  />
+);
+
+const formatCentsToUSD = (cents: number | null): string => {
+  if (cents === null || cents === undefined) return "";
+  return (cents / 100).toFixed(2);
+};
+
+const parseUSDToCents = (usd: string): number | null => {
+  const floatVal = parseFloat(usd);
+  if (isNaN(floatVal)) return null;
+  return Math.round(floatVal * 100);
+};
+
 const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) => {
   const params = useParams();
 
@@ -23,6 +67,8 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
   const [selectedPriceId, setSelectedPriceId] = React.useState<string | null>(null);
   // Quantity state
   const [quantity, setQuantity] = React.useState<number>(1);
+  // Custom price state (as string for input)
+  const [customPriceInput, setCustomPriceInput] = React.useState<string>("");
 
   const { data } = useGetSalesOrderSaleLineItemByIdCreateDialogQuery({
     variables: { id: lineItemId },
@@ -42,7 +88,14 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
 
   useEffect(() => {
     setQuantity(item?.so_quantity || 1);
-    setSelectedPriceId(item?.price_id || null);
+    // Set custom price input if present
+    if (item?.unit_cost_in_cents) {
+      setCustomPriceInput(formatCentsToUSD(item.unit_cost_in_cents));
+      setSelectedPriceId("custom");
+    } else {
+      setCustomPriceInput("");
+      setSelectedPriceId(item?.price_id || null);
+    }
   }, [data]);
 
   const prices =
@@ -53,12 +106,6 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
       );
     }) || [];
 
-  // Helper to format cents to dollars with commas
-  const formatCentsToUSD = (cents: number) =>
-    cents != null
-      ? `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : "-";
-
   return (
     <Box>
       <Box sx={{ p: 3 }}>
@@ -68,10 +115,6 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
         {pricesLoading ? (
           <Typography variant="body2" color="text.secondary">
             Loading price options...
-          </Typography>
-        ) : prices.length === 0 ? (
-          <Typography variant="body2" color="error">
-            No price options available.
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -134,11 +177,57 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
                     </Typography>
                   </Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                    {formatCentsToUSD(price.unitCostInCents)}
+                    {price.unitCostInCents != null
+                      ? `$${formatCentsToUSD(price.unitCostInCents)}`
+                      : "-"}
                   </Typography>
                 </Box>
               );
             })}
+            {/* Custom Price Option */}
+            <Box
+              key="custom-price"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                border: "1px solid",
+                borderColor: selectedPriceId === "custom" ? "primary.main" : "grey.300",
+                borderRadius: 2,
+                px: 2,
+                py: 1.5,
+                cursor: "pointer",
+                background:
+                  selectedPriceId === "custom" ? "rgba(25, 118, 210, 0.04)" : "background.paper",
+              }}
+              onClick={() => setSelectedPriceId("custom")}
+              data-testid="price-option-custom"
+            >
+              <Box sx={{ display: "flex", flexDirection: "column" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <input
+                    type="radio"
+                    checked={selectedPriceId === "custom"}
+                    onChange={() => setSelectedPriceId("custom")}
+                    style={{ marginRight: 8 }}
+                    name="price-option"
+                  />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                    Custom Price
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+                  Enter a custom price per unit
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CustomPriceInput
+                  value={selectedPriceId === "custom" ? customPriceInput : ""}
+                  onChange={(val) => setCustomPriceInput(val)}
+                  placeholder="0.00"
+                />
+              </Box>
+            </Box>
           </Box>
         )}
       </Box>
@@ -174,16 +263,29 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
         </Select>
       </Box>
       <Footer
-        nextEnabled={quantity > 0 && !!selectedPriceId}
+        nextEnabled={
+          quantity > 0 &&
+          ((selectedPriceId && selectedPriceId !== "custom") ||
+            (selectedPriceId === "custom" &&
+              parseUSDToCents(customPriceInput) !== null &&
+              parseUSDToCents(customPriceInput)! > 0))
+        }
         loading={pricesLoading}
         onNextClick={async () => {
+          const input: UpdateSalesOrderLineItemInput = {
+            id: lineItemId,
+            so_quantity: quantity,
+          };
+          if (selectedPriceId === "custom") {
+            input.unit_cost_in_cents = parseUSDToCents(customPriceInput);
+            input.price_id = null;
+          } else {
+            input.price_id = selectedPriceId;
+            input.unit_cost_in_cents = null;
+          }
           await updateItem({
             variables: {
-              input: {
-                id: lineItemId,
-                so_quantity: quantity,
-                price_id: selectedPriceId,
-              },
+              input,
             },
           });
         }}
