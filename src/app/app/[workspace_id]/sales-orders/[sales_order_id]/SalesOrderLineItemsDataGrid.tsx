@@ -4,7 +4,9 @@ import { graphql } from "@/graphql";
 import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
-import { Box, Button, Typography } from "@mui/material";
+import DateRangeIcon from "@mui/icons-material/DateRange";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import { Box, Button, Tooltip, Typography } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { DataGridPro, GridColDef, Toolbar } from "@mui/x-data-grid-pro";
 import { addDays, format } from "date-fns";
@@ -147,6 +149,36 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
   const lineItems = data?.getSalesOrderById?.line_items || [];
 
   const columns: GridColDef[] = [
+    // Line item type icon column (first)
+    {
+      field: "line_item_type",
+      headerName: "",
+      width: 50,
+      sortable: false,
+      filterable: false,
+      align: "center",
+      renderCell: (params) => {
+        if (params.row.__typename === "RentalSalesOrderLineItem") {
+          return (
+            <Tooltip title="Rental" arrow>
+              <span>
+                <DateRangeIcon color="primary" fontSize="small" />
+              </span>
+            </Tooltip>
+          );
+        }
+        if (params.row.__typename === "SaleSalesOrderLineItem") {
+          return (
+            <Tooltip title="Sale" arrow>
+              <span>
+                <ShoppingCartIcon color="secondary" fontSize="small" />
+              </span>
+            </Tooltip>
+          );
+        }
+        return null;
+      },
+    },
     // Core identifiers and product/category info
     {
       field: "id",
@@ -189,6 +221,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       flex: 1,
       valueGetter: (_, row) => row.so_pim_product?.manufacturer_part_number ?? "-",
     },
+
     {
       field: "so_pim_product.year",
       headerName: "Year",
