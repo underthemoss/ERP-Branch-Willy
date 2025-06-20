@@ -1109,19 +1109,19 @@ input SalesOrderInput {
 union SalesOrderLineItem = RentalSalesOrderLineItem | SaleSalesOrderLineItem
 
 type SalesOrderLineItemPriceEstimate {
-  costInCents: Int!
+  costInCents: Int
 
   """Delivery cost in cents for this line item"""
   delivery_cost_in_cents: Int
-  details: LineItemCostOptionDetails!
+  details: LineItemCostOptionDetails
 
   """Forecast of accumulative cost over a range of days"""
   forecast(number_of_days: Int = 200): LineItemPriceForecast
-  rentalPeriod: LineItemRentalPeriod!
-  savingsComparedToDayRateInCents: Int!
-  savingsComparedToDayRateInFraction: Float!
-  savingsComparedToExactSplitInCents: Int!
-  strategy: String!
+  rentalPeriod: LineItemRentalPeriod
+  savingsComparedToDayRateInCents: Int
+  savingsComparedToDayRateInFraction: Float
+  savingsComparedToExactSplitInCents: Int
+  strategy: String
 
   """Total cost including delivery in cents for this line item"""
   total_including_delivery_in_cents: Int

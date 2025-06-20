@@ -23,6 +23,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import OrderItemsSection from "./OrderItemsSection";
+import SalesOrderCostForcastReport from "./SalesOrderCostForcastReport";
 
 const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
   mutation CreatePdfFromPageAndAttachToEntityId(
@@ -277,6 +278,14 @@ export default function SalesOrderDetailPage() {
               </Typography>
               <Divider sx={{ mb: 1 }} />
               <AttachedFilesSection key={`files-${cachekey}`} entityId={salesOrder.id} />
+            </Paper>
+            {/* Price Forecast Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Price Forecast
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <SalesOrderCostForcastReport salesOrderId={salesOrder.id} />
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
