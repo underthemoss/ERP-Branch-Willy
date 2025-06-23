@@ -2,7 +2,6 @@
 
 import { graphql } from "@/graphql";
 import { useSalesOrderLineItemsChartReportQuery } from "@/graphql/hooks";
-import { useQuery } from "@apollo/client";
 import { LineChart } from "@mui/x-charts/LineChart";
 import * as React from "react";
 
@@ -91,7 +90,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
       if (li?.__typename === "SaleSalesOrderLineItem") {
         const label = li.so_pim_product?.name || li.id;
         const cost = li.unit_cost_in_cents
-          ? (li.unit_cost_in_cents * (li.so_quantity || 1)) / 100
+          ? (li.unit_cost_in_cents * ((li as any).so_quantity || 1)) / 100
           : 0;
         allDays.forEach((day) => {
           dayToRow[day][label] = cost;
@@ -107,7 +106,8 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
       if (li?.__typename === "SaleSalesOrderLineItem")
         return {
           id: li.id,
-          label: li.so_pim_product?.name || li.so_pim_category?.name || `Sale Item ${idx + 1}`,
+          label:
+            li.so_pim_product?.name || (li as any).so_pim_category?.name || `Sale Item ${idx + 1}`,
           dataKey: li.so_pim_product?.name || li.id,
           area: true,
           showMark: false,

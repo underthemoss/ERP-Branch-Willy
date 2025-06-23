@@ -37,10 +37,10 @@ export function RMTreeView({
     await onSelectionChange(ids);
   };
 
-  const buildTree = (item: Item, items: Item[]): ItemWithChildren => {
+  const buildTree = React.useCallback((item: Item, items: Item[]): ItemWithChildren => {
     const children = items.filter((i) => i.parentId === item.id);
     return { ...item, children: children.map((c) => buildTree(c, items)) };
-  };
+  }, []);
 
   const rmMapsTrees = React.useMemo(() => {
     const rmMaps = items.filter((i) => i.parentId === "");

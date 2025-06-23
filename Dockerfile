@@ -1,4 +1,4 @@
-FROM node:slim AS base
+FROM node:22-slim AS base
 
 # Declaring envs
 ENV LEVEL=${LEVEL}
@@ -28,4 +28,3 @@ CMD ["npm", "run", "start", "--", "-p", "5000"]
 
 # Expose server port
 EXPOSE 5000
-
