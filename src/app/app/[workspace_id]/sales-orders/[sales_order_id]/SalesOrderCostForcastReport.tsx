@@ -116,7 +116,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
         };
       return null;
     });
-    const rentalSeries = rentalItems.map((li, idx: number) => {
+    const rentalSeries = rentalItems.map((li: any, idx: number) => {
       if (li?.__typename === "RentalSalesOrderLineItem")
         return {
           id: li.id,
