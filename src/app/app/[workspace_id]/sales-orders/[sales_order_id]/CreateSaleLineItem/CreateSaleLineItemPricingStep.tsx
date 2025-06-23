@@ -96,7 +96,7 @@ const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) 
       setCustomPriceInput("");
       setSelectedPriceId(item?.price_id || null);
     }
-  }, [data]);
+  }, [item?.price_id, item?.so_quantity, item?.unit_cost_in_cents]);
 
   const prices =
     pricesData?.listPrices?.items?.filter((item) => {

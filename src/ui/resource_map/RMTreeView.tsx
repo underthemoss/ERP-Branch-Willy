@@ -45,7 +45,7 @@ export function RMTreeView({
   const rmMapsTrees = React.useMemo(() => {
     const rmMaps = items.filter((i) => i.parentId === "");
     return rmMaps.map((map) => buildTree(map, items));
-  }, [items]);
+  }, [items, buildTree]);
 
   return (
     <div style={{ width: "100%" }}>

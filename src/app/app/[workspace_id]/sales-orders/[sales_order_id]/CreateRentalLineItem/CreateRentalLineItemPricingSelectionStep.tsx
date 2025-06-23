@@ -117,7 +117,12 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     setCustomDay(formatCentsToUSD(Number(item?.price_per_day_in_cents?.toString()) || 0) || "");
     setCustomWeek(formatCentsToUSD(Number(item?.price_per_week_in_cents?.toString()) || 0) || "");
     setCustomMonth(formatCentsToUSD(Number(item?.price_per_month_in_cents?.toString()) || 0) || "");
-  }, [data]);
+  }, [
+    item?.price_id,
+    item?.price_per_day_in_cents,
+    item?.price_per_week_in_cents,
+    item?.price_per_month_in_cents,
+  ]);
 
   const customPrice: PriceOption = {
     id: "custom",

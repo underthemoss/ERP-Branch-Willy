@@ -67,7 +67,7 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
       );
       setDateRange([item.delivery_date || null, item.off_rent_date || null]);
     }
-  }, [data]);
+  }, [item]);
 
   // Convert ISO strings to dayjs objects for the DateRangePicker
   const internalDateRange: [Dayjs | null, Dayjs | null] = [
