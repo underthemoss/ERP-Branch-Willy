@@ -33,7 +33,7 @@ import React, { useState } from "react";
 
 // GQL query declarations (for codegen)
 graphql(`
-  query ListWorkflowConfigurations($search: String) {
+  query ListWorkflowConfigurations {
     listWorkflowConfigurations {
       items {
         id

@@ -1,4 +1,6 @@
 // "use client";
+import { graphql } from "@/graphql";
+import { useGetWorkflowConfigurationByIdQuery, useUpdateWorkflowConfigurationMutation } from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -22,8 +24,36 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import React from "react";
+
+const GetWorkflowConfigurationByIdDocument = graphql(`
+  query GetWorkflowConfigurationById($id: ID!) {
+    getWorkflowConfigurationById(id: $id) {
+      id
+      name
+      columns {
+        id
+        name
+      }
+    }
+  }
+`);
+
+const UpdateWorkflowConfigurationDocument = graphql(`
+  mutation UpdateWorkflowConfiguration($id: ID!, $input: UpdateWorkflowConfigurationInput!) {
+    updateWorkflowConfiguration(id: $id, input: $input) {
+      id
+      name
+      columns {
+        id
+        name
+      }
+    }
+  }
+`);
 
 type WorkflowStatus = string;
 
@@ -135,8 +165,24 @@ type EditColumnDialogState = {
   isNew: boolean;
 };
 
-export default function WorkflowDesigner() {
-  const [columns, setColumns] = React.useState<Column[]>(defaultColumns);
+export default function WorkflowDesigner({ workflowId }: { workflowId: string }) {
+  // Fetch columns from API
+  const { data, loading, error } = useGetWorkflowConfigurationByIdQuery({
+    variables: { id: workflowId },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Map API columns to local Column type
+  const apiColumns: Column[] =
+    data?.getWorkflowConfigurationById?.columns?.map((col, idx) => ({
+      key: col.id,
+      label: col.name,
+      // Assign color based on index or fallback to default
+      color:
+        (["default", "primary", "warning", "success"] as Column["color"][])[idx % 4] || "default",
+    })) ?? defaultColumns;
+
+  const [columns, setColumns] = React.useState<Column[]>(apiColumns);
   const [steps, setSteps] = React.useState<WorkflowStep[]>(mockSteps);
   const [editDialog, setEditDialog] = React.useState<EditDialogState>({ open: false, step: null });
   const [editColumnDialog, setEditColumnDialog] = React.useState<EditColumnDialogState>({
@@ -145,7 +191,25 @@ export default function WorkflowDesigner() {
     isNew: false,
   });
   const [newColumnLabel, setNewColumnLabel] = React.useState("");
-  const [newColumnColor, setNewColumnColor] = React.useState<Column["color"]>("default");
+
+  // Add Ticket dialog state
+  const [addTicketState, setAddTicketState] = React.useState<{
+    open: boolean;
+    columnKey: string | null;
+  }>({ open: false, columnKey: null });
+  const [newTicketAsset, setNewTicketAsset] = React.useState("");
+  const [newTicketDescription, setNewTicketDescription] = React.useState("");
+
+  // Save mutation
+  const [updateWorkflow, { loading: saving, error: saveError }] = useUpdateWorkflowConfigurationMutation();
+
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+
+  // Update columns when API data changes
+  React.useEffect(() => {
+    setColumns(apiColumns);
+  }, [data]);
 
   const grouped = React.useMemo(() => groupByStatus(steps, columns), [steps, columns]);
 
@@ -202,17 +266,15 @@ export default function WorkflowDesigner() {
       isNew: true,
     });
     setNewColumnLabel("");
-    setNewColumnColor("default");
   }
 
   function handleEditColumnClick(col: Column) {
     setEditColumnDialog({
       open: true,
-      column: { ...col },
+      column: { ...col, color: col.color || "default" },
       isNew: false,
     });
     setNewColumnLabel(col.label);
-    setNewColumnColor(col.color);
   }
 
   function handleDeleteColumn(col: Column) {
@@ -233,12 +295,15 @@ export default function WorkflowDesigner() {
       ? newColumnLabel.trim() || `Column${columns.length + 1}`
       : editColumnDialog.column.key;
     const label = newColumnLabel.trim() || key;
-    const color = newColumnColor;
     if (editColumnDialog.isNew) {
-      setColumns((prev) => [...prev, { key, label, color }]);
+      setColumns((prev) => [...prev, { key, label, color: "default" }]);
     } else {
       setColumns((prev) =>
-        prev.map((c) => (c.key === editColumnDialog.column!.key ? { ...c, key, label, color } : c)),
+        prev.map((c) =>
+          c.key === editColumnDialog.column!.key
+            ? { ...c, key, label, color: c.color || "default" }
+            : c,
+        ),
       );
       // Update steps' status if key changed
       if (editColumnDialog.column.key !== key) {
@@ -256,23 +321,75 @@ export default function WorkflowDesigner() {
   return (
     <Box sx={{ width: "100%", p: 2, bgcolor: "#f4f6f8" }}>
       <Typography variant="h4" mb={2} fontWeight={700}>
-        Workflow Designer (POC)
+        {loading
+          ? "Loading workflow..."
+          : data?.getWorkflowConfigurationById?.name || "Workflow Designer"}
       </Typography>
       <Typography variant="subtitle1" mb={3}>
         Kanban-style workflow. Click a column to configure control flow, actions, and constraints.
       </Typography>
+      {loading && <Typography>Loading workflow...</Typography>}
+      {error && <Typography color="error">Failed to load workflow</Typography>}
       <Box mb={2} display="flex" alignItems="center" gap={2}>
         <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddColumnClick}>
           Add Column
         </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={async () => {
+            try {
+              await updateWorkflow({
+                variables: {
+                  id: workflowId,
+                  input: {
+                    columns: columns.map((col) => ({
+                      id: col.key,
+                      name: col.label,
+                    })),
+                  },
+                },
+              });
+              setSnackbarOpen(true);
+            } catch (e) {
+              // error handled by saveError
+            }
+          }}
+          disabled={saving}
+        >
+          {saving ? "Saving..." : "Save"}
+        </Button>
+        {saveError && (
+          <Typography color="error" ml={2}>
+            Failed to save: {saveError.message}
+          </Typography>
+        )}
       </Box>
       <DragDropContext onDragEnd={onDragEnd}>
-        <Grid container spacing={3}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 3,
+            overflowX: "auto",
+            pb: 1,
+            width: "100%",
+          }}
+        >
           {columns.map((col) => (
-            <Grid size={{ xs: 12, md: Math.max(12 / columns.length, 3) }} key={col.key}>
+            <Box
+              key={col.key}
+              sx={{
+                minWidth: 320,
+                maxWidth: 360,
+                flex: "0 0 320px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Paper
                 elevation={3}
-                sx={{ p: 2, minHeight: 500, bgcolor: "#f8f9fa", position: "relative" }}
+                sx={{ p: 2, minHeight: 500, bgcolor: "#f8f9fa", position: "relative", height: "100%" }}
               >
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                   <Typography variant="h6">{col.label}</Typography>
@@ -367,13 +484,34 @@ export default function WorkflowDesigner() {
                         </Draggable>
                       ))}
                       {provided.placeholder}
+                      {/* Column Footer: Add Ticket */}
+                      <Box
+                        mt={2}
+                        p={1}
+                        sx={{
+                          borderTop: "1px solid #e0e0e0",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          bgcolor: "#f5f5f5",
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<AddIcon />}
+                          onClick={() => setAddTicketState({ open: true, columnKey: col.key })}
+                        >
+                          Add Ticket
+                        </Button>
+                      </Box>
                     </Box>
                   )}
                 </Droppable>
               </Paper>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </DragDropContext>
 
       {/* Edit Step Dialog */}
@@ -435,85 +573,6 @@ export default function WorkflowDesigner() {
               fullWidth
               autoFocus
             />
-            <TextField
-              select
-              label="Color"
-              value={newColumnColor}
-              onChange={(e) => setNewColumnColor(e.target.value as Column["color"])}
-              fullWidth
-            >
-              <MenuItem value="default">Default</MenuItem>
-              <MenuItem value="primary">Primary</MenuItem>
-              <MenuItem value="success">Success</MenuItem>
-              <MenuItem value="warning">Warning</MenuItem>
-            </TextField>
-            {/* Column-level workflow settings */}
-            <TextField
-              select
-              label="Allowed Transitions"
-              value={
-                editColumnDialog.column
-                  ? columns.filter((c) => c.key !== editColumnDialog.column!.key).map((c) => c.key)
-                  : []
-              }
-              onChange={() => {}}
-              SelectProps={{ multiple: true, readOnly: true }}
-              fullWidth
-              helperText="Transitions allowed from this column (edit logic as needed)"
-            >
-              {columns
-                .filter((c) => c.key !== editColumnDialog.column?.key)
-                .map((c) => (
-                  <MenuItem key={c.key} value={c.key}>
-                    {c.label}
-                  </MenuItem>
-                ))}
-            </TextField>
-            <TextField
-              select
-              label="Default Enter Actions"
-              value={["Notify sourcing team", "Assign driver"]}
-              onChange={() => {}}
-              SelectProps={{ multiple: true, readOnly: true }}
-              fullWidth
-              helperText="Default enter actions for steps in this column (edit logic as needed)"
-            >
-              {allActions.map((a) => (
-                <MenuItem key={a} value={a}>
-                  {a}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Default Exit Actions"
-              value={["Mark as sourced", "Confirm dispatch"]}
-              onChange={() => {}}
-              SelectProps={{ multiple: true, readOnly: true }}
-              fullWidth
-              helperText="Default exit actions for steps in this column (edit logic as needed)"
-            >
-              {allActions.map((a) => (
-                <MenuItem key={a} value={a}>
-                  {a}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Default Constraints"
-              value={["Asset must be available", "Driver must be assigned"]}
-              onChange={() => {}}
-              SelectProps={{ multiple: true, readOnly: true }}
-              fullWidth
-              helperText="Default constraints for steps in this column (edit logic as needed)"
-            >
-              {allConstraints.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </TextField>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -527,6 +586,92 @@ export default function WorkflowDesigner() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Add Ticket Dialog */}
+      <Dialog
+        open={addTicketState.open}
+        onClose={() => {
+          setAddTicketState({ open: false, columnKey: null });
+          setNewTicketAsset("");
+          setNewTicketDescription("");
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Add Ticket</DialogTitle>
+        <DialogContent>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Asset"
+              value={newTicketAsset}
+              onChange={(e) => setNewTicketAsset(e.target.value)}
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label="Description"
+              value={newTicketDescription}
+              onChange={(e) => setNewTicketDescription(e.target.value)}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAddTicketState({ open: false, columnKey: null });
+              setNewTicketAsset("");
+              setNewTicketDescription("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!newTicketAsset.trim() || !newTicketDescription.trim()}
+            onClick={() => {
+              if (!addTicketState.columnKey) return;
+              setSteps((prev) => [
+                ...prev,
+                {
+                  id: `step-${Date.now()}`,
+                  asset: newTicketAsset.trim(),
+                  description: newTicketDescription.trim(),
+                  status: addTicketState.columnKey!,
+                  enterActions: [],
+                  exitActions: [],
+                  constraints: [],
+                  allowedTransitions: [],
+                },
+              ]);
+              setAddTicketState({ open: false, columnKey: null });
+              setNewTicketAsset("");
+              setNewTicketDescription("");
+            }}
+          >
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Success Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          elevation={6}
+          variant="filled"
+        >
+          Workflow saved successfully
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
