@@ -243,6 +243,18 @@ input CreatePurchaseOrderLineItemInput {
   purchase_order_id: String!
 }
 
+input CreateRentalFulfilmentInput {
+  assignedToId: String
+  companyId: String!
+  rentalEndDate: DateTime!
+  rentalStartDate: DateTime!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  statusId: String!
+  statusLabel: String!
+  workspaceId: String!
+}
+
 input CreateRentalPriceInput {
   name: String
   pimCategoryId: String!
@@ -270,6 +282,18 @@ input CreateRentalSalesOrderLineItemInput {
   unit_cost_in_cents: Int
 }
 
+input CreateSaleFulfilmentInput {
+  assignedToId: String
+  companyId: String!
+  quantity: Int!
+  salePrice: Float!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  statusId: String!
+  statusLabel: String!
+  workspaceId: String!
+}
+
 input CreateSalePriceInput {
   discounts: JSON
   name: String
@@ -286,6 +310,22 @@ input CreateSaleSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
+}
+
+input CreateServiceFulfilmentInput {
+  assignedToId: String
+  companyId: String!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  serviceDate: DateTime!
+  statusId: String!
+  statusLabel: String!
+  workspaceId: String!
+}
+
+input CreateWorkflowConfigurationInput {
+  columns: [WorkflowColumnInput!]!
+  name: String!
 }
 
 """
@@ -320,6 +360,28 @@ type File {
   updated_by: String!
   updated_by_user: User
   url: String!
+}
+
+union Fulfilment = RentalFulfilment | SaleFulfilment | ServiceFulfilment
+
+interface FulfilmentBase {
+  assignedToId: String
+  companyId: String!
+  createdAt: DateTime!
+  id: ID!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  salesOrderType: FulfilmentType!
+  statusId: String!
+  statusLabel: String!
+  updatedAt: DateTime!
+  workspaceId: String!
+}
+
+enum FulfilmentType {
+  RENTAL
+  SALE
+  SERVICE
 }
 
 type HasuraClaims {
@@ -428,6 +490,16 @@ type ListContactsResult {
   page: PaginationInfo!
 }
 
+input ListFulfilmentsPage {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListFulfilmentsResult {
+  items: [Fulfilment!]!
+  page: PaginationInfo!
+}
+
 type ListPersonContactsResult {
   items: [PersonContact!]!
   page: PaginationInfo!
@@ -489,6 +561,16 @@ type ListTransactionResult {
   page: PaginationInfo!
 }
 
+input ListWorkflowConfigurationsPage {
+  number: Int
+  size: Int
+}
+
+type ListWorkflowConfigurationsResult {
+  items: [WorkflowConfiguration!]!
+  page: PaginationInfo!
+}
+
 type ListWorkspacesResult {
   items: [Workspace!]!
   page: PaginationInfo!
@@ -507,17 +589,23 @@ type Mutation {
   createProject(input: ProjectInput): Project
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
   createPurchaseOrderLineItem(input: CreatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  createRentalFulfilment(input: CreateRentalFulfilmentInput!): RentalFulfilment
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
   createRentalSalesOrderLineItem(input: CreateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
+  createSaleFulfilment(input: CreateSaleFulfilmentInput!): SaleFulfilment
   createSalePrice(input: CreateSalePriceInput!): SalePrice
   createSaleSalesOrderLineItem(input: CreateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   createSalesOrder(input: SalesOrderInput): SalesOrder
+  createServiceFulfilment(input: CreateServiceFulfilmentInput!): ServiceFulfilment
   createTransaction(input: TransactionInput!): Transaction
+  createWorkflowConfiguration(input: CreateWorkflowConfigurationInput!): WorkflowConfiguration
   deleteContactById(id: ID!): Boolean
+  deleteFulfilment(id: ID!): Boolean
   deleteNote(id: String!): Note
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
+  deleteWorkflowConfigurationById(id: ID!): Boolean
   removeFileFromEntity(file_id: String!): File!
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
@@ -543,8 +631,12 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updateRentalFulfilment(id: ID!, input: UpdateRentalFulfilmentInput!): RentalFulfilment
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
+  updateSaleFulfilment(id: ID!, input: UpdateSaleFulfilmentInput!): SaleFulfilment
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
+  updateServiceFulfilment(id: ID!, input: UpdateServiceFulfilmentInput!): ServiceFulfilment
+  updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
 }
 
 type Note {
@@ -854,6 +946,7 @@ type PurchaseOrderListResult {
 type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
+  getFulfilmentById(id: ID!): Fulfilment
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
   getPriceBookById(id: ID!): PriceBook
@@ -865,11 +958,13 @@ type Query {
   getSalesOrderById(id: String): SalesOrder
   getSalesOrderLineItemById(id: String): SalesOrderLineItem
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
+  getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
+  listFulfilments(filter: JSON, page: ListFulfilmentsPage): ListFulfilmentsResult
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
@@ -908,12 +1003,29 @@ type Query {
   """Lists all top-level projects (where parent_project is null)."""
   listTopLevelProjects: [Project]
   listTransactions(workspaceId: ID!): ListTransactionResult!
+  listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
   listWorkspaces: ListWorkspacesResult!
 }
 
 type Quote {
   id: ID
   url: String
+}
+
+type RentalFulfilment implements FulfilmentBase {
+  assignedToId: String
+  companyId: String!
+  createdAt: DateTime!
+  id: ID!
+  rentalEndDate: DateTime!
+  rentalStartDate: DateTime!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  salesOrderType: FulfilmentType!
+  statusId: String!
+  statusLabel: String!
+  updatedAt: DateTime!
+  workspaceId: String!
 }
 
 type RentalPrice {
@@ -1011,6 +1123,22 @@ type ResourceMapResource {
   tenant_id: String!
   type: String
   value: String
+}
+
+type SaleFulfilment implements FulfilmentBase {
+  assignedToId: String
+  companyId: String!
+  createdAt: DateTime!
+  id: ID!
+  quantity: Int!
+  salePrice: Float!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  salesOrderType: FulfilmentType!
+  statusId: String!
+  statusLabel: String!
+  updatedAt: DateTime!
+  workspaceId: String!
 }
 
 type SalePrice {
@@ -1176,6 +1304,21 @@ enum ScopeOfWorkEnum {
   WARRANTY_SERVICES
 }
 
+type ServiceFulfilment implements FulfilmentBase {
+  assignedToId: String
+  companyId: String!
+  createdAt: DateTime!
+  id: ID!
+  salesOrderId: String!
+  salesOrderLineItemId: String
+  salesOrderType: FulfilmentType!
+  serviceDate: DateTime!
+  statusId: String!
+  statusLabel: String!
+  updatedAt: DateTime!
+  workspaceId: String!
+}
+
 type ServiceTask {
   completed: Boolean
   taskDetails: String
@@ -1284,6 +1427,15 @@ input UpdatePurchaseOrderLineItemInput {
   po_quantity: Int
 }
 
+input UpdateRentalFulfilmentInput {
+  assignedToId: String
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
+  salesOrderLineItemId: String
+  statusId: String
+  statusLabel: String
+}
+
 input UpdateRentalSalesOrderLineItemInput {
   delivery_charge_in_cents: Int
   delivery_date: String
@@ -1299,6 +1451,15 @@ input UpdateRentalSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
+}
+
+input UpdateSaleFulfilmentInput {
+  assignedToId: String
+  quantity: Int
+  salePrice: Float
+  salesOrderLineItemId: String
+  statusId: String
+  statusLabel: String
 }
 
 input UpdateSalesOrderLineItemInput {
@@ -1319,6 +1480,19 @@ input UpdateSalesOrderLineItemInput {
   unit_cost_in_cents: Int
 }
 
+input UpdateServiceFulfilmentInput {
+  assignedToId: String
+  salesOrderLineItemId: String
+  serviceDate: DateTime
+  statusId: String
+  statusLabel: String
+}
+
+input UpdateWorkflowConfigurationInput {
+  columns: [WorkflowColumnInput!]!
+  name: String
+}
+
 type User {
   companyId: String!
   email: String!
@@ -1331,6 +1505,29 @@ type Workflow {
   id: ID
   name: String
   statuses: [TransactionStatus!]
+}
+
+type WorkflowColumn {
+  id: String!
+  name: String!
+}
+
+input WorkflowColumnInput {
+  id: String!
+  name: String!
+}
+
+type WorkflowConfiguration {
+  columns: [WorkflowColumn!]!
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  deletedAt: DateTime
+  deletedBy: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+  updatedBy: String!
 }
 
 type Workspace {

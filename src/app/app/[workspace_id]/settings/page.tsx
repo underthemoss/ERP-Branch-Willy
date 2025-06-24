@@ -1,13 +1,13 @@
 "use client";
 
-import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
-import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import Link from "next/link";
-import Box from "@mui/material/Box";
 import { useParams } from "next/navigation";
 
 export default function SettingsPage() {
@@ -43,7 +43,7 @@ export default function SettingsPage() {
       </Typography>
       <List>
         <ListItem disablePadding>
-          <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workflows/123`}>
+          <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workflows`}>
             <ListItemText primary="Workflow Designer Settings" />
           </ListItemButton>
         </ListItem>

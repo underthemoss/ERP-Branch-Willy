@@ -259,8 +259,7 @@ export default function WorkflowDesigner() {
         Workflow Designer (POC)
       </Typography>
       <Typography variant="subtitle1" mb={3}>
-        Kanban-style workflow. Click a column to configure
-        control flow, actions, and constraints.
+        Kanban-style workflow. Click a column to configure control flow, actions, and constraints.
       </Typography>
       <Box mb={2} display="flex" alignItems="center" gap={2}>
         <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddColumnClick}>
@@ -454,9 +453,7 @@ export default function WorkflowDesigner() {
               label="Allowed Transitions"
               value={
                 editColumnDialog.column
-                  ? columns
-                      .filter((c) => c.key !== editColumnDialog.column!.key)
-                      .map((c) => c.key)
+                  ? columns.filter((c) => c.key !== editColumnDialog.column!.key).map((c) => c.key)
                   : []
               }
               onChange={() => {}}

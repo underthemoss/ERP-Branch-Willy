@@ -423,13 +423,15 @@ export const NavBar = () => {
           sx={{
             px: "12px",
             borderRadius: "8px",
-            color: pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+            color:
+              pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
             width: "100%",
           }}
         >
           <ListItemIcon
             sx={{
-              color: pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+              color:
+                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
               minWidth: "30px",
             }}
           >
@@ -438,7 +440,8 @@ export const NavBar = () => {
           <ListItemText
             disableTypography
             sx={{
-              color: pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+              color:
+                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
               fontFamily: "Inter",
               fontSize: "14px",
               fontStyle: "normal",
