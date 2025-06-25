@@ -1,11 +1,16 @@
 // "use client";
 import { graphql } from "@/graphql";
-import { useGetWorkflowConfigurationByIdQuery, useUpdateWorkflowConfigurationMutation } from "@/graphql/hooks";
+import {
+  useGetWorkflowConfigurationByIdQuery,
+  useUpdateWorkflowConfigurationMutation,
+} from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import EditIcon from "@mui/icons-material/Edit";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -21,11 +26,10 @@ import {
   InputAdornment,
   MenuItem,
   Paper,
+  Snackbar,
   TextField,
   Tooltip,
   Typography,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import React from "react";
 
@@ -37,6 +41,7 @@ const GetWorkflowConfigurationByIdDocument = graphql(`
       columns {
         id
         name
+        colour
       }
     }
   }
@@ -50,6 +55,7 @@ const UpdateWorkflowConfigurationDocument = graphql(`
       columns {
         id
         name
+        colour
       }
     }
   }
@@ -71,75 +77,10 @@ type WorkflowStep = {
 type Column = {
   key: string;
   label: string;
-  color: "default" | "primary" | "success" | "warning";
+  color: string; // hex color, e.g. "#1976d2"
 };
 
-const defaultColumns: Column[] = [
-  { key: "Sourcing", label: "Sourcing", color: "default" },
-  { key: "Dispatching", label: "Dispatching", color: "primary" },
-  { key: "Pickup", label: "Pickup", color: "warning" },
-  { key: "Completed", label: "Completed", color: "success" },
-];
-
-const mockSteps: WorkflowStep[] = [
-  {
-    id: "step-1",
-    asset: "Excavator #A12",
-    description: "Ready for sourcing",
-    status: "Sourcing",
-    enterActions: ["Notify sourcing team"],
-    exitActions: ["Mark as sourced"],
-    constraints: ["Asset must be available"],
-    allowedTransitions: ["Dispatching"],
-  },
-  {
-    id: "step-2",
-    asset: "Truck #B7",
-    description: "Awaiting dispatch",
-    status: "Dispatching",
-    enterActions: ["Assign driver"],
-    exitActions: ["Confirm dispatch"],
-    constraints: ["Driver must be assigned"],
-    allowedTransitions: ["Pickup"],
-  },
-  {
-    id: "step-3",
-    asset: "Forklift #C3",
-    description: "Ready for pickup",
-    status: "Pickup",
-    enterActions: ["Notify pickup team"],
-    exitActions: ["Confirm pickup"],
-    constraints: ["Pickup time required"],
-    allowedTransitions: ["Completed"],
-  },
-  {
-    id: "step-4",
-    asset: "Loader #D9",
-    description: "Completed workflow",
-    status: "Completed",
-    enterActions: [],
-    exitActions: [],
-    constraints: [],
-    allowedTransitions: [],
-  },
-];
-
-const allActions = [
-  "Notify sourcing team",
-  "Mark as sourced",
-  "Assign driver",
-  "Confirm dispatch",
-  "Notify pickup team",
-  "Confirm pickup",
-  "Send completion email",
-];
-
-const allConstraints = [
-  "Asset must be available",
-  "Driver must be assigned",
-  "Pickup time required",
-  "Asset must be inspected",
-];
+const PRIMARY_HEX = "#1976d2";
 
 function groupByStatus(steps: WorkflowStep[], columns: Column[]): Record<string, WorkflowStep[]> {
   const grouped: Record<string, WorkflowStep[]> = {};
@@ -174,16 +115,14 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
 
   // Map API columns to local Column type
   const apiColumns: Column[] =
-    data?.getWorkflowConfigurationById?.columns?.map((col, idx) => ({
+    data?.getWorkflowConfigurationById?.columns?.map((col) => ({
       key: col.id,
       label: col.name,
-      // Assign color based on index or fallback to default
-      color:
-        (["default", "primary", "warning", "success"] as Column["color"][])[idx % 4] || "default",
-    })) ?? defaultColumns;
+      color: col.colour && /^#[0-9A-Fa-f]{6}$/.test(col.colour) ? col.colour : PRIMARY_HEX,
+    })) || [];
 
   const [columns, setColumns] = React.useState<Column[]>(apiColumns);
-  const [steps, setSteps] = React.useState<WorkflowStep[]>(mockSteps);
+  const [steps, setSteps] = React.useState<WorkflowStep[]>([]);
   const [editDialog, setEditDialog] = React.useState<EditDialogState>({ open: false, step: null });
   const [editColumnDialog, setEditColumnDialog] = React.useState<EditColumnDialogState>({
     open: false,
@@ -191,6 +130,7 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
     isNew: false,
   });
   const [newColumnLabel, setNewColumnLabel] = React.useState("");
+  const [newColumnColor, setNewColumnColor] = React.useState(PRIMARY_HEX);
 
   // Add Ticket dialog state
   const [addTicketState, setAddTicketState] = React.useState<{
@@ -201,7 +141,8 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
   const [newTicketDescription, setNewTicketDescription] = React.useState("");
 
   // Save mutation
-  const [updateWorkflow, { loading: saving, error: saveError }] = useUpdateWorkflowConfigurationMutation();
+  const [updateWorkflow, { loading: saving, error: saveError }] =
+    useUpdateWorkflowConfigurationMutation();
 
   // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
@@ -262,27 +203,37 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
   function handleAddColumnClick() {
     setEditColumnDialog({
       open: true,
-      column: { key: "", label: "", color: "default" },
+      column: { key: "", label: "", color: PRIMARY_HEX },
       isNew: true,
     });
     setNewColumnLabel("");
+    setNewColumnColor(PRIMARY_HEX);
   }
 
   function handleEditColumnClick(col: Column) {
     setEditColumnDialog({
       open: true,
-      column: { ...col, color: col.color || "default" },
+      column: { ...col, color: col.color || PRIMARY_HEX },
       isNew: false,
     });
     setNewColumnLabel(col.label);
+    setNewColumnColor(col.color || PRIMARY_HEX);
   }
 
+  const [deleteColumnDialog, setDeleteColumnDialog] = React.useState<{ open: boolean; column: Column | null }>({ open: false, column: null });
+
   function handleDeleteColumn(col: Column) {
-    // Remove column and move steps to first column (or delete if no columns left)
+    setDeleteColumnDialog({ open: true, column: col });
+  }
+
+  function confirmDeleteColumn() {
+    const col = deleteColumnDialog.column;
+    if (!col) return;
     setColumns((prev) => prev.filter((c) => c.key !== col.key));
     setSteps((prev) =>
       prev.map((s) => (s.status === col.key ? { ...s, status: columns[0]?.key || "" } : s)),
     );
+    setDeleteColumnDialog({ open: false, column: null });
   }
 
   function handleColumnDialogClose() {
@@ -295,15 +246,12 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
       ? newColumnLabel.trim() || `Column${columns.length + 1}`
       : editColumnDialog.column.key;
     const label = newColumnLabel.trim() || key;
+    const color = newColumnColor || PRIMARY_HEX;
     if (editColumnDialog.isNew) {
-      setColumns((prev) => [...prev, { key, label, color: "default" }]);
+      setColumns((prev) => [...prev, { key, label, color }]);
     } else {
       setColumns((prev) =>
-        prev.map((c) =>
-          c.key === editColumnDialog.column!.key
-            ? { ...c, key, label, color: c.color || "default" }
-            : c,
-        ),
+        prev.map((c) => (c.key === editColumnDialog.column!.key ? { ...c, key, label, color } : c)),
       );
       // Update steps' status if key changed
       if (editColumnDialog.column.key !== key) {
@@ -365,153 +313,197 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
           </Typography>
         )}
       </Box>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            gap: 3,
-            overflowX: "auto",
-            pb: 1,
-            width: "100%",
-          }}
-        >
-          {columns.map((col) => (
+      <DragDropContext
+        onDragEnd={(result) => {
+          if (result.type === "column") {
+            const { source, destination } = result;
+            if (!destination || source.index === destination.index) return;
+            setColumns((prev) => {
+              const newCols = Array.from(prev);
+              const [removed] = newCols.splice(source.index, 1);
+              newCols.splice(destination.index, 0, removed);
+              return newCols;
+            });
+          } else {
+            onDragEnd(result);
+          }
+        }}
+      >
+        <Droppable droppableId="kanban-columns" direction="horizontal" type="column">
+          {(provided) => (
             <Box
-              key={col.key}
+              ref={provided.innerRef}
+              {...provided.droppableProps}
               sx={{
-                minWidth: 320,
-                maxWidth: 360,
-                flex: "0 0 320px",
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "row",
+                gap: 3,
+                overflowX: "auto",
+                pb: 1,
+                width: "100%",
               }}
             >
-              <Paper
-                elevation={3}
-                sx={{ p: 2, minHeight: 500, bgcolor: "#f8f9fa", position: "relative", height: "100%" }}
-              >
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                  <Typography variant="h6">{col.label}</Typography>
-                  <Box>
-                    <Tooltip title="Edit Column">
-                      <IconButton size="small" onClick={() => handleEditColumnClick(col)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    {columns.length > 1 && (
-                      <Tooltip title="Delete Column">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteColumn(col)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Box>
-                </Box>
-                <Droppable droppableId={col.key}>
-                  {(provided, snapshot) => (
+              {columns.map((col, colIdx) => (
+                <Draggable draggableId={col.key} index={colIdx} key={col.key}>
+                  {(dragProvided, dragSnapshot) => (
                     <Box
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
+                      ref={dragProvided.innerRef}
+                      {...dragProvided.draggableProps}
                       sx={{
-                        minHeight: 450,
-                        transition: "background 0.2s",
-                        background: snapshot.isDraggingOver ? "#e3f2fd" : undefined,
+                        minWidth: 320,
+                        maxWidth: 360,
+                        flex: "0 0 320px",
+                        display: "flex",
+                        flexDirection: "column",
+                        opacity: dragSnapshot.isDragging ? 0.9 : 1,
                       }}
                     >
-                      {grouped[col.key]?.map((step, idx) => (
-                        <Draggable draggableId={step.id} index={idx} key={step.id}>
-                          {(provided, snapshot) => (
-                            <Card
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              sx={{
-                                mb: 2,
-                                borderLeft: `6px solid ${
-                                  col.color === "success"
-                                    ? "#2e7d32"
-                                    : col.color === "warning"
-                                      ? "#ed6c02"
-                                      : col.color === "primary"
-                                        ? "#1976d2"
-                                        : "#757575"
-                                }`,
-                                boxShadow: snapshot.isDragging ? 6 : 2,
-                                opacity: snapshot.isDragging ? 0.8 : 1,
-                                cursor: "pointer",
-                              }}
-                              onClick={() => handleCardClick(step)}
-                            >
-                              <CardContent>
-                                <Box
-                                  display="flex"
-                                  alignItems="center"
-                                  justifyContent="space-between"
-                                >
-                                  <Typography variant="subtitle1" fontWeight={600}>
-                                    {step.asset}
-                                  </Typography>
-                                  <Chip
-                                    label={col.label}
-                                    color={col.color}
-                                    size="small"
-                                    sx={{ fontWeight: 600 }}
-                                  />
-                                </Box>
-                                <Typography variant="body2" color="text.secondary" mt={1}>
-                                  {step.description}
-                                </Typography>
-                                <Divider sx={{ my: 1 }} />
-                                <Typography variant="caption" color="text.secondary">
-                                  Enter: {step.enterActions.join(", ") || "None"}
-                                </Typography>
-                                <br />
-                                <Typography variant="caption" color="text.secondary">
-                                  Exit: {step.exitActions.join(", ") || "None"}
-                                </Typography>
-                                <br />
-                                <Typography variant="caption" color="text.secondary">
-                                  Constraints: {step.constraints.join(", ") || "None"}
-                                </Typography>
-                              </CardContent>
-                            </Card>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                      {/* Column Footer: Add Ticket */}
-                      <Box
-                        mt={2}
-                        p={1}
+                      <Paper
+                        elevation={3}
                         sx={{
-                          borderTop: "1px solid #e0e0e0",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          bgcolor: "#f5f5f5",
+                          p: 2,
+                          minHeight: 500,
+                          bgcolor: "#f8f9fa",
+                          position: "relative",
+                          height: "100%",
                         }}
                       >
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => setAddTicketState({ open: true, columnKey: col.key })}
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          mb={2}
                         >
-                          Add Ticket
-                        </Button>
-                      </Box>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <span
+                              {...dragProvided.dragHandleProps}
+                              style={{ cursor: "grab", display: "flex" }}
+                            >
+                              <DragIndicatorIcon fontSize="small" color="action" />
+                            </span>
+                            <Typography variant="h6">{col.label}</Typography>
+                          </Box>
+                          <Box>
+                            <Tooltip title="Edit Column">
+                              <IconButton size="small" onClick={() => handleEditColumnClick(col)}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {columns.length > 1 && (
+                              <Tooltip title="Delete Column">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteColumn(col)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </Box>
+                        <Droppable droppableId={col.key} type="step">
+                          {(provided, snapshot) => (
+                            <Box
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              sx={{
+                                minHeight: 450,
+                                transition: "background 0.2s",
+                                background: snapshot.isDraggingOver ? "#e3f2fd" : undefined,
+                              }}
+                            >
+                              {grouped[col.key]?.map((step, idx) => (
+                                <Draggable draggableId={step.id} index={idx} key={step.id}>
+                                  {(provided, snapshot) => (
+                                    <Card
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      sx={{
+                                        mb: 2,
+                                        borderLeft: `6px solid ${col.color}`,
+                                        boxShadow: snapshot.isDragging ? 6 : 2,
+                                        opacity: snapshot.isDragging ? 0.8 : 1,
+                                        cursor: "pointer",
+                                      }}
+                                      onClick={() => handleCardClick(step)}
+                                    >
+                                      <CardContent>
+                                        <Box
+                                          display="flex"
+                                          alignItems="center"
+                                          justifyContent="space-between"
+                                        >
+                                          <Typography variant="subtitle1" fontWeight={600}>
+                                            {step.asset}
+                                          </Typography>
+                                          <Chip
+                                            label={col.label}
+                                            size="small"
+                                            sx={{
+                                              fontWeight: 600,
+                                              backgroundColor: col.color,
+                                              color: "#fff",
+                                            }}
+                                          />
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" mt={1}>
+                                          {step.description}
+                                        </Typography>
+                                        <Divider sx={{ my: 1 }} />
+                                        <Typography variant="caption" color="text.secondary">
+                                          Enter: {step.enterActions.join(", ") || "None"}
+                                        </Typography>
+                                        <br />
+                                        <Typography variant="caption" color="text.secondary">
+                                          Exit: {step.exitActions.join(", ") || "None"}
+                                        </Typography>
+                                        <br />
+                                        <Typography variant="caption" color="text.secondary">
+                                          Constraints: {step.constraints.join(", ") || "None"}
+                                        </Typography>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                              {/* Column Footer: Add Ticket */}
+                              <Box
+                                mt={2}
+                                p={1}
+                                sx={{
+                                  borderTop: "1px solid #e0e0e0",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  bgcolor: "#f5f5f5",
+                                }}
+                              >
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<AddIcon />}
+                                  onClick={() =>
+                                    setAddTicketState({ open: true, columnKey: col.key })
+                                  }
+                                >
+                                  Add Ticket
+                                </Button>
+                              </Box>
+                            </Box>
+                          )}
+                        </Droppable>
+                      </Paper>
                     </Box>
                   )}
-                </Droppable>
-              </Paper>
+                </Draggable>
+              ))}
+              {provided.placeholder}
             </Box>
-          ))}
-        </Box>
+          )}
+        </Droppable>
       </DragDropContext>
 
       {/* Edit Step Dialog */}
@@ -573,6 +565,73 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
               fullWidth
               autoFocus
             />
+            <Box>
+              <Typography variant="subtitle2" mb={1}>
+                Column Colour:
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 32px)",
+                  gap: 1,
+                  mb: 1,
+                  width: "fit-content",
+                }}
+              >
+                {[
+                  "#1976d2", // Blue
+                  "#388e3c", // Green
+                  "#fbc02d", // Yellow
+                  "#d32f2f", // Red
+                  "#7b1fa2", // Purple
+                  "#0288d1", // Light Blue
+                  "#c2185b", // Pink
+                  "#f57c00", // Orange
+                  "#455a64", // Blue Grey
+                  "#afb42b", // Lime
+                  "#5d4037", // Brown
+                  "#009688", // Teal
+                  "#8d6e63", // Taupe
+                  "#00acc1", // Cyan
+                  "#e64a19", // Deep Orange
+                  "#43a047", // Emerald
+                ].map((color) => (
+                  <Box
+                    key={color}
+                    onClick={() => setNewColumnColor(color)}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: color,
+                      borderRadius: "50%",
+                      border: newColumnColor === color ? "3px solid #000" : "2px solid #fff",
+                      cursor: "pointer",
+                      boxShadow: newColumnColor === color ? 3 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                    }}
+                  >
+                    {/* {newColumnColor === color && (
+                      <Box
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: "50%",
+                          border: "2px solid #fff",
+                          background: "#000",
+                          position: "absolute",
+                          top: 7,
+                          left: 7,
+                        }}
+                      />
+                    )} */}
+                  </Box>
+                ))}
+              </Box>
+              <span style={{ fontFamily: "monospace" }}>{newColumnColor}</span>
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -583,6 +642,36 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
             disabled={!newColumnLabel.trim()}
           >
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Delete Column Confirmation Dialog */}
+      <Dialog
+        open={deleteColumnDialog.open}
+        onClose={() => setDeleteColumnDialog({ open: false, column: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Column</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the column{" "}
+            <b>{deleteColumnDialog.column?.label}</b>?
+            <br />
+            <br />
+            All tickets in this column should be moved to a new column before deleting.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteColumnDialog({ open: false, column: null })}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeleteColumn}
+            color="error"
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

@@ -1508,11 +1508,13 @@ type Workflow {
 }
 
 type WorkflowColumn {
+  colour: String
   id: String!
   name: String!
 }
 
 input WorkflowColumnInput {
+  colour: String
   id: String!
   name: String!
 }
