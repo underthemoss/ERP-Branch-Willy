@@ -22,6 +22,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Alert,
 } from "@mui/material";
 import React from "react";
 
@@ -343,6 +344,9 @@ export default function AutomationsDialog({ open, column, onClose }: Automations
       <DialogTitle>{column ? `Automations for "${column.label}"` : "Automations"}</DialogTitle>
       <DialogContent>
         <Box mb={2}>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            This is a proof-of-concept (POC) feature. Changes made here are not persisted.
+          </Alert>
           <FormControlLabel
             control={
               <Switch
