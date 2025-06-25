@@ -53,7 +53,8 @@
     "pg": "^8.13.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-hook-form": "^7.56.3"
+    "react-hook-form": "^7.56.3",
+    "sqids": "^0.3.0"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",
