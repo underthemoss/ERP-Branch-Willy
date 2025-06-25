@@ -39,6 +39,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import React from "react";
 import Sqids from "sqids";
+import AutomationsDialog, { Column as AutomationColumn } from "./AutomationsDialog";
 
 const GetWorkflowConfigurationByIdDocument = graphql(`
   query GetWorkflowConfigurationById($id: ID!) {
@@ -88,11 +89,7 @@ type WorkflowTicket = {
   status: WorkflowStatus;
 };
 
-type Column = {
-  id: string;
-  label: string;
-  color: string; // hex color, e.g. "#1976d2"
-};
+type Column = AutomationColumn;
 
 const PRIMARY_HEX = "#1976d2";
 
@@ -440,7 +437,7 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
   const transitionOptions = columns.map((s) => s.id);
 
   return (
-    <Box sx={{ width: "100%", p: 2, bgcolor: "#f4f6f8" }}>
+    <Box sx={{ width: "100%", p: 2 }}>
       <Box display="flex" alignItems="center" mb={2} gap={1}>
         <Typography variant="h4" fontWeight={700}>
           {loading
@@ -553,7 +550,8 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
                 flexDirection: "row",
                 gap: 3,
                 overflowX: "auto",
-                pb: 1,
+                p: 1,
+                pb: 3,
                 width: "100%",
               }}
             >
@@ -960,24 +958,11 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
         )}
       </Menu>
       {/* Automations Dialog */}
-      <Dialog
+      <AutomationsDialog
         open={automationsDialog.open}
+        column={automationsDialog.column}
         onClose={() => setAutomationsDialog({ open: false, column: null })}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {automationsDialog.column
-            ? `Automations for "${automationsDialog.column.label}"`
-            : "Automations"}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>Placeholder for automations configuration.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAutomationsDialog({ open: false, column: null })}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      />
       {/* Color Picker Popover */}
       <Popover
         open={Boolean(colorPopoverAnchorEl)}
