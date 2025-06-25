@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import {
+  useGenerateExampleTicketLazyQuery,
   useGetWorkflowConfigurationByIdQuery,
   useUpdateWorkflowConfigurationMutation,
 } from "@/graphql/hooks";
@@ -67,6 +68,17 @@ const UpdateWorkflowConfigurationDocument = graphql(`
   }
 `);
 
+const GenerateExampleTicketDocument = graphql(`
+  query GenerateExampleTicket {
+    llm {
+      exampleTicket {
+        title
+        description
+      }
+    }
+  }
+`);
+
 type WorkflowStatus = string;
 
 type WorkflowTicket = {
@@ -117,6 +129,40 @@ type EditColumnDialogState = {
   column: Column | null;
   isNew: boolean;
 };
+
+function GenerateTicketDialogContent({
+  open,
+  setNewTicket,
+  setNewTicketDescription,
+}: {
+  open: boolean;
+  setNewTicket: (v: string) => void;
+  setNewTicketDescription: (v: string) => void;
+}) {
+  const [fetchTicket, { data, loading, error }] = useGenerateExampleTicketLazyQuery({
+    fetchPolicy: "no-cache",
+  });
+
+  // Fetch when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      fetchTicket();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  React.useEffect(() => {
+    if (open && !loading && data?.llm?.exampleTicket) {
+      setNewTicket(data.llm.exampleTicket.title);
+      setNewTicketDescription(data.llm.exampleTicket.description);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loading, data]);
+
+  if (loading) return <Typography>Generating example ticket...</Typography>;
+  if (error) return <Typography color="error">Failed to generate example ticket</Typography>;
+  return null;
+}
 
 export default function WorkflowDesigner({ workflowId }: { workflowId: string }) {
   // Automations dialog state
@@ -238,7 +284,8 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
   // Update columns when API data changes
   React.useEffect(() => {
     setColumns(apiColumns);
-  }, [apiColumns, data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const grouped = React.useMemo(() => groupByStatus(tickets, columns), [tickets, columns]);
 
@@ -686,7 +733,7 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
                                     setAddTicketState({ open: true, columnKey: col.id })
                                   }
                                 >
-                                  Add Ticket
+                                  Generate Ticket
                                 </Button>
                               </Box>
                             </Box>
@@ -801,6 +848,7 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
         </DialogActions>
       </Dialog>
       {/* Add Ticket Dialog */}
+      {/* Generate Ticket Dialog */}
       <Dialog
         open={addTicketState.open}
         onClose={() => {
@@ -811,8 +859,13 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Add Ticket</DialogTitle>
+        <DialogTitle>Generate Ticket</DialogTitle>
         <DialogContent>
+          <GenerateTicketDialogContent
+            open={addTicketState.open}
+            setNewTicket={setNewTicket}
+            setNewTicketDescription={setNewTicketDescription}
+          />
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <TextField
               label="Title"
@@ -862,7 +915,7 @@ export default function WorkflowDesigner({ workflowId }: { workflowId: string })
               setNewTicketDescription("");
             }}
           >
-            Add
+            Generate
           </Button>
         </DialogActions>
       </Dialog>

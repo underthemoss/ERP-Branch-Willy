@@ -343,6 +343,11 @@ enum DeliveryMethod {
   PICKUP
 }
 
+type ExampleTicket {
+  description: String!
+  title: String!
+}
+
 type File {
   comments: [Note!]!
   created_at: String!
@@ -574,6 +579,10 @@ type ListWorkflowConfigurationsResult {
 type ListWorkspacesResult {
   items: [Workspace!]!
   page: PaginationInfo!
+}
+
+type Llm {
+  exampleTicket: ExampleTicket
 }
 
 type Mutation {
@@ -1005,6 +1014,7 @@ type Query {
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
   listWorkspaces: ListWorkspacesResult!
+  llm: Llm
 }
 
 type Quote {
