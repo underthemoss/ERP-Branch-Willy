@@ -12,6 +12,7 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import SettingsIcon from "@mui/icons-material/Settings";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import {
@@ -157,15 +158,16 @@ export const NavBar = () => {
     <Box
       className="navbar"
       sx={{
-        display: "inline-flex",
+        display: "flex",
         flexDirection: "column",
         alignItems: "flex-start",
         pt: "18px",
         pb: 2,
         px: 2,
         bgcolor: "#F5F5F5",
-        height: "100%",
+        height: "100vh",
         width: 288,
+        position: "relative",
       }}
     >
       <Box
@@ -257,7 +259,7 @@ export const NavBar = () => {
 
       <Divider sx={{ width: "100%", my: "12px" }} />
 
-      <Box className="navmenu" sx={{ width: "100%" }}>
+      <Box className="navmenu" sx={{ width: "100%", flex: 1 }}>
         <List disablePadding>
           {navItems.map((item, index) => (
             <React.Fragment key={index}>
@@ -399,6 +401,58 @@ export const NavBar = () => {
             </React.Fragment>
           ))}
         </List>
+      </Box>
+      <Box
+        sx={{
+          width: "100%",
+          borderTop: "1px solid #eee",
+          p: 1.5,
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          bottom: 0,
+          left: 0,
+          bgcolor: "#F5F5F5",
+        }}
+      >
+        <ListItemButton
+          component={Link}
+          href={`/app/${currentWorkspace?.id}/settings`}
+          selected={pathname === `/app/${currentWorkspace?.id}/settings`}
+          data-testid="nav-settings"
+          sx={{
+            px: "12px",
+            borderRadius: "8px",
+            color:
+              pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+            width: "100%",
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              color:
+                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+              minWidth: "30px",
+            }}
+          >
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            disableTypography
+            sx={{
+              color:
+                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
+              fontFamily: "Inter",
+              fontSize: "14px",
+              fontStyle: "normal",
+              fontWeight: 500,
+              lineHeight: "21px",
+              letterSpacing: "0.28px",
+            }}
+          >
+            Settings
+          </ListItemText>
+        </ListItemButton>
       </Box>
     </Box>
   );
