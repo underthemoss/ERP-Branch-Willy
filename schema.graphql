@@ -1534,12 +1534,14 @@ type WorkflowConfiguration {
   companyId: String!
   createdAt: DateTime!
   createdBy: String!
+  createdByUser: User
   deletedAt: DateTime
   deletedBy: String
   id: ID!
   name: String!
   updatedAt: DateTime!
   updatedBy: String!
+  updatedByUser: User
 }
 
 type Workspace {

@@ -31,6 +31,33 @@ import { PageContainer } from "@toolpad/core";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
 
+// Utility for pretty printing dates
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  return new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+// Utility for pretty printing user names
+function formatUser(
+  user?: { firstName?: string | null; lastName?: string | null } | null,
+  fallback?: string | null,
+) {
+  if (!user) return fallback || "";
+  const first = user.firstName || "";
+  const last = user.lastName || "";
+  const full = `${first} ${last}`.trim();
+  return full || fallback || "";
+}
+
 // GQL query declarations (for codegen)
 graphql(`
   query ListWorkflowConfigurations {
@@ -45,8 +72,16 @@ graphql(`
         companyId
         createdAt
         createdBy
+        createdByUser {
+          firstName
+          lastName
+        }
         updatedAt
         updatedBy
+        updatedByUser {
+          firstName
+          lastName
+        }
         deletedAt
         deletedBy
       }
@@ -198,12 +233,12 @@ export default function WorkflowConfigurationsPage() {
       name: item.name,
       columns: item.columns.map((col) => col.name).join(", "),
       companyId: item.companyId,
-      createdAt: item.createdAt,
-      createdBy: item.createdBy,
-      updatedAt: item.updatedAt,
-      updatedBy: item.updatedBy,
-      deletedAt: item.deletedAt,
-      deletedBy: item.deletedBy,
+      createdAt: formatDate(item.createdAt),
+      createdBy: formatUser(item.createdByUser, item.createdBy),
+      updatedAt: formatDate(item.updatedAt),
+      updatedBy: formatUser(item.updatedByUser, item.updatedBy),
+      deletedAt: formatDate(item.deletedAt),
+      deletedBy: item.deletedBy ?? "",
     })) ?? [];
 
   const columns: GridColDef[] = [
