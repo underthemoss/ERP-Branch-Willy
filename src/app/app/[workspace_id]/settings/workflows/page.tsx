@@ -248,8 +248,6 @@ export default function WorkflowConfigurationsPage() {
     { field: "createdBy", headerName: "Created By", flex: 1, minWidth: 150 },
     { field: "updatedAt", headerName: "Updated At", flex: 1, minWidth: 180 },
     { field: "updatedBy", headerName: "Updated By", flex: 1, minWidth: 150 },
-    { field: "deletedAt", headerName: "Deleted At", flex: 1, minWidth: 180 },
-    { field: "deletedBy", headerName: "Deleted By", flex: 1, minWidth: 150 },
     {
       field: "actions",
       headerName: "Actions",
