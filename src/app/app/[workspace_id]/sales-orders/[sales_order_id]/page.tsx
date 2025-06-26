@@ -237,11 +237,10 @@ export default function SalesOrderDetailPage() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Button variant="outlined" color="secondary" startIcon={<EditOutlinedIcon />}>
+                    <Button color="secondary" startIcon={<EditOutlinedIcon />}>
                       Edit
                     </Button>
                     <Button
-                      variant="outlined"
                       color="secondary"
                       startIcon={<PrintOutlinedIcon />}
                       disabled={pdfLoading}
@@ -268,7 +267,6 @@ export default function SalesOrderDetailPage() {
                     <Button
                       variant="contained"
                       color="primary"
-                      startIcon={<CheckCircleOutlinedIcon />}
                       disabled={submitLoading}
                       onClick={async () => {
                         if (!salesOrder?.id) return;
