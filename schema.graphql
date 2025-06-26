@@ -1063,8 +1063,8 @@ type RentalFulfilment implements FulfilmentBase {
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
-  rentalEndDate: DateTime!
-  rentalStartDate: DateTime!
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
   salesOrder: SalesOrder
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
@@ -1183,8 +1183,8 @@ type SaleFulfilment implements FulfilmentBase {
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
-  quantity: Int!
-  salePrice: Float!
+  quantity: Int
+  salePrice: Float
   salesOrder: SalesOrder
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
@@ -1382,7 +1382,7 @@ type ServiceFulfilment implements FulfilmentBase {
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID!
   salesOrderType: FulfilmentType!
-  serviceDate: DateTime!
+  serviceDate: DateTime
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID

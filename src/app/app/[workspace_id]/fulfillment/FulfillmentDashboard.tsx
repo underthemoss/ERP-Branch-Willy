@@ -1,7 +1,10 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useListWorkflowConfigurationsFulfilmentPageQuery } from "@/graphql/hooks";
+import {
+  useListFulfilmentsFulfilmentDashboardPageQuery,
+  useListWorkflowConfigurationsFulfilmentPageQuery,
+} from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
@@ -21,7 +24,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React from "react";
+import React, { useEffect } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 // --- Mock Data Types ---
@@ -35,7 +38,7 @@ type Workflow = {
   }[];
 };
 
-type Ticket = {
+type FulfilmentTicket = {
   id: string;
   title: string;
   description: string;
@@ -44,6 +47,68 @@ type Ticket = {
   workflowId: string | null; // null = backlog
   status: string; // column id if in workflow, "" if in backlog
 };
+
+graphql(`
+  query ListFulfilmentsFulfilmentDashboardPage(
+    $filter: ListFulfilmentsFilter
+    $page: ListFulfilmentsPage
+  ) {
+    listFulfilments(filter: $filter, page: $page) {
+      items {
+        __typename
+        ... on RentalFulfilment {
+          id
+          contact {
+            __typename
+            ... on BusinessContact {
+              id
+              name
+            }
+            ... on PersonContact {
+              id
+              name
+            }
+          }
+          project {
+            id
+            name
+            project_code
+          }
+          purchaseOrderNumber
+          salesOrderId
+          salesOrderType
+          workflowId
+          workflowColumnId
+          createdAt
+          updatedAt
+          salesOrderLineItem {
+            __typename
+            ... on RentalSalesOrderLineItem {
+              id
+              price {
+                __typename
+                ... on RentalPrice {
+                  id
+                  name
+                  pimCategory {
+                    id
+                    name
+                  }
+                  pimCategoryPath
+                }
+              }
+            }
+          }
+          assignedTo {
+            id
+            firstName
+            lastName
+          }
+        }
+      }
+    }
+  }
+`);
 
 // Inline GQL query for codegen
 graphql(`
@@ -67,7 +132,7 @@ graphql(`
 const assignees = ["Alex Johnson", "Maria Lopez", "Chris Evans", "Lisa Green"];
 const customers = ["Kansas Rentals", "Arrowhead Rentals", "Warehouse"];
 
-const initialTickets: Ticket[] = [
+const initialTickets: FulfilmentTicket[] = [
   {
     id: "t1",
     title: "SKID STEER",
@@ -125,16 +190,16 @@ const initialTickets: Ticket[] = [
 ];
 
 // --- Helper Functions ---
-function getBacklogTickets(tickets: Ticket[]) {
+function getBacklogTickets(tickets: FulfilmentTicket[]) {
   return tickets.filter((t) => t.workflowId === null);
 }
-function getWorkflowTickets(tickets: Ticket[], workflowId: string, columnId: string) {
+function getWorkflowTickets(tickets: FulfilmentTicket[], workflowId: string, columnId: string) {
   return tickets.filter((t) => t.workflowId === workflowId && t.status === columnId);
 }
 
 // --- Main Component ---
 export default function FulfillmentDashboard() {
-  const [tickets, setTickets] = React.useState<Ticket[]>(initialTickets);
+  const [tickets, setTickets] = React.useState<FulfilmentTicket[]>(initialTickets);
   const [assigneeFilter, setAssigneeFilter] = React.useState<string[]>([]);
   const [customerFilter, setCustomerFilter] = React.useState<string[]>([]);
   const [workflowFilter, setWorkflowFilter] = React.useState<string[]>([]);
@@ -148,6 +213,45 @@ export default function FulfillmentDashboard() {
   } = useListWorkflowConfigurationsFulfilmentPageQuery({
     fetchPolicy: "cache-and-network",
   });
+  const {
+    data: fulfillments,
+    loading: fulfillmentsLoading,
+    error: fulfillmentsError,
+  } = useListFulfilmentsFulfilmentDashboardPageQuery({
+    fetchPolicy: "cache-and-network",
+    variables: { page: { number: 1, size: 1000 }, filter: {} },
+  });
+
+  useEffect(() => {
+    const tickets: FulfilmentTicket[] =
+      fulfillments?.listFulfilments?.items
+        .map((i) => {
+          if (i.__typename === "RentalFulfilment")
+            return {
+              id: i.id,
+              assignee: i.assignedTo?.firstName
+                ? `${i.assignedTo?.firstName} ${i.assignedTo?.lastName}`
+                : "Unassigned",
+              customer: i.contact?.name || "",
+              description:
+                (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
+                  i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
+                  `${i.salesOrderLineItem.price.pimCategory?.name}`) ||
+                "",
+              status: "",
+              title:
+                (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
+                  i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
+                  `${i.salesOrderLineItem.price.name}`) ||
+                "",
+              workflowId: null,
+            } satisfies FulfilmentTicket;
+        })
+        .filter(Boolean)
+        .map((i) => i as FulfilmentTicket) || [];
+
+    setTickets(tickets);
+  }, [fulfillments]);
 
   // Map API data to expected workflow shape
   const workflows: Workflow[] =
@@ -407,9 +511,6 @@ export default function FulfillmentDashboard() {
                                               <Typography variant="body2" color="text.secondary">
                                                 <strong>Customer:</strong> {ticket.customer}
                                               </Typography>
-                                              <Typography variant="caption" color="text.secondary">
-                                                {ticket.id}
-                                              </Typography>
                                             </CardContent>
                                           </Card>
                                         )}
@@ -576,6 +677,12 @@ export default function FulfillmentDashboard() {
                                                       <Typography
                                                         variant="subtitle1"
                                                         fontWeight={600}
+                                                        noWrap
+                                                        sx={{
+                                                          maxWidth: 120,
+                                                          overflow: "hidden",
+                                                          textOverflow: "ellipsis",
+                                                        }}
                                                       >
                                                         {ticket.title}
                                                       </Typography>
@@ -603,12 +710,6 @@ export default function FulfillmentDashboard() {
                                                       color="text.secondary"
                                                     >
                                                       <strong>Customer:</strong> {ticket.customer}
-                                                    </Typography>
-                                                    <Typography
-                                                      variant="caption"
-                                                      color="text.secondary"
-                                                    >
-                                                      {ticket.id}
                                                     </Typography>
                                                   </CardContent>
                                                 </Card>
