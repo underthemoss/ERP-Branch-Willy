@@ -192,14 +192,12 @@ export default function SalesOrdersPage() {
       headerName: "Created At",
       width: 180,
       renderCell: (params) => {
-        if (params.value === "not implemented") return "not implemented";
-        const date = params.value ? parseISO(params.value) : null;
-        return date ? (
+        if (!params?.value) return "";
+        const date = new Date(Number(params.value));
+        return (
           <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
             <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
           </Tooltip>
-        ) : (
-          ""
         );
       },
     },
@@ -208,14 +206,12 @@ export default function SalesOrdersPage() {
       headerName: "Updated At",
       width: 180,
       renderCell: (params) => {
-        if (params.value === "not implemented") return "not implemented";
-        const date = params.value ? parseISO(params.value) : null;
-        return date ? (
+        if (!params?.value) return "";
+        const date = new Date(Number(params.value));
+        return (
           <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
             <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
           </Tooltip>
-        ) : (
-          ""
         );
       },
     },

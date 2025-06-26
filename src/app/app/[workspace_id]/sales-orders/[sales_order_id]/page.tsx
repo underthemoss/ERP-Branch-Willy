@@ -4,11 +4,16 @@ import { graphql } from "@/graphql";
 import {
   useCreatePdfFromPageAndAttachToEntityIdMutation,
   useGetSalesOrderByIdQuery,
+  useSubmitSalesOrderSalesOrderPageMutation,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
+  Alert,
   Box,
   Button,
   Container,
@@ -16,6 +21,7 @@ import {
   Grid,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   Tooltip,
   Typography,
@@ -138,6 +144,16 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
   }
 `);
 
+// Submit Sales Order mutation
+const SUBMIT_SALES_ORDER_MUTATION = graphql(`
+  mutation SubmitSalesOrderSalesOrderPage($id: ID!) {
+    submitSalesOrder(id: $id) {
+      id
+      status
+    }
+  }
+`);
+
 export default function SalesOrderDetailPage() {
   const { sales_order_id, workspace_id } = useParams<{
     sales_order_id: string;
@@ -154,6 +170,25 @@ export default function SalesOrderDetailPage() {
 
   const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
     useCreatePdfFromPageAndAttachToEntityIdMutation();
+
+  // Submit Sales Order mutation
+  const [submitSalesOrder, { loading: submitLoading, data: submitData, error: submitError }] =
+    useSubmitSalesOrderSalesOrderPageMutation();
+
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (submitData?.submitSalesOrder?.id) {
+      setSnackbarOpen(true);
+    }
+  }, [submitData]);
+
+  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
 
   const salesOrder = data?.getSalesOrderById;
 
@@ -201,33 +236,50 @@ export default function SalesOrderDetailPage() {
                   </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                  <Button variant="contained" sx={{ mr: 1 }}>
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    disabled={pdfLoading}
-                    onClick={async () => {
-                      if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
-                      // Format file name as sales-order-YYYY-MM-DD
-                      const today = new Date();
-                      const yyyy = today.getFullYear();
-                      const mm = String(today.getMonth() + 1).padStart(2, "0");
-                      const dd = String(today.getDate()).padStart(2, "0");
-                      const fileName = `sales-order-${yyyy}-${mm}-${dd}`;
-                      await createPdf({
-                        variables: {
-                          entity_id: salesOrder.id,
-                          path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
-                          file_name: fileName,
-                        },
-                      });
-                      setCacheKey((k) => k + 1);
-                    }}
-                  >
-                    {pdfLoading ? "Generating PDF..." : "Print"}
-                  </Button>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Button variant="outlined" color="secondary" startIcon={<EditOutlinedIcon />}>
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<PrintOutlinedIcon />}
+                      disabled={pdfLoading}
+                      onClick={async () => {
+                        if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
+                        // Format file name as sales-order-YYYY-MM-DD
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, "0");
+                        const dd = String(today.getDate()).padStart(2, "0");
+                        const fileName = `sales-order-${yyyy}-${mm}-${dd}`;
+                        await createPdf({
+                          variables: {
+                            entity_id: salesOrder.id,
+                            path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
+                            file_name: fileName,
+                          },
+                        });
+                        setCacheKey((k) => k + 1);
+                      }}
+                    >
+                      {pdfLoading ? "Generating PDF..." : "Print"}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<CheckCircleOutlinedIcon />}
+                      disabled={submitLoading}
+                      onClick={async () => {
+                        if (!salesOrder?.id) return;
+                        await submitSalesOrder({
+                          variables: { id: salesOrder.id },
+                        });
+                      }}
+                    >
+                      {submitLoading ? "Submitting..." : "Submit"}
+                    </Button>
+                  </Box>
                   {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
                     <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
                       PDF attached!
@@ -550,6 +602,21 @@ export default function SalesOrderDetailPage() {
           </Grid>
         </Grid>
       )}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          Sales order submitted successfully!
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
