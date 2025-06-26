@@ -9,6 +9,7 @@ import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -70,6 +71,13 @@ export const NavBar = () => {
       icon: <DescriptionOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
       testId: "nav-purchase-order",
+    },
+    {
+      text: "Fulfillment",
+      href: `/app/${currentWorkspace?.id}/fulfillment`,
+      icon: <LocalShippingIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/fulfillment`,
+      testId: "nav-fulfillment",
     },
     {
       text: "Tickets",
