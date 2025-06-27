@@ -49,6 +49,56 @@ type FulfilmentTicket = {
 };
 
 graphql(`
+  fragment BaseFulfilmentFields on FulfilmentBase {
+    id
+    contact {
+      __typename
+      ... on BusinessContact {
+        id
+        name
+      }
+      ... on PersonContact {
+        id
+        name
+      }
+    }
+    project {
+      id
+      name
+      project_code
+    }
+    purchaseOrderNumber
+    salesOrderId
+    salesOrderType
+    workflowId
+    workflowColumnId
+    createdAt
+    updatedAt
+    salesOrderLineItem {
+      __typename
+      ... on RentalSalesOrderLineItem {
+        id
+        price {
+          __typename
+          ... on RentalPrice {
+            id
+            name
+            pimCategory {
+              id
+              name
+            }
+            pimCategoryPath
+          }
+        }
+      }
+    }
+    assignedTo {
+      id
+      firstName
+      lastName
+    }
+  }
+
   query ListFulfilmentsFulfilmentDashboardPage(
     $filter: ListFulfilmentsFilter
     $page: ListFulfilmentsPage
@@ -56,55 +106,7 @@ graphql(`
     listFulfilments(filter: $filter, page: $page) {
       items {
         __typename
-        ... on RentalFulfilment {
-          id
-          contact {
-            __typename
-            ... on BusinessContact {
-              id
-              name
-            }
-            ... on PersonContact {
-              id
-              name
-            }
-          }
-          project {
-            id
-            name
-            project_code
-          }
-          purchaseOrderNumber
-          salesOrderId
-          salesOrderType
-          workflowId
-          workflowColumnId
-          createdAt
-          updatedAt
-          salesOrderLineItem {
-            __typename
-            ... on RentalSalesOrderLineItem {
-              id
-              price {
-                __typename
-                ... on RentalPrice {
-                  id
-                  name
-                  pimCategory {
-                    id
-                    name
-                  }
-                  pimCategoryPath
-                }
-              }
-            }
-          }
-          assignedTo {
-            id
-            firstName
-            lastName
-          }
-        }
+        ...BaseFulfilmentFields
       }
     }
   }
