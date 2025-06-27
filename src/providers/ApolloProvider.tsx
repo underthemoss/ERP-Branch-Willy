@@ -4,6 +4,7 @@ import { ApolloClient, ApolloProvider, createHttpLink, InMemoryCache } from "@ap
 import { setContext } from "@apollo/client/link/context";
 import { useAuth0 } from "@auth0/auth0-react";
 import React, { useMemo } from "react";
+import introspectionResult from "../graphql/hooks";
 import { useJwtOverride } from "./JwtOverrideContext";
 
 export const ApolloClientProvider: React.FC<{
@@ -30,7 +31,9 @@ export const ApolloClientProvider: React.FC<{
 
     return new ApolloClient({
       link: authLink.concat(httpLink),
-      cache: new InMemoryCache(),
+      cache: new InMemoryCache({
+        possibleTypes: introspectionResult.possibleTypes,
+      }),
     });
   }, [api, getAccessTokenSilently, jwtOverride]);
 
