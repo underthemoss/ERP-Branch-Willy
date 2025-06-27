@@ -466,6 +466,7 @@ export default function FulfillmentDashboard() {
               <MuiChip
                 label={option.name}
                 {...getTagProps({ index })}
+                key={option.id}
                 size="small"
                 sx={{ mr: 0.5 }}
               />
