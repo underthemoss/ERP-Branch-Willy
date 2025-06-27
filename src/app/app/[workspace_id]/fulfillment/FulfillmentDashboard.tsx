@@ -9,9 +9,11 @@ import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea
 import BoltIcon from "@mui/icons-material/Bolt";
 import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import ClearIcon from "@mui/icons-material/Clear";
-import SearchIcon from "@mui/icons-material/Search";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import SearchIcon from "@mui/icons-material/Search";
 import {
+  Autocomplete,
+  Avatar,
   Box,
   Button,
   Card,
@@ -23,16 +25,15 @@ import {
   IconButton,
   InputAdornment,
   MenuItem,
+  Chip as MuiChip,
   Paper,
   Select,
   Stack,
   TextField,
-  Typography,
-  Avatar,
   Tooltip,
-  Autocomplete,
-  Chip as MuiChip,
+  Typography,
 } from "@mui/material";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 
@@ -138,9 +139,6 @@ graphql(`
 // --- Mock Data ---
 // const workflows: Workflow[] = [ ... ] (REMOVED, now fetched from API)
 
-const assignees = ["Alex Johnson", "Maria Lopez", "Chris Evans", "Lisa Green"];
-const customers = ["Kansas Rentals", "Arrowhead Rentals", "Warehouse"];
-
 const initialTickets: FulfilmentTicket[] = [
   {
     id: "t1",
@@ -209,10 +207,39 @@ function getWorkflowTickets(tickets: FulfilmentTicket[], workflowId: string, col
 // --- Main Component ---
 export default function FulfillmentDashboard() {
   const [tickets, setTickets] = React.useState<FulfilmentTicket[]>(initialTickets);
-  const [assigneeFilter, setAssigneeFilter] = React.useState<string[]>([]);
-  const [customerFilter, setCustomerFilter] = React.useState<string[]>([]);
-  const [workflowFilter, setWorkflowFilter] = React.useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Compute unique assignees and customers from tickets
+  const assignees = React.useMemo(
+    () => Array.from(new Set(tickets.map((t) => t.assignee).filter(Boolean))).sort(),
+    [tickets],
+  );
+  const customers = React.useMemo(
+    () => Array.from(new Set(tickets.map((t) => t.customer).filter(Boolean))).sort(),
+    [tickets],
+  );
+
+  // Parse filters from query params
+  const assigneeFilter = searchParams.getAll("assignee");
+  const customerFilter = searchParams.getAll("customer");
+  const workflowFilter = searchParams.getAll("workflow");
+  const searchTerm = searchParams.get("search") || "";
+
+  // Helper to update query params
+  function setQueryParam(key: string, value: string[] | string) {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    if (Array.isArray(value)) {
+      params.delete(key);
+      value.forEach((v) => params.append(key, v));
+    } else if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   // --- Fetch Workflows from API ---
   const {
@@ -338,7 +365,7 @@ export default function FulfillmentDashboard() {
           variant="outlined"
           size="small"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => setQueryParam("search", e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -347,7 +374,7 @@ export default function FulfillmentDashboard() {
             ),
             endAdornment: searchTerm ? (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchTerm("")}>
+                <IconButton size="small" onClick={() => setQueryParam("search", "")}>
                   <ClearIcon fontSize="small" />
                 </IconButton>
               </InputAdornment>
@@ -360,11 +387,11 @@ export default function FulfillmentDashboard() {
           multiple
           displayEmpty
           value={assigneeFilter}
-          onChange={(e) =>
-            setAssigneeFilter(
-              typeof e.target.value === "string" ? [e.target.value] : (e.target.value as string[]),
-            )
-          }
+          onChange={(e) => {
+            const value =
+              typeof e.target.value === "string" ? [e.target.value] : (e.target.value as string[]);
+            setQueryParam("assignee", value);
+          }}
           renderValue={(selected) =>
             selected.length === 0 ? "Assignee" : (selected as string[]).join(", ")
           }
@@ -384,11 +411,11 @@ export default function FulfillmentDashboard() {
           multiple
           displayEmpty
           value={customerFilter}
-          onChange={(e) =>
-            setCustomerFilter(
-              typeof e.target.value === "string" ? [e.target.value] : (e.target.value as string[]),
-            )
-          }
+          onChange={(e) => {
+            const value =
+              typeof e.target.value === "string" ? [e.target.value] : (e.target.value as string[]);
+            setQueryParam("customer", value);
+          }}
           renderValue={(selected) =>
             selected.length === 0 ? "Customer" : (selected as string[]).join(", ")
           }
@@ -409,7 +436,12 @@ export default function FulfillmentDashboard() {
           options={workflows}
           getOptionLabel={(option) => option.name}
           value={workflows.filter((w) => workflowFilter.includes(w.id))}
-          onChange={(_, value) => setWorkflowFilter(value.map((w) => w.id))}
+          onChange={(_, value) =>
+            setQueryParam(
+              "workflow",
+              value.map((w) => w.id),
+            )
+          }
           renderInput={(params) => (
             <TextField
               {...params}
@@ -489,8 +521,16 @@ export default function FulfillmentDashboard() {
                                       .filter((t) => t.workflowId === null)
                                       .filter((t) => {
                                         // Apply assignee, customer, and search filters, but NOT workflowFilter
-                                        if (assigneeFilter.length > 0 && !assigneeFilter.includes(t.assignee)) return false;
-                                        if (customerFilter.length > 0 && !customerFilter.includes(t.customer)) return false;
+                                        if (
+                                          assigneeFilter.length > 0 &&
+                                          !assigneeFilter.includes(t.assignee)
+                                        )
+                                          return false;
+                                        if (
+                                          customerFilter.length > 0 &&
+                                          !customerFilter.includes(t.customer)
+                                        )
+                                          return false;
                                         if (searchTerm) {
                                           const lower = searchTerm.toLowerCase();
                                           if (
@@ -597,7 +637,7 @@ export default function FulfillmentDashboard() {
                               elevation={0}
                               sx={{
                                 p: 2,
-                                bgcolor: "#fafbfc",
+                                bgcolor: "transparent",
                                 borderRadius: 3,
                                 margin: 0,
                               }}
@@ -776,7 +816,12 @@ export default function FulfillmentDashboard() {
                                                         </Typography>
                                                         <Tooltip title={ticket.assignee}>
                                                           <Avatar
-                                                            sx={{ width: 28, height: 28, fontSize: 14, ml: 1 }}
+                                                            sx={{
+                                                              width: 28,
+                                                              height: 28,
+                                                              fontSize: 14,
+                                                              ml: 1,
+                                                            }}
                                                           >
                                                             {ticket.assignee === "Unassigned"
                                                               ? null
