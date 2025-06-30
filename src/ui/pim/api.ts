@@ -6,7 +6,12 @@ export type {
   PimCategoryFieldsFragment as PimCategoryFields,
 } from "@/graphql/graphql";
 
-export { useListPimProductsQuery, useListPimCategoriesQuery } from "@/graphql/hooks";
+export {
+  useListPimProductsQuery,
+  useListPimCategoriesQuery,
+  useListPimCategoriesLazyQuery,
+  useListPimProductsLazyQuery,
+} from "@/graphql/hooks";
 
 graphql(`
   fragment PimProductFields on PimProduct {
@@ -23,6 +28,8 @@ graphql(`
     name
     path
     has_products
+    childrenCount
+    productCount
   }
 `);
 
@@ -43,8 +50,8 @@ graphql(`
 `);
 
 graphql(`
-  query ListPimCategories($page: ListPimCategoriesPage) {
-    listPimCategories(page: $page) {
+  query ListPimCategories($page: ListPimCategoriesPage, $filter: ListPimCategoriesFilter) {
+    listPimCategories(page: $page, filter: $filter) {
       page {
         number
         size
