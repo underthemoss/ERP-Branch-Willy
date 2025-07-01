@@ -6,7 +6,6 @@ import { Autocomplete, Box, Button, TextField, Typography } from "@mui/material"
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
-import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
 import { AddNewPriceDialog } from "./AddNewPriceDialog";
 
 function formatCentsToUSD(cents: number): string {

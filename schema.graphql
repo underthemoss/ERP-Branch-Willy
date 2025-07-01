@@ -536,6 +536,12 @@ type ListPersonContactsResult {
   page: PaginationInfo!
 }
 
+input ListPimCategoriesFilter {
+  parentId: ID
+  path: String
+  searchTerm: String
+}
+
 input ListPimCategoriesPage {
   number: Int = 1
   size: Int = 10
@@ -548,6 +554,9 @@ type ListPimCategoriesResult {
 
 input ListPimProductsFilter {
   pimCategoryPlatformId: ID
+
+  """Search term to filter products by name """
+  searchTerm: String
 }
 
 input ListPimProductsPage {
@@ -746,6 +755,7 @@ input PersonContactInput {
 }
 
 type PimCategory {
+  childrenCount: Int
   description: String
   has_products: Boolean
   id: String!
@@ -753,6 +763,7 @@ type PimCategory {
   name: String!
   path: String!
   platform_id: String!
+  productCount: Int
   tenant_id: String!
 }
 
@@ -1005,7 +1016,7 @@ type Query {
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
-  listPimCategories(page: ListPimCategoriesPage): ListPimCategoriesResult
+  listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
   listPriceBookCategories(priceBookId: String): [PimCategory!]!
   listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
