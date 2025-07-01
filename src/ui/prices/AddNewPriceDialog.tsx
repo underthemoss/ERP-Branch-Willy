@@ -143,8 +143,8 @@ export function AddNewPriceDialog({
       <form onSubmit={rhfHandleSubmit(onFormSubmit)}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <PimCategoriesTreeView
+            includeProducts
             onItemSelected={(item) => {
-              debugger;
               if (item.__typename === "PimCategory") {
                 setFormCategoryId(item.id ?? null);
                 setSelectedProduct(null);

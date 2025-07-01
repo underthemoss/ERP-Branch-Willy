@@ -254,6 +254,7 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
 
 export function PimCategoriesTreeView(props: {
   onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
+  includeProducts?: boolean;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
@@ -308,9 +309,7 @@ export function PimCategoriesTreeView(props: {
         const parentCategoryId = opts.parentCategoryId || "";
         const { error, data } = await listCategoriesQuery({
           variables: {
-            filter: {
-              parentId: parentCategoryId,
-            },
+            filter: parentCategoryId ? { parentId: parentCategoryId } : { path: "" },
             page: {
               size: item?.childrenCount ?? 500,
             },
@@ -333,7 +332,7 @@ export function PimCategoriesTreeView(props: {
           pimItem: category,
         }));
 
-        if (item?.productCount) {
+        if (item?.productCount && props.includeProducts) {
           // inject a product tree item
           treeItems.unshift({
             id: `products:${item?.id}`,
@@ -349,14 +348,18 @@ export function PimCategoriesTreeView(props: {
         return treeItems as PimCategoryTreeViewItem[];
       }
     },
-    [listCategoriesQuery, listProductsQuery, apiRef],
+    [listCategoriesQuery, listProductsQuery, apiRef, props.includeProducts],
   );
 
   const handleItemClicked = React.useCallback(
     (itemId: string) => {
       const item: PimCategoryTreeViewItem = apiRef.current?.getItem(itemId);
 
-      if (item?.childrenCount || item?.productCount) {
+      if (item?.childrenCount) {
+        return;
+      }
+
+      if (props.includeProducts && item?.productCount) {
         return;
       }
 
@@ -394,16 +397,18 @@ export function PimCategoriesTreeView(props: {
             },
           },
         }),
-        listProductsQuery({
-          variables: {
-            filter: {
-              searchTerm,
-            },
-            page: {
-              size: 500,
-            },
-          },
-        }),
+        props.includeProducts
+          ? listProductsQuery({
+              variables: {
+                filter: {
+                  searchTerm,
+                },
+                page: {
+                  size: 500,
+                },
+              },
+            })
+          : Promise.resolve({ data: { listPimProducts: { items: [] } } }),
       ]);
       const items = getTreeItems({
         pimCategories: categoriesData?.data?.listPimCategories?.items || [],
@@ -415,7 +420,7 @@ export function PimCategoriesTreeView(props: {
       setExpandedItems(idsToExpand);
     },
 
-    [listCategoriesQuery, listProductsQuery],
+    [listCategoriesQuery, listProductsQuery, props.includeProducts],
   );
 
   React.useEffect(() => {
@@ -511,7 +516,11 @@ export function PimCategoriesTreeView(props: {
                   ? undefined
                   : {
                       getChildrenCount: (item: PimCategoryTreeViewItem) => {
-                        return item.childrenCount || item.productCount || 0;
+                        if (props.includeProducts) {
+                          return item.childrenCount || item.productCount || 0;
+                        } else {
+                          return item.childrenCount || 0;
+                        }
                       },
                       getTreeItems: async (parentCategoryId) => {
                         const item = parentCategoryId
