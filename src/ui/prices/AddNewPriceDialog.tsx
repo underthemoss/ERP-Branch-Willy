@@ -144,6 +144,7 @@ export function AddNewPriceDialog({
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <PimCategoriesTreeView
             onItemSelected={(item) => {
+              debugger;
               if (item.__typename === "PimCategory") {
                 setFormCategoryId(item.id ?? null);
                 setSelectedProduct(null);

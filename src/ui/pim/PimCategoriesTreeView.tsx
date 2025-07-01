@@ -10,15 +10,13 @@ import { RichTreeViewPro } from "@mui/x-tree-view-pro";
 import { useTreeViewApiRef } from "@mui/x-tree-view/hooks";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import { get } from "lodash";
+import { get, set } from "lodash";
 import * as React from "react";
 import {
   PimCategoryFields,
   PimProductFields,
   useListPimCategoriesLazyQuery,
-  useListPimCategoriesQuery,
   useListPimProductsLazyQuery,
-  useListPimProductsQuery,
 } from "./api";
 
 type TreeViewNode = Record<
@@ -32,6 +30,7 @@ type TreeViewNode = Record<
     productId?: string;
     childrenCount?: number;
     productCount?: number;
+    pimItem?: PimCategoryFields | PimProductFields;
   }
 >;
 
@@ -43,6 +42,7 @@ type PimCategoryTreeViewItem = TreeViewBaseItem<{
   productId?: string;
   childrenCount?: number;
   productCount?: number;
+  pimItem?: PimCategoryFields | PimProductFields;
 }>;
 
 function normalizeString(val: unknown): string | undefined {
@@ -77,19 +77,19 @@ function getTreeItems(opts: {
     let currentLevel = treeItemsMap;
     let partialPath = "";
 
-    categoryPath.forEach((category, index) => {
-      if (!category || typeof category !== "string") return;
+    categoryPath.forEach((categoryName, index) => {
+      if (!categoryName || typeof categoryName !== "string") return;
       partialPath += "|category";
-      if (!currentLevel[category]) {
-        currentLevel[category] = {
+      if (!currentLevel[categoryName]) {
+        currentLevel[categoryName] = {
           id: `${id}-${index}`,
-          label: category,
+          label: categoryName,
           children: {},
           path: partialPath,
           nodeType: "category",
         };
       }
-      currentLevel = currentLevel[category].children as TreeViewNode;
+      currentLevel = currentLevel[categoryName].children as TreeViewNode;
     });
 
     if (!name || typeof name !== "string") return;
@@ -99,6 +99,7 @@ function getTreeItems(opts: {
       label: name,
       children: {},
       nodeType: "category",
+      pimItem: category,
     };
   });
 
@@ -159,10 +160,11 @@ function getTreeItems(opts: {
     // Add product as a leaf node
     if (!name || typeof name !== "string") return;
     currentLevel[name] = {
-      id: `product-${id}`,
+      id: `product:${id}`,
       path: normalizeString(pim_category_path),
       label: name,
       nodeType: "product",
+      pimItem: product,
     };
   });
 
@@ -171,14 +173,11 @@ function getTreeItems(opts: {
 
 function flattenTree(map: TreeViewNode): PimCategoryTreeViewItem[] {
   return Object.values(map).map((node) => {
-    const { id, label, nodeType, children } = node;
+    const { children, ...otherFields } = node;
     return {
-      id,
-      label,
-      nodeType,
-      path: normalizeString(node.path),
+      ...otherFields,
       children: children ? flattenTree(children) : undefined,
-    };
+    } as PimCategoryTreeViewItem;
   });
 }
 
@@ -257,71 +256,27 @@ export function PimCategoriesTreeView(props: {
   onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
-  const [searchInput, setSearchInput] = React.useState<string>("");
+  const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
+  const [searchInput, setSearchInput] = React.useState<string>("");
   const [selectedItem, setSelectedItem] = React.useState<
     PimCategoryFields | PimProductFields | null
   >(null);
   const apiRef = useTreeViewApiRef();
 
-  const [listCategoriesQuery, { data, loading, error }] = useListPimCategoriesLazyQuery();
-  const [
-    listProductsQuery,
-    { data: productsData, loading: productsLoading, error: productsError },
-  ] = useListPimProductsLazyQuery();
+  const [listCategoriesQuery, { loading: categoriesLoading, error: categoriesError }] =
+    useListPimCategoriesLazyQuery();
+  const [listProductsQuery, { loading: productsLoading, error: productsError }] =
+    useListPimProductsLazyQuery();
 
-  // const { data, loading, error } = useListPimCategoriesQuery({
-  //   variables: {
-  //     page: {
-  //       number: 0,
-  //       size: 5000,
-  //     },
-  //   },
-  // });
-  // const {
-  //   data: productsData,
-  //   loading: productsLoading,
-  //   error: productsError,
-  // } = useListPimProductsQuery({
-  //   variables: {
-  //     page: {
-  //       number: 0,
-  //       size: 5000,
-  //     },
-  //   },
-  // });
-
-  const items = React.useMemo(() => {
-    if (loading || productsLoading) {
-      return [];
-    }
-
-    const pimItems = data?.listPimCategories?.items || [];
-    const productItems = productsData?.listPimProducts?.items || [];
-    // Only filter if at least 3 chars, otherwise show all
-    if (pimSearch && pimSearch.length >= 3) {
-      return getTreeItems({
-        pimCategories: pimItems,
-        pimProducts: productItems,
-        searchTerm: pimSearch,
-      });
-    }
-    return getTreeItems({ pimCategories: pimItems, pimProducts: productItems });
-  }, [
-    data?.listPimCategories?.items,
-    productsData?.listPimProducts?.items,
-    pimSearch,
-    loading,
-    productsLoading,
-  ]);
+  const loading = categoriesLoading || productsLoading;
+  const error = categoriesError || productsError;
 
   const getItemsForParent = React.useCallback(
     async (opts: { parentCategoryId?: string }): Promise<PimCategoryTreeViewItem[]> => {
       const item: PimCategoryTreeViewItem | null = opts.parentCategoryId
         ? apiRef.current?.getItem(opts.parentCategoryId)
         : null;
-
-      console.log("\n\n\n\n item: ", item);
 
       if (opts.parentCategoryId?.startsWith("products:")) {
         const parentCategoryId = opts.parentCategoryId.replace("products:", "");
@@ -347,6 +302,7 @@ export function PimCategoriesTreeView(props: {
           path: product.pim_category_path ?? "",
           productId: product.id ?? "",
           children: [],
+          pimItem: product,
         }));
       } else {
         const parentCategoryId = opts.parentCategoryId || "";
@@ -366,7 +322,7 @@ export function PimCategoriesTreeView(props: {
         }
 
         const categoryItems = data?.listPimCategories?.items || [];
-        const treeItems = categoryItems.map((category) => ({
+        const treeItems: PimCategoryTreeViewItem[] = categoryItems.map((category) => ({
           id: category.id,
           label: category.name ?? "",
           nodeType: "category",
@@ -374,6 +330,7 @@ export function PimCategoriesTreeView(props: {
           children: [],
           childrenCount: category.childrenCount ?? 0,
           productCount: category.productCount ?? 0,
+          pimItem: category,
         }));
 
         if (item?.productCount) {
@@ -395,46 +352,21 @@ export function PimCategoriesTreeView(props: {
     [listCategoriesQuery, listProductsQuery, apiRef],
   );
 
-  const handleCategorySelected = React.useCallback(
+  const handleItemClicked = React.useCallback(
     (itemId: string) => {
-      debugger;
-      // Handle product selection
-      if (itemId.startsWith("product-")) {
-        const productId = itemId.replace("product-", "");
-        const product =
-          productsData?.listPimProducts?.items.find((p) => p.id === productId) || null;
-        if (product) {
-          setSelectedItem(product);
-          props.onItemSelected(product);
-          return product;
-        }
+      const item: PimCategoryTreeViewItem = apiRef.current?.getItem(itemId);
+
+      if (item?.childrenCount || item?.productCount) {
         return;
       }
 
-      // Handle category selection
-      const category = data?.listPimCategories?.items.find((c) => c.id === itemId);
-      if (!category) {
-        return;
+      if (item.pimItem) {
+        setSelectedItem(item.pimItem);
+        props.onItemSelected(item.pimItem);
+        return item.pimItem;
       }
-
-      const hasChildren = data?.listPimCategories?.items.some((c) => {
-        const expectedPath = category.path
-          ? `${category.path}${category?.name}|`
-          : `|${category?.name}|`;
-        const match = c.path === expectedPath;
-
-        return match;
-      });
-
-      if (hasChildren) {
-        return;
-      }
-
-      setSelectedItem(category);
-      props.onItemSelected(category);
-      return category;
     },
-    [data?.listPimCategories?.items, productsData?.listPimProducts?.items, props],
+    [props, apiRef],
   );
 
   // Debounce search input and update pimSearch only if >= 3 chars
@@ -449,20 +381,51 @@ export function PimCategoriesTreeView(props: {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
+  const fetchDataForSearchTerm = React.useCallback(
+    async (searchTerm: string) => {
+      const [categoriesData, productsData] = await Promise.all([
+        listCategoriesQuery({
+          variables: {
+            filter: {
+              searchTerm,
+            },
+            page: {
+              size: 500,
+            },
+          },
+        }),
+        listProductsQuery({
+          variables: {
+            filter: {
+              searchTerm,
+            },
+            page: {
+              size: 500,
+            },
+          },
+        }),
+      ]);
+      const items = getTreeItems({
+        pimCategories: categoriesData?.data?.listPimCategories?.items || [],
+        pimProducts: productsData?.data?.listPimProducts?.items || [],
+        searchTerm,
+      });
+      setSearchResults(items);
+      const idsToExpand = getExpandedNodeIdsForSearch(items, searchTerm);
+      setExpandedItems(idsToExpand);
+    },
+
+    [listCategoriesQuery, listProductsQuery],
+  );
+
   React.useEffect(() => {
     if (pimSearch && pimSearch.length >= 3) {
-      // check if the search term is a valid category ID
-      const isCategory = handleCategorySelected(pimSearch);
-      if (isCategory) {
-        return;
-      }
-
-      const idsToExpand = getExpandedNodeIdsForSearch(items, pimSearch);
-      setExpandedItems(idsToExpand);
+      fetchDataForSearchTerm(pimSearch);
     } else {
       setExpandedItems([]);
+      setSearchResults([]);
     }
-  }, [items, pimSearch, apiRef, handleCategorySelected]);
+  }, [pimSearch, apiRef, handleItemClicked, fetchDataForSearchTerm]);
 
   const handleClearSelection = () => {
     setSelectedItem(null);
@@ -531,78 +494,44 @@ export function PimCategoriesTreeView(props: {
             navigate through them.
           </Typography>
           <Box>
-            {loading && <Typography>Loading...</Typography>}
+            {loading && pimSearch && <Typography>Loading...</Typography>}
             {error && <Typography color="error">Error loading categories</Typography>}
-            {/* <RichTreeView
-              items={items}
+            <RichTreeViewPro
+              // we need to do this to reset the internal state of the tree view
+              key={pimSearch ? "search-mode" : "datasource-mode"}
+              items={pimSearch ? searchResults : []}
               apiRef={apiRef}
-              expandedItems={expandedItems}
-              onExpandedItemsChange={(event, itemIds) => setExpandedItems(itemIds)}
-              onItemClick={(event, itemId) => handleCategorySelected(itemId)}
+              expandedItems={pimSearch ? expandedItems : undefined}
+              onExpandedItemsChange={
+                pimSearch ? (event, itemIds) => setExpandedItems(itemIds) : undefined
+              }
+              onItemClick={(event, itemId) => handleItemClicked(itemId)}
+              dataSource={
+                pimSearch
+                  ? undefined
+                  : {
+                      getChildrenCount: (item: PimCategoryTreeViewItem) => {
+                        return item.childrenCount || item.productCount || 0;
+                      },
+                      getTreeItems: async (parentCategoryId) => {
+                        const item = parentCategoryId
+                          ? apiRef.current?.getItem(parentCategoryId)
+                          : null;
+
+                        const items = await getItemsForParent({ parentCategoryId });
+                        return items;
+                      },
+                    }
+              }
               slots={{ item: CustomTreeItem }}
               slotProps={{
                 item: {
                   searchTerm: pimSearch,
                 } as CustomTreeItemProps,
               }}
-            /> */}
+            />
           </Box>
           <Divider sx={{ my: 2 }} />
-          other
-          <RichTreeViewPro
-            items={[]}
-            apiRef={apiRef}
-            // expandedItems={expandedItems}
-            //onExpandedItemsChange={(event, itemIds) => setExpandedItems(itemIds)}
-            //onItemClick={(event, itemId) => handleCategorySelected(itemId)}
-            dataSource={{
-              // @ts-ignore
-              getChildrenCount: (item: PimCategoryTreeViewItem) => {
-                return item.childrenCount || item.productCount || 0;
-                // return item.children ? item.children.length : 0;
-              },
-              // @ts-ignore
-              getTreeItems: async (parentCategoryId: string) => {
-                debugger;
-                const item = parentCategoryId ? apiRef.current?.getItem(parentCategoryId) : null;
-
-                console.log("getTreeItems item: ", item);
-
-                const items = await getItemsForParent({ parentCategoryId });
-                return items;
-
-                // console.log("getTreeItems", parentId);
-                // return new Promise((resolve) => {
-                //   console.log("Fetching children for parentId:", parentId);
-                //   setTimeout(() => {
-                //     console.log("Fetched children for parentId:", parentId);
-                //     resolve([
-                //       // @ts-ignore
-                //       {
-                //         id: parentId ? (Number(parentId) + 1).toString() : "1",
-                //         label: parentId ? (Number(parentId) + 1).toString() : "1",
-                //         children: [],
-                //       },
-                //     ]);
-                //   }, 1000);
-                // });
-
-                // return Promise.resolve([
-                //   {
-                //     id: parentId ? (Number(parentId) + 1).toString() : "1",
-                //     label: parentId ? (Number(parentId) + 1).toString() : "1",
-                //     children: [],
-                //   },
-                // ]);
-              },
-            }}
-            slots={{ item: CustomTreeItem }}
-            slotProps={{
-              item: {
-                searchTerm: pimSearch,
-              } as CustomTreeItemProps,
-            }}
-          />
         </Box>
       )}
     </Stack>
