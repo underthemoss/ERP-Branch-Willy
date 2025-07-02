@@ -60,7 +60,6 @@ function getTreeItems(opts: {
 
   // Build category tree
   pimCategories.forEach((category) => {
-    debugger;
     const { id, name, path } = category;
     const categoryPath = (path || "")
       .split("|")
@@ -356,6 +355,12 @@ export function PimCategoriesTreeView(props: {
             childrenCount: item?.productCount ?? 0,
             productCount: 0,
           });
+
+          if (item.childrenCount === 0) {
+            // we need to let the user also be able to choose this category
+            // so we'll render it again since this has no children but has products
+            treeItems.push({ ...item, id: `category:${item.id}`, productCount: 0 });
+          }
         }
 
         return treeItems as PimCategoryTreeViewItem[];
@@ -368,7 +373,6 @@ export function PimCategoriesTreeView(props: {
     (itemId: string) => {
       const item: PimCategoryTreeViewItem = apiRef.current?.getItem(itemId);
 
-      debugger;
       if (item?.childrenCount || item.children?.length) {
         return;
       }
