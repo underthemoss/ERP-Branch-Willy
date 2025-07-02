@@ -9,8 +9,6 @@ import { TreeItem, TreeItemProps } from "@mui/x-tree-view";
 import { RichTreeViewPro } from "@mui/x-tree-view-pro";
 import { useTreeViewApiRef } from "@mui/x-tree-view/hooks";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
-import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import { get, set } from "lodash";
 import * as React from "react";
 import {
   PimCategoryFields,
@@ -91,7 +89,12 @@ function getTreeItems(opts: {
       pimItem: category,
     };
 
-    if (category.productCount && category.productCount > 0 && category.childrenCount === 0) {
+    if (
+      category.productCount &&
+      category.productCount > 0 &&
+      category.childrenCount === 0 &&
+      pimProducts.length > 0 // equivalent to includeProducts
+    ) {
       currentLevel[name].children = {
         ...currentLevel[name].children,
         [name]: {
@@ -419,7 +422,6 @@ export function PimCategoriesTreeView(props: {
       const items = getTreeItems({
         pimCategories: categoriesData?.data?.listPimCategories?.items || [],
         pimProducts: productsData?.data?.listPimProducts?.items || [],
-        // searchTerm,
       });
       setSearchResults(items);
       const idsToExpand = getExpandedNodeIdsForSearch(items, searchTerm);
