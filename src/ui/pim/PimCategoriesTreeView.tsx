@@ -52,27 +52,29 @@ function normalizeString(val: unknown): string | undefined {
 function getTreeItems(opts: {
   pimCategories: PimCategoryFields[];
   pimProducts: PimProductFields[];
-  searchTerm?: string;
+  //searchTerm?: string;
 }): PimCategoryTreeViewItem[] {
-  const { pimCategories, pimProducts, searchTerm } = opts;
+  const { pimCategories, pimProducts } = opts;
+  // const searchTerm = opts.searchTerm?.toLowerCase() || "";
   const treeItemsMap: TreeViewNode = {};
 
   // Build category tree
   pimCategories.forEach((category) => {
+    debugger;
     const { id, name, path } = category;
     const categoryPath = (path || "")
       .split("|")
       .map((s) => (s ?? "").trim())
       .filter((s) => !!s);
 
-    if (
-      searchTerm &&
-      path?.toLowerCase().includes(searchTerm) === false &&
-      name?.toLowerCase().includes(searchTerm) === false &&
-      id?.toLowerCase().includes(searchTerm) === false
-    ) {
-      return;
-    }
+    // if (
+    //   searchTerm &&
+    //   path?.toLowerCase().includes(searchTerm) === false &&
+    //   name?.toLowerCase().includes(searchTerm) === false &&
+    //   id?.toLowerCase().includes(searchTerm) === false
+    // ) {
+    //   return;
+    // }
 
     let currentLevel = treeItemsMap;
     let partialPath = "";
@@ -97,7 +99,7 @@ function getTreeItems(opts: {
       id: id!,
       path: normalizeString(path),
       label: name,
-      children: {},
+      children: currentLevel[name]?.children || {},
       nodeType: "category",
       pimItem: category,
     };
@@ -109,18 +111,25 @@ function getTreeItems(opts: {
     if (!pim_category_path) return;
 
     // Filter by search term
-    if (
-      searchTerm &&
-      name?.toLowerCase().includes(searchTerm) === false &&
-      id?.toLowerCase().includes(searchTerm) === false
-    ) {
-      return;
-    }
+    // if (
+    //   searchTerm &&
+    //   name?.toLowerCase().includes(searchTerm) === false &&
+    //   id?.toLowerCase().includes(searchTerm) === false
+    // ) {
+    //   return;
+    // }
 
     const categoryPath = (pim_category_path || "")
       .split("|")
       .map((s) => (s ?? "").trim())
       .filter((s) => !!s);
+
+    const endCategory = pimCategories.find((cat) => cat.id === product.pim_category_platform_id);
+
+    if (endCategory) {
+      // If the product's category is found, use its path
+      categoryPath.push(endCategory.name);
+    }
 
     // Find the parent category object by matching the full path
     let parentCategoryId = "root";
@@ -168,6 +177,8 @@ function getTreeItems(opts: {
     };
   });
 
+  console.log("treeItemsMap", treeItemsMap);
+
   return flattenTree(treeItemsMap);
 }
 
@@ -188,7 +199,9 @@ function getExpandedNodeIdsForSearch(items: PimCategoryTreeViewItem[], search: s
   function traverse(nodes: PimCategoryTreeViewItem[], path: string[] = []) {
     for (const node of nodes) {
       const isMatch =
-        node.label.toLowerCase().includes(term) || node.id.toLowerCase().includes(term);
+        node.label.toLowerCase().includes(term) ||
+        node.id.toLowerCase().includes(term) ||
+        node?.path?.toLowerCase().includes(term);
       const hasMatchingChild = node.children && traverse(node.children, [...path, node.id]);
 
       if (isMatch || hasMatchingChild) {
@@ -355,7 +368,8 @@ export function PimCategoriesTreeView(props: {
     (itemId: string) => {
       const item: PimCategoryTreeViewItem = apiRef.current?.getItem(itemId);
 
-      if (item?.childrenCount) {
+      debugger;
+      if (item?.childrenCount || item.children?.length) {
         return;
       }
 
@@ -413,7 +427,7 @@ export function PimCategoriesTreeView(props: {
       const items = getTreeItems({
         pimCategories: categoriesData?.data?.listPimCategories?.items || [],
         pimProducts: productsData?.data?.listPimProducts?.items || [],
-        searchTerm,
+        // searchTerm,
       });
       setSearchResults(items);
       const idsToExpand = getExpandedNodeIdsForSearch(items, searchTerm);
@@ -438,6 +452,10 @@ export function PimCategoriesTreeView(props: {
     setSearchInput("");
     setExpandedItems([]);
   };
+
+  console.log("PimCategoriesTreeView render", {
+    searchResults,
+  });
 
   return (
     <Stack spacing={2}>
