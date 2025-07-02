@@ -8,8 +8,6 @@ export function Sidebar() {
   const sidebarState = getSidebarState();
   const isSidebarOpen = sidebarState !== null;
 
-  console.log("sidebar stuff:", sidebarState);
-
   let content = null;
   switch (sidebarState?.sidebarType) {
     case "contact":

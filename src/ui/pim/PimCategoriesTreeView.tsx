@@ -52,10 +52,8 @@ function normalizeString(val: unknown): string | undefined {
 function getTreeItems(opts: {
   pimCategories: PimCategoryFields[];
   pimProducts: PimProductFields[];
-  //searchTerm?: string;
 }): PimCategoryTreeViewItem[] {
   const { pimCategories, pimProducts } = opts;
-  // const searchTerm = opts.searchTerm?.toLowerCase() || "";
   const treeItemsMap: TreeViewNode = {};
 
   // Build category tree
@@ -65,15 +63,6 @@ function getTreeItems(opts: {
       .split("|")
       .map((s) => (s ?? "").trim())
       .filter((s) => !!s);
-
-    // if (
-    //   searchTerm &&
-    //   path?.toLowerCase().includes(searchTerm) === false &&
-    //   name?.toLowerCase().includes(searchTerm) === false &&
-    //   id?.toLowerCase().includes(searchTerm) === false
-    // ) {
-    //   return;
-    // }
 
     let currentLevel = treeItemsMap;
     let partialPath = "";
@@ -93,7 +82,6 @@ function getTreeItems(opts: {
       currentLevel = currentLevel[categoryName].children as TreeViewNode;
     });
 
-    if (!name || typeof name !== "string") return;
     currentLevel[name] = {
       id: id!,
       path: normalizeString(path),
@@ -102,21 +90,26 @@ function getTreeItems(opts: {
       nodeType: "category",
       pimItem: category,
     };
+
+    if (category.productCount && category.productCount > 0 && category.childrenCount === 0) {
+      currentLevel[name].children = {
+        ...currentLevel[name].children,
+        [name]: {
+          id: `category:${id}`!,
+          path: normalizeString(path),
+          label: name,
+          children: {},
+          nodeType: "category",
+          pimItem: category,
+        },
+      };
+    }
   });
 
   // Add products under their parent category
   pimProducts.forEach((product) => {
     const { id, name, pim_category_path } = product;
     if (!pim_category_path) return;
-
-    // Filter by search term
-    // if (
-    //   searchTerm &&
-    //   name?.toLowerCase().includes(searchTerm) === false &&
-    //   id?.toLowerCase().includes(searchTerm) === false
-    // ) {
-    //   return;
-    // }
 
     const categoryPath = (pim_category_path || "")
       .split("|")
@@ -176,8 +169,6 @@ function getTreeItems(opts: {
     };
   });
 
-  console.log("treeItemsMap", treeItemsMap);
-
   return flattenTree(treeItemsMap);
 }
 
@@ -197,10 +188,7 @@ function getExpandedNodeIdsForSearch(items: PimCategoryTreeViewItem[], search: s
 
   function traverse(nodes: PimCategoryTreeViewItem[], path: string[] = []) {
     for (const node of nodes) {
-      const isMatch =
-        node.label.toLowerCase().includes(term) ||
-        node.id.toLowerCase().includes(term) ||
-        node?.path?.toLowerCase().includes(term);
+      const isMatch = node.label.toLowerCase().includes(term);
       const hasMatchingChild = node.children && traverse(node.children, [...path, node.id]);
 
       if (isMatch || hasMatchingChild) {
@@ -456,10 +444,6 @@ export function PimCategoriesTreeView(props: {
     setSearchInput("");
     setExpandedItems([]);
   };
-
-  console.log("PimCategoriesTreeView render", {
-    searchResults,
-  });
 
   return (
     <Stack spacing={2}>
