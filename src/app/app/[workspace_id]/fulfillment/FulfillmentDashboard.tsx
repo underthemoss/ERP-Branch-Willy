@@ -33,7 +33,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 
@@ -212,6 +213,7 @@ export default function FulfillmentDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
 
   // Compute unique assignees and customers from tickets
   const assignees = React.useMemo(
@@ -559,32 +561,49 @@ export default function FulfillmentDashboard() {
                                                 mb: 0,
                                                 boxShadow: snapshot.isDragging ? 6 : 2,
                                                 opacity: snapshot.isDragging ? 0.8 : 1,
-                                                cursor: "grab",
+                                                cursor: "pointer",
                                                 borderLeft: "6px solid #1976d2",
+                                                transition: "box-shadow 0.2s",
+                                                "&:hover": {
+                                                  boxShadow: 8,
+                                                  background: "#f0f7ff",
+                                                },
                                               }}
                                             >
-                                              <CardContent>
-                                                <Typography
-                                                  variant="subtitle1"
-                                                  fontWeight={600}
-                                                  gutterBottom
-                                                >
-                                                  {ticket.title}
-                                                </Typography>
-                                                <Typography
-                                                  variant="body2"
-                                                  color="text.secondary"
-                                                  gutterBottom
-                                                >
-                                                  {ticket.description}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                  <strong>Assignee:</strong> {ticket.assignee}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                  <strong>Customer:</strong> {ticket.customer}
-                                                </Typography>
-                                              </CardContent>
+                                              <Link
+                                                href={`/app/${workspace_id}/fulfillment/${ticket.id}`}
+                                                scroll={false}
+                                                style={{ textDecoration: "none", color: "inherit" }}
+                                              >
+                                                <CardContent>
+                                                  <Typography
+                                                    variant="subtitle1"
+                                                    fontWeight={600}
+                                                    gutterBottom
+                                                  >
+                                                    {ticket.title}
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    gutterBottom
+                                                  >
+                                                    {ticket.description}
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                  >
+                                                    <strong>Assignee:</strong> {ticket.assignee}
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                  >
+                                                    <strong>Customer:</strong> {ticket.customer}
+                                                  </Typography>
+                                                </CardContent>
+                                              </Link>
                                             </Card>
                                           )}
                                         </Draggable>
@@ -783,7 +802,7 @@ export default function FulfillmentDashboard() {
                                                   sx={{
                                                     boxShadow: snapshot.isDragging ? 6 : 2,
                                                     opacity: snapshot.isDragging ? 0.8 : 1,
-                                                    cursor: "grab",
+                                                    cursor: "pointer",
                                                     borderLeft: `6px solid ${col.color}`,
                                                     borderRadius: 2,
                                                     mb: 0,
@@ -794,65 +813,79 @@ export default function FulfillmentDashboard() {
                                                     display: "flex",
                                                     flexDirection: "column",
                                                     justifyContent: "center",
+                                                    transition: "box-shadow 0.2s",
+                                                    "&:hover": {
+                                                      boxShadow: 8,
+                                                      background: "#f0f7ff",
+                                                    },
                                                   }}
                                                 >
-                                                  <CardContent
-                                                    sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}
+                                                  <Link
+                                                    href={`/app/${workspace_id}/fulfillment/${ticket.id}`}
+                                                    scroll={false}
+                                                    style={{
+                                                      textDecoration: "none",
+                                                      color: "inherit",
+                                                    }}
                                                   >
-                                                    <Stack spacing={1}>
-                                                      <Stack
-                                                        direction="row"
-                                                        alignItems="center"
-                                                        spacing={1}
-                                                      >
-                                                        <Typography
-                                                          variant="subtitle1"
-                                                          fontWeight={700}
-                                                          sx={{
-                                                            flex: 1,
-                                                            overflow: "hidden",
-                                                            textOverflow: "ellipsis",
-                                                            whiteSpace: "nowrap",
-                                                          }}
+                                                    <CardContent
+                                                      sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}
+                                                    >
+                                                      <Stack spacing={1}>
+                                                        <Stack
+                                                          direction="row"
+                                                          alignItems="center"
+                                                          spacing={1}
                                                         >
-                                                          {ticket.title}
-                                                        </Typography>
-                                                        <Tooltip title={ticket.assignee}>
-                                                          <Avatar
+                                                          <Typography
+                                                            variant="subtitle1"
+                                                            fontWeight={700}
                                                             sx={{
-                                                              width: 28,
-                                                              height: 28,
-                                                              fontSize: 14,
-                                                              ml: 1,
+                                                              flex: 1,
+                                                              overflow: "hidden",
+                                                              textOverflow: "ellipsis",
+                                                              whiteSpace: "nowrap",
                                                             }}
                                                           >
-                                                            {ticket.assignee === "Unassigned"
-                                                              ? null
-                                                              : ticket.assignee
-                                                                  .split(" ")
-                                                                  .map((n) => n[0])
-                                                                  .join("")
-                                                                  .toUpperCase()}
-                                                          </Avatar>
-                                                        </Tooltip>
+                                                            {ticket.title}
+                                                          </Typography>
+                                                          <Tooltip title={ticket.assignee}>
+                                                            <Avatar
+                                                              sx={{
+                                                                width: 28,
+                                                                height: 28,
+                                                                fontSize: 14,
+                                                                ml: 1,
+                                                              }}
+                                                            >
+                                                              {ticket.assignee === "Unassigned"
+                                                                ? null
+                                                                : ticket.assignee
+                                                                    .split(" ")
+                                                                    .map((n) => n[0])
+                                                                    .join("")
+                                                                    .toUpperCase()}
+                                                            </Avatar>
+                                                          </Tooltip>
+                                                        </Stack>
+                                                        <Typography
+                                                          variant="body2"
+                                                          color="text.secondary"
+                                                          sx={{ fontSize: 15, mb: 0.5 }}
+                                                        >
+                                                          {ticket.description}
+                                                        </Typography>
+                                                        <Typography
+                                                          variant="body2"
+                                                          color="text.secondary"
+                                                          sx={{ fontSize: 14 }}
+                                                        >
+                                                          {ticket.customer}
+                                                        </Typography>
+                                                        {/* Optionally, add a note or extra info here if needed */}
                                                       </Stack>
-                                                      <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{ fontSize: 15, mb: 0.5 }}
-                                                      >
-                                                        {ticket.description}
-                                                      </Typography>
-                                                      <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{ fontSize: 14 }}
-                                                      >
-                                                        {ticket.customer}
-                                                      </Typography>
-                                                      {/* Optionally, add a note or extra info here if needed */}
-                                                    </Stack>
-                                                  </CardContent>
+                                                    </CardContent>
+                                                  </Link>
                                                 </Card>
                                               )}
                                             </Draggable>
