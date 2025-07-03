@@ -9,8 +9,6 @@ import { TreeItem, TreeItemProps } from "@mui/x-tree-view";
 import { RichTreeViewPro } from "@mui/x-tree-view-pro";
 import { useTreeViewApiRef } from "@mui/x-tree-view/hooks";
 import { TreeViewBaseItem } from "@mui/x-tree-view/models";
-import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import { get, set } from "lodash";
 import * as React from "react";
 import {
   PimCategoryFields,
@@ -52,9 +50,8 @@ function normalizeString(val: unknown): string | undefined {
 function getTreeItems(opts: {
   pimCategories: PimCategoryFields[];
   pimProducts: PimProductFields[];
-  searchTerm?: string;
 }): PimCategoryTreeViewItem[] {
-  const { pimCategories, pimProducts, searchTerm } = opts;
+  const { pimCategories, pimProducts } = opts;
   const treeItemsMap: TreeViewNode = {};
 
   // Build category tree
@@ -64,15 +61,6 @@ function getTreeItems(opts: {
       .split("|")
       .map((s) => (s ?? "").trim())
       .filter((s) => !!s);
-
-    if (
-      searchTerm &&
-      path?.toLowerCase().includes(searchTerm) === false &&
-      name?.toLowerCase().includes(searchTerm) === false &&
-      id?.toLowerCase().includes(searchTerm) === false
-    ) {
-      return;
-    }
 
     let currentLevel = treeItemsMap;
     let partialPath = "";
@@ -92,15 +80,33 @@ function getTreeItems(opts: {
       currentLevel = currentLevel[categoryName].children as TreeViewNode;
     });
 
-    if (!name || typeof name !== "string") return;
     currentLevel[name] = {
       id: id!,
       path: normalizeString(path),
       label: name,
-      children: {},
+      children: currentLevel[name]?.children || {},
       nodeType: "category",
       pimItem: category,
     };
+
+    if (
+      category.productCount &&
+      category.productCount > 0 &&
+      category.childrenCount === 0 &&
+      pimProducts.length > 0 // equivalent to includeProducts
+    ) {
+      currentLevel[name].children = {
+        ...currentLevel[name].children,
+        [name]: {
+          id: `category:${id}`!,
+          path: normalizeString(path),
+          label: name,
+          children: {},
+          nodeType: "category",
+          pimItem: category,
+        },
+      };
+    }
   });
 
   // Add products under their parent category
@@ -108,19 +114,17 @@ function getTreeItems(opts: {
     const { id, name, pim_category_path } = product;
     if (!pim_category_path) return;
 
-    // Filter by search term
-    if (
-      searchTerm &&
-      name?.toLowerCase().includes(searchTerm) === false &&
-      id?.toLowerCase().includes(searchTerm) === false
-    ) {
-      return;
-    }
-
     const categoryPath = (pim_category_path || "")
       .split("|")
       .map((s) => (s ?? "").trim())
       .filter((s) => !!s);
+
+    const endCategory = pimCategories.find((cat) => cat.id === product.pim_category_platform_id);
+
+    if (endCategory) {
+      // If the product's category is found, use its path
+      categoryPath.push(endCategory.name);
+    }
 
     // Find the parent category object by matching the full path
     let parentCategoryId = "root";
@@ -187,8 +191,7 @@ function getExpandedNodeIdsForSearch(items: PimCategoryTreeViewItem[], search: s
 
   function traverse(nodes: PimCategoryTreeViewItem[], path: string[] = []) {
     for (const node of nodes) {
-      const isMatch =
-        node.label.toLowerCase().includes(term) || node.id.toLowerCase().includes(term);
+      const isMatch = node.label.toLowerCase().includes(term);
       const hasMatchingChild = node.children && traverse(node.children, [...path, node.id]);
 
       if (isMatch || hasMatchingChild) {
@@ -343,6 +346,12 @@ export function PimCategoriesTreeView(props: {
             childrenCount: item?.productCount ?? 0,
             productCount: 0,
           });
+
+          if (item.childrenCount === 0) {
+            // we need to let the user also be able to choose this category
+            // so we'll render it again since this has no children but has products
+            treeItems.push({ ...item, id: `category:${item.id}`, productCount: 0 });
+          }
         }
 
         return treeItems as PimCategoryTreeViewItem[];
@@ -355,7 +364,7 @@ export function PimCategoriesTreeView(props: {
     (itemId: string) => {
       const item: PimCategoryTreeViewItem = apiRef.current?.getItem(itemId);
 
-      if (item?.childrenCount) {
+      if (item?.childrenCount || item.children?.length) {
         return;
       }
 
@@ -413,7 +422,6 @@ export function PimCategoriesTreeView(props: {
       const items = getTreeItems({
         pimCategories: categoriesData?.data?.listPimCategories?.items || [],
         pimProducts: productsData?.data?.listPimProducts?.items || [],
-        searchTerm,
       });
       setSearchResults(items);
       const idsToExpand = getExpandedNodeIdsForSearch(items, searchTerm);
