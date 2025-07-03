@@ -1,3 +1,4 @@
+import * as links from "@/lib/links";
 import CloseIcon from "@mui/icons-material/Close";
 import { Divider, TextField, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -207,7 +208,7 @@ export function PimProductsTreeView(props: { onProductSelected: (productId: stri
           </Typography>
 
           <Link
-            href={`/products/${selectedProduct.id}`}
+            href={links.getPimProductUrl(selectedProduct.id)}
             target="_blank"
             sx={{ textDecoration: "none" }}
           >
