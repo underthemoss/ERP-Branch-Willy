@@ -1,56 +1,70 @@
+import { Typography } from "@mui/material";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import React from "react";
+import { RentalFulfilmentPrice, SaleFulfilmentPrice, useGetFulfilmentByIdQuery } from "./api";
 
 export type FulfillmentDetailsProps = {
   fulfillmentId: string;
-  // Optionally, pass fulfillment data directly if already fetched
-  fulfillment?: {
-    id: string;
-    title: string;
-    status: string;
-    assignee: string;
-    createdAt: string;
-    updatedAt: string;
-    description: string;
-    items: { name: string; quantity: number }[];
-    activity: { date: string; action: string; user: string }[];
-  };
 };
 
-const mockFulfillment = {
-  id: "12345",
-  title: "Fulfillment Order #12345",
-  status: "In Progress",
-  assignee: "Jane Doe",
-  createdAt: "2025-03-01",
-  updatedAt: "2025-03-06",
-  description:
-    "This is a placeholder for the fulfillment details. Replace with real data fetching.",
-  items: [
-    { name: "Item A", quantity: 2 },
-    { name: "Item B", quantity: 1 },
-  ],
-  activity: [
-    { date: "2025-03-06", action: "Status changed to In Progress", user: "Jane Doe" },
-    { date: "2025-03-01", action: "Fulfillment created", user: "System" },
-  ],
-};
+/* Removed mockFulfillment, now using real data from GraphQL */
 
-export function FulfillmentDetails({ fulfillmentId, fulfillment }: FulfillmentDetailsProps) {
-  // TODO: Replace mockFulfillment with real data fetching using fulfillmentId
-  const data = fulfillment || mockFulfillment;
+export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+  const { data, loading, error } = useGetFulfilmentByIdQuery({ variables: { id: fulfillmentId } });
+  const fulfilment = data?.getFulfilmentById;
+
+  if (loading) {
+    return <div>Loading fulfilment details...</div>;
+  }
+  if (error || !fulfilment) {
+    return <div>Error loading fulfilment details.</div>;
+  }
+
+  // Render below using fulfilment fields
+  // Type guards for union types
+  const isRental = (f: any): f is { rentalStartDate?: string; rentalEndDate?: string } =>
+    f.__typename === "RentalFulfilment";
+  const isSale = (f: any): f is { salePrice?: number; quantity?: number } =>
+    f.__typename === "SaleFulfilment";
+  const isService = (f: any): f is { serviceDate?: string } => f.__typename === "ServiceFulfilment";
+
+  // Helper for assignedTo
+  const assignedTo =
+    fulfilment.assignedTo &&
+    [fulfilment.assignedTo.firstName, fulfilment.assignedTo.lastName].filter(Boolean).join(" ");
+
+  let price: RentalFulfilmentPrice | SaleFulfilmentPrice | undefined;
+
+  switch (fulfilment.salesOrderLineItem?.__typename) {
+    case "RentalSalesOrderLineItem":
+      price = fulfilment.salesOrderLineItem.price as RentalFulfilmentPrice;
+      break;
+    case "SaleSalesOrderLineItem":
+      price = fulfilment.salesOrderLineItem.price as SaleFulfilmentPrice;
+      break;
+    default:
+      price = undefined;
+  }
 
   return (
     <div
+      // give this a max with of lg in mui
       style={{
         display: "flex",
+        height: "100%",
+        maxWidth: "1200px",
+        margin: "0 auto",
       }}
     >
       {/* Main Content */}
       <div
         style={{
           flex: 3,
-          padding: "40px 48px 40px 48px",
+          padding: 2,
           borderRight: "1px solid #ececec",
+          background: "#fff",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}>
@@ -60,64 +74,257 @@ export function FulfillmentDetails({ fulfillmentId, fulfillment }: FulfillmentDe
               fontWeight: 700,
               marginRight: 16,
               color: "#1a1a1a",
-              lineHeight: 1.2,
             }}
           >
-            {data.title}{" "}
+            {price?.name || fulfilment.id}
             <span
               style={{
                 fontSize: 16,
                 fontWeight: 400,
                 color: "#888",
+                marginLeft: 12,
               }}
             >
-              ({fulfillmentId})
+              {fulfilment.salesOrderType}
             </span>
+            <div>
+              <Typography variant="caption">
+                {price?.pimCategory?.path}
+                {price?.pimCategory?.name}
+              </Typography>
+            </div>
           </div>
-          <span
-            style={{
-              background: "#e6f4ea",
-              color: "#218a5a",
-              borderRadius: 4,
-              padding: "4px 12px",
-              fontWeight: 500,
-              marginLeft: 8,
-              fontSize: 15,
-            }}
-          >
-            {data.status}
-          </span>
         </div>
         <div style={{ marginBottom: 20, color: "#555", fontSize: 15 }}>
-          <strong>Assignee:</strong> {data.assignee} &nbsp;|&nbsp;
-          <strong>Created:</strong> {data.createdAt} &nbsp;|&nbsp;
-          <strong>Last Updated:</strong> {data.updatedAt}
+          <strong>Assigned To:</strong> {assignedTo || "-"} &nbsp;|&nbsp;
+          <strong>Email:</strong> {fulfilment.assignedTo?.email || "-"}
         </div>
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Description</div>
-          <div style={{ color: "#333", fontSize: 15 }}>{data.description}</div>
+          <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Order Info</div>
+          <div style={{ color: "#333", fontSize: 15 }}>
+            <div>Sales Order Type: {fulfilment.salesOrderType || "-"}</div>
+            <div>
+              Workflow ID:{" "}
+              {fulfilment.workflowId ? (
+                <Link
+                  href={`/app/${workspace_id}/workflows/${fulfilment.workflowId}`}
+                  style={{ color: "#1976d2", textDecoration: "underline" }}
+                >
+                  {fulfilment.workflowId}
+                </Link>
+              ) : (
+                "-"
+              )}
+            </div>
+            <div>Workflow Column ID: {fulfilment.workflowColumnId || "-"}</div>
+          </div>
         </div>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Items</div>
-          <ul style={{ marginTop: 8, paddingLeft: 20, color: "#444", fontSize: 15 }}>
-            {data.items.map((item, idx) => (
-              <li key={idx}>
-                {item.name} &times; {item.quantity}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Activity</div>
-          <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-            {data.activity.map((act, idx) => (
-              <li key={idx} style={{ marginBottom: 6, fontSize: 15 }}>
-                <span style={{ color: "#888" }}>{act.date}</span> — {act.action}{" "}
-                <span style={{ color: "#555" }}>by {act.user}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Type-specific fields */}
+        {isRental(fulfilment) && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Rental Details</div>
+            <div style={{ color: "#333", fontSize: 15 }}>
+              Start: {fulfilment.rentalStartDate || "-"}
+              <br />
+              End: {fulfilment.rentalEndDate || "-"}
+            </div>
+          </div>
+        )}
+        {isSale(fulfilment) && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Sale Details</div>
+            <div style={{ color: "#333", fontSize: 15 }}>
+              Price: {fulfilment.salePrice ?? "-"}
+              <br />
+              Quantity: {fulfilment.quantity ?? "-"}
+            </div>
+          </div>
+        )}
+        {isService(fulfilment) && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Service Details</div>
+            <div style={{ color: "#333", fontSize: 15 }}>
+              Service Date: {fulfilment.serviceDate || "-"}
+            </div>
+          </div>
+        )}
+
+        {/* Sales Order Line Items */}
+        {Array.isArray(fulfilment.salesOrderLineItem) &&
+          fulfilment.salesOrderLineItem.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>
+                Sales Order Line Items
+              </div>
+              <div>
+                {fulfilment.salesOrderLineItem.map((item: any, idx: number) => (
+                  <div
+                    key={item.id || idx}
+                    style={{
+                      border: "1px solid #ececec",
+                      borderRadius: 8,
+                      padding: "16px 20px",
+                      marginBottom: 16,
+                      background: "#f8fafd",
+                    }}
+                  >
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>ID:</strong>{" "}
+                      {item.id ? (
+                        <Link
+                          href={`/app/${workspace_id}/sales-order-line-items/${item.id}`}
+                          style={{ color: "#1976d2", textDecoration: "underline" }}
+                        >
+                          {item.id}
+                        </Link>
+                      ) : (
+                        "-"
+                      )}
+                    </div>
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>Type:</strong> {item.lineitem_type || "-"}
+                    </div>
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>Created By:</strong>{" "}
+                      {item.created_by_user?.id ? (
+                        <Link
+                          href={`/app/${workspace_id}/users/${item.created_by_user.id}`}
+                          style={{ color: "#1976d2", textDecoration: "underline" }}
+                        >
+                          {[item.created_by_user.firstName, item.created_by_user.lastName]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </Link>
+                      ) : (
+                        [item.created_by_user?.firstName, item.created_by_user?.lastName]
+                          .filter(Boolean)
+                          .join(" ") || "-"
+                      )}
+                    </div>
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>Updated By:</strong>{" "}
+                      {item.updated_by_user?.id ? (
+                        <Link
+                          href={`/app/${workspace_id}/users/${item.updated_by_user.id}`}
+                          style={{ color: "#1976d2", textDecoration: "underline" }}
+                        >
+                          {[item.updated_by_user.firstName, item.updated_by_user.lastName]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </Link>
+                      ) : (
+                        [item.updated_by_user?.firstName, item.updated_by_user?.lastName]
+                          .filter(Boolean)
+                          .join(" ") || "-"
+                      )}
+                    </div>
+                    {/* Price object */}
+                    {item.price && (
+                      <div style={{ marginTop: 10, paddingLeft: 10 }}>
+                        <div style={{ fontWeight: 500, color: "#1976d2", marginBottom: 4 }}>
+                          Price Details ({item.price.__typename})
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>ID:</strong> {item.price.id}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Name:</strong> {item.price.name}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Product:</strong>{" "}
+                          {item.price.pimProduct?.id ? (
+                            <Link
+                              href={`/app/${workspace_id}/products/${item.price.pimProduct.id}`}
+                              style={{ color: "#1976d2", textDecoration: "underline" }}
+                            >
+                              {item.price.pimProduct.name}
+                            </Link>
+                          ) : (
+                            item.price.pimProduct?.name || "-"
+                          )}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Category:</strong>{" "}
+                          {item.price.pimCategory?.id ? (
+                            <Link
+                              href={`/app/${workspace_id}/categories/${item.price.pimCategory.id}`}
+                              style={{ color: "#1976d2", textDecoration: "underline" }}
+                            >
+                              {item.price.pimCategory.name}
+                            </Link>
+                          ) : (
+                            item.price.pimCategory?.name || "-"
+                          )}
+                          {item.price.pimCategory?.path ? ` (${item.price.pimCategory.path})` : ""}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Price Type:</strong> {item.price.priceType || "-"}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Price Book:</strong>{" "}
+                          {item.price.priceBook?.id ? (
+                            <Link
+                              href={`/app/${workspace_id}/price-books/${item.price.priceBook.id}`}
+                              style={{ color: "#1976d2", textDecoration: "underline" }}
+                            >
+                              {item.price.priceBook.name}
+                            </Link>
+                          ) : (
+                            item.price.priceBook?.name || "-"
+                          )}
+                        </div>
+                        {/* RentalPrice fields */}
+                        {item.price.__typename === "RentalPrice" && (
+                          <>
+                            <div style={{ marginBottom: 4 }}>
+                              <strong>Price/Day:</strong>{" "}
+                              {item.price.pricePerDayInCents != null
+                                ? `${item.price.pricePerDayInCents / 100} USD`
+                                : "-"}
+                            </div>
+                            <div style={{ marginBottom: 4 }}>
+                              <strong>Price/Week:</strong>{" "}
+                              {item.price.pricePerWeekInCents != null
+                                ? `${item.price.pricePerWeekInCents / 100} USD`
+                                : "-"}
+                            </div>
+                            <div style={{ marginBottom: 4 }}>
+                              <strong>Price/Month:</strong>{" "}
+                              {item.price.pricePerMonthInCents != null
+                                ? `${item.price.pricePerMonthInCents / 100} USD`
+                                : "-"}
+                            </div>
+                          </>
+                        )}
+                        {/* SalePrice fields */}
+                        {item.price.__typename === "SalePrice" && (
+                          <>
+                            <div style={{ marginBottom: 4 }}>
+                              <strong>Unit Cost:</strong>{" "}
+                              {item.price.unitCostInCents != null
+                                ? `${item.price.unitCostInCents / 100} USD`
+                                : "-"}
+                            </div>
+                            <div style={{ marginBottom: 4 }}>
+                              <strong>Discounts:</strong>{" "}
+                              {item.price.discounts != null ? String(item.price.discounts) : "-"}
+                            </div>
+                          </>
+                        )}
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Created At:</strong> {item.price.createdAt}
+                        </div>
+                        <div style={{ marginBottom: 4 }}>
+                          <strong>Updated At:</strong> {item.price.updatedAt}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         {/* Add comment box mock */}
         <div
           style={{
@@ -149,29 +356,85 @@ export function FulfillmentDetails({ fulfillmentId, fulfillment }: FulfillmentDe
         style={{
           flex: 1,
           padding: "40px 32px",
-          background: "#fafbfc",
           minWidth: 260,
+          height: "100%",
         }}
       >
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Properties</div>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-            <input type="checkbox" checked={data.status === "In Progress"} readOnly />
-            <span style={{ marginLeft: 8, color: "#444", fontSize: 15 }}>Todo</span>
+          <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Rental Details</div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>ID:</strong>
+            <div>{fulfilment.id}</div>
           </div>
-          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>Set priority</div>
-        </div>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Assignee</div>
-          <div style={{ color: "#444", fontSize: 15 }}>{data.assignee}</div>
-        </div>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Labels</div>
-          <div style={{ color: "#888", fontSize: 14 }}>Add label</div>
-        </div>
-        <div>
-          <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Project</div>
-          <div style={{ color: "#888", fontSize: 14 }}>Add to project</div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>Contact:</strong>
+            <div>
+              {fulfilment.contact?.id ? (
+                <Link
+                  href={`/app/${workspace_id}/contacts/${fulfilment.contact.id}`}
+                  style={{ color: "#1976d2", textDecoration: "underline" }}
+                >
+                  {fulfilment.contact.name}
+                </Link>
+              ) : (
+                fulfilment.contact?.name || "-"
+              )}
+            </div>
+          </div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>Project:</strong>
+            <div>
+              {fulfilment.project?.id ? (
+                <Link
+                  href={`/app/${workspace_id}/projects/${fulfilment.project.id}`}
+                  style={{ color: "#1976d2", textDecoration: "underline" }}
+                >
+                  {fulfilment.project.name}
+                </Link>
+              ) : (
+                fulfilment.project?.name || "-"
+              )}
+            </div>
+          </div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>Sales Order:</strong>
+            <div>
+              {fulfilment.salesOrderId ? (
+                <Link
+                  href={`/app/${workspace_id}/sales-orders/${fulfilment.salesOrderId}`}
+                  style={{ color: "#1976d2", textDecoration: "underline" }}
+                >
+                  {fulfilment.salesOrderId}
+                </Link>
+              ) : (
+                "-"
+              )}
+            </div>
+          </div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>Created At:</strong>
+            <div>
+              {fulfilment.createdAt
+                ? new Date(fulfilment.createdAt).toLocaleString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "-"}
+            </div>
+          </div>
+          <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>
+            <strong>Created By:</strong>
+            <div>
+              {fulfilment.salesOrderLineItem?.created_by_user
+                ? fulfilment.salesOrderLineItem.created_by_user.firstName +
+                  " " +
+                  fulfilment.salesOrderLineItem.created_by_user.lastName
+                : "-"}
+            </div>
+          </div>
         </div>
       </div>
     </div>
