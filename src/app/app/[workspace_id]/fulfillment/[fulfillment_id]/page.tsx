@@ -9,7 +9,7 @@ export default function FulfillmentDetailsPage() {
   const fulfillmentId = params?.fulfillment_id as string;
 
   return (
-    <div style={{ padding: "40px 0" }}>
+    <div style={{ padding: "40px 0", height: "100vh" }}>
       <FulfillmentDetails fulfillmentId={fulfillmentId} />
     </div>
   );

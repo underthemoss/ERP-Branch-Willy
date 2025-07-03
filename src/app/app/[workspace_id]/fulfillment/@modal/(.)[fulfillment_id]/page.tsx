@@ -11,7 +11,7 @@ export default function FulfillmentDetailsInterceptor() {
   const router = useRouter();
 
   return (
-    <Dialog open onClose={() => router.back()}>
+    <Dialog open onClose={() => router.back()} fullWidth maxWidth="md">
       <DialogContent>
         <FulfillmentDetails fulfillmentId={fulfillmentId} />
       </DialogContent>
