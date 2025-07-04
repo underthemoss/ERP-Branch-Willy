@@ -206,14 +206,15 @@ export function PimProductsTreeView(props: { onProductSelected: (productId: stri
           <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>
             {selectedProduct.pim_category_path}
           </Typography>
-
-          <Link
-            href={links.getPimProductUrl(selectedProduct.id)}
-            target="_blank"
-            sx={{ textDecoration: "none" }}
-          >
-            View Product →
-          </Link>
+          {selectedProduct.id && (
+            <Link
+              href={links.getPimProductUrl(selectedProduct.id!)}
+              target="_blank"
+              sx={{ textDecoration: "none" }}
+            >
+              View Product →
+            </Link>
+          )}
         </Paper>
       )}
       {!selectedProduct && (
