@@ -67,3 +67,5 @@ storybook-static
 release_note.md
 
 release_note.txt
+slack_message.txt
+docker_build_log.txt

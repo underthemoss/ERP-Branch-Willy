@@ -33,13 +33,32 @@ jobs:
         with:
           registries: 696398453447
 
-      - name: Build, tag, and push image to ECR
+      - name: Docker build
         run: |
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG . 2>&1 | tee docker_build_log.txt
+
+      - name: Post Slack message on Docker build failure
+        if: failure()
+        run: |
+          npm install -g @openai/codex
+          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          CODEX_QUIET_MODE=1 CI=1 npx @openai/codex -q -a auto-edit "You are investigating the root cause of a docker build failure. Read the contents of ./docker_build_log.txt. Summarise your findings in plain text and write it to slack_message.txt with the section headers 'Summary' 'Details' 'Suggested fix'. Try and identify the user from git. Use emojiis, don't run linting or tests or change code."
+          node scripts/slack-message-post.js
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Docker tag
+        if: success()
+        run: |
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Docker push
+        if: success()
+        run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Create and push git tag
+        if: success()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"

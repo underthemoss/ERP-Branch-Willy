@@ -34,4 +34,4 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
-          node ./scripts/slack-post.js
+          node ./scripts/release-note-slack-post.js

@@ -651,7 +651,6 @@ type Mutation {
   deleteProject(id: String!): Project
   deleteWorkflowConfigurationById(id: ID!): Boolean
   removeFileFromEntity(file_id: String!): File!
-  setFulfilmentWorkflow(fulfilmentId: ID!, workflowId: ID!): FulfilmentBase
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   submitSalesOrder(id: ID!): SalesOrder
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
@@ -660,7 +659,8 @@ type Mutation {
   updateBusinessPhone(id: ID!, phone: String!): BusinessContact
   updateBusinessTaxId(id: ID!, taxId: String!): BusinessContact
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
-  updateFulfilmentWorkflowColumn(fulfilmentId: ID!, workflowColumnId: ID!): FulfilmentBase
+  updateFulfilmentAssignee(assignedToId: ID!, fulfilmentId: ID!): FulfilmentBase
+  updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID!, workflowId: ID!): FulfilmentBase
   updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
@@ -678,11 +678,8 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
-  updateRentalFulfilment(id: ID!, input: UpdateRentalFulfilmentInput!): RentalFulfilment
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
-  updateSaleFulfilment(id: ID!, input: UpdateSaleFulfilmentInput!): SaleFulfilment
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
-  updateServiceFulfilment(id: ID!, input: UpdateServiceFulfilmentInput!): ServiceFulfilment
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
 }
