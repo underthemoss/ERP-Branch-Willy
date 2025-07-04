@@ -4,6 +4,7 @@ import { graphql } from "@/graphql";
 import {
   useListFulfilmentsFulfilmentDashboardPageQuery,
   useListWorkflowConfigurationsFulfilmentPageQuery,
+  useUpdateFulfilmentColumnMutation,
 } from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import BoltIcon from "@mui/icons-material/Bolt";
@@ -107,6 +108,18 @@ graphql(`
       id
       firstName
       lastName
+    }
+  }
+
+  mutation UpdateFulfilmentColumn($fulfilmentId: ID!, $workflowId: ID!, $workflowColumnId: ID!) {
+    updateFulfilmentColumn(
+      fulfilmentId: $fulfilmentId
+      workflowId: $workflowId
+      workflowColumnId: $workflowColumnId
+    ) {
+      id
+      workflowId
+      workflowColumnId
     }
   }
 
@@ -278,13 +291,13 @@ export default function FulfillmentDashboard() {
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.pimCategory?.name}`) ||
                 "",
-              status: "",
+              status: i.workflowColumnId || "",
               title:
                 (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.name}`) ||
                 "",
-              workflowId: null,
+              workflowId: i.workflowId ?? null,
             } satisfies FulfilmentTicket;
         })
         .filter(Boolean)
@@ -333,6 +346,8 @@ export default function FulfillmentDashboard() {
   }, [tickets, assigneeFilter, customerFilter, workflowFilter, searchTerm]);
 
   // --- DND Logic ---
+  const [updateFulfilmentColumn] = useUpdateFulfilmentColumnMutation();
+
   function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result;
     if (!destination) return;
@@ -354,6 +369,15 @@ export default function FulfillmentDashboard() {
         // destination.droppableId = workflowId:columnId
         const [workflowId, columnId] = destination.droppableId.split(":");
         newTickets = [...newTickets, { ...ticket, workflowId, status: columnId }];
+
+        // Call mutation to update backend
+        updateFulfilmentColumn({
+          variables: {
+            fulfilmentId: ticket.id,
+            workflowId,
+            workflowColumnId: columnId,
+          },
+        });
       }
       return newTickets;
     });
@@ -575,7 +599,33 @@ export default function FulfillmentDashboard() {
                                                 scroll={false}
                                                 style={{ textDecoration: "none", color: "inherit" }}
                                               >
-                                                <CardContent>
+                                                <CardContent sx={{ position: "relative" }}>
+                                                  <Box
+                                                    sx={{
+                                                      position: "absolute",
+                                                      top: 8,
+                                                      right: 8,
+                                                      zIndex: 1,
+                                                    }}
+                                                  >
+                                                    <Tooltip title={ticket.assignee}>
+                                                      <Avatar
+                                                        sx={{
+                                                          width: 28,
+                                                          height: 28,
+                                                          fontSize: 14,
+                                                        }}
+                                                      >
+                                                        {ticket.assignee === "Unassigned"
+                                                          ? null
+                                                          : ticket.assignee
+                                                              .split(" ")
+                                                              .map((n) => n[0])
+                                                              .join("")
+                                                              .toUpperCase()}
+                                                      </Avatar>
+                                                    </Tooltip>
+                                                  </Box>
                                                   <Typography
                                                     variant="subtitle1"
                                                     fontWeight={600}
@@ -589,12 +639,6 @@ export default function FulfillmentDashboard() {
                                                     gutterBottom
                                                   >
                                                     {ticket.description}
-                                                  </Typography>
-                                                  <Typography
-                                                    variant="body2"
-                                                    color="text.secondary"
-                                                  >
-                                                    <strong>Assignee:</strong> {ticket.assignee}
                                                   </Typography>
                                                   <Typography
                                                     variant="body2"
