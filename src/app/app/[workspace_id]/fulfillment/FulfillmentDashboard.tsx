@@ -4,6 +4,7 @@ import { graphql } from "@/graphql";
 import {
   useListFulfilmentsFulfilmentDashboardPageQuery,
   useListWorkflowConfigurationsFulfilmentPageQuery,
+  useUpdateFulfilmentColumnMutation,
 } from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import BoltIcon from "@mui/icons-material/Bolt";
@@ -107,6 +108,18 @@ graphql(`
       id
       firstName
       lastName
+    }
+  }
+
+  mutation UpdateFulfilmentColumn($fulfilmentId: ID!, $workflowId: ID!, $workflowColumnId: ID!) {
+    updateFulfilmentColumn(
+      fulfilmentId: $fulfilmentId
+      workflowId: $workflowId
+      workflowColumnId: $workflowColumnId
+    ) {
+      id
+      workflowId
+      workflowColumnId
     }
   }
 
@@ -278,13 +291,13 @@ export default function FulfillmentDashboard() {
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.pimCategory?.name}`) ||
                 "",
-              status: "",
+              status: i.workflowColumnId || "",
               title:
                 (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.name}`) ||
                 "",
-              workflowId: null,
+              workflowId: i.workflowId ?? null,
             } satisfies FulfilmentTicket;
         })
         .filter(Boolean)
@@ -333,6 +346,8 @@ export default function FulfillmentDashboard() {
   }, [tickets, assigneeFilter, customerFilter, workflowFilter, searchTerm]);
 
   // --- DND Logic ---
+  const [updateFulfilmentColumn] = useUpdateFulfilmentColumnMutation();
+
   function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result;
     if (!destination) return;
@@ -354,6 +369,15 @@ export default function FulfillmentDashboard() {
         // destination.droppableId = workflowId:columnId
         const [workflowId, columnId] = destination.droppableId.split(":");
         newTickets = [...newTickets, { ...ticket, workflowId, status: columnId }];
+
+        // Call mutation to update backend
+        updateFulfilmentColumn({
+          variables: {
+            fulfilmentId: ticket.id,
+            workflowId,
+            workflowColumnId: columnId,
+          },
+        });
       }
       return newTickets;
     });
