@@ -2,7 +2,7 @@ name: Issue Codex AutoFix
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
 
 permissions:
   contents: write
