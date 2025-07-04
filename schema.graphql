@@ -651,6 +651,8 @@ type Mutation {
   deleteProject(id: String!): Project
   deleteWorkflowConfigurationById(id: ID!): Boolean
   removeFileFromEntity(file_id: String!): File!
+  setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
+  setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   submitSalesOrder(id: ID!): SalesOrder
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
@@ -1005,6 +1007,7 @@ type Query {
   getSalesOrderById(id: String): SalesOrder
   getSalesOrderLineItemById(id: String): SalesOrderLineItem
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
+  getUsersById(userIds: [String!]!): [User]
   getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
   helloWorld: String
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
@@ -1053,6 +1056,7 @@ type Query {
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
+  usersSearch(searchTerm: String): [User]
 }
 
 type Quote {

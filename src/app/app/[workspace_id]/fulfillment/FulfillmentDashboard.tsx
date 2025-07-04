@@ -575,7 +575,33 @@ export default function FulfillmentDashboard() {
                                                 scroll={false}
                                                 style={{ textDecoration: "none", color: "inherit" }}
                                               >
-                                                <CardContent>
+                                                <CardContent sx={{ position: "relative" }}>
+                                                  <Box
+                                                    sx={{
+                                                      position: "absolute",
+                                                      top: 8,
+                                                      right: 8,
+                                                      zIndex: 1,
+                                                    }}
+                                                  >
+                                                    <Tooltip title={ticket.assignee}>
+                                                      <Avatar
+                                                        sx={{
+                                                          width: 28,
+                                                          height: 28,
+                                                          fontSize: 14,
+                                                        }}
+                                                      >
+                                                        {ticket.assignee === "Unassigned"
+                                                          ? null
+                                                          : ticket.assignee
+                                                              .split(" ")
+                                                              .map((n) => n[0])
+                                                              .join("")
+                                                              .toUpperCase()}
+                                                      </Avatar>
+                                                    </Tooltip>
+                                                  </Box>
                                                   <Typography
                                                     variant="subtitle1"
                                                     fontWeight={600}
@@ -589,12 +615,6 @@ export default function FulfillmentDashboard() {
                                                     gutterBottom
                                                   >
                                                     {ticket.description}
-                                                  </Typography>
-                                                  <Typography
-                                                    variant="body2"
-                                                    color="text.secondary"
-                                                  >
-                                                    <strong>Assignee:</strong> {ticket.assignee}
                                                   </Typography>
                                                   <Typography
                                                     variant="body2"
