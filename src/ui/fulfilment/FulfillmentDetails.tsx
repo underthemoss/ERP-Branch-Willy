@@ -1,11 +1,7 @@
-import { FragmentType, makeFragmentData, useFragment } from "@/graphql";
-import {
-  GetFulfilmentById,
-  RentalFulfilment,
-  useSetExpectedRentalEndDateMutation,
-  useSetRentalEndDateMutation,
-  useSetRentalStartDateMutation,
-} from "@/ui/fulfilment/api";
+import { FragmentType, graphql, makeFragmentData, useFragment } from "@/graphql";
+import { useUpdateFulfilmentAssigneeMutation } from "@/graphql/hooks";
+import { RentalFulfilment } from "@/ui/fulfilment/api";
+import UserPicker from "@/ui/UserPicker";
 import { Typography } from "@mui/material";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -26,12 +22,28 @@ export type FulfillmentDetailsProps = {
 
 /* Removed mockFulfillment, now using real data from GraphQL */
 
+graphql(`
+  mutation updateFulfilmentAssignee($assignedToId: ID, $fulfilmentId: ID!) {
+    updateFulfilmentAssignee(assignedToId: $assignedToId, fulfilmentId: $fulfilmentId) {
+      id
+      assignedTo {
+        id
+        firstName
+        lastName
+        email
+      }
+    }
+  }
+`);
+
 export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading, error, refetch } = useGetFulfilmentByIdQuery({
     variables: { id: fulfillmentId },
   });
   const fulfilment = data?.getFulfilmentById;
+
+  const [updateAssignee, { loading: updatingAssignee }] = useUpdateFulfilmentAssigneeMutation();
 
   if (loading) {
     return <div>Loading fulfilment details...</div>;
@@ -150,6 +162,25 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
           height: "100%",
         }}
       >
+        <div style={{ marginBottom: 24 }}>
+          <UserPicker
+            userId={fulfilment.assignedTo?.id}
+            onChange={async (newUserId) => {
+              // Allow unassign (null), or change to a new user
+              if (newUserId === fulfilment.assignedTo?.id) return;
+              await updateAssignee({
+                variables: {
+                  assignedToId: newUserId ?? null,
+                  fulfilmentId: fulfilment.id,
+                },
+              });
+              await refetch();
+            }}
+            disabled={updatingAssignee}
+            label="Assigned to"
+            placeholder="Search users..."
+          />
+        </div>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontWeight: 600, color: "#222", marginBottom: 10 }}>Rental Details</div>
           <div style={{ color: "#888", fontSize: 14, marginBottom: 12 }}>

@@ -56,8 +56,6 @@ export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}></div>
-      <div style={{ marginBottom: 32 }}></div>
       <div style={{ marginBottom: 32 }}>
         <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Rental Details</div>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
