@@ -6,7 +6,7 @@ import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from 
 import { useParams } from "next/navigation";
 import React from "react";
 
-export const InvoiceByIdQuery = graphql(`
+const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
     invoiceById(id: $id) {
       id
