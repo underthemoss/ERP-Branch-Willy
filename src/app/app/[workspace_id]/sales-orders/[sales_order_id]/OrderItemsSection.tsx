@@ -1,5 +1,6 @@
 "use client";
 
+import { SalesOrderStatus } from "@/graphql/graphql";
 import { Box, Button, Paper, Typography } from "@mui/material";
 import * as React from "react";
 import CreateRentalLineItemDialog from "./CreateRentalLineItem/CreateRentalLineItemDialog";
@@ -10,10 +11,14 @@ import TransactionTypeSelectDialog, { TransactionType } from "./TransactionTypeS
 
 interface OrderItemsSectionProps {
   salesOrderId: string;
+  salesOrderStatus: SalesOrderStatus;
 }
 
 type DialogState = "none" | "type" | "rental" | "sale" | "transfer";
-const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) => {
+const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({
+  salesOrderId,
+  salesOrderStatus,
+}) => {
   // Dialog state for add item flow
   const [openDialog, setOpenDialog] = React.useState<DialogState>("none");
   const [lineItemId, setLineItemId] = React.useState<string | null>(null);
@@ -71,6 +76,7 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ salesOrderId }) =
           key={`${salesOrderId}-${openDialog}`}
           salesOrderId={salesOrderId}
           onAddNewItem={() => setOpenDialog("type")}
+          salesOrderStatus={salesOrderStatus}
         />
       </Paper>
     </>
