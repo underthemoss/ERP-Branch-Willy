@@ -23,7 +23,7 @@ const CreateInvoiceDialog = dynamic(() => import("@/ui/invoices/CreateInvoiceDia
   ssr: false,
 });
 
-export const ListInvoicesQuery = graphql(`
+const ListInvoicesQuery = graphql(`
   query ListInvoicesInvoiceListPage($query: ListInvoicesQuery!) {
     listInvoices(query: $query) {
       items {
