@@ -14,7 +14,7 @@ export type FulfillmentDetailsProps = {
 /* Removed mockFulfillment, now using real data from GraphQL */
 
 graphql(`
-  mutation updateFulfilmentAssignee($assignedToId: ID!, $fulfilmentId: ID!) {
+  mutation updateFulfilmentAssignee($assignedToId: ID, $fulfilmentId: ID!) {
     updateFulfilmentAssignee(assignedToId: $assignedToId, fulfilmentId: $fulfilmentId) {
       id
       assignedTo {
@@ -382,10 +382,11 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
           <UserPicker
             userId={fulfilment.assignedTo?.id}
             onChange={async (newUserId) => {
-              if (!newUserId || newUserId === fulfilment.assignedTo?.id) return;
+              // Allow unassign (null), or change to a new user
+              if (newUserId === fulfilment.assignedTo?.id) return;
               await updateAssignee({
                 variables: {
-                  assignedToId: newUserId,
+                  assignedToId: newUserId ?? null,
                   fulfilmentId: fulfilment.id,
                 },
               });
