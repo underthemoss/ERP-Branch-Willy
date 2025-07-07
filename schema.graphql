@@ -219,6 +219,11 @@ enum ContactType {
   PERSON
 }
 
+input CreateInvoiceInput {
+  buyerId: String!
+  sellerId: String!
+}
+
 type CreatePdfResult {
   error_message: String
   success: Boolean!
@@ -412,6 +417,34 @@ type HasuraClaims {
   x_hasura_user_id: String
 }
 
+type Invoice {
+  amount: Float!
+  buyer: Contact
+  buyerId: String!
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String
+  createdByUser: User
+  id: String!
+  seller: Contact
+  sellerId: String!
+  status: InvoiceStatus!
+  updatedAt: DateTime!
+  updatedBy: String
+  updatedByUser: User
+}
+
+enum InvoiceStatus {
+  CANCELLED
+  DRAFT
+  PAID
+  SENT
+}
+
+type InvoicesResponse {
+  items: [Invoice!]!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -531,6 +564,21 @@ type ListFulfilmentsResult {
   page: PaginationInfo!
 }
 
+input ListInvoicesFilter {
+  companyId: String
+  status: InvoiceStatus
+}
+
+input ListInvoicesPage {
+  number: Int
+  size: Int
+}
+
+input ListInvoicesQuery {
+  filter: ListInvoicesFilter
+  page: ListInvoicesPage
+}
+
 type ListPersonContactsResult {
   items: [PersonContact!]!
   page: PaginationInfo!
@@ -624,6 +672,7 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
+  createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
 
   """Generate and save a PDF for an entity by path and entity_id"""
@@ -1011,11 +1060,13 @@ type Query {
   getUsersById(userIds: [String!]!): [User]
   getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
   helloWorld: String
+  invoiceById(id: String!): Invoice
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
+  listInvoices(query: ListInvoicesQuery): InvoicesResponse!
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
