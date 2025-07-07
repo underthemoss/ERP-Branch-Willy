@@ -156,6 +156,8 @@ export const FulfilmentBaseFields = graphql(`
 
 export const RentalFulfilmentFields = graphql(`
   fragment RentalFulfilmentFields on RentalFulfilment {
+    ...FulfilmentBaseFields
+    id
     rentalStartDate
     rentalEndDate
     expectedRentalEndDate
@@ -164,6 +166,7 @@ export const RentalFulfilmentFields = graphql(`
 
 export const SaleFulfilmentFields = graphql(`
   fragment SaleFulfilmentFields on SaleFulfilment {
+    ...FulfilmentBaseFields
     salePrice
     quantity
   }
@@ -171,6 +174,7 @@ export const SaleFulfilmentFields = graphql(`
 
 export const ServiceFulfilmentFields = graphql(`
   fragment ServiceFulfilmentFields on ServiceFulfilment {
+    ...FulfilmentBaseFields
     serviceDate
   }
 `);
