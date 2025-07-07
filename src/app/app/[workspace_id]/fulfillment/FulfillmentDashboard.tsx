@@ -111,7 +111,7 @@ graphql(`
     }
   }
 
-  mutation UpdateFulfilmentColumn($fulfilmentId: ID!, $workflowId: ID!, $workflowColumnId: ID!) {
+  mutation UpdateFulfilmentColumn($fulfilmentId: ID!, $workflowId: ID, $workflowColumnId: ID) {
     updateFulfilmentColumn(
       fulfilmentId: $fulfilmentId
       workflowId: $workflowId
@@ -365,6 +365,13 @@ export default function FulfillmentDashboard() {
       if (destination.droppableId === "backlog") {
         // Move to backlog
         newTickets = [...newTickets, { ...ticket, workflowId: null, status: "" }];
+
+        // Call mutation to update backend (set workflowId and workflowColumnId to null)
+        updateFulfilmentColumn({
+          variables: {
+            fulfilmentId: ticket.id,
+          },
+        });
       } else {
         // destination.droppableId = workflowId:columnId
         const [workflowId, columnId] = destination.droppableId.split(":");

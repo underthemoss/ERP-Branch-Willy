@@ -651,6 +651,7 @@ type Mutation {
   deleteProject(id: String!): Project
   deleteWorkflowConfigurationById(id: ID!): Boolean
   removeFileFromEntity(file_id: String!): File!
+  setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
@@ -661,8 +662,8 @@ type Mutation {
   updateBusinessPhone(id: ID!, phone: String!): BusinessContact
   updateBusinessTaxId(id: ID!, taxId: String!): BusinessContact
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
-  updateFulfilmentAssignee(assignedToId: ID!, fulfilmentId: ID!): FulfilmentBase
-  updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID!, workflowId: ID!): FulfilmentBase
+  updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
+  updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
   updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
@@ -1071,6 +1072,7 @@ type RentalFulfilment implements FulfilmentBase {
   contact: Contact
   contactId: ID
   createdAt: DateTime!
+  expectedRentalEndDate: DateTime
   id: ID!
   project: Project
   projectId: ID
@@ -1508,15 +1510,6 @@ input UpdatePurchaseOrderLineItemInput {
   po_quantity: Int
 }
 
-input UpdateRentalFulfilmentInput {
-  assignedToId: String
-  rentalEndDate: DateTime
-  rentalStartDate: DateTime
-  salesOrderLineItemId: String
-  workflowColumnId: ID
-  workflowId: ID
-}
-
 input UpdateRentalSalesOrderLineItemInput {
   delivery_charge_in_cents: Int
   delivery_date: String
@@ -1532,15 +1525,6 @@ input UpdateRentalSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
-}
-
-input UpdateSaleFulfilmentInput {
-  assignedToId: String
-  quantity: Int
-  salePrice: Float
-  salesOrderLineItemId: String
-  workflowColumnId: ID
-  workflowId: ID
 }
 
 input UpdateSalesOrderLineItemInput {
@@ -1559,14 +1543,6 @@ input UpdateSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
-}
-
-input UpdateServiceFulfilmentInput {
-  assignedToId: String
-  salesOrderLineItemId: String
-  serviceDate: DateTime
-  workflowColumnId: ID
-  workflowId: ID
 }
 
 input UpdateWorkflowConfigurationInput {
