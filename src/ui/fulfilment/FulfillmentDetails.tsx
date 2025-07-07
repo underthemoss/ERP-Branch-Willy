@@ -1,7 +1,25 @@
-import { Typography } from "@mui/material";
+import {
+  useSetExpectedRentalEndDateMutation,
+  useSetRentalEndDateMutation,
+  useSetRentalStartDateMutation,
+} from "@/ui/fulfilment/api";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import EditIcon from "@mui/icons-material/Edit";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { RentalFulfilmentPrice, SaleFulfilmentPrice, useGetFulfilmentByIdQuery } from "./api";
 
 export type FulfillmentDetailsProps = {
@@ -11,9 +29,23 @@ export type FulfillmentDetailsProps = {
 /* Removed mockFulfillment, now using real data from GraphQL */
 
 export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
+  const [endRentalDialogOpen, setEndRentalDialogOpen] = useState(false);
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
   const { workspace_id } = useParams<{ workspace_id: string }>();
-  const { data, loading, error } = useGetFulfilmentByIdQuery({ variables: { id: fulfillmentId } });
+  const { data, loading, error, refetch } = useGetFulfilmentByIdQuery({
+    variables: { id: fulfillmentId },
+  });
   const fulfilment = data?.getFulfilmentById;
+
+  // Mutation hooks for rental dates
+  const [setRentalStartDate] = useSetRentalStartDateMutation();
+  const [setRentalEndDate] = useSetRentalEndDateMutation();
+  const [setExpectedRentalEndDate] = useSetExpectedRentalEndDateMutation();
+
+  // State for editing which date
+  const [editingDateField, setEditingDateField] = React.useState<"start" | "expectedEnd" | null>(
+    null,
+  );
 
   if (loading) {
     return <div>Loading fulfilment details...</div>;
@@ -99,37 +131,151 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
           <strong>Assigned To:</strong> {assignedTo || "-"} &nbsp;|&nbsp;
           <strong>Email:</strong> {fulfilment.assignedTo?.email || "-"}
         </div>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Order Info</div>
-          <div style={{ color: "#333", fontSize: 15 }}>
-            <div>Sales Order Type: {fulfilment.salesOrderType || "-"}</div>
-            <div>
-              Workflow ID:{" "}
-              {fulfilment.workflowId ? (
-                <Link
-                  href={`/app/${workspace_id}/workflows/${fulfilment.workflowId}`}
-                  style={{ color: "#1976d2", textDecoration: "underline" }}
-                >
-                  {fulfilment.workflowId}
-                </Link>
-              ) : (
-                "-"
-              )}
-            </div>
-            <div>Workflow Column ID: {fulfilment.workflowColumnId || "-"}</div>
-          </div>
-        </div>
+        <div style={{ marginBottom: 32 }}></div>
         {/* Type-specific fields */}
-        {isRental(fulfilment) && (
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Rental Details</div>
-            <div style={{ color: "#333", fontSize: 15 }}>
-              Start: {fulfilment.rentalStartDate || "-"}
-              <br />
-              End: {fulfilment.rentalEndDate || "-"}
-            </div>
-          </div>
-        )}
+        {isRental(fulfilment) &&
+          (() => {
+            type RentalFulfilment = {
+              rentalStartDate?: string;
+              expectedRentalEndDate?: string;
+              id: string;
+              [key: string]: any;
+            };
+            const rentalFulfilment = fulfilment as RentalFulfilment;
+            const rentalStartDateValue = rentalFulfilment.rentalStartDate
+              ? new Date(rentalFulfilment.rentalStartDate)
+              : null;
+            const expectedRentalEndDateValue = rentalFulfilment.expectedRentalEndDate
+              ? new Date(rentalFulfilment.expectedRentalEndDate)
+              : null;
+
+            // Helper to format date
+            const formatDate = (date: Date | null) =>
+              date
+                ? date.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "-";
+
+            // Days between
+            let daysBetween: number | null = null;
+            if (rentalStartDateValue && expectedRentalEndDateValue) {
+              const msPerDay = 1000 * 60 * 60 * 24;
+              daysBetween = Math.round(
+                (expectedRentalEndDateValue.getTime() - rentalStartDateValue.getTime()) / msPerDay,
+              );
+            }
+
+            return (
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>
+                  Rental Details
+                </div>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <div
+                    style={{
+                      color: "#333",
+                      fontSize: 15,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 24,
+                    }}
+                  >
+                    {/* Start Date */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {editingDateField === "start" || !rentalStartDateValue ? (
+                        <DatePicker
+                          label="Start Date"
+                          value={rentalStartDateValue}
+                          onChange={async (date) => {
+                            if (!date) return;
+                            try {
+                              await setRentalStartDate({
+                                variables: {
+                                  fulfilmentId: rentalFulfilment.id,
+                                  rentalStartDate: date.toISOString(),
+                                },
+                              });
+                              setEditingDateField(null);
+                              refetch();
+                            } catch (e) {
+                              // handle error (could show a toast/snackbar)
+                            }
+                          }}
+                          onClose={() => setEditingDateField(null)}
+                          slotProps={{
+                            textField: { size: "small", fullWidth: true },
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <span>{formatDate(rentalStartDateValue)}</span>
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditingDateField("start")}
+                            aria-label="Edit start date"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </>
+                      )}
+                    </div>
+                    {/* Arrow and days between */}
+                    {rentalStartDateValue && expectedRentalEndDateValue && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <ArrowForwardIcon fontSize="small" />
+                        <span style={{ fontSize: 13, color: "#1976d2", margin: "0 4px" }}>
+                          {daysBetween} day{daysBetween === 1 ? "" : "s"}
+                        </span>
+                        <ArrowForwardIcon fontSize="small" style={{ transform: "scaleX(-1)" }} />
+                      </div>
+                    )}
+                    {/* Expected End Date */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {editingDateField === "expectedEnd" || !expectedRentalEndDateValue ? (
+                        <DatePicker
+                          label="Expected End Date"
+                          value={expectedRentalEndDateValue}
+                          onChange={async (date) => {
+                            if (!date) return;
+                            try {
+                              await setExpectedRentalEndDate({
+                                variables: {
+                                  fulfilmentId: rentalFulfilment.id,
+                                  expectedRentalEndDate: date.toISOString(),
+                                },
+                              });
+                              setEditingDateField(null);
+                              refetch();
+                            } catch (e) {
+                              // handle error
+                            }
+                          }}
+                          onClose={() => setEditingDateField(null)}
+                          slotProps={{
+                            textField: { size: "small", fullWidth: true },
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <span>{formatDate(expectedRentalEndDateValue)}</span>
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditingDateField("expectedEnd")}
+                            aria-label="Edit expected end date"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </LocalizationProvider>
+              </div>
+            );
+          })()}
         {isSale(fulfilment) && (
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontWeight: 600, marginBottom: 6, color: "#222" }}>Sale Details</div>
@@ -350,6 +496,73 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
             disabled
           />
         </div>
+        {/* End rental button */}
+        <Box sx={{ marginTop: 4, display: "flex" }}>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={!isRental(fulfilment) || !fulfilment.rentalStartDate}
+            style={{ fontWeight: 600, fontSize: 16 }}
+            onClick={() => {
+              setEndRentalDialogOpen(true);
+              setSelectedEndDate(null);
+            }}
+          >
+            End rental
+          </Button>
+          <Dialog open={endRentalDialogOpen} onClose={() => setEndRentalDialogOpen(false)}>
+            <DialogTitle>Set Rental End Date</DialogTitle>
+            <DialogContent>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  label="Rental End Date"
+                  value={selectedEndDate}
+                  onChange={(value) => {
+                    if (!value) {
+                      setSelectedEndDate(null);
+                    } else if (value instanceof Date) {
+                      setSelectedEndDate(value);
+                    } else if (typeof value === "object" && typeof value.toDate === "function") {
+                      setSelectedEndDate(value.toDate());
+                    } else {
+                      setSelectedEndDate(null);
+                    }
+                  }}
+                  slotProps={{
+                    textField: { fullWidth: true, size: "small", sx: { mt: 2 } },
+                  }}
+                />
+              </LocalizationProvider>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEndRentalDialogOpen(false)} color="secondary">
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!selectedEndDate) return;
+                  try {
+                    await setRentalEndDate({
+                      variables: {
+                        fulfilmentId: fulfilment.id,
+                        rentalEndDate: selectedEndDate.toISOString(),
+                      },
+                    });
+                    setEndRentalDialogOpen(false);
+                    refetch();
+                  } catch (e) {
+                    // handle error (could show a toast/snackbar)
+                  }
+                }}
+                color="primary"
+                variant="contained"
+                disabled={!selectedEndDate}
+              >
+                Confirm end date
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
       </div>
       {/* Sidebar */}
       <div

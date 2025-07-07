@@ -107,7 +107,7 @@ export default function NewSalesOrderPage() {
               onClick={handleSubmit}
               disabled={createSalesOrderLoading}
             >
-              Submit Order
+              Create Order
             </Button>
           </Box>
           <Box sx={{ maxWidth: 400 }}>

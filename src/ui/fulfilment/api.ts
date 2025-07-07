@@ -12,7 +12,12 @@ export type {
 } from "@/graphql/graphql";
 
 // Re-exporting other hooks, that do not need any modifications
-export { useGetFulfilmentByIdQuery } from "@/graphql/hooks";
+export {
+  useGetFulfilmentByIdQuery,
+  useSetRentalEndDateMutation,
+  useSetRentalStartDateMutation,
+  useSetExpectedRentalEndDateMutation,
+} from "@/graphql/hooks";
 
 export const RentalFulfilmentPriceFields = graphql(`
   fragment RentalFulfilmentPriceFields on RentalPrice {
@@ -153,6 +158,7 @@ export const RentalFulfilmentFields = graphql(`
   fragment RentalFulfilmentFields on RentalFulfilment {
     rentalStartDate
     rentalEndDate
+    expectedRentalEndDate
   }
 `);
 
@@ -185,6 +191,33 @@ export const GetFulfilmentById = graphql(`
       ... on ServiceFulfilment {
         ...ServiceFulfilmentFields
       }
+    }
+  }
+`);
+
+export const SetRentalStartDate = graphql(`
+  mutation SetRentalStartDate($fulfilmentId: ID!, $rentalStartDate: DateTime!) {
+    setRentalStartDate(fulfilmentId: $fulfilmentId, rentalStartDate: $rentalStartDate) {
+      ...RentalFulfilmentFields
+    }
+  }
+`);
+
+export const SetRentalEndDate = graphql(`
+  mutation SetRentalEndDate($fulfilmentId: ID!, $rentalEndDate: DateTime!) {
+    setRentalEndDate(fulfilmentId: $fulfilmentId, rentalEndDate: $rentalEndDate) {
+      ...RentalFulfilmentFields
+    }
+  }
+`);
+
+export const SetExpectedRentalEndDate = graphql(`
+  mutation SetExpectedRentalEndDate($fulfilmentId: ID!, $expectedRentalEndDate: DateTime!) {
+    setExpectedRentalEndDate(
+      fulfilmentId: $fulfilmentId
+      expectedRentalEndDate: $expectedRentalEndDate
+    ) {
+      ...RentalFulfilmentFields
     }
   }
 `);
