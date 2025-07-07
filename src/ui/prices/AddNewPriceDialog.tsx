@@ -148,7 +148,6 @@ export function AddNewPriceDialog({
               if (item.__typename === "PimCategory") {
                 setFormCategoryId(item.id ?? null);
                 setSelectedProduct(null);
-                setValue("class", "");
               } else if (item.__typename === "PimProduct") {
                 setFormCategoryId(item.pim_category_platform_id ?? null);
                 setValue("class", item.name ?? "");

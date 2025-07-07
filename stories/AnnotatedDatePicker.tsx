@@ -18,9 +18,8 @@ import React from "react";
 export type DayAnnotationMap = Record<string, { badge?: {}; tooltip?: string }>;
 
 export interface AnnotatedDatePickerProps
-  extends Omit<DatePickerProps, "renderDay" | "value" | "onChange"> {
+  extends Omit<DatePickerProps, "renderDay" | "value"> {
   value: Dayjs | null;
-  onChange: (date: Dayjs | null) => void;
   dayAnnotations: DayAnnotationMap;
 }
 
@@ -39,7 +38,7 @@ function AnnotatedDay(props: PickersDayProps) {
   // @ts-expect-error dayAnnotations is injected via slotProps, but not typed in PickersDayProps
   const dayAnnotations: DayAnnotationMap = props.dayAnnotations || {};
   const { day, outsideCurrentMonth, ...other } = props;
-  const dayKey = day.format("YYYY-MM-DD");
+  const dayKey = dayjs(day).format("YYYY-MM-DD");
   const dayAnnotation =
     !outsideCurrentMonth && dayAnnotations?.[dayKey]
       ? dayAnnotations[dayKey]

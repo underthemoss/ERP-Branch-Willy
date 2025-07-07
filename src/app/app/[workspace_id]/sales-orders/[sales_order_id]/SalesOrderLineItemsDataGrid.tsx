@@ -1,7 +1,7 @@
 // "use client";
 
 import { graphql } from "@/graphql";
-import { SalesOrderLineItemsQuery } from "@/graphql/graphql";
+import { SalesOrderLineItemsQuery, SalesOrderStatus } from "@/graphql/graphql";
 import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
@@ -137,6 +137,7 @@ graphql(`
 
 export interface SalesOrderLineItemsDataGridProps {
   salesOrderId: string;
+  salesOrderStatus: SalesOrderStatus;
   onAddNewItem?: () => void;
 }
 type RowType = NonNullable<
@@ -146,6 +147,7 @@ type RowType = NonNullable<
 export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridProps> = ({
   salesOrderId,
   onAddNewItem,
+  salesOrderStatus,
 }) => {
   const { data, loading, error, refetch } = useSalesOrderLineItemsQuery({
     variables: { salesOrderId },
@@ -477,6 +479,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               size="medium"
               onClick={handleAddNewItem}
               sx={{ minWidth: 160 }}
+              disabled={salesOrderStatus === SalesOrderStatus.Submitted}
             >
               Add New Item
             </Button>
@@ -721,6 +724,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               size="small"
               onClick={handleAddNewItem}
               sx={{ mt: 1, alignSelf: "flex-start" }}
+              disabled={salesOrderStatus === SalesOrderStatus.Submitted}
             >
               Add Item
             </Button>

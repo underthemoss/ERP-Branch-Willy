@@ -16,6 +16,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Container,
   Divider,
   Grid,
@@ -61,6 +62,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
       updated_by
       buyer_id
       project_id
+      status
       buyer {
         ... on BusinessContact {
           id
@@ -228,18 +230,25 @@ export default function SalesOrderDetailPage() {
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 12, md: 8 }}>
-                  <Typography variant="h4" gutterBottom>
-                    Sales Order
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="h4">Sales Order</Typography>
+                    <Chip
+                      label={salesOrder.status}
+                      color={
+                        salesOrder.status === "SUBMITTED"
+                          ? "primary"
+                          : salesOrder.status === "DRAFT"
+                            ? "default"
+                            : "default"
+                      }
+                    />
+                  </Box>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Purchase Order Number: {salesOrder.purchase_order_number}
                   </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Button color="secondary" startIcon={<EditOutlinedIcon />}>
-                      Edit
-                    </Button>
                     <Button
                       color="secondary"
                       startIcon={<PrintOutlinedIcon />}
@@ -264,19 +273,26 @@ export default function SalesOrderDetailPage() {
                     >
                       {pdfLoading ? "Generating PDF..." : "Print"}
                     </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      disabled={submitLoading}
-                      onClick={async () => {
-                        if (!salesOrder?.id) return;
-                        await submitSalesOrder({
-                          variables: { id: salesOrder.id },
-                        });
-                      }}
-                    >
-                      {submitLoading ? "Submitting..." : "Submit"}
-                    </Button>
+                    {salesOrder.status !== "SUBMITTED" && (
+                      <>
+                        <Button color="secondary" startIcon={<EditOutlinedIcon />}>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          disabled={submitLoading}
+                          onClick={async () => {
+                            if (!salesOrder?.id) return;
+                            await submitSalesOrder({
+                              variables: { id: salesOrder.id },
+                            });
+                          }}
+                        >
+                          {submitLoading ? "Submitting..." : "Submit"}
+                        </Button>
+                      </>
+                    )}
                   </Box>
                   {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
                     <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
@@ -320,7 +336,7 @@ export default function SalesOrderDetailPage() {
             {/* Buyer & Project Info moved to sidebar */}
 
             {/* Order Items Section */}
-            <OrderItemsSection salesOrderId={salesOrder.id} />
+            <OrderItemsSection salesOrderId={salesOrder.id} salesOrderStatus={salesOrder.status} />
             {/* File Upload Card */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>

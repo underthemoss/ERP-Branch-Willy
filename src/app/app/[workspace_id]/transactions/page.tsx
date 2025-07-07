@@ -53,7 +53,10 @@ function MiniCalendarEditCell(props: GridRenderEditCellParams) {
         props.api.setEditCellValue({
           id: props.id,
           field: "date_range",
-          value: [start?.toDate(), end?.toDate()],
+          value: [
+            start instanceof Date ? start : start?.toDate(),
+            end instanceof Date ? end : end?.toDate(),
+          ],
         });
       }}
     />

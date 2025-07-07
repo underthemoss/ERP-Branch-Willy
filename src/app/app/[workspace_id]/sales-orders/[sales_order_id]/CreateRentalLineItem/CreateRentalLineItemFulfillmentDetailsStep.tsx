@@ -75,14 +75,6 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
     dateRange[1] ? dayjs(dateRange[1]) : null,
   ];
 
-  // Convert dayjs objects back to ISO strings when date changes
-  const handleDateRangeChange = (newValue: [Dayjs | null, Dayjs | null]) => {
-    setDateRange([
-      newValue[0] ? newValue[0].toISOString() : null,
-      newValue[1] ? newValue[1].toISOString() : null,
-    ]);
-  };
-
   const handleContinue = async () => {
     try {
       await updateLineItem({
@@ -145,7 +137,12 @@ const CreateRentalLineItemFulfillmentDetailsStep: React.FC<FulfillmentDetailsSte
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DateRangePicker
             value={internalDateRange}
-            onChange={handleDateRangeChange}
+            onChange={(newValue) => {
+              setDateRange([
+                newValue[0] ? newValue[0].toISOString() : null,
+                newValue[1] ? newValue[1].toISOString() : null,
+              ]);
+            }}
             slots={{ field: MultiInputDateRangeField }}
             localeText={{
               start: "Delivery Date",
