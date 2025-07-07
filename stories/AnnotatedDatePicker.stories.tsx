@@ -45,7 +45,7 @@ export const Default: Story = {
           </Typography>
           <AnnotatedDatePicker
             value={value}
-            onChange={setValue}
+            onChange={(value) => setValue(dayjs(value))}
             dayAnnotations={prices}
             label="Select a date"
             disablePast={false}
