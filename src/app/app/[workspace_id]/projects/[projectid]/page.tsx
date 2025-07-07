@@ -7,6 +7,7 @@ import {
   useGetProjectByIdForDisplayQuery,
   useProjectCodeDescriptionsQuery,
 } from "@/graphql/hooks";
+import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -221,18 +222,7 @@ export default function ProjectDetailAltPage() {
   });
 
   // Helper to format ISO date strings
-  function formatDate(dateString?: string | null) {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
+  // (Replaced by parseDate utility below)
 
   const handleDelete = async () => {
     if (!project?.id) return;
@@ -564,7 +554,10 @@ export default function ProjectDetailAltPage() {
                       : "—"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {formatDate(project.created_at)}
+                    {(() => {
+                      const date = parseDate(project.created_at);
+                      return date ? format(date, "MMM d, yyyy, h:mm a") : "";
+                    })()}
                   </Typography>
                 </Box>
                 <Box>
@@ -577,7 +570,10 @@ export default function ProjectDetailAltPage() {
                       : "—"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {formatDate(project.updated_at)}
+                    {(() => {
+                      const date = parseDate(project.updated_at);
+                      return date ? format(date, "MMM d, yyyy, h:mm a") : "";
+                    })()}
                   </Typography>
                 </Box>
                 <Box>

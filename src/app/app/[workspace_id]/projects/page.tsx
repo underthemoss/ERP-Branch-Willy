@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useListTopLevelProjectsQuery } from "@/graphql/hooks";
+import { parseDate } from "@/lib/parseDate";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
@@ -20,7 +21,7 @@ import {
 } from "@mui/material";
 import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -148,7 +149,7 @@ export default function ProjectsPage() {
       headerName: "Created At",
       width: 180,
       renderCell: (params) => {
-        const date = params.value ? parseISO(params.value) : null;
+        const date = parseDate(params.value);
         return date ? (
           <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
             <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
@@ -164,7 +165,7 @@ export default function ProjectsPage() {
       headerName: "Updated At",
       width: 180,
       renderCell: (params) => {
-        const date = params.value ? parseISO(params.value) : null;
+        const date = parseDate(params.value);
         return date ? (
           <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
             <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
