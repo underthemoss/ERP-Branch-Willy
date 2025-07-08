@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useInvoiceByIdQuery } from "@/graphql/hooks";
+import InvoiceRender from "@/ui/invoices/InvoiceRender";
 import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useParams } from "next/navigation";
 import React from "react";
@@ -210,6 +211,15 @@ export default function InvoiceDisplayPage() {
               <Button variant="outlined" size="small" disabled>
                 Add Item (stub)
               </Button>
+            </Paper>
+
+            {/* Printable Invoice */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Invoice Preview
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <InvoiceRender invoiceId={invoiceId} scale={0.85} />
             </Paper>
           </Grid>
 
