@@ -11,10 +11,12 @@ import PersonIcon from "@mui/icons-material/Person";
 import {
   Avatar,
   Box,
+  Button,
   Chip,
   CircularProgress,
   IconButton,
   Paper,
+  Popover,
   Stack,
   TextField,
   Tooltip,
@@ -28,7 +30,7 @@ import {
   UseTreeItemContentSlotOwnProps,
 } from "@mui/x-tree-view";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 
 export const CONTACT_SELECTOR_LIST = graphql(`
   query ContactSelectorList(
@@ -120,6 +122,8 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
 }) => {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const { data, loading, error } = useContactSelectorListQuery({
     variables: {
@@ -130,7 +134,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     fetchPolicy: "cache-and-network",
   });
 
-  const contacts = data?.listContacts?.items || [];
+  const contacts = useMemo(() => data?.listContacts?.items || [], [data?.listContacts?.items]);
 
   // Type guard for PersonContact
   function isPersonContact(e: any): e is {
@@ -144,40 +148,98 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     return e && e.__typename === "PersonContact";
   }
 
-  // Build tree items for RichTreeView
-  const treeItems: ContactTreeItem[] = [
-    ...contacts
-      .filter((c) => c.__typename === "BusinessContact")
-      .map((business) => ({
-        id: business.id,
-        label: business.name,
-        type: "business" as const,
-        profilePicture: business.profilePicture ?? undefined,
-        children:
-          business.employees?.items.filter(isPersonContact).map((employee) => ({
-            id: employee.id,
-            label: employee.name,
-            type: "person" as const,
-            profilePicture: employee.profilePicture ?? undefined,
-            email: employee.email ?? undefined,
-            business: business ? { id: business.id, name: business.name } : undefined,
-          })) || [],
-      })),
-    ...contacts
-      .filter((c) => c.__typename === "PersonContact")
-      .filter((c) => !c.business)
-      .map((contact) => ({
-        id: contact.id,
-        label: contact.name,
-        type: "person" as const,
-        profilePicture: contact.profilePicture ?? undefined,
-        email: contact.email ?? undefined,
-        business:
-          contact.business && contact.business.id && contact.business.name
-            ? { id: contact.business.id, name: contact.business.name }
-            : undefined,
-      })),
-  ];
+  // Build tree items for RichTreeView, memoized for performance
+  const treeItems: ContactTreeItem[] = useMemo(
+    () => [
+      ...contacts
+        .filter((c) => c.__typename === "BusinessContact")
+        .map((business) => ({
+          id: business.id,
+          label: business.name,
+          type: "business" as const,
+          profilePicture: business.profilePicture ?? undefined,
+          children:
+            business.employees?.items.filter(isPersonContact).map((employee) => ({
+              id: employee.id,
+              label: employee.name,
+              type: "person" as const,
+              profilePicture: employee.profilePicture ?? undefined,
+              email: employee.email ?? undefined,
+              business: business ? { id: business.id, name: business.name } : undefined,
+            })) || [],
+        })),
+      ...contacts
+        .filter((c) => c.__typename === "PersonContact")
+        .filter((c) => !c.business)
+        .map((contact) => ({
+          id: contact.id,
+          label: contact.name,
+          type: "person" as const,
+          profilePicture: contact.profilePicture ?? undefined,
+          email: contact.email ?? undefined,
+          business:
+            contact.business && contact.business.id && contact.business.name
+              ? { id: contact.business.id, name: contact.business.name }
+              : undefined,
+        })),
+    ],
+    [contacts],
+  );
+
+  // Filter tree items based on search state
+  const filteredTreeItems = useMemo(() => {
+    if (!search.trim()) return treeItems;
+    const s = search.trim().toLowerCase();
+    return treeItems
+      .map((item) => {
+        if (item.type === "business") {
+          const businessMatches = item.label.toLowerCase().includes(s);
+          const filteredChildren = item.children.filter(
+            (child) =>
+              child.label.toLowerCase().includes(s) ||
+              (child.email && child.email.toLowerCase().includes(s)),
+          );
+          if (businessMatches) {
+            return { ...item };
+          } else if (filteredChildren.length > 0) {
+            return { ...item, children: filteredChildren };
+          }
+          return null;
+        } else {
+          // person
+          if (
+            item.label.toLowerCase().includes(s) ||
+            (item.email && item.email.toLowerCase().includes(s))
+          ) {
+            return item;
+          }
+          return null;
+        }
+      })
+      .filter(Boolean) as ContactTreeItem[];
+  }, [treeItems, search]);
+
+  // Memoized handlers for RichTreeView
+  const handleItemSelectionToggle = useCallback(
+    (e: React.SyntheticEvent<Element, Event> | null, id: string, isSelected: boolean) => {
+      const target = (e?.target as HTMLElement | undefined)?.tagName;
+      if (["svg", "path"].includes(target ?? "")) {
+        return;
+      }
+      if (isSelected) {
+        onChange(id);
+        setSearch("");
+        setPopoverOpen(false);
+      }
+    },
+    [onChange],
+  );
+
+  const handleExpandedItemsChange = useCallback(
+    (_event: React.SyntheticEvent<Element, Event> | null, itemIds: string[]) =>
+      setExpanded(itemIds),
+    [],
+  );
 
   if (loading) {
     return (
@@ -203,9 +265,14 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     ...props
   }: CustomContentProps) {
     const contact = contacts.find((c) => c.id === contactId);
+    const {
+      status: { focused },
+    } = useTreeItem({ itemId: contactId });
+
     return (
       <TreeItemContent {...props}>
         {children}
+
         {contact?.__typename && (
           <Tooltip
             title={
@@ -218,13 +285,13 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
             placement="top"
             arrow
           >
-            <span>
+            <Box display={"flex"} alignItems={"center"} sx={{ maxHeight: 8 }}>
               {contact.__typename === "PersonContact" ? (
                 <PersonIcon fontSize="small" sx={{ ml: 1, verticalAlign: "middle" }} />
               ) : contact.__typename === "BusinessContact" ? (
                 <BusinessIcon fontSize="small" sx={{ ml: 1, verticalAlign: "middle" }} />
               ) : null}
-            </span>
+            </Box>
           </Tooltip>
         )}
       </TreeItemContent>
@@ -235,13 +302,6 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     props: TreeItemProps,
     ref: React.Ref<HTMLLIElement>,
   ) {
-    const { publicAPI, status } = useTreeItem(props);
-
-    const toggleItemDisabled = () =>
-      publicAPI.setIsItemDisabled({
-        itemId: props.itemId,
-      });
-
     return (
       <TreeItem
         {...props}
@@ -251,8 +311,6 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
         }}
         slotProps={{
           content: {
-            toggleItemDisabled,
-            disabled: status.disabled,
             contactId: props.itemId,
           } as CustomContentProps,
         }}
@@ -262,39 +320,91 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
 
   return (
     <Box>
-      <TextField
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search contacts…"
-        size="small"
-        fullWidth
-        sx={{ mb: 1.5 }}
-      />
-      <Paper
-        variant="outlined"
-        sx={{
-          p: 1,
-          borderRadius: 2,
-          minHeight: 200,
-          maxHeight: 400,
-          overflow: "auto",
-        }}
-      >
-        <RichTreeView
-          items={treeItems || []}
-          selectedItems={contactId}
-          expandedItems={expanded}
-          slots={{
-            item: CustomTreeItem,
-          }}
-          onExpandedItemsChange={(_event: any, itemIds: string[]) => setExpanded(itemIds)}
-          // getItemLabel={(i) => i.label}
-          sx={{
-            width: "100%",
-            "& .MuiTreeItem-label": { width: "100%" },
-          }}
-        />
-      </Paper>
+      {contactId ? (
+        (() => {
+          const selectedContact = contacts.find((c) => c.id === contactId);
+          return (
+            <Chip
+              size="medium"
+              variant="filled"
+              icon={
+                <Box p={1} pt={1.5}>
+                  {selectedContact?.__typename === "PersonContact" ? (
+                    <PersonIcon />
+                  ) : selectedContact?.__typename === "BusinessContact" ? (
+                    <BusinessIcon />
+                  ) : (
+                    "?"
+                  )}
+                </Box>
+              }
+              label={selectedContact?.name || "Unknown"}
+              onDelete={() => {
+                onChange("");
+                setPopoverOpen(false);
+              }}
+              data-testid="contact-selector-chip"
+            />
+          );
+        })()
+      ) : (
+        <>
+          <TextField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClick={(e) => {
+              setPopoverOpen(true);
+              setAnchorEl(e.currentTarget);
+            }}
+            onBlur={() => {}}
+            placeholder="Search contacts…"
+            size="small"
+            fullWidth
+            sx={{ mb: 1.5 }}
+          />
+          <Popover
+            open={popoverOpen}
+            anchorEl={anchorEl}
+            onClose={() => setPopoverOpen(false)}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+            PaperProps={{
+              sx: {
+                p: 1,
+                borderRadius: 2,
+                minWidth: anchorEl ? anchorEl.clientWidth : 300,
+                minHeight: 200,
+                maxHeight: 400,
+                overflow: "auto",
+              },
+            }}
+            disableAutoFocus
+            disableEnforceFocus
+          >
+            <RichTreeView
+              items={filteredTreeItems || []}
+              selectedItems={contactId || null}
+              expandedItems={expanded}
+              slots={{
+                item: CustomTreeItem,
+              }}
+              onItemSelectionToggle={handleItemSelectionToggle}
+              onExpandedItemsChange={handleExpandedItemsChange}
+              // getItemLabel={(i) => i.label}
+              sx={{
+                width: "100%",
+                "& .MuiTreeItem-label": { width: "100%" },
+              }}
+            />
+          </Popover>
+        </>
+      )}
     </Box>
   );
 };
