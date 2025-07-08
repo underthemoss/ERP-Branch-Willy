@@ -3,7 +3,21 @@
 import { graphql } from "@/graphql";
 import { useInvoiceByIdQuery } from "@/graphql/hooks";
 import InvoiceRender from "@/ui/invoices/InvoiceRender";
-import { Box, Button, Container, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { useParams } from "next/navigation";
 import React from "react";
 
@@ -61,6 +75,8 @@ export default function InvoiceDisplayPage() {
   const params = useParams();
   const invoiceId = params.invoice_id as string;
 
+  const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
+
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
     fetchPolicy: "cache-and-network",
@@ -80,6 +96,24 @@ export default function InvoiceDisplayPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  // Helper to map status to MUI Chip color
+  function getStatusChipColor(status?: string) {
+    switch (status) {
+      case "PAID":
+        return "success";
+      case "DRAFT":
+        return "default";
+      case "SENT":
+        return "info";
+      case "OVERDUE":
+        return "error";
+      case "PARTIAL":
+        return "warning";
+      default:
+        return "default";
+    }
   }
 
   return (
@@ -103,10 +137,7 @@ export default function InvoiceDisplayPage() {
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Typography variant="h4" gutterBottom>
-                    Invoice #{invoice.id}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Status: {invoice.status}
+                    Invoice
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Amount: {invoice.amount != null ? `$${invoice.amount.toFixed(2)}` : ""}
@@ -118,13 +149,33 @@ export default function InvoiceDisplayPage() {
                     Seller: {invoice.seller?.name ?? ""}
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                  <Button variant="contained" sx={{ mr: 1 }} disabled>
-                    Edit
-                  </Button>
-                  <Button variant="outlined" color="secondary" disabled>
-                    Print
-                  </Button>
+                <Grid
+                  size={{ xs: 12, md: 4 }}
+                  sx={{
+                    textAlign: { md: "right", xs: "left" },
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: { md: "flex-end", xs: "flex-start" },
+                    gap: 1,
+                  }}
+                >
+                  <Chip
+                    label={invoice.status}
+                    color={getStatusChipColor(invoice.status)}
+                    sx={{ mb: 1, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1 }}
+                  />
+                  <Box display={"flex"} gap={1}>
+                    <Button variant="outlined" color="secondary" disabled>
+                      Print
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => setSendDialogOpen(true)}
+                    >
+                      Mark as sent
+                    </Button>
+                  </Box>
                 </Grid>
               </Grid>
               <Divider sx={{ my: 2 }} />
@@ -154,50 +205,6 @@ export default function InvoiceDisplayPage() {
             </Paper>
 
             {/* Info Cards */}
-            <Grid container spacing={3} alignItems="stretch" sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Buyer Details
-                    </Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    <Typography>{invoice.buyer?.name ?? "—"}</Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }}>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Seller Details
-                    </Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    <Typography>{invoice.seller?.name ?? "—"}</Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
 
             {/* Items Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
@@ -259,6 +266,47 @@ export default function InvoiceDisplayPage() {
               </Stack>
             </Paper>
 
+            {/* Buyer & Seller Details Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Buyer & Seller Details
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Buyer
+                </Typography>
+                <Typography>{invoice.buyer?.name ?? "—"}</Typography>
+                {invoice.buyer?.__typename === "BusinessContact" && (
+                  <Typography color="text.secondary" variant="body2">
+                    {invoice.buyer.website ? `Website: ${invoice.buyer.website}` : ""}
+                  </Typography>
+                )}
+                {invoice.buyer?.__typename === "PersonContact" && (
+                  <Typography color="text.secondary" variant="body2">
+                    {invoice.buyer.email ? `Email: ${invoice.buyer.email}` : ""}
+                  </Typography>
+                )}
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Seller
+                </Typography>
+                <Typography>{invoice.seller?.name ?? "—"}</Typography>
+                {invoice.seller?.__typename === "BusinessContact" && (
+                  <Typography color="text.secondary" variant="body2">
+                    {invoice.seller.website ? `Website: ${invoice.seller.website}` : ""}
+                  </Typography>
+                )}
+                {invoice.seller?.__typename === "PersonContact" && (
+                  <Typography color="text.secondary" variant="body2">
+                    {invoice.seller.email ? `Email: ${invoice.seller.email}` : ""}
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+
             {/* Stubbed Help/Support Card */}
             <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
               <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
@@ -305,6 +353,21 @@ export default function InvoiceDisplayPage() {
           </Grid>
         </Grid>
       )}
+      {/* Mark as Sent Confirmation Dialog */}
+      <Dialog open={sendDialogOpen} onClose={() => setSendDialogOpen(false)}>
+        <DialogTitle>Mark as sent</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to mark this invoice as sent?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSendDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={() => setSendDialogOpen(false)} color="primary" variant="contained">
+            Mark as sent
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
