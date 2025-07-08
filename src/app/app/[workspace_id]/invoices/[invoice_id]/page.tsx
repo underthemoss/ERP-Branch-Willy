@@ -18,6 +18,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useParams } from "next/navigation";
 import React from "react";
 
@@ -76,6 +78,7 @@ export default function InvoiceDisplayPage() {
   const invoiceId = params.invoice_id as string;
 
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
+  const [sentDate, setSentDate] = React.useState<Date | null>(new Date());
 
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
@@ -357,13 +360,27 @@ export default function InvoiceDisplayPage() {
       <Dialog open={sendDialogOpen} onClose={() => setSendDialogOpen(false)}>
         <DialogTitle>Mark as sent</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to mark this invoice as sent?</Typography>
+          <Typography sx={{ mb: 2 }}>Please select the date this invoice was sent.</Typography>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Sent date"
+              value={sentDate}
+              onChange={setSentDate}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
+              maxDate={new Date()}
+            />
+          </LocalizationProvider>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSendDialogOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={() => setSendDialogOpen(false)} color="primary" variant="contained">
+          <Button
+            onClick={() => setSendDialogOpen(false)}
+            color="primary"
+            variant="contained"
+            disabled={!sentDate}
+          >
             Mark as sent
           </Button>
         </DialogActions>
