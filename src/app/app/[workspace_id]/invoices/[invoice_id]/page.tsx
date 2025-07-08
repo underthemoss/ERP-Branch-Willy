@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useInvoiceByIdQuery } from "@/graphql/hooks";
+import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
 import InvoiceRender from "@/ui/invoices/InvoiceRender";
 import {
   Box,
@@ -16,6 +17,8 @@ import {
   Grid,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -79,6 +82,9 @@ export default function InvoiceDisplayPage() {
 
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [sentDate, setSentDate] = React.useState<Date | null>(new Date());
+
+  const [addItemDialogOpen, setAddItemDialogOpen] = React.useState(false);
+  const [addItemTab, setAddItemTab] = React.useState(0);
 
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
@@ -218,8 +224,8 @@ export default function InvoiceDisplayPage() {
               <Typography color="text.secondary" sx={{ mb: 1 }}>
                 No items found for this invoice.
               </Typography>
-              <Button variant="outlined" size="small" disabled>
-                Add Item (stub)
+              <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
+                Add Item
               </Button>
             </Paper>
 
@@ -365,7 +371,11 @@ export default function InvoiceDisplayPage() {
             <DatePicker
               label="Sent date"
               value={sentDate}
-              onChange={setSentDate}
+              onChange={(value) => {
+                if (value === null || value instanceof Date) {
+                  setSentDate(value);
+                }
+              }}
               slotProps={{ textField: { fullWidth: true, size: "small" } }}
               maxDate={new Date()}
             />
@@ -385,6 +395,11 @@ export default function InvoiceDisplayPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Add Invoice Line Item Dialog */}
+      <AddInvoiceLineItemDialog
+        open={addItemDialogOpen}
+        onClose={() => setAddItemDialogOpen(false)}
+      />
     </Container>
   );
 }
