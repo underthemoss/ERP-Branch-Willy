@@ -1,22 +1,34 @@
+"use client";
+
 import { graphql } from "@/graphql";
 import { ContactType as GqlContactType } from "@/graphql/graphql";
 import { useContactSelectorListQuery } from "@/graphql/hooks";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import BusinessIcon from "@mui/icons-material/Business";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Avatar,
   Box,
   Chip,
   CircularProgress,
-  ListItemIcon,
-  ListItemText,
-  MenuItem,
+  IconButton,
   Paper,
-  Select,
-  SelectChangeEvent,
   Stack,
+  TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import React from "react";
+import {
+  TreeItem,
+  TreeItemContent,
+  TreeItemProps,
+  useTreeItem,
+  UseTreeItemContentSlotOwnProps,
+} from "@mui/x-tree-view";
+import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
+import React, { useMemo, useState } from "react";
 
 export const CONTACT_SELECTOR_LIST = graphql(`
   query ContactSelectorList(
@@ -45,6 +57,13 @@ export const CONTACT_SELECTOR_LIST = graphql(`
           employees {
             items {
               id
+              name
+              email
+              profilePicture
+              business {
+                id
+                name
+              }
             }
           }
         }
@@ -68,13 +87,40 @@ function getContactType(type?: ContactType): GqlContactType | undefined {
   return undefined;
 }
 
+// Define tree item types
+type BusinessTreeItem = {
+  id: string;
+  type: "business";
+  label: string;
+  profilePicture?: string;
+  children: PersonTreeItem[];
+};
+type PersonTreeItem = {
+  id: string;
+  type: "person";
+  label: string;
+  profilePicture?: string;
+  email?: string;
+  business?: { id: string; name: string };
+};
+type ContactTreeItem = BusinessTreeItem | PersonTreeItem;
+
+interface CustomContentProps extends UseTreeItemContentSlotOwnProps {
+  children: React.ReactNode;
+  toggleItemDisabled: () => void;
+  disabled: boolean;
+  contactId: string;
+}
+
 export const ContactSelector: React.FC<ContactSelectorProps> = ({
   contactId,
   onChange,
   type = "any",
   workspaceId,
 }) => {
-  // Use the generated hook from codegen
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string[]>([]);
+
   const { data, loading, error } = useContactSelectorListQuery({
     variables: {
       workspaceId,
@@ -85,6 +131,53 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
   });
 
   const contacts = data?.listContacts?.items || [];
+
+  // Type guard for PersonContact
+  function isPersonContact(e: any): e is {
+    __typename: "PersonContact";
+    id: string;
+    name: string;
+    email?: string;
+    profilePicture?: string;
+    business?: { id: string; name: string };
+  } {
+    return e && e.__typename === "PersonContact";
+  }
+
+  // Build tree items for RichTreeView
+  const treeItems: ContactTreeItem[] = [
+    ...contacts
+      .filter((c) => c.__typename === "BusinessContact")
+      .map((business) => ({
+        id: business.id,
+        label: business.name,
+        type: "business" as const,
+        profilePicture: business.profilePicture ?? undefined,
+        children:
+          business.employees?.items.filter(isPersonContact).map((employee) => ({
+            id: employee.id,
+            label: employee.name,
+            type: "person" as const,
+            profilePicture: employee.profilePicture ?? undefined,
+            email: employee.email ?? undefined,
+            business: business ? { id: business.id, name: business.name } : undefined,
+          })) || [],
+      })),
+    ...contacts
+      .filter((c) => c.__typename === "PersonContact")
+      .filter((c) => !c.business)
+      .map((contact) => ({
+        id: contact.id,
+        label: contact.name,
+        type: "person" as const,
+        profilePicture: contact.profilePicture ?? undefined,
+        email: contact.email ?? undefined,
+        business:
+          contact.business && contact.business.id && contact.business.name
+            ? { id: contact.business.id, name: contact.business.name }
+            : undefined,
+      })),
+  ];
 
   if (loading) {
     return (
@@ -102,228 +195,107 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     );
   }
 
-  return (
-    <Select
-      value={contactId ?? ""}
-      onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
-      displayEmpty
-      fullWidth
-      IconComponent={ArrowDropDownIcon}
-      renderValue={(selected) => {
-        const contact = contacts.find((c) => c.id === selected);
-        if (!contact) {
-          return (
-            <Paper
-              variant="outlined"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                p: 2,
-                width: "100%",
-                boxShadow: "none",
-                borderRadius: 2,
-              }}
-            >
-              <Avatar sx={{ width: 40, height: 40, mr: 2, bgcolor: "grey.400" }}>
-                {/* Placeholder circle */}
-              </Avatar>
-              <Box flex={1}>
-                <Typography fontWeight={500} fontSize={16} color="text.secondary">
-                  Select contact…
-                </Typography>
-              </Box>
-            </Paper>
-          );
-        }
-        return (
-          <Paper
-            variant="outlined"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              p: 2,
-              width: "100%",
-              boxShadow: "none",
-              borderRadius: 2,
-              marginRight: 3,
-              gap: 2,
-            }}
+  function CustomContent({
+    children,
+    toggleItemDisabled,
+    disabled,
+    contactId,
+    ...props
+  }: CustomContentProps) {
+    const contact = contacts.find((c) => c.id === contactId);
+    return (
+      <TreeItemContent {...props}>
+        {children}
+        {contact?.__typename && (
+          <Tooltip
+            title={
+              contact.__typename === "PersonContact"
+                ? "Person"
+                : contact.__typename === "BusinessContact"
+                  ? "Business"
+                  : ""
+            }
+            placement="top"
+            arrow
           >
-            <Avatar
-              src={
-                contact.__typename === "PersonContact"
-                  ? (contact.profilePicture ?? undefined)
-                  : contact.__typename === "BusinessContact"
-                    ? (contact.profilePicture ?? undefined)
-                    : undefined
-              }
-              sx={{ width: 44, height: 44, mr: 2, bgcolor: "grey.400" }}
-            >
-              {(!contact.profilePicture || contact.profilePicture === "") && contact.name[0]}
-            </Avatar>
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700} fontSize={17} noWrap>
-                {contact.name}
-              </Typography>
-              <Stack spacing={0.2}>
-                {"email" in contact && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Email:
-                    </Typography>
-                    <Typography fontSize={14} color="text.secondary" noWrap>
-                      {contact.email}
-                    </Typography>
-                  </Box>
-                )}
-                {"email" in contact && contact.business?.name && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Business:
-                    </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
-                      {contact.business.name}
-                    </Typography>
-                  </Box>
-                )}
-                {"website" in contact && contact.website && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Website:
-                    </Typography>
-                    <Typography fontSize={14} color="text.secondary" noWrap>
-                      {contact.website}
-                    </Typography>
-                  </Box>
-                )}
-                {"employees" in contact && contact.employees && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Contacts:
-                    </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
-                      {`${contact.employees.items.length} employee${contact.employees.items.length === 1 ? "" : "s"}`}
-                    </Typography>
-                  </Box>
-                )}
-              </Stack>
-            </Box>
-            <Chip
-              label={contact.__typename === "BusinessContact" ? "Business" : "Person"}
-              color={contact.__typename === "BusinessContact" ? "primary" : "default"}
-              size="small"
-              sx={{
-                fontWeight: 600,
-                fontSize: 13,
-                minWidth: 70,
-                ml: 2,
-                mr: 2,
-                bgcolor: contact.__typename === "BusinessContact" ? "primary.light" : "grey.200",
-                color:
-                  contact.__typename === "BusinessContact"
-                    ? "primary.contrastText"
-                    : "text.secondary",
-              }}
-            />
-          </Paper>
-        );
-      }}
-      sx={{
-        background: "transparent",
-        borderRadius: 2,
-        "& .MuiSelect-select": { p: 0 },
-      }}
-      MenuProps={{
-        PaperProps: {
-          sx: { minWidth: 350, maxHeight: 400 },
-        },
-      }}
-    >
-      <MenuItem value="">
-        <Typography color="text.secondary">Select contact…</Typography>
-      </MenuItem>
-      {contacts.map((contact) => (
-        <MenuItem key={contact.id} value={contact.id} sx={{ py: 1 }}>
-          <Box display="flex" alignItems="center" width="100%" gap={2} minWidth={0}>
-            <Avatar
-              src={
-                contact.__typename === "PersonContact"
-                  ? (contact.profilePicture ?? undefined)
-                  : contact.__typename === "BusinessContact"
-                    ? (contact.profilePicture ?? undefined)
-                    : undefined
-              }
-              sx={{ width: 36, height: 36, bgcolor: "grey.400" }}
-            >
-              {(!contact.profilePicture || contact.profilePicture === "") && contact.name[0]}
-            </Avatar>
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700} fontSize={16} noWrap>
-                {contact.name}
-              </Typography>
-              <Stack spacing={0.2}>
-                {"email" in contact && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Email:
-                    </Typography>
-                    <Typography fontSize={14} color="text.secondary" noWrap>
-                      {contact.email}
-                    </Typography>
-                  </Box>
-                )}
-                {"email" in contact && contact.business?.name && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Business:
-                    </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
-                      {contact.business.name}
-                    </Typography>
-                  </Box>
-                )}
-                {"website" in contact && contact.website && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Website:
-                    </Typography>
-                    <Typography fontSize={14} color="text.secondary" noWrap>
-                      {contact.website}
-                    </Typography>
-                  </Box>
-                )}
-                {"employees" in contact && contact.employees && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Contacts:
-                    </Typography>
-                    <Typography fontSize={13} color="text.secondary" noWrap>
-                      {`${contact.employees.items.length} employee${contact.employees.items.length === 1 ? "" : "s"}`}
-                    </Typography>
-                  </Box>
-                )}
-              </Stack>
-            </Box>
-            <Chip
-              label={contact.__typename === "BusinessContact" ? "Business" : "Person"}
-              color={contact.__typename === "BusinessContact" ? "primary" : "default"}
-              size="small"
-              sx={{
-                fontWeight: 600,
-                fontSize: 13,
-                minWidth: 70,
-                ml: 2,
-                bgcolor: contact.__typename === "BusinessContact" ? "primary.light" : "grey.200",
-                color:
-                  contact.__typename === "BusinessContact"
-                    ? "primary.contrastText"
-                    : "text.secondary",
-              }}
-            />
-          </Box>
-        </MenuItem>
-      ))}
-    </Select>
+            <span>
+              {contact.__typename === "PersonContact" ? (
+                <PersonIcon fontSize="small" sx={{ ml: 1, verticalAlign: "middle" }} />
+              ) : contact.__typename === "BusinessContact" ? (
+                <BusinessIcon fontSize="small" sx={{ ml: 1, verticalAlign: "middle" }} />
+              ) : null}
+            </span>
+          </Tooltip>
+        )}
+      </TreeItemContent>
+    );
+  }
+
+  const CustomTreeItem = React.forwardRef(function CustomTreeItem(
+    props: TreeItemProps,
+    ref: React.Ref<HTMLLIElement>,
+  ) {
+    const { publicAPI, status } = useTreeItem(props);
+
+    const toggleItemDisabled = () =>
+      publicAPI.setIsItemDisabled({
+        itemId: props.itemId,
+      });
+
+    return (
+      <TreeItem
+        {...props}
+        ref={ref}
+        slots={{
+          content: CustomContent,
+        }}
+        slotProps={{
+          content: {
+            toggleItemDisabled,
+            disabled: status.disabled,
+            contactId: props.itemId,
+          } as CustomContentProps,
+        }}
+      />
+    );
+  });
+
+  return (
+    <Box>
+      <TextField
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search contacts…"
+        size="small"
+        fullWidth
+        sx={{ mb: 1.5 }}
+      />
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1,
+          borderRadius: 2,
+          minHeight: 200,
+          maxHeight: 400,
+          overflow: "auto",
+        }}
+      >
+        <RichTreeView
+          items={treeItems || []}
+          selectedItems={contactId}
+          expandedItems={expanded}
+          slots={{
+            item: CustomTreeItem,
+          }}
+          onExpandedItemsChange={(_event: any, itemIds: string[]) => setExpanded(itemIds)}
+          // getItemLabel={(i) => i.label}
+          sx={{
+            width: "100%",
+            "& .MuiTreeItem-label": { width: "100%" },
+          }}
+        />
+      </Paper>
+    </Box>
   );
 };
 
