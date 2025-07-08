@@ -28,7 +28,7 @@ jobs:
         run: |
           npm install -g @openai/codex
           export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          CODEX_QUIET_MODE=1 CI=1 codex -q -a auto-edit "Generate user facing release notes for the last commit, be brief. Use headings 'User facing changes', 'Other changes', 'Author', 'Commit Link' and 'Limerick'. Use simple plain text formating with emojiis, no markdown. Include the author of the changes. Include a link to the changes like https://github.com/EquipmentShare/es-erp/commit/xxxxx. Write notes to a new file called release_note.txt"
+          codex exec --full-auto "Generate user facing release notes for the last commit, be brief. Use headings 'User facing changes', 'Other changes', 'Author', 'Commit Link' and 'Limerick'. Use simple plain text formating with emojiis, no markdown. Include the author of the changes. Include a link to the changes like https://github.com/EquipmentShare/es-erp/commit/xxxxx. Write notes to a new file called release_note.txt"
 
       - name: Post to Slack
         env:
