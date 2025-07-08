@@ -39,26 +39,6 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import React, { useEffect } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 
-// --- Mock Data Types ---
-type Workflow = {
-  id: string;
-  name: string;
-  columns: {
-    id: string;
-    label: string;
-    color: string;
-  }[];
-};
-
-type FulfilmentTicket = {
-  id: string;
-  title: string;
-  description: string;
-  assignee: string;
-  customer: string;
-  workflowId: string | null; // null = backlog
-  status: string; // column id if in workflow, "" if in backlog
-};
 
 graphql(`
   fragment BaseFulfilmentFields on FulfilmentBase {
@@ -146,83 +126,46 @@ graphql(`
         columns {
           id
           name
+          colour
         }
       }
     }
   }
 `);
 
-// --- Mock Data ---
-// const workflows: Workflow[] = [ ... ] (REMOVED, now fetched from API)
-
-const initialTickets: FulfilmentTicket[] = [
-  {
-    id: "t1",
-    title: "SKID STEER",
-    description: "Move to Kansas Rentals",
-    assignee: "Alex Johnson",
-    customer: "Kansas Rentals",
-    workflowId: null,
-    status: "",
-  },
-  {
-    id: "t2",
-    title: "GENIE LIFT",
-    description: "Inspect for Arrowhead Rentals",
-    assignee: "Maria Lopez",
-    customer: "Arrowhead Rentals",
-    workflowId: null,
-    status: "",
-  },
-  {
-    id: "t3",
-    title: "FORKLIFT",
-    description: "Warehouse transfer",
-    assignee: "Chris Evans",
-    customer: "Warehouse",
-    workflowId: null,
-    status: "",
-  },
-  {
-    id: "t4",
-    title: "SKID STEER",
-    description: "Doing in Kansas Rentals",
-    assignee: "Lisa Green",
-    customer: "Kansas Rentals",
-    workflowId: null,
-    status: "",
-  },
-  {
-    id: "t5",
-    title: "SKID STEER",
-    description: "Doing in Warehouse",
-    assignee: "Chris Evans",
-    customer: "Warehouse",
-    workflowId: null,
-    status: "",
-  },
-  {
-    id: "t6",
-    title: "SKID STEER",
-    description: "Doing in Warehouse",
-    assignee: "Chris Evans",
-    customer: "Warehouse",
-    workflowId: null,
-    status: "",
-  },
-];
 
 // --- Helper Functions ---
-function getBacklogTickets(tickets: FulfilmentTicket[]) {
+import {
+  ListWorkflowConfigurationsFulfilmentPageQuery,
+  ListFulfilmentsFulfilmentDashboardPageQuery,
+} from "@/graphql/hooks";
+
+type Ticket = {
+  id: string;
+  title: string;
+  description: string;
+  assignee: string;
+  customer: string;
+  workflowId: string | null;
+  status: string;
+};
+
+type WorkflowConfig = NonNullable<
+  ListWorkflowConfigurationsFulfilmentPageQuery["listWorkflowConfigurations"]
+>["items"][number];
+
+type WorkflowColumn = NonNullable<WorkflowConfig["columns"]>[number];
+
+function getBacklogTickets(tickets: Ticket[]) {
   return tickets.filter((t) => t.workflowId === null);
 }
-function getWorkflowTickets(tickets: FulfilmentTicket[], workflowId: string, columnId: string) {
+function getWorkflowTickets(tickets: Ticket[], workflowId: string, columnId: string) {
   return tickets.filter((t) => t.workflowId === workflowId && t.status === columnId);
 }
 
 // --- Main Component ---
 export default function FulfillmentDashboard() {
-  const [tickets, setTickets] = React.useState<FulfilmentTicket[]>(initialTickets);
+  const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -276,7 +219,7 @@ export default function FulfillmentDashboard() {
   });
 
   useEffect(() => {
-    const tickets: FulfilmentTicket[] =
+    const tickets: Ticket[] =
       fulfillments?.listFulfilments?.items
         .map((i) => {
           if (i.__typename === "RentalFulfilment")
@@ -298,25 +241,24 @@ export default function FulfillmentDashboard() {
                   `${i.salesOrderLineItem.price.name}`) ||
                 "",
               workflowId: i.workflowId ?? null,
-            } satisfies FulfilmentTicket;
+            } as Ticket;
         })
         .filter(Boolean)
-        .map((i) => i as FulfilmentTicket) || [];
+        .map((i) => i as Ticket) || [];
 
     setTickets(tickets);
   }, [fulfillments]);
 
   // Map API data to expected workflow shape
-  const workflows: Workflow[] =
-    data?.listWorkflowConfigurations?.items?.map((wf) => ({
-      id: wf.id,
-      name: wf.name,
+  const workflows =
+    data?.listWorkflowConfigurations?.items?.map((wf, wfIdx) => ({
+      id: wf.id!,
+      name: wf.name!,
       columns:
         wf.columns?.map((col, idx) => ({
-          id: col.id,
-          label: col.name,
-          // Assign a default color based on index if not present
-          color: ["#1976d2", "#fbc02d", "#388e3c", "#d32f2f", "#7b1fa2"][idx % 5],
+          id: col.id!,
+          label: col.name!,
+          color: col.colour || ["#1976d2", "#fbc02d", "#388e3c", "#d32f2f", "#7b1fa2"][idx % 5],
         })) ?? [],
     })) ?? [];
 
