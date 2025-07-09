@@ -3,10 +3,10 @@
 import { graphql } from "@/graphql";
 import {
   useCreatePdfFromPageAndAttachToInvoiceMutation,
+  useDeleteInvoiceMutation,
   useInvoiceByIdQuery,
   useMarkInvoiceAsPaidMutation,
   useMarkInvoiceAsSentMutation,
-  useDeleteInvoiceMutation,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
@@ -28,6 +28,9 @@ import {
   Paper,
   Snackbar,
   Stack,
+  Step,
+  StepLabel,
+  Stepper,
   Tab,
   Tabs,
   Typography,
@@ -312,36 +315,6 @@ export default function InvoiceDisplayPage() {
                     width="100%"
                     flexDirection={{ xs: "column", sm: "row" }}
                   >
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      startIcon={<PrintOutlinedIcon />}
-                      disabled={pdfLoading}
-                      sx={{
-                        minWidth: 140,
-                        whiteSpace: "nowrap",
-                        flex: 1,
-                        maxWidth: { xs: "100%", sm: "unset" },
-                      }}
-                      onClick={async () => {
-                        if (!invoice?.id || !workspaceId || !invoiceId) return;
-                        // Format file name as invoice-YYYY-MM-DD
-                        const today = new Date();
-                        const yyyy = today.getFullYear();
-                        const mm = String(today.getMonth() + 1).padStart(2, "0");
-                        const dd = String(today.getDate()).padStart(2, "0");
-                        const fileName = `invoice-${yyyy}-${mm}-${dd}`;
-                        await createPdf({
-                          variables: {
-                            entity_id: invoice.id,
-                            path: `app/${workspaceId}/invoices/${invoiceId}/print`,
-                            file_name: fileName,
-                          },
-                        });
-                      }}
-                    >
-                      {pdfLoading ? "Generating PDF..." : "Print"}
-                    </Button>
                     {invoice.status === "DRAFT" && (
                       <Button
                         variant="contained"
@@ -391,28 +364,34 @@ export default function InvoiceDisplayPage() {
                 </Grid>
               </Grid>
               <Divider sx={{ my: 2 }} />
-              {/* Stubbed Progress Bar */}
+              {/* Invoice Lifecycle Stepper */}
               <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Progress
+                  Invoice Progress
                 </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Box sx={{ width: "80%", mr: 1 }}>
-                    <Box sx={{ bgcolor: "#e0e0e0", borderRadius: 1, height: 10 }}>
-                      <Box
-                        sx={{
-                          width: "40%",
-                          bgcolor: "primary.main",
-                          height: 10,
-                          borderRadius: 1,
-                        }}
-                      />
+                {(() => {
+                  // Define the steps and their order
+                  const steps = [
+                    { label: "Draft", status: "DRAFT" },
+                    { label: "Sent", status: "SENT" },
+                    { label: "Paid", status: "PAID" },
+                  ];
+                  // Optionally add more steps if needed (e.g., PARTIAL, OVERDUE)
+                  // Find the active step index
+                  const statusIndex = steps.findIndex((s) => s.status === invoice.status);
+                  const activeStep = statusIndex === -1 ? 0 : statusIndex;
+                  return (
+                    <Box sx={{ width: "100%" }}>
+                      <Stepper activeStep={activeStep} alternativeLabel>
+                        {steps.map((step) => (
+                          <Step key={step.status}>
+                            <StepLabel>{step.label}</StepLabel>
+                          </Step>
+                        ))}
+                      </Stepper>
                     </Box>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    2 of 5 steps
-                  </Typography>
-                </Box>
+                  );
+                })()}
               </Box>
             </Paper>
 
@@ -447,9 +426,33 @@ export default function InvoiceDisplayPage() {
                   <InvoiceRender invoiceId={invoiceId} scale={1} />
                 </Box>
               </Box>
-              <Box mt={2}>
+              <Box mt={2} display="flex" gap={2}>
                 <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
                   Add Line Item
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<PrintOutlinedIcon />}
+                  disabled={pdfLoading}
+                  onClick={async () => {
+                    if (!invoice?.id || !workspaceId || !invoiceId) return;
+                    // Format file name as invoice-YYYY-MM-DD
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, "0");
+                    const dd = String(today.getDate()).padStart(2, "0");
+                    const fileName = `invoice-${yyyy}-${mm}-${dd}`;
+                    await createPdf({
+                      variables: {
+                        entity_id: invoice.id,
+                        path: `app/${workspaceId}/invoices/${invoiceId}/print`,
+                        file_name: fileName,
+                      },
+                    });
+                  }}
+                >
+                  {pdfLoading ? "Generating PDF..." : "Print"}
                 </Button>
               </Box>
             </Paper>
