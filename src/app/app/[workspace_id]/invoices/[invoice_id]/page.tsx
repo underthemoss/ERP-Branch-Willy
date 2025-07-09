@@ -1,10 +1,17 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useInvoiceByIdQuery } from "@/graphql/hooks";
+import {
+  useCreatePdfFromPageAndAttachToInvoiceMutation,
+  useInvoiceByIdQuery,
+} from "@/graphql/hooks";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
 import InvoiceRender from "@/ui/invoices/InvoiceRender";
+import NotesSection from "@/ui/notes/NotesSection";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -16,6 +23,7 @@ import {
   Divider,
   Grid,
   Paper,
+  Snackbar,
   Stack,
   Tab,
   Tabs,
@@ -25,6 +33,23 @@ import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useParams } from "next/navigation";
 import React from "react";
+
+graphql(`
+  mutation CreatePdfFromPageAndAttachToInvoice(
+    $entity_id: String!
+    $path: String!
+    $file_name: String!
+  ) {
+    createPdfFromPageAndAttachToEntityId(
+      entity_id: $entity_id
+      path: $path
+      file_name: $file_name
+    ) {
+      success
+      error_message
+    }
+  }
+`);
 
 const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
@@ -79,6 +104,7 @@ const InvoiceByIdQuery = graphql(`
 export default function InvoiceDisplayPage() {
   const params = useParams();
   const invoiceId = params.invoice_id as string;
+  const workspaceId = params.workspace_id as string;
 
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [sentDate, setSentDate] = React.useState<Date | null>(new Date());
@@ -86,12 +112,35 @@ export default function InvoiceDisplayPage() {
   const [addItemDialogOpen, setAddItemDialogOpen] = React.useState(false);
   const [addItemTab, setAddItemTab] = React.useState(0);
 
+  const [cachekey, setCacheKey] = React.useState(0);
+
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
     fetchPolicy: "cache-and-network",
   });
 
   const invoice = data?.invoiceById;
+
+  // Print mutation
+  const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
+    useCreatePdfFromPageAndAttachToInvoiceMutation();
+
+  // Snackbar for print success
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (pdfData?.createPdfFromPageAndAttachToEntityId?.success) {
+      setSnackbarOpen(true);
+      setCacheKey((k) => k + 1); // Refresh files
+    }
+  }, [pdfData]);
+
+  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
 
   // Helper to format ISO date strings
   function formatDate(dateString?: string | null) {
@@ -144,7 +193,7 @@ export default function InvoiceDisplayPage() {
             {/* Top Card: Invoice Overview */}
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
               <Grid container alignItems="center" justifyContent="space-between">
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="h4" gutterBottom>
                     Invoice
                   </Typography>
@@ -159,7 +208,7 @@ export default function InvoiceDisplayPage() {
                   </Typography>
                 </Grid>
                 <Grid
-                  size={{ xs: 12, md: 4 }}
+                  size={{ xs: 6 }}
                   sx={{
                     textAlign: { md: "right", xs: "left" },
                     display: "flex",
@@ -173,18 +222,71 @@ export default function InvoiceDisplayPage() {
                     color={getStatusChipColor(invoice.status)}
                     sx={{ mb: 1, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1 }}
                   />
-                  <Box display={"flex"} gap={1}>
-                    <Button variant="outlined" color="secondary" disabled>
-                      Print
+                  <Box
+                    display="flex"
+                    gap={2}
+                    width="100%"
+                    flexDirection={{ xs: "column", sm: "row" }}
+                  >
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<PrintOutlinedIcon />}
+                      disabled={pdfLoading}
+                      sx={{
+                        minWidth: 140,
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                        maxWidth: { xs: "100%", sm: "unset" },
+                      }}
+                      onClick={async () => {
+                        if (!invoice?.id || !workspaceId || !invoiceId) return;
+                        // Format file name as invoice-YYYY-MM-DD
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, "0");
+                        const dd = String(today.getDate()).padStart(2, "0");
+                        const fileName = `invoice-${yyyy}-${mm}-${dd}`;
+                        await createPdf({
+                          variables: {
+                            entity_id: invoice.id,
+                            path: `app/${workspaceId}/invoices/${invoiceId}/print`,
+                            file_name: fileName,
+                          },
+                        });
+                      }}
+                    >
+                      {pdfLoading ? "Generating PDF..." : "Print"}
                     </Button>
                     <Button
                       variant="contained"
                       color="primary"
+                      sx={{
+                        minWidth: 140,
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                        maxWidth: { xs: "100%", sm: "unset" },
+                      }}
                       onClick={() => setSendDialogOpen(true)}
                     >
                       Mark as sent
                     </Button>
                   </Box>
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
+                    <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
+                      PDF attached!
+                    </Typography>
+                  )}
+                  {pdfError && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfError.message}
+                    </Typography>
+                  )}
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.error_message && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfData.createPdfFromPageAndAttachToEntityId.error_message}
+                    </Typography>
+                  )}
                 </Grid>
               </Grid>
               <Divider sx={{ my: 2 }} />
@@ -214,28 +316,55 @@ export default function InvoiceDisplayPage() {
             </Paper>
 
             {/* Info Cards */}
-
-            {/* Items Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Items
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <Typography color="text.secondary" sx={{ mb: 1 }}>
-                No items found for this invoice.
-              </Typography>
-              <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
-                Add Item
-              </Button>
-            </Paper>
-
             {/* Printable Invoice */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Invoice Preview
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <InvoiceRender invoiceId={invoiceId} scale={0.85} />
+              <Box
+                sx={{
+                  maxHeight: "450px",
+                  overflow: "scroll",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: "816px",
+                    height: "1056px",
+                    // maxWidth: "100%",
+                    maxHeight: "70vh",
+                    // aspectRatio: "8.5 / 11",
+                    p: 7,
+                    bgcolor: "#f8f6f1",
+                    border: "1px solid #ccc",
+                    boxShadow: 3,
+                    transform: "scale(0.85) translate(0, 0)",
+                    transformOrigin: "top left",
+                  }}
+                >
+                  <InvoiceRender invoiceId={invoiceId} scale={1} />
+                </Box>
+              </Box>
+              <Box mt={2}>
+                <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
+                  Add Line Item
+                </Button>
+              </Box>
+            </Paper>
+
+            {/* File Upload Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Attached Files
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <AttachedFilesSection key={`files-${cachekey}`} entityId={invoice.id} />
+            </Paper>
+
+            {/* Notes Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <NotesSection entityId={invoice.id} />
             </Paper>
           </Grid>
 
@@ -400,6 +529,22 @@ export default function InvoiceDisplayPage() {
         open={addItemDialogOpen}
         onClose={() => setAddItemDialogOpen(false)}
       />
+      {/* Snackbar for print success */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          PDF attached to invoice!
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

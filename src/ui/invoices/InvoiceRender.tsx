@@ -65,12 +65,9 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
   return (
     <div
       style={{
-        width: "8.5in",
-        height: "11in",
-        margin: "0 auto",
-        border: "1px solid #222",
-        padding: 32,
-        background: "#fff",
+        marginLeft: -30,
+        marginRight: -30,
+        padding: 0,
         fontFamily: "serif",
         boxSizing: "border-box",
         display: "flex",
