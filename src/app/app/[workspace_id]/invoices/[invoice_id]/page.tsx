@@ -134,6 +134,9 @@ const InvoiceByIdQuery = graphql(`
 `);
 
 export default function InvoiceDisplayPage() {
+  // Print dialog state
+  const [printDialogOpen, setPrintDialogOpen] = React.useState(false);
+  const [printFileName, setPrintFileName] = React.useState("");
   const params = useParams();
   const invoiceId = params.invoice_id as string;
   const workspaceId = params.workspace_id as string;
@@ -435,26 +438,74 @@ export default function InvoiceDisplayPage() {
                   color="secondary"
                   startIcon={<PrintOutlinedIcon />}
                   disabled={pdfLoading}
-                  onClick={async () => {
-                    if (!invoice?.id || !workspaceId || !invoiceId) return;
-                    // Format file name as invoice-YYYY-MM-DD
+                  onClick={() => {
+                    if (!invoice) return;
+                    // Set default file name based on status and date
                     const today = new Date();
                     const yyyy = today.getFullYear();
                     const mm = String(today.getMonth() + 1).padStart(2, "0");
                     const dd = String(today.getDate()).padStart(2, "0");
-                    const fileName = `invoice-${yyyy}-${mm}-${dd}`;
-                    await createPdf({
-                      variables: {
-                        entity_id: invoice.id,
-                        path: `app/${workspaceId}/invoices/${invoiceId}/print`,
-                        file_name: fileName,
-                      },
-                    });
+                    let defaultName = "invoice";
+                    if (invoice.status === "PAID") {
+                      defaultName = "receipt";
+                    }
+                    setPrintFileName(`${defaultName}-${yyyy}-${mm}-${dd}`);
+                    setPrintDialogOpen(true);
                   }}
                 >
                   {pdfLoading ? "Generating PDF..." : "Print"}
                 </Button>
               </Box>
+              {/* Print Dialog */}
+              <Dialog open={printDialogOpen} onClose={() => setPrintDialogOpen(false)}>
+                <DialogTitle>Print Invoice</DialogTitle>
+                <DialogContent>
+                  <Typography sx={{ mb: 2 }}>
+                    Choose a name for the document to be generated.
+                  </Typography>
+                  <input
+                    type="text"
+                    value={printFileName}
+                    onChange={(e) => setPrintFileName(e.target.value)}
+                    style={{
+                      width: "100%",
+                      fontSize: 16,
+                      padding: 8,
+                      borderRadius: 4,
+                      border: "1px solid #ccc",
+                      marginBottom: 8,
+                    }}
+                    disabled={pdfLoading}
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    onClick={() => setPrintDialogOpen(false)}
+                    color="inherit"
+                    disabled={pdfLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      if (!invoice?.id || !workspaceId || !invoiceId || !printFileName) return;
+                      await createPdf({
+                        variables: {
+                          entity_id: invoice.id,
+                          path: `app/${workspaceId}/invoices/${invoiceId}/print`,
+                          file_name: printFileName,
+                        },
+                      });
+                      setPrintDialogOpen(false);
+                    }}
+                    color="primary"
+                    variant="contained"
+                    disabled={!printFileName || pdfLoading}
+                  >
+                    {pdfLoading ? "Generating..." : "Print"}
+                  </Button>
+                </DialogActions>
+              </Dialog>
             </Paper>
 
             {/* File Upload Card */}
