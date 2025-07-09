@@ -6,6 +6,7 @@ import {
   useInvoiceByIdQuery,
   useMarkInvoiceAsPaidMutation,
   useMarkInvoiceAsSentMutation,
+  useDeleteInvoiceMutation,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
@@ -70,6 +71,12 @@ graphql(`
       status
       invoicePaidDate
     }
+  }
+`);
+
+graphql(`
+  mutation DeleteInvoice($id: String!) {
+    deleteInvoice(id: $id)
   }
 `);
 
@@ -140,6 +147,9 @@ export default function InvoiceDisplayPage() {
   const [paidDialogOpen, setPaidDialogOpen] = React.useState(false);
   const [paidDate, setPaidDate] = React.useState<Date | null>(new Date());
 
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
     fetchPolicy: "cache-and-network",
@@ -167,6 +177,13 @@ export default function InvoiceDisplayPage() {
 
   // Snackbar for mark as paid
   const [paidSnackbarOpen, setPaidSnackbarOpen] = React.useState(false);
+
+  // Delete mutation
+  const [deleteInvoice, { loading: deleteLoading, data: deleteData, error: deleteError }] =
+    useDeleteInvoiceMutation();
+
+  // Snackbar for delete
+  const [deleteSnackbarOpen, setDeleteSnackbarOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (pdfData?.createPdfFromPageAndAttachToEntityId?.success) {
@@ -197,6 +214,17 @@ export default function InvoiceDisplayPage() {
     }
     setSnackbarOpen(false);
   };
+
+  React.useEffect(() => {
+    if (deleteData?.deleteInvoice) {
+      setDeleteSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+      // Redirect to invoice list after short delay so user sees snackbar
+      setTimeout(() => {
+        window.location.href = `/app/${workspaceId}/invoices`;
+      }, 1000);
+    }
+  }, [deleteData]);
 
   // Helper to format ISO date strings
   function formatDate(dateString?: string | null) {
@@ -561,6 +589,20 @@ export default function InvoiceDisplayPage() {
                 Upgrade Plan (stub)
               </Button>
             </Paper>
+            {/* Delete Invoice Card */}
+            <Paper elevation={2} sx={{ p: 2, mt: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Danger Zone
+              </Typography>
+              <Button
+                variant="contained"
+                color="error"
+                sx={{ width: "100%", fontWeight: "bold" }}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Delete Invoice
+              </Button>
+            </Paper>
           </Grid>
         </Grid>
       )}
@@ -662,6 +704,36 @@ export default function InvoiceDisplayPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Invoice</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Are you sure you want to delete this invoice? This action cannot be undone.
+          </Typography>
+          {deleteError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteError.message}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!invoiceId) return;
+              await deleteInvoice({ variables: { id: invoiceId } });
+            }}
+            color="error"
+            variant="contained"
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Add Invoice Line Item Dialog */}
       <AddInvoiceLineItemDialog
         open={addItemDialogOpen}
@@ -713,6 +785,22 @@ export default function InvoiceDisplayPage() {
           variant="filled"
         >
           Invoice marked as paid!
+        </Alert>
+      </Snackbar>
+      {/* Snackbar for delete */}
+      <Snackbar
+        open={deleteSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setDeleteSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setDeleteSnackbarOpen(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          Invoice deleted!
         </Alert>
       </Snackbar>
     </Container>
