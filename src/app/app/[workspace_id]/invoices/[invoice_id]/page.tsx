@@ -4,6 +4,7 @@ import { graphql } from "@/graphql";
 import {
   useCreatePdfFromPageAndAttachToInvoiceMutation,
   useInvoiceByIdQuery,
+  useMarkInvoiceAsPaidMutation,
   useMarkInvoiceAsSentMutation,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
@@ -58,6 +59,16 @@ graphql(`
       id
       status
       invoiceSentDate
+    }
+  }
+`);
+
+graphql(`
+  mutation MarkInvoiceAsPaid($input: MarkInvoiceAsPaidInput!) {
+    markInvoiceAsPaid(input: $input) {
+      id
+      status
+      invoicePaidDate
     }
   }
 `);
@@ -125,6 +136,10 @@ export default function InvoiceDisplayPage() {
 
   const [cachekey, setCacheKey] = React.useState(0);
 
+  // Mark as paid dialog state
+  const [paidDialogOpen, setPaidDialogOpen] = React.useState(false);
+  const [paidDate, setPaidDate] = React.useState<Date | null>(new Date());
+
   const { data, loading, error } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
     fetchPolicy: "cache-and-network",
@@ -146,6 +161,13 @@ export default function InvoiceDisplayPage() {
   // Snackbar for mark as sent
   const [sentSnackbarOpen, setSentSnackbarOpen] = React.useState(false);
 
+  // Mark as paid mutation
+  const [markAsPaid, { loading: markAsPaidLoading, data: markAsPaidData, error: markAsPaidError }] =
+    useMarkInvoiceAsPaidMutation();
+
+  // Snackbar for mark as paid
+  const [paidSnackbarOpen, setPaidSnackbarOpen] = React.useState(false);
+
   React.useEffect(() => {
     if (pdfData?.createPdfFromPageAndAttachToEntityId?.success) {
       setSnackbarOpen(true);
@@ -160,6 +182,14 @@ export default function InvoiceDisplayPage() {
       // Optionally, refetch invoice data here if needed
     }
   }, [markAsSentData]);
+
+  React.useEffect(() => {
+    if (markAsPaidData?.markInvoiceAsPaid?.status === "PAID") {
+      setPaidSnackbarOpen(true);
+      setPaidDialogOpen(false);
+      // Optionally, refetch invoice data here if needed
+    }
+  }, [markAsPaidData]);
 
   const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
@@ -284,7 +314,7 @@ export default function InvoiceDisplayPage() {
                     >
                       {pdfLoading ? "Generating PDF..." : "Print"}
                     </Button>
-                    {invoice.status !== "SENT" && (
+                    {invoice.status === "DRAFT" && (
                       <Button
                         variant="contained"
                         color="primary"
@@ -297,6 +327,21 @@ export default function InvoiceDisplayPage() {
                         onClick={() => setSendDialogOpen(true)}
                       >
                         Mark as sent
+                      </Button>
+                    )}
+                    {invoice.status === "SENT" && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        sx={{
+                          minWidth: 140,
+                          whiteSpace: "nowrap",
+                          flex: 1,
+                          maxWidth: { xs: "100%", sm: "unset" },
+                        }}
+                        onClick={() => setPaidDialogOpen(true)}
+                      >
+                        Mark as paid
                       </Button>
                     )}
                   </Box>
@@ -568,6 +613,55 @@ export default function InvoiceDisplayPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Mark as Paid Confirmation Dialog */}
+      <Dialog open={paidDialogOpen} onClose={() => setPaidDialogOpen(false)}>
+        <DialogTitle>Mark as paid</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>Please select the date this invoice was paid.</Typography>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Paid date"
+              value={paidDate}
+              onChange={(value) => {
+                if (value === null || value instanceof Date) {
+                  setPaidDate(value);
+                }
+              }}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
+              maxDate={new Date()}
+            />
+          </LocalizationProvider>
+          {markAsPaidError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {markAsPaidError.message}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaidDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!invoiceId || !paidDate) return;
+              await markAsPaid({
+                variables: {
+                  input: {
+                    invoiceId,
+                    date: paidDate.toISOString(),
+                  },
+                },
+                // Optionally, refetchQueries: [{ query: InvoiceByIdQuery, variables: { id: invoiceId } }]
+              });
+            }}
+            color="success"
+            variant="contained"
+            disabled={!paidDate || markAsPaidLoading}
+          >
+            {markAsPaidLoading ? "Marking..." : "Mark as paid"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Add Invoice Line Item Dialog */}
       <AddInvoiceLineItemDialog
         open={addItemDialogOpen}
@@ -603,6 +697,22 @@ export default function InvoiceDisplayPage() {
           variant="filled"
         >
           Invoice marked as sent!
+        </Alert>
+      </Snackbar>
+      {/* Snackbar for mark as paid */}
+      <Snackbar
+        open={paidSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setPaidSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setPaidSnackbarOpen(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          Invoice marked as paid!
         </Alert>
       </Snackbar>
     </Container>
