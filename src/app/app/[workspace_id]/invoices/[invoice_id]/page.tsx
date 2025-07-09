@@ -4,6 +4,7 @@ import { graphql } from "@/graphql";
 import {
   useCreatePdfFromPageAndAttachToInvoiceMutation,
   useInvoiceByIdQuery,
+  useMarkInvoiceAsSentMutation,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
@@ -47,6 +48,16 @@ graphql(`
     ) {
       success
       error_message
+    }
+  }
+`);
+
+graphql(`
+  mutation MarkInvoiceAsSent($input: MarkInvoiceAsSentInput!) {
+    markInvoiceAsSent(input: $input) {
+      id
+      status
+      invoiceSentDate
     }
   }
 `);
@@ -128,12 +139,27 @@ export default function InvoiceDisplayPage() {
   // Snackbar for print success
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
 
+  // Mark as sent mutation
+  const [markAsSent, { loading: markAsSentLoading, data: markAsSentData, error: markAsSentError }] =
+    useMarkInvoiceAsSentMutation();
+
+  // Snackbar for mark as sent
+  const [sentSnackbarOpen, setSentSnackbarOpen] = React.useState(false);
+
   React.useEffect(() => {
     if (pdfData?.createPdfFromPageAndAttachToEntityId?.success) {
       setSnackbarOpen(true);
       setCacheKey((k) => k + 1); // Refresh files
     }
   }, [pdfData]);
+
+  React.useEffect(() => {
+    if (markAsSentData?.markInvoiceAsSent?.status === "SENT") {
+      setSentSnackbarOpen(true);
+      setSendDialogOpen(false);
+      // Optionally, refetch invoice data here if needed
+    }
+  }, [markAsSentData]);
 
   const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
@@ -258,19 +284,21 @@ export default function InvoiceDisplayPage() {
                     >
                       {pdfLoading ? "Generating PDF..." : "Print"}
                     </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      sx={{
-                        minWidth: 140,
-                        whiteSpace: "nowrap",
-                        flex: 1,
-                        maxWidth: { xs: "100%", sm: "unset" },
-                      }}
-                      onClick={() => setSendDialogOpen(true)}
-                    >
-                      Mark as sent
-                    </Button>
+                    {invoice.status !== "SENT" && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{
+                          minWidth: 140,
+                          whiteSpace: "nowrap",
+                          flex: 1,
+                          maxWidth: { xs: "100%", sm: "unset" },
+                        }}
+                        onClick={() => setSendDialogOpen(true)}
+                      >
+                        Mark as sent
+                      </Button>
+                    )}
                   </Box>
                   {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
                     <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
@@ -509,18 +537,34 @@ export default function InvoiceDisplayPage() {
               maxDate={new Date()}
             />
           </LocalizationProvider>
+          {markAsSentError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {markAsSentError.message}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSendDialogOpen(false)} color="inherit">
             Cancel
           </Button>
           <Button
-            onClick={() => setSendDialogOpen(false)}
+            onClick={async () => {
+              if (!invoiceId || !sentDate) return;
+              await markAsSent({
+                variables: {
+                  input: {
+                    invoiceId,
+                    date: sentDate.toISOString(),
+                  },
+                },
+                // Optionally, refetchQueries: [{ query: InvoiceByIdQuery, variables: { id: invoiceId } }]
+              });
+            }}
             color="primary"
             variant="contained"
-            disabled={!sentDate}
+            disabled={!sentDate || markAsSentLoading}
           >
-            Mark as sent
+            {markAsSentLoading ? "Marking..." : "Mark as sent"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -543,6 +587,22 @@ export default function InvoiceDisplayPage() {
           variant="filled"
         >
           PDF attached to invoice!
+        </Alert>
+      </Snackbar>
+      {/* Snackbar for mark as sent */}
+      <Snackbar
+        open={sentSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSentSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSentSnackbarOpen(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          Invoice marked as sent!
         </Alert>
       </Snackbar>
     </Container>

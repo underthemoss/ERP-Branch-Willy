@@ -7,6 +7,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Button,
+  Chip,
   Container,
   IconButton,
   InputAdornment,
@@ -114,7 +115,43 @@ const columns: GridColDef[] = [
     type: "number",
     valueFormatter: (params: any) => (params.value != null ? `$${params.value.toFixed(2)}` : ""),
   },
-  { field: "status", headerName: "Status", width: 120 },
+  {
+    field: "status",
+    headerName: "Status",
+    width: 120,
+    renderCell: (params) => {
+      // Helper to map status to MUI Chip color
+      function getStatusChipColor(status?: string) {
+        switch (status) {
+          case "PAID":
+            return "success";
+          case "DRAFT":
+            return "default";
+          case "SENT":
+            return "info";
+          case "OVERDUE":
+            return "error";
+          case "PARTIAL":
+            return "warning";
+          default:
+            return "default";
+        }
+      }
+      return (
+        <Chip
+          label={params.value}
+          color={getStatusChipColor(params.value)}
+          sx={{
+            fontWeight: "bold",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            minWidth: 80,
+          }}
+          size="small"
+        />
+      );
+    },
+  },
 ];
 
 export default function InvoicesPage() {
@@ -197,7 +234,7 @@ export default function InvoicesPage() {
                 hideFooter
                 getRowId={(row) => row.id}
                 initialState={{
-                  pinnedColumns: { left: ["number"] },
+                  pinnedColumns: { left: ["number"], right: ["status"] },
                 }}
                 sx={{
                   cursor: "pointer",
