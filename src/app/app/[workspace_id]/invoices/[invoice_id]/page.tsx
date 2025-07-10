@@ -10,6 +10,7 @@ import {
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import AddInvoiceLineItemDialog from "@/ui/invoices/AddInvoiceLineItemDialog";
+import EditInvoiceTaxesDialog from "@/ui/invoices/EditInvoiceTaxesDialog";
 import InvoiceRender from "@/ui/invoices/InvoiceRender";
 import NotesSection from "@/ui/notes/NotesSection";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
@@ -88,6 +89,7 @@ const InvoiceByIdQuery = graphql(`
     invoiceById(id: $id) {
       id
       subTotalInCents
+      taxPercent
       status
       createdAt
       updatedAt
@@ -146,6 +148,9 @@ export default function InvoiceDisplayPage() {
 
   const [addItemDialogOpen, setAddItemDialogOpen] = React.useState(false);
   const [addItemTab, setAddItemTab] = React.useState(0);
+
+  // Edit Taxes dialog state
+  const [editTaxesDialogOpen, setEditTaxesDialogOpen] = React.useState(false);
 
   const [cachekey, setCacheKey] = React.useState(0);
 
@@ -417,10 +422,7 @@ export default function InvoiceDisplayPage() {
                 <Box
                   sx={{
                     width: "816px",
-                    height: "1056px",
-                    // maxWidth: "100%",
-                    maxHeight: "70vh",
-                    // aspectRatio: "8.5 / 11",
+                    minHeight: "70vh",
                     p: 7,
                     bgcolor: "#f8f6f1",
                     border: "1px solid #ccc",
@@ -435,6 +437,9 @@ export default function InvoiceDisplayPage() {
               <Box mt={2} display="flex" gap={2}>
                 <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
                   Add Line Item
+                </Button>
+                <Button variant="outlined" onClick={() => setEditTaxesDialogOpen(true)}>
+                  Edit Taxes
                 </Button>
                 <Button
                   variant="outlined"
@@ -459,6 +464,12 @@ export default function InvoiceDisplayPage() {
                   {pdfLoading ? "Generating PDF..." : "Print"}
                 </Button>
               </Box>
+              <EditInvoiceTaxesDialog
+                open={editTaxesDialogOpen}
+                onClose={() => setEditTaxesDialogOpen(false)}
+                invoiceId={invoiceId}
+                currentTaxPercent={invoice.taxPercent ?? 0}
+              />
               {/* Print Dialog */}
               <Dialog open={printDialogOpen} onClose={() => setPrintDialogOpen(false)}>
                 <DialogTitle>Print Invoice</DialogTitle>
@@ -795,6 +806,7 @@ export default function InvoiceDisplayPage() {
       <AddInvoiceLineItemDialog
         open={addItemDialogOpen}
         onClose={() => setAddItemDialogOpen(false)}
+        invoiceId={invoiceId}
       />
       {/* Snackbar for print success */}
       <Snackbar

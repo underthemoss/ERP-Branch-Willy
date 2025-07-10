@@ -434,14 +434,17 @@ type Invoice {
   createdAt: DateTime!
   createdBy: String
   createdByUser: User
+  finalSumInCents: Int!
   id: String!
   invoicePaidDate: DateTime
   invoiceSentDate: DateTime
-  lineItems: [InvoiceLineItem]
+  lineItems: [InvoiceLineItem!]!
   seller: Contact
   sellerId: String!
   status: InvoiceStatus!
   subTotalInCents: Int!
+  taxPercent: Float!
+  taxesInCents: Int!
   updatedAt: DateTime!
   updatedBy: String
   updatedByUser: User
@@ -735,6 +738,7 @@ type Mutation {
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
+  setInvoiceTax(input: SetInvoiceTaxInput!): Invoice!
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
@@ -1517,6 +1521,11 @@ enum ServiceTransactionTypes {
   CUSTOM
   HAULING
   MAINTENANCE
+}
+
+input SetInvoiceTaxInput {
+  invoiceId: String!
+  taxPercent: Float!
 }
 
 type SignedUploadUrl {
