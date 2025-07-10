@@ -1,7 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useAddInvoiceChargesMutation } from "@/graphql/hooks";
+import { useAddInvoiceChargesMutation, useListChargesQuery } from "@/graphql/hooks";
 import {
   Box,
   Button,
@@ -43,6 +43,27 @@ export const AddInvoiceChargesMutation = graphql(`
   }
 `);
 
+const LIST_CHARGES_QUERY = graphql(`
+  query ListCharges($filter: ListChargesFilter!, $page: PageInfoInput) {
+    listCharges(filter: $filter, page: $page) {
+      items {
+        id
+        companyId
+        amountInCents
+        description
+        chargeType
+        contactId
+        createdAt
+        projectId
+        salesOrderId
+        purchaseOrderNumber
+        salesOrderLineItemId
+        fulfilmentId
+        invoiceId
+      }
+    }
+  }
+`);
 export default function AddInvoiceLineItemDialog({
   open,
   onClose,
@@ -53,233 +74,52 @@ export default function AddInvoiceLineItemDialog({
     useAddInvoiceChargesMutation();
   const [mutationError, setMutationError] = React.useState<string | null>(null);
 
-  // Mock data for unallocated charges
-  interface ChargeDoc {
+  // Prepare filter for unallocated charges (not yet invoiced)
+  const chargesFilter = {
+    invoiceId: null,
+  };
+
+  const {
+    data: chargesData,
+    loading: chargesLoading,
+    error: chargesError,
+    refetch,
+  } = useListChargesQuery({
+    variables: {
+      filter: chargesFilter,
+      page: { size: 1000 },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Map GQL data to table rows
+  type ChargeRow = {
     _id: string;
     companyId: number;
     amountInCents: number;
     description: string;
-    contactId: string;
-    customerName: string;
+    chargeType?: string;
+    contactId?: string;
+    createdAt?: string;
     projectId?: string;
     salesOrderId?: string;
     salesOrderPONumber?: string;
+    salesOrderLineItemId?: string;
     fulfilmentId?: string;
     invoiceId?: string;
-  }
+    customerName?: string;
+  };
 
-  const mockCharges: ChargeDoc[] = [
-    // Acme Construction
-    {
-      _id: "1",
-      companyId: 101,
-      amountInCents: 120000,
-      description: "Excavator Rental - 3 days",
-      contactId: "C001",
-      customerName: "Acme Construction",
-      projectId: "P001",
-      salesOrderId: "SO001",
-      salesOrderPONumber: "PO123",
-      fulfilmentId: "F001",
-      invoiceId: undefined,
-    },
-    {
-      _id: "2",
-      companyId: 101,
-      amountInCents: 50000,
-      description: "Loader Rental - 2 days",
-      contactId: "C002",
-      customerName: "Acme Construction",
-      projectId: "P001",
-      salesOrderId: "SO002",
-      salesOrderPONumber: "PO123",
-      fulfilmentId: "F002",
-      invoiceId: undefined,
-    },
-    {
-      _id: "3",
-      companyId: 101,
-      amountInCents: 15000,
-      description: "Cleaning Fee - Skid Steer",
-      contactId: "C003",
-      customerName: "Acme Construction",
-      projectId: "P002",
-      salesOrderId: "SO001",
-      salesOrderPONumber: "PO124",
-      fulfilmentId: "F003",
-      invoiceId: undefined,
-    },
-    {
-      _id: "4",
-      companyId: 101,
-      amountInCents: 8000,
-      description: "Unscheduled Maintenance - Backhoe",
-      contactId: "C004",
-      customerName: "Acme Construction",
-      projectId: "P002",
-      salesOrderId: "SO002",
-      salesOrderPONumber: "PO124",
-      fulfilmentId: "F004",
-      invoiceId: undefined,
-    },
-    {
-      _id: "5",
-      companyId: 101,
-      amountInCents: 20000,
-      description: "Fuel Surcharge - Bulldozer",
-      contactId: "C005",
-      customerName: "Acme Construction",
-      projectId: "P003",
-      salesOrderId: "SO003",
-      salesOrderPONumber: "PO125",
-      fulfilmentId: "F005",
-      invoiceId: undefined,
-    },
-    {
-      _id: "6",
-      companyId: 101,
-      amountInCents: 35000,
-      description: "Damage Fee - Mini Excavator",
-      contactId: "C006",
-      customerName: "Acme Construction",
-      projectId: "P003",
-      salesOrderId: "SO003",
-      salesOrderPONumber: "PO126",
-      fulfilmentId: "F006",
-      invoiceId: undefined,
-    },
-    {
-      _id: "7",
-      companyId: 101,
-      amountInCents: 180000,
-      description: "Crane Rental - 1 week",
-      contactId: "C007",
-      customerName: "Acme Construction",
-      projectId: "P004",
-      salesOrderId: "SO004",
-      salesOrderPONumber: "PO126",
-      fulfilmentId: "F007",
-      invoiceId: undefined,
-    },
-    {
-      _id: "8",
-      companyId: 101,
-      amountInCents: 12000,
-      description: "Late Return Fee - Scissor Lift",
-      contactId: "C008",
-      customerName: "Acme Construction",
-      projectId: "P004",
-      salesOrderId: "SO004",
-      salesOrderPONumber: "PO127",
-      fulfilmentId: "F008",
-      invoiceId: undefined,
-    },
-    // BuildRight Ltd.
-    {
-      _id: "9",
-      companyId: 102,
-      amountInCents: 90000,
-      description: "Telehandler Rental - 4 days",
-      contactId: "C009",
-      customerName: "BuildRight Ltd.",
-      projectId: "P001",
-      salesOrderId: "SO001",
-      salesOrderPONumber: "PO123",
-      fulfilmentId: "F009",
-      invoiceId: undefined,
-    },
-    {
-      _id: "10",
-      companyId: 102,
-      amountInCents: 25000,
-      description: "Delivery Fee - Wheel Loader",
-      contactId: "C010",
-      customerName: "BuildRight Ltd.",
-      projectId: "P002",
-      salesOrderId: "SO002",
-      salesOrderPONumber: "PO123",
-      fulfilmentId: "F010",
-      invoiceId: undefined,
-    },
-    {
-      _id: "11",
-      companyId: 102,
-      amountInCents: 60000,
-      description: "Compactor Rental - 5 days",
-      contactId: "C011",
-      customerName: "BuildRight Ltd.",
-      projectId: "P003",
-      salesOrderId: "SO003",
-      salesOrderPONumber: "PO124",
-      fulfilmentId: "F011",
-      invoiceId: undefined,
-    },
-    {
-      _id: "12",
-      companyId: 102,
-      amountInCents: 17000,
-      description: "Cleaning Fee - Dump Truck",
-      contactId: "C012",
-      customerName: "BuildRight Ltd.",
-      projectId: "P003",
-      salesOrderId: "SO003",
-      salesOrderPONumber: "PO125",
-      fulfilmentId: "F012",
-      invoiceId: undefined,
-    },
-    {
-      _id: "13",
-      companyId: 102,
-      amountInCents: 22000,
-      description: "Fuel Surcharge - Grader",
-      contactId: "C013",
-      customerName: "BuildRight Ltd.",
-      projectId: "P004",
-      salesOrderId: "SO004",
-      salesOrderPONumber: "PO125",
-      fulfilmentId: "F013",
-      invoiceId: undefined,
-    },
-    {
-      _id: "14",
-      companyId: 102,
-      amountInCents: 45000,
-      description: "Damage Fee - Articulated Truck",
-      contactId: "C014",
-      customerName: "BuildRight Ltd.",
-      projectId: "P004",
-      salesOrderId: "SO004",
-      salesOrderPONumber: "PO126",
-      fulfilmentId: "F014",
-      invoiceId: undefined,
-    },
-    {
-      _id: "15",
-      companyId: 102,
-      amountInCents: 30000,
-      description: "Loader Rental - 3 days",
-      contactId: "C015",
-      customerName: "BuildRight Ltd.",
-      projectId: "P001",
-      salesOrderId: "SO001",
-      salesOrderPONumber: "PO127",
-      fulfilmentId: "F015",
-      invoiceId: undefined,
-    },
-    {
-      _id: "16",
-      companyId: 102,
-      amountInCents: 110000,
-      description: "Excavator Rental - 5 days",
-      contactId: "C016",
-      customerName: "BuildRight Ltd.",
-      projectId: "P002",
-      salesOrderId: "SO002",
-      salesOrderPONumber: "PO127",
-      fulfilmentId: "F016",
-      invoiceId: undefined,
-    },
-  ];
+  const chargeRows: ChargeRow[] =
+    chargesData?.listCharges?.items
+      ?.filter((i) => !i.invoiceId)
+      .map((charge: any) => ({
+        ...charge,
+        _id: charge.id,
+        customerName: "", // TODO: If customer name is needed, fetch/join from related entity
+        salesOrderPONumber: charge.purchaseOrderNumber,
+        amountInCents: charge.amountInCents,
+      })) ?? [];
 
   const chargeColumns: GridColDef[] = [
     { field: "_id", headerName: "ID", width: 90 },
@@ -421,9 +261,11 @@ export default function AddInvoiceLineItemDialog({
             </Box>
             <Box sx={{ flex: 1, minHeight: 0, width: "100%" }}>
               <DataGridPremium
-                rows={mockCharges}
+                rows={chargeRows}
                 columns={chargeColumns}
-                getRowId={(row) => row._id}
+                getRowId={(row: ChargeRow) => row._id}
+                loading={chargesLoading}
+                // error={!!chargesError}
                 disableRowSelectionOnClick
                 disableColumnFilter={false}
                 disableColumnMenu={false}
@@ -516,9 +358,9 @@ export default function AddInvoiceLineItemDialog({
               onClose();
             } else {
               setMutationError(null);
-              const selectedChargeIds = mockCharges
-                .filter((row) => rowSelectionModel.includes(row._id))
-                .map((row) => row._id);
+              const selectedChargeIds = chargeRows
+                .filter((row: ChargeRow) => rowSelectionModel.includes(row._id))
+                .map((row: ChargeRow) => row._id);
               if (selectedChargeIds.length === 0) {
                 setMutationError("Please select at least one charge to add.");
                 return;
@@ -532,6 +374,7 @@ export default function AddInvoiceLineItemDialog({
                     },
                   },
                 });
+                refetch();
                 onClose();
               } catch (err: any) {
                 setMutationError(err?.message || "Failed to add charges to invoice.");
