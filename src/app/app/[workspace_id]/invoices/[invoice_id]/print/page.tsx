@@ -11,7 +11,7 @@ const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
     invoiceById(id: $id) {
       id
-      amount
+      subTotalInCents
       status
       createdAt
       updatedAt

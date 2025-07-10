@@ -87,7 +87,7 @@ const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
     invoiceById(id: $id) {
       id
-      amount
+      subTotalInCents
       status
       createdAt
       updatedAt
@@ -288,7 +288,10 @@ export default function InvoiceDisplayPage() {
                     Invoice
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Amount: {invoice.amount != null ? `$${invoice.amount.toFixed(2)}` : ""}
+                    Amount:{" "}
+                    {invoice.subTotalInCents != null
+                      ? `$${(invoice.subTotalInCents / 100).toFixed(2)}`
+                      : ""}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Buyer: {invoice.buyer?.name ?? ""}

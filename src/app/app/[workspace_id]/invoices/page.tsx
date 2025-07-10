@@ -29,7 +29,7 @@ const ListInvoicesQuery = graphql(`
     listInvoices(query: $query) {
       items {
         id
-        amount
+        subTotalInCents
         buyerId
         buyer {
           __typename
@@ -174,7 +174,7 @@ export default function InvoicesPage() {
       date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : "",
       buyer: inv.buyer?.name || "",
       seller: inv.seller?.name || "",
-      amount: inv.amount,
+      amount: inv.subTotalInCents != null ? inv.subTotalInCents / 100 : null,
       status: inv.status,
     })) ?? [];
 
