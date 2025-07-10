@@ -1,3 +1,8 @@
+input AddInvoiceChargesInput {
+  chargeIds: [ID!]!
+  invoiceId: ID!
+}
+
 type Asset {
   category: AssetCategory
   class: AssetClass
@@ -423,7 +428,6 @@ type HasuraClaims {
 }
 
 type Invoice {
-  amount: Float!
   buyer: Contact
   buyerId: String!
   companyId: String!
@@ -433,12 +437,20 @@ type Invoice {
   id: String!
   invoicePaidDate: DateTime
   invoiceSentDate: DateTime
+  lineItems: [InvoiceLineItem]
   seller: Contact
   sellerId: String!
   status: InvoiceStatus!
+  subTotalInCents: Int!
   updatedAt: DateTime!
   updatedBy: String
   updatedByUser: User
+}
+
+type InvoiceLineItem {
+  chargeId: ID!
+  description: String!
+  totalInCents: Int!
 }
 
 enum InvoiceStatus {
@@ -687,6 +699,7 @@ input MarkInvoiceAsSentInput {
 
 type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
+  addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact

@@ -12,7 +12,7 @@ const invoiceQuery = graphql(`
   query InvoiceByIdInvoiceRenderer($id: String!) {
     invoiceById(id: $id) {
       id
-      amount
+      subTotalInCents
       status
       createdAt
       updatedAt
@@ -134,7 +134,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
         <strong>Last Updated:</strong> {formatDate(invoice.updatedAt)}
       </div>
       <div style={{ textAlign: "right", fontSize: 24, fontWeight: "bold", marginTop: 32 }}>
-        Total: £{invoice.amount.toFixed(2)}
+        Total: £{(invoice.subTotalInCents / 100).toFixed(2)}
       </div>
     </div>
   );

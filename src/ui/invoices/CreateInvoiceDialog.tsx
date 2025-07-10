@@ -21,7 +21,7 @@ export const CreateInvoiceMutation = graphql(`
       id
       buyerId
       sellerId
-      amount
+      subTotalInCents
       status
       createdAt
     }
