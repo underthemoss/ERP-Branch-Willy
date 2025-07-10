@@ -1,7 +1,12 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useAddInvoiceChargesMutation, useListChargesQuery } from "@/graphql/hooks";
+import {
+  ChargeType,
+  useAddInvoiceChargesMutation,
+  useInvoiceCreateChargeMiscMutation,
+  useListChargesQuery,
+} from "@/graphql/hooks";
 import {
   Box,
   Button,
@@ -28,6 +33,7 @@ export interface AddInvoiceLineItemDialogProps {
   open: boolean;
   onClose: () => void;
   invoiceId: string;
+  buyerId: string;
 }
 
 export const AddInvoiceChargesMutation = graphql(`
@@ -39,6 +45,25 @@ export const AddInvoiceChargesMutation = graphql(`
         description
         totalInCents
       }
+    }
+  }
+`);
+
+export const InvoiceCreateChargeMiscMutation = graphql(`
+  mutation invoiceCreateChargeMisc($input: CreateChargeInput!) {
+    createCharge(input: $input) {
+      id
+      amountInCents
+      description
+      chargeType
+      contactId
+      createdAt
+      projectId
+      salesOrderId
+      purchaseOrderNumber
+      salesOrderLineItemId
+      fulfilmentId
+      invoiceId
     }
   }
 `);
@@ -68,10 +93,13 @@ export default function AddInvoiceLineItemDialog({
   open,
   onClose,
   invoiceId,
+  buyerId,
 }: AddInvoiceLineItemDialogProps) {
   const [tab, setTab] = React.useState(0);
   const [addInvoiceCharges, { loading: addChargesLoading, error: addChargesError }] =
     useAddInvoiceChargesMutation();
+  const [createChargeMisc, { loading: createChargeLoading, error: createChargeError }] =
+    useInvoiceCreateChargeMiscMutation();
   const [mutationError, setMutationError] = React.useState<string | null>(null);
 
   // Prepare filter for unallocated charges (not yet invoiced)
@@ -344,18 +372,27 @@ export default function AddInvoiceLineItemDialog({
         <Button
           onClick={async () => {
             if (tab === 1) {
-              alert(
-                JSON.stringify(
-                  {
-                    description: miscDesc,
-                    amount: miscAmount,
-                    date: miscDate,
+              setMutationError(null);
+              try {
+                const { data } = await createChargeMisc({
+                  variables: {
+                    input: {
+                      description: miscDesc,
+                      amountInCents: Math.round(Number(miscAmount) * 100),
+                      chargeType: ChargeType.Sale,
+                      contactId: buyerId,
+                    },
                   },
-                  null,
-                  2,
-                ),
-              );
-              onClose();
+                });
+                if (data?.createCharge?.id) {
+                  await addInvoiceCharges({
+                    variables: { input: { invoiceId, chargeIds: [data?.createCharge?.id] } },
+                  });
+                }
+                onClose();
+              } catch (err: any) {
+                setMutationError(err?.message || "Failed to create miscellaneous charge.");
+              }
             } else {
               setMutationError(null);
               const selectedChargeIds = chargeRows
@@ -383,9 +420,9 @@ export default function AddInvoiceLineItemDialog({
           }}
           color="primary"
           variant="contained"
-          disabled={(tab === 1 && !miscValid) || addChargesLoading}
+          disabled={(tab === 1 && !miscValid) || addChargesLoading || createChargeLoading}
         >
-          {addChargesLoading ? "Adding..." : "Add"}
+          {addChargesLoading || createChargeLoading ? "Adding..." : "Add"}
         </Button>
         {mutationError && (
           <Box sx={{ color: "error.main", mt: 1, mb: 1 }}>

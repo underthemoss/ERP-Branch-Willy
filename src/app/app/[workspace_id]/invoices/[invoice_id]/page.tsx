@@ -161,7 +161,7 @@ export default function InvoiceDisplayPage() {
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
-  const { data, loading, error } = useInvoiceByIdQuery({
+  const { data, loading, error, refetch } = useInvoiceByIdQuery({
     variables: { id: invoiceId },
     fetchPolicy: "cache-and-network",
   });
@@ -805,8 +805,12 @@ export default function InvoiceDisplayPage() {
       {/* Add Invoice Line Item Dialog */}
       <AddInvoiceLineItemDialog
         open={addItemDialogOpen}
-        onClose={() => setAddItemDialogOpen(false)}
+        onClose={() => {
+          setAddItemDialogOpen(false);
+          refetch();
+        }}
         invoiceId={invoiceId}
+        buyerId={invoice?.buyer?.id || ""}
       />
       {/* Snackbar for print success */}
       <Snackbar
