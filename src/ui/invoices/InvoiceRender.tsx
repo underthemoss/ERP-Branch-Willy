@@ -19,6 +19,7 @@ const invoiceQuery = graphql(`
       createdAt
       updatedAt
       invoicePaidDate
+      taxPercent
       lineItems {
         chargeId
         description
@@ -176,9 +177,13 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 4 }}>
               Subtotal: £{(invoice.subTotalInCents / 100).toFixed(2)}
             </div>
+
             <div style={{ fontSize: 16, marginBottom: 4 }}>
-              Taxes:{" "}
-              <span style={{ color: "#888" }}>£{(invoice.taxesInCents / 100).toFixed(2)}</span>
+              Taxes (
+              {invoice.taxPercent !== undefined && invoice.taxPercent !== null
+                ? `${(invoice.taxPercent * 100).toFixed(0)}%`
+                : "N/A"}
+              ): <span style={{}}>£{(invoice.taxesInCents / 100).toFixed(2)}</span>
             </div>
             <div
               style={{
