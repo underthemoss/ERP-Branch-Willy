@@ -203,6 +203,10 @@ input BusinessContactInput {
   workspaceId: String!
 }
 
+input CancelInvoiceInput {
+  invoiceId: String!
+}
+
 type Comment {
   id: ID
 }
@@ -250,6 +254,7 @@ input CreatePurchaseOrderLineItemInput {
 
 input CreateRentalFulfilmentInput {
   assignedToId: String
+  expectedRentalEndDate: DateTime
 
   """If salesOrderLineItemId is not provided, these fields are required"""
   pimDetails: FulfilmentPimInput
@@ -426,6 +431,8 @@ type Invoice {
   createdBy: String
   createdByUser: User
   id: String!
+  invoicePaidDate: DateTime
+  invoiceSentDate: DateTime
   seller: Contact
   sellerId: String!
   status: InvoiceStatus!
@@ -668,8 +675,19 @@ type Llm {
   exampleTicket: ExampleTicket
 }
 
+input MarkInvoiceAsPaidInput {
+  date: DateTime!
+  invoiceId: String!
+}
+
+input MarkInvoiceAsSentInput {
+  date: DateTime!
+  invoiceId: String!
+}
+
 type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
+  cancelInvoice(input: CancelInvoiceInput!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createInvoice(input: CreateInvoiceInput!): Invoice!
@@ -694,11 +712,14 @@ type Mutation {
   createWorkflowConfiguration(input: CreateWorkflowConfigurationInput!): WorkflowConfiguration
   deleteContactById(id: ID!): Boolean
   deleteFulfilment(id: ID!): Boolean
+  deleteInvoice(id: String!): Boolean!
   deleteNote(id: String!): Note
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
   deleteWorkflowConfigurationById(id: ID!): Boolean
+  markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
+  markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment

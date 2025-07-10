@@ -16,6 +16,7 @@ const invoiceQuery = graphql(`
       status
       createdAt
       updatedAt
+      invoicePaidDate
       buyer {
         ... on BusinessContact {
           id
@@ -77,6 +78,32 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
         transformOrigin: "top left",
       }}
     >
+      {invoice.status === "PAID" && (
+        <div
+          style={{
+            background: "#e6ffed",
+            color: "#1a7f37",
+            border: "1px solid #b7ebc6",
+            borderRadius: 6,
+            padding: "18px 24px",
+            marginBottom: 32,
+            fontSize: "1.15rem",
+            fontWeight: 500,
+            textAlign: "center",
+          }}
+        >
+          <div>
+            <strong>Payment Received</strong>
+          </div>
+          <div>
+            Thank you! Payment for this invoice was received on{" "}
+            <strong>{formatDate(invoice.invoicePaidDate)}</strong>.
+          </div>
+          <div>
+            This document serves as a <strong>receipt of payment</strong> for your records.
+          </div>
+        </div>
+      )}
       <h1 style={{ textAlign: "center", marginBottom: 8 }}>Invoice</h1>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <strong>Invoice ID:</strong> {invoice.id}
