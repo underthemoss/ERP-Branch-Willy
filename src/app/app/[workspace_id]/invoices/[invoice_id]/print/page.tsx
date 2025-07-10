@@ -7,8 +7,8 @@ import { useParams } from "next/navigation";
 import * as React from "react";
 
 // GQL Query (same as detail page)
-const InvoiceByIdQuery = graphql(`
-  query InvoiceById($id: String!) {
+const InvoiceByIdPrintQuery = graphql(`
+  query InvoiceByIdPrint($id: String!) {
     invoiceById(id: $id) {
       id
       subTotalInCents

@@ -13,10 +13,18 @@ const invoiceQuery = graphql(`
     invoiceById(id: $id) {
       id
       subTotalInCents
+      taxesInCents
+      finalSumInCents
       status
       createdAt
       updatedAt
       invoicePaidDate
+      taxPercent
+      lineItems {
+        chargeId
+        description
+        totalInCents
+      }
       buyer {
         ... on BusinessContact {
           id
@@ -133,9 +141,64 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
       <div style={{ marginBottom: 16 }}>
         <strong>Last Updated:</strong> {formatDate(invoice.updatedAt)}
       </div>
-      <div style={{ textAlign: "right", fontSize: 24, fontWeight: "bold", marginTop: 32 }}>
-        Total: £{(invoice.subTotalInCents / 100).toFixed(2)}
-      </div>
+      {invoice.lineItems && invoice.lineItems.length > 0 && (
+        <div style={{ marginTop: 32, marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, marginBottom: 12 }}>Line Items</h2>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginBottom: 16,
+              fontSize: 16,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ borderBottom: "1px solid #ccc", textAlign: "left", padding: 8 }}>
+                  Description
+                </th>
+                <th style={{ borderBottom: "1px solid #ccc", textAlign: "right", padding: 8 }}>
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.lineItems.map((item) => (
+                <tr key={item.chargeId}>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{item.description}</td>
+                  <td style={{ borderBottom: "1px solid #eee", textAlign: "right", padding: 8 }}>
+                    £{(item.totalInCents / 100).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ textAlign: "right", marginTop: 24 }}>
+            <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 4 }}>
+              Subtotal: £{(invoice.subTotalInCents / 100).toFixed(2)}
+            </div>
+
+            <div style={{ fontSize: 16, marginBottom: 4 }}>
+              Taxes (
+              {invoice.taxPercent !== undefined && invoice.taxPercent !== null
+                ? `${(invoice.taxPercent * 100).toFixed(0)}%`
+                : "N/A"}
+              ): <span style={{}}>£{(invoice.taxesInCents / 100).toFixed(2)}</span>
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: "bold",
+                marginTop: 8,
+                borderTop: "2px solid #222",
+                paddingTop: 8,
+              }}
+            >
+              Total: £{(invoice.finalSumInCents / 100).toFixed(2)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

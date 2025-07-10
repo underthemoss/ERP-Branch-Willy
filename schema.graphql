@@ -212,6 +212,33 @@ input CancelInvoiceInput {
   invoiceId: String!
 }
 
+type Charge {
+  amountInCents: Int!
+  chargeType: ChargeType!
+  companyId: ID!
+  contactId: ID!
+  createdAt: DateTime!
+  description: String!
+  fulfilmentId: ID
+  id: ID!
+  invoiceId: ID
+  projectId: ID
+  purchaseOrderNumber: String
+  salesOrderId: ID
+  salesOrderLineItemId: ID
+}
+
+type ChargePage {
+  items: [Charge!]!
+  page: PaginationInfo!
+}
+
+enum ChargeType {
+  RENTAL
+  SALE
+  SERVICE
+}
+
 type Comment {
   id: ID
 }
@@ -226,6 +253,19 @@ union Contact = BusinessContact | PersonContact
 enum ContactType {
   BUSINESS
   PERSON
+}
+
+input CreateChargeInput {
+  amountInCents: Int!
+  chargeType: ChargeType!
+  contactId: ID!
+  description: String!
+  fulfilmentId: ID
+  invoiceId: ID
+  projectId: ID
+  purchaseOrderNumber: ID
+  salesOrderId: ID
+  salesOrderLineItemId: ID
 }
 
 input CreateInvoiceInput {
@@ -263,8 +303,11 @@ input CreateRentalFulfilmentInput {
 
   """If salesOrderLineItemId is not provided, these fields are required"""
   pimDetails: FulfilmentPimInput
-  rentalEndDate: DateTime!
-  rentalStartDate: DateTime!
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
   salesOrderId: String!
   salesOrderLineItemId: String
   workflowColumnId: ID
@@ -304,9 +347,9 @@ input CreateSaleFulfilmentInput {
   """If salesOrderLineItemId is not provided, these fields are required"""
   pimDetails: FulfilmentPimInput
   quantity: Int!
-  salePrice: Float!
   salesOrderId: String!
   salesOrderLineItemId: String
+  unitCostInCents: Int!
   workflowColumnId: ID
   workflowId: ID
 }
@@ -337,6 +380,7 @@ input CreateServiceFulfilmentInput {
   salesOrderId: String!
   salesOrderLineItemId: String
   serviceDate: DateTime!
+  unitCostInCents: Int!
   workflowColumnId: ID
   workflowId: ID
 }
@@ -402,6 +446,7 @@ interface FulfilmentBase {
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID!
+  salesOrderPONumber: String
   salesOrderType: FulfilmentType!
   updatedAt: DateTime!
   workflowColumnId: ID
@@ -434,14 +479,17 @@ type Invoice {
   createdAt: DateTime!
   createdBy: String
   createdByUser: User
+  finalSumInCents: Int!
   id: String!
   invoicePaidDate: DateTime
   invoiceSentDate: DateTime
-  lineItems: [InvoiceLineItem]
+  lineItems: [InvoiceLineItem!]!
   seller: Contact
   sellerId: String!
   status: InvoiceStatus!
   subTotalInCents: Int!
+  taxPercent: Float!
+  taxesInCents: Int!
   updatedAt: DateTime!
   updatedBy: String
   updatedByUser: User
@@ -547,6 +595,16 @@ input ListAssetsPage {
 type ListAssetsResult {
   items: [Asset!]!
   page: PaginationInfo!
+}
+
+input ListChargesFilter {
+  chargeType: ChargeType
+  contactId: ID
+  fulfilmentId: ID
+  invoiceId: ID
+  projectId: ID
+  purchaseOrderNumber: ID
+  salesOrderId: ID
 }
 
 input ListContactsFilter {
@@ -703,6 +761,7 @@ type Mutation {
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
+  createCharge(input: CreateChargeInput!): Charge
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
 
@@ -735,6 +794,7 @@ type Mutation {
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
+  setInvoiceTax(input: SetInvoiceTaxInput!): Invoice!
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
@@ -792,6 +852,11 @@ input NoteInput {
 input NoteUpdateInput {
   id: String!
   value: JSON!
+}
+
+input PageInfoInput {
+  number: Int
+  size: Int
 }
 
 type PaginationInfo {
@@ -1097,6 +1162,7 @@ type Query {
   invoiceById(id: String!): Invoice
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
+  listCharges(filter: ListChargesFilter, page: PageInfoInput): ChargePage
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
@@ -1159,6 +1225,10 @@ type RentalFulfilment implements FulfilmentBase {
   createdAt: DateTime!
   expectedRentalEndDate: DateTime
   id: ID!
+  lastChargedAt: DateTime
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
@@ -1168,6 +1238,7 @@ type RentalFulfilment implements FulfilmentBase {
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID!
+  salesOrderPONumber: String
   salesOrderType: FulfilmentType!
   updatedAt: DateTime!
   workflowColumnId: ID
@@ -1282,13 +1353,15 @@ type SaleFulfilment implements FulfilmentBase {
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
-  quantity: Int
+  quantity: Int!
   salePrice: Float
   salesOrder: SalesOrder
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID!
+  salesOrderPONumber: String
   salesOrderType: FulfilmentType!
+  unitCostInCents: Int!
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
@@ -1480,8 +1553,10 @@ type ServiceFulfilment implements FulfilmentBase {
   salesOrderId: ID!
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID!
+  salesOrderPONumber: String
   salesOrderType: FulfilmentType!
   serviceDate: DateTime
+  unitCostInCents: Int!
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
@@ -1517,6 +1592,11 @@ enum ServiceTransactionTypes {
   CUSTOM
   HAULING
   MAINTENANCE
+}
+
+input SetInvoiceTaxInput {
+  invoiceId: String!
+  taxPercent: Float!
 }
 
 type SignedUploadUrl {

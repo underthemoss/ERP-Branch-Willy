@@ -1,5 +1,7 @@
 "use client";
 
+import { graphql } from "@/graphql";
+import { useAddInvoiceChargesMutation } from "@/graphql/hooks";
 import {
   Box,
   Button,
@@ -25,10 +27,31 @@ import React from "react";
 export interface AddInvoiceLineItemDialogProps {
   open: boolean;
   onClose: () => void;
+  invoiceId: string;
 }
 
-export default function AddInvoiceLineItemDialog({ open, onClose }: AddInvoiceLineItemDialogProps) {
+export const AddInvoiceChargesMutation = graphql(`
+  mutation AddInvoiceCharges($input: AddInvoiceChargesInput!) {
+    addInvoiceCharges(input: $input) {
+      id
+      lineItems {
+        chargeId
+        description
+        totalInCents
+      }
+    }
+  }
+`);
+
+export default function AddInvoiceLineItemDialog({
+  open,
+  onClose,
+  invoiceId,
+}: AddInvoiceLineItemDialogProps) {
   const [tab, setTab] = React.useState(0);
+  const [addInvoiceCharges, { loading: addChargesLoading, error: addChargesError }] =
+    useAddInvoiceChargesMutation();
+  const [mutationError, setMutationError] = React.useState<string | null>(null);
 
   // Mock data for unallocated charges
   interface ChargeDoc {
@@ -477,7 +500,7 @@ export default function AddInvoiceLineItemDialog({ open, onClose }: AddInvoiceLi
           Cancel
         </Button>
         <Button
-          onClick={() => {
+          onClick={async () => {
             if (tab === 1) {
               alert(
                 JSON.stringify(
@@ -490,26 +513,42 @@ export default function AddInvoiceLineItemDialog({ open, onClose }: AddInvoiceLi
                   2,
                 ),
               );
+              onClose();
             } else {
-              const selectedRows = mockCharges.filter((row) => rowSelectionModel.includes(row._id));
-              alert(
-                JSON.stringify(
-                  {
-                    selectedLineItems: selectedRows,
+              setMutationError(null);
+              const selectedChargeIds = mockCharges
+                .filter((row) => rowSelectionModel.includes(row._id))
+                .map((row) => row._id);
+              if (selectedChargeIds.length === 0) {
+                setMutationError("Please select at least one charge to add.");
+                return;
+              }
+              try {
+                await addInvoiceCharges({
+                  variables: {
+                    input: {
+                      invoiceId,
+                      chargeIds: selectedChargeIds,
+                    },
                   },
-                  null,
-                  2,
-                ),
-              );
+                });
+                onClose();
+              } catch (err: any) {
+                setMutationError(err?.message || "Failed to add charges to invoice.");
+              }
             }
-            onClose();
           }}
           color="primary"
           variant="contained"
-          disabled={tab === 1 && !miscValid}
+          disabled={(tab === 1 && !miscValid) || addChargesLoading}
         >
-          Add
+          {addChargesLoading ? "Adding..." : "Add"}
         </Button>
+        {mutationError && (
+          <Box sx={{ color: "error.main", mt: 1, mb: 1 }}>
+            <Typography variant="body2">{mutationError}</Typography>
+          </Box>
+        )}
       </DialogActions>
     </Dialog>
   );
