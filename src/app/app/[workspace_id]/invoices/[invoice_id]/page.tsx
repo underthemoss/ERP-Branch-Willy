@@ -431,7 +431,7 @@ export default function InvoiceDisplayPage() {
                     transformOrigin: "top left",
                   }}
                 >
-                  <InvoiceRender invoiceId={invoiceId} scale={1} />
+                  <InvoiceRender key={cachekey} invoiceId={invoiceId} scale={1} />
                 </Box>
               </Box>
               <Box mt={2} display="flex" gap={2}>
@@ -808,6 +808,7 @@ export default function InvoiceDisplayPage() {
         onClose={() => {
           setAddItemDialogOpen(false);
           refetch();
+          setCacheKey((d) => d + 1);
         }}
         invoiceId={invoiceId}
         buyerId={invoice?.buyer?.id || ""}
