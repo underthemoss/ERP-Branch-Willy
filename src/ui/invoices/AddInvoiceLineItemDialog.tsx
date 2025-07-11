@@ -182,7 +182,6 @@ export default function AddInvoiceLineItemDialog({
     miscDesc.trim().length > 0 &&
     miscAmount.trim().length > 0 &&
     !isNaN(Number(miscAmount)) &&
-    Number(miscAmount) > 0 &&
     !!miscDate;
 
   return (
@@ -349,7 +348,7 @@ export default function AddInvoiceLineItemDialog({
               required
               fullWidth
               type="number"
-              inputProps={{ min: 0, step: "0.01" }}
+              inputProps={{ step: "0.01" }}
             />
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
