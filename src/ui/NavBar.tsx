@@ -59,14 +59,14 @@ export const NavBar = () => {
       testId: "nav-home",
     },
     {
-      text: "Sales Order",
+      text: "Sales Orders",
       href: `/app/${currentWorkspace?.id}/sales-orders`,
       icon: <SyncAltIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
       testId: "nav-sales-order",
     },
     {
-      text: "Purchase Order",
+      text: "Purchase Orders",
       href: `/app/${currentWorkspace?.id}/purchase-orders`,
       icon: <DescriptionOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,

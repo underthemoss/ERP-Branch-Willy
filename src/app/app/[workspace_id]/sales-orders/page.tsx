@@ -35,12 +35,16 @@ graphql(`
         id
         order_id
         buyer_id
+        status
         project_id
         company_id
         purchase_order_number
         created_at
         updated_at
         updated_by
+        pricing {
+          total_in_cents
+        }
         created_by_user {
           id
           firstName
@@ -128,8 +132,8 @@ export default function SalesOrdersPage() {
         order_id: order.order_id,
         buyer: contactMap.get(order.buyer_id ?? "") ?? order.buyer_id ?? "not implemented",
         project: projectMap.get(order.project_id ?? "") ?? order.project_id ?? "not implemented",
-        status: "not implemented",
-        total: "not implemented",
+        status: order.status,
+        total: `$${((order.pricing?.total_in_cents || 0) / 100).toFixed(2)}`,
         created_by: order.created_by_user
           ? [order.created_by_user.firstName, order.created_by_user.lastName]
               .filter(Boolean)
@@ -177,9 +181,8 @@ export default function SalesOrdersPage() {
         ) : (
           <Chip
             label={params.value}
-            color={params.value === "Open" ? "success" : "default"}
+            color={params.value === "SUBMITTED" ? "primary" : "default"}
             size="small"
-            sx={{ fontWeight: 600 }}
           />
         ),
       sortable: false,

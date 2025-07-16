@@ -282,14 +282,17 @@ export default function SalesOrderDetailPage() {
                           variant="contained"
                           color="primary"
                           disabled={submitLoading}
+                          loading={submitLoading}
                           onClick={async () => {
                             if (!salesOrder?.id) return;
                             await submitSalesOrder({
                               variables: { id: salesOrder.id },
+                              refetchQueries: ["GetSalesOrderById"],
+                              awaitRefetchQueries: true,
                             });
                           }}
                         >
-                          {submitLoading ? "Submitting..." : "Submit"}
+                          Submit
                         </Button>
                       </>
                     )}
