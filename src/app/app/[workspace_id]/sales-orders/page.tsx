@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { SalesOrderStatus } from "@/graphql/graphql";
 import { useSalesOrdersWithLookupsQuery } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
@@ -82,7 +83,9 @@ graphql(`
 `);
 
 export default function SalesOrdersPage() {
-  const [statusFilter, setStatusFilter] = React.useState("All Statuses");
+  const [statusFilter, setStatusFilter] = React.useState<SalesOrderStatus | "All Statuses">(
+    "All Statuses",
+  );
   const [searchTerm, setSearchTerm] = React.useState("");
 
   // Fetch sales orders, projects, and contacts
@@ -103,7 +106,7 @@ export default function SalesOrdersPage() {
     order_id: string;
     buyer: string;
     project: string;
-    status: string;
+    status: SalesOrderStatus;
     total: string;
     created_by: string;
     updated_by: string;
@@ -181,7 +184,7 @@ export default function SalesOrdersPage() {
         ) : (
           <Chip
             label={params.value}
-            color={params.value === "SUBMITTED" ? "primary" : "default"}
+            color={params.value === SalesOrderStatus.Submitted ? "primary" : "default"}
             size="small"
           />
         ),
@@ -265,7 +268,7 @@ export default function SalesOrdersPage() {
           <Select
             size="small"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => setStatusFilter(e.target.value as SalesOrderStatus | "All Statuses")}
             sx={{ minWidth: 140 }}
             data-testid="sales-order-status-filter"
             MenuProps={{
@@ -275,8 +278,8 @@ export default function SalesOrdersPage() {
             }}
           >
             <MenuItem value="All Statuses">All Statuses</MenuItem>
-            <MenuItem value="Open">Open</MenuItem>
-            <MenuItem value="Closed">Closed</MenuItem>
+            <MenuItem value={SalesOrderStatus.Draft}>Draft</MenuItem>
+            <MenuItem value={SalesOrderStatus.Submitted}>Submitted</MenuItem>
           </Select>
         </Box>
         <Box sx={{ height: 600 }}>
