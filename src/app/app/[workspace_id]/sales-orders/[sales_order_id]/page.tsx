@@ -165,7 +165,7 @@ export default function SalesOrderDetailPage() {
 
   const [cachekey, setCacheKey] = React.useState(0);
 
-  const { data, loading, error, refetch } = useGetSalesOrderByIdQuery({
+  const { data, loading, error } = useGetSalesOrderByIdQuery({
     variables: { id: sales_order_id },
     fetchPolicy: "cache-and-network",
   });
