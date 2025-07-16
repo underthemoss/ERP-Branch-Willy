@@ -72,7 +72,7 @@ graphql(`
 `);
 
 export default function Inventory() {
-  const pageSize = 200_000;
+  const pageSize = 2_000;
   const [searchTerm, setSearchTerm] = React.useState("");
   const { data, loading } = useListAssetsQuery({
     variables: { page: { number: 1, size: pageSize } },
