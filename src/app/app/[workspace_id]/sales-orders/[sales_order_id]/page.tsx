@@ -165,7 +165,7 @@ export default function SalesOrderDetailPage() {
 
   const [cachekey, setCacheKey] = React.useState(0);
 
-  const { data, loading, error } = useGetSalesOrderByIdQuery({
+  const { data, loading, error, refetch } = useGetSalesOrderByIdQuery({
     variables: { id: sales_order_id },
     fetchPolicy: "cache-and-network",
   });
@@ -282,14 +282,17 @@ export default function SalesOrderDetailPage() {
                           variant="contained"
                           color="primary"
                           disabled={submitLoading}
+                          loading={submitLoading}
                           onClick={async () => {
                             if (!salesOrder?.id) return;
                             await submitSalesOrder({
                               variables: { id: salesOrder.id },
+                              refetchQueries: ["GetSalesOrderById"],
+                              awaitRefetchQueries: true,
                             });
                           }}
                         >
-                          {submitLoading ? "Submitting..." : "Submit"}
+                          Submit
                         </Button>
                       </>
                     )}
