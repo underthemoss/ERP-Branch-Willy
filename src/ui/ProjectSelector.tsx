@@ -1,261 +1,174 @@
+"use client";
+
 import { graphql } from "@/graphql";
-import type { Project } from "@/graphql/graphql";
-import { useProjectSelectorListQuery } from "@/graphql/hooks";
+import { ContactType as GqlContactType } from "@/graphql/graphql";
+import { useProjectSelectorListSelectorQuery } from "@/graphql/hooks";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import FolderIcon from "@mui/icons-material/Folder";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Avatar,
   Box,
+  Button,
   Chip,
   CircularProgress,
-  MenuItem,
+  IconButton,
   Paper,
-  Select,
-  SelectChangeEvent,
+  Popover,
   Stack,
+  TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import React from "react";
+import {
+  TreeItem,
+  TreeItemContent,
+  TreeItemProps,
+  TreeViewBaseItem,
+  useTreeItem,
+  UseTreeItemContentSlotOwnProps,
+} from "@mui/x-tree-view";
+import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
+import React, { useCallback, useMemo, useState } from "react";
 
-// GQL query for listing projects
-export const PROJECT_SELECTOR_LIST = graphql(`
-  query ProjectSelectorList {
+export const CONTACT_SELECTOR_LIST = graphql(`
+  query ProjectSelectorListSelector {
     listProjects {
+      parent_project
       id
       name
       project_code
-      description
       deleted
     }
   }
 `);
 
+type ProjectTreeItem = {
+  id: string;
+  label: string;
+  children: ProjectTreeItem[];
+  searchterms: string;
+  fullLineageLabel: string;
+};
 export interface ProjectSelectorProps {
   projectId?: string;
-  onChange: (projectId: string) => void;
-  // Optionally filter out deleted projects
-  showDeleted?: boolean;
+  onChange: (contactId: string) => void;
 }
 
-export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
-  projectId,
-  onChange,
-  showDeleted = false,
-}) => {
-  // Use the generated hook for the renamed query
-  const { data, loading, error } = useProjectSelectorListQuery({
+export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ projectId, onChange }) => {
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const { data, loading, error } = useProjectSelectorListSelectorQuery({
     fetchPolicy: "cache-and-network",
   });
 
-  // Filter out deleted projects unless showDeleted is true
-  const projects =
-    data?.listProjects
-      ?.filter((p) => {
-        if (!p) {
-          return null;
-        }
-        if (showDeleted) {
-          return p;
-        }
-        return p.deleted === false;
-      })
-      .filter(Boolean)
-      .map((p) => p!) || [];
+  const projects = (data?.listProjects || [])
+    .filter((i) => i !== null)
+    .filter((d) => d.deleted === false);
 
-  if (loading) {
-    return (
-      <Box display="flex" alignItems="center" justifyContent="center" minHeight={80}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const prepareTree = () => {
+    const rootProjects = projects.filter((d) => !d?.parent_project);
+    const findChildren = (
+      item: { id: string; label: string },
+      lineageSoFar: string,
+    ): ProjectTreeItem => {
+      const fullLineage = lineageSoFar ? `${lineageSoFar} > ${item.label}` : item.label;
+      const children = projects
+        .filter((p) => p.parent_project === item.id)
+        .map((i) => findChildren({ id: i.id, label: i.name }, fullLineage));
+      const searchterms = [item.label, ...children.map((c) => c.label)].join(" ");
+      console.log(fullLineage);
+      return {
+        id: item.id,
+        label: item.label,
+        searchterms: searchterms,
+        fullLineageLabel: fullLineage,
+        children: children.filter((i) => i.searchterms.includes(search)),
+      };
+    };
+    const items = rootProjects
+      .map((i) => findChildren({ id: i.id, label: i.name }, ""))
+      .filter((i) => i.searchterms.includes(search));
+    return items;
+  };
 
-  if (error) {
-    return (
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography color="error">Failed to load projects</Typography>
-      </Paper>
-    );
-  }
+  const items = prepareTree();
+
+  // Flatten the tree into a hashmap for quick lookup by id
+  const projectMap = useMemo(() => {
+    const map: Record<string, ProjectTreeItem> = {};
+    const traverse = (nodes: ProjectTreeItem[]) => {
+      for (const node of nodes) {
+        map[node.id] = node;
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      }
+    };
+    traverse(items);
+    return map;
+  }, [items]);
 
   return (
-    <Select
-      value={projectId ?? ""}
-      onChange={(e: SelectChangeEvent<string>) => onChange(e.target.value)}
-      displayEmpty
-      fullWidth
-      IconComponent={ArrowDropDownIcon}
-      renderValue={(selected) => {
-        const project = projects.find((p) => p.id === selected);
-        if (!project) {
-          return (
-            <Paper
-              variant="outlined"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                p: 2,
-                width: "100%",
-                boxShadow: "none",
-                borderRadius: 2,
-              }}
-            >
-              <Avatar sx={{ width: 40, height: 40, mr: 2, bgcolor: "grey.400" }}>
-                {/* Placeholder circle */}
-              </Avatar>
-              <Box flex={1}>
-                <Typography fontWeight={500} fontSize={16} color="text.secondary">
-                  Select project…
-                </Typography>
-              </Box>
-            </Paper>
-          );
-        }
-        return (
-          <Paper
-            variant="outlined"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              p: 2,
-              width: "100%",
-              boxShadow: "none",
-              borderRadius: 2,
-              marginRight: 3,
-              gap: 2,
+    <Box>
+      {projectId ? (
+        <Chip
+          icon={<FolderIcon />}
+          label={projectMap[projectId].fullLineageLabel || "Unknown Project"}
+          onDelete={() => {
+            onChange("");
+            setPopoverOpen(false);
+          }}
+          // sx={{ height: 32, fontSize: 16 }}
+        />
+      ) : (
+        <>
+          <TextField
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={(e) => {
+              setPopoverOpen(true);
+              setAnchorEl(e.currentTarget);
             }}
+            placeholder="Search projects..."
+            size="small"
+            fullWidth
+            autoComplete="off"
+          />
+          <Popover
+            open={popoverOpen}
+            anchorEl={anchorEl}
+            onClose={() => setPopoverOpen(false)}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            sx={{ maxHeight: 200 }}
+            disableAutoFocus
+            disableEnforceFocus
           >
-            <Avatar sx={{ width: 44, height: 44, mr: 2, bgcolor: "primary.light" }}>
-              {project.name[0]}
-            </Avatar>
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700} fontSize={17} noWrap>
-                {project.name}
-              </Typography>
-              <Stack spacing={0.2}>
-                <Box display="flex" gap={0.5} alignItems="center">
-                  <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                    Code:
-                  </Typography>
-                  <Typography fontSize={14} color="text.secondary" noWrap>
-                    {project.project_code}
-                  </Typography>
-                </Box>
-                {project.description && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Description:
-                    </Typography>
-                    <Typography
-                      fontSize={13}
-                      color="text.secondary"
-                      noWrap
-                      sx={{
-                        maxWidth: 520,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "block",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {project.description}
-                    </Typography>
-                  </Box>
-                )}
-                {project.deleted && (
-                  <Chip
-                    label="Deleted"
-                    color="error"
-                    size="small"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: 13,
-                      minWidth: 70,
-                      ml: 2,
-                      bgcolor: "error.light",
-                      color: "error.contrastText",
-                    }}
-                  />
-                )}
-              </Stack>
+            <Box sx={{ p: 1 }}>
+              <RichTreeView
+                selectedItems={projectId}
+                items={items}
+                onItemSelectionToggle={(ev, itemId) => {
+                  const target = (ev?.target as HTMLElement | undefined)?.tagName;
+                  if (["svg", "path"].includes(target ?? "")) {
+                    return;
+                  }
+                  onChange(itemId);
+                }}
+              />
             </Box>
-          </Paper>
-        );
-      }}
-      sx={{
-        background: "transparent",
-        borderRadius: 2,
-        "& .MuiSelect-select": { p: 0 },
-      }}
-      MenuProps={{
-        PaperProps: {
-          sx: { minWidth: 350, maxHeight: 400 },
-        },
-      }}
-    >
-      <MenuItem value="">
-        <Typography color="text.secondary">Select project…</Typography>
-      </MenuItem>
-      {projects.map((project) => (
-        <MenuItem key={project.id} value={project.id} sx={{ py: 1 }}>
-          <Box display="flex" alignItems="center" width="100%" gap={2} minWidth={0}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.light" }}>
-              {project.name[0]}
-            </Avatar>
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700} fontSize={16} noWrap>
-                {project.name}
-              </Typography>
-              <Stack spacing={0.2}>
-                <Box display="flex" gap={0.5} alignItems="center">
-                  <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                    Code:
-                  </Typography>
-                  <Typography fontSize={14} color="text.secondary" noWrap>
-                    {project.project_code}
-                  </Typography>
-                </Box>
-                {project.description && (
-                  <Box display="flex" gap={0.5} alignItems="center">
-                    <Typography fontSize={12} color="text.secondary" fontWeight={600} noWrap>
-                      Description:
-                    </Typography>
-                    <Typography
-                      fontSize={13}
-                      color="text.secondary"
-                      noWrap
-                      sx={{
-                        maxWidth: 500,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "block",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {project.description}
-                    </Typography>
-                  </Box>
-                )}
-                {project.deleted && (
-                  <Chip
-                    label="Deleted"
-                    color="error"
-                    size="small"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: 13,
-                      minWidth: 70,
-                      ml: 2,
-                      bgcolor: "error.light",
-                      color: "error.contrastText",
-                    }}
-                  />
-                )}
-              </Stack>
-            </Box>
-          </Box>
-        </MenuItem>
-      ))}
-    </Select>
+          </Popover>
+        </>
+      )}
+    </Box>
   );
 };
 
