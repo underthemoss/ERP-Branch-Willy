@@ -16,7 +16,12 @@ export const ApolloClientProvider: React.FC<{
 
   const client = useMemo(() => {
     const httpLink = createHttpLink({
-      uri: api,
+      uri: (operation) => {
+        if (!operation.operationName) return api;
+        const hasQuery = api.includes("?");
+        const opParam = `op=${encodeURIComponent(operation.operationName)}`;
+        return hasQuery ? `${api}&${opParam}` : `${api}?${opParam}`;
+      },
     });
 
     const authLink = setContext(async (_, { headers }) => {
