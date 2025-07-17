@@ -31,6 +31,16 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
+
+  const lineItem =
+    data?.getSalesOrderLineItemById?.__typename === "SaleSalesOrderLineItem"
+      ? data.getSalesOrderLineItemById
+      : null;
+
+  if (!lineItem) {
+    return null;
+  }
+
   const handleClose = () => {
     setStep(1);
     onClose();
@@ -91,7 +101,13 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
           )}
 
           {/* Step 2: Pricing */}
-          {step === 2 && <CreateSaleLineItemPricingStep lineItemId={lineItemId} Footer={Footer} />}
+          {step === 2 && lineItem.so_pim_id && (
+            <CreateSaleLineItemPricingStep
+              lineItemId={lineItemId}
+              Footer={Footer}
+              pimCategoryId={lineItem.so_pim_id}
+            />
+          )}
 
           {/* Step 3: Confirmation */}
           {step === 3 && (
