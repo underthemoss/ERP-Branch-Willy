@@ -19,7 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { Controller, SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { useListBusinessContactsQuery } from "../contacts/api";
-import { useListProjectsQuery } from "../projects/api";
+import { ProjectSelector } from "../ProjectSelector";
 import { useCreatePriceBookMutation, useListPriceBooksQuery } from "./api";
 
 interface NewPriceBookFields {
@@ -45,9 +45,6 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
       workspaceId: workspace_id,
       page: { number: 1, size: 100 },
     },
-  });
-  const { data: projectsData, loading: projectsLoading } = useListProjectsQuery({
-    fetchPolicy: "cache-and-network",
   });
 
   const { control, handleSubmit, setValue, watch } = useForm<NewPriceBookFields>({
@@ -180,19 +177,10 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
               name="projectId"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel>Project</InputLabel>
-                  <Select label="Project" {...field} disabled={projectsLoading}>
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {projectsData?.listProjects?.map((project: any) => (
-                      <MenuItem key={project.id} value={project.id}>
-                        {project.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <ProjectSelector
+                  projectId={field.value}
+                  onChange={(projectId) => field.onChange(projectId)}
+                />
               )}
             />
 
