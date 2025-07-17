@@ -19,6 +19,7 @@ import {
   GridColDef,
   GridRowGroupingModel,
   useGridApiRef,
+  useKeepGroupedColumnsHidden,
 } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import Link from "next/link";
@@ -84,7 +85,7 @@ export default function AllPrices() {
       width: 200,
       renderCell: (params) => {
         const priceBookId = params.row.priceBookId;
-        const priceBookName = params.value;
+        const priceBookName = params.value || "Not in Price Book";
         // Use workspace_id in the route
         return priceBookId ? (
           <Box display="flex" alignItems="center" height="100%">
@@ -101,19 +102,19 @@ export default function AllPrices() {
     },
     {
       field: "pricePerDayInCents",
-      headerName: "Price/Day",
+      headerName: "1 Day",
       width: 120,
       valueFormatter: (value: number) => (value != null ? `$${(value / 100).toFixed(2)}` : ""),
     },
     {
       field: "pricePerWeekInCents",
-      headerName: "Price/Week",
+      headerName: "1 Week",
       width: 120,
       valueFormatter: (value: number) => (value != null ? `$${(value / 100).toFixed(2)}` : ""),
     },
     {
       field: "pricePerMonthInCents",
-      headerName: "Price/Month",
+      headerName: "4 Weeks",
       width: 120,
       valueFormatter: (value: number) => (value != null ? `$${(value / 100).toFixed(2)}` : ""),
     },
@@ -138,11 +139,20 @@ export default function AllPrices() {
   ];
 
   // Row grouping model: group by PIM Category, then Name, then Price Book (by id)
-  const rowGroupingModel: GridRowGroupingModel = ["pimCategoryName", "name", "priceBookId"];
+  const rowGroupingModel: GridRowGroupingModel = ["pimCategoryName", "priceBookName"];
 
   // State for grouping expansion depth
   const [defaultGroupingExpansionDepth, setDefaultGroupingExpansionDepth] =
     React.useState<number>(0);
+
+  const initialState = useKeepGroupedColumnsHidden({
+    apiRef,
+    initialState: {
+      rowGrouping: {
+        model: rowGroupingModel,
+      },
+    },
+  });
 
   return (
     <PageContainer>
@@ -250,6 +260,10 @@ export default function AllPrices() {
             disableRowSelectionOnClick
             getRowId={(row) => row.id}
             defaultGroupingExpansionDepth={defaultGroupingExpansionDepth}
+            initialState={initialState}
+            groupingColDef={{
+              headerName: "Category / Price Book",
+            }}
           />
         </Box>
       </Stack>
