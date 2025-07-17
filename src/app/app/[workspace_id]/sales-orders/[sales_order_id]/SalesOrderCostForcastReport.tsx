@@ -1,9 +1,36 @@
-// "use client";
+"use client";
 
 import { graphql } from "@/graphql";
 import { useSalesOrderLineItemsChartReportQuery } from "@/graphql/hooks";
+import { Box, Checkbox, FormControlLabel, Paper, Typography } from "@mui/material";
+import {
+  ChartsTooltipContainer,
+  useAxesTooltip,
+  useItemTooltip,
+} from "@mui/x-charts/ChartsTooltip";
+import { HighlightItemData, HighlightScope } from "@mui/x-charts/context";
 import { LineChart } from "@mui/x-charts/LineChart";
 import * as React from "react";
+
+// Color palette for chart series - Material Design colors
+const CHART_COLORS = [
+  "#f44336", // Red 500
+  "#2196f3", // Blue 500
+  "#4caf50", // Green 500
+  "#ff9800", // Orange 500
+  "#9c27b0", // Purple 500
+  "#00bcd4", // Cyan 500
+  "#673ab7", // Deep Purple 500
+  "#009688", // Teal 500
+  "#e91e63", // Pink 500
+  "#3f51b5", // Indigo 500
+  "#8bc34a", // Light Green 500
+  "#ffeb3b", // Yellow 500
+  "#ff5722", // Deep Orange 500
+  "#03a9f4", // Light Blue 500
+  "#cddc39", // Lime 500
+  "#ffc107", // Amber 500
+];
 
 // GQL document for the chart report
 const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
@@ -47,6 +74,145 @@ type Props = {
   salesOrderId: string;
 };
 
+// Custom tooltip content component
+function CustomTooltipContent({ highlightedItem }: { highlightedItem: HighlightItemData | null }) {
+  const tooltipData = useAxesTooltip();
+  const [highlightedSeriesId, setHighlightedSeriesId] = React.useState<string | number | null>(
+    null,
+  );
+
+  if (!tooltipData || tooltipData.length === 0) {
+    return null;
+  }
+
+  const axisData = tooltipData[0];
+  if (!axisData) {
+    return null;
+  }
+
+  // Filter series items based on chart highlighting
+  const displayItems = highlightedItem
+    ? axisData.seriesItems.filter((item) => item.seriesId === highlightedItem.seriesId)
+    : axisData.seriesItems;
+
+  // Calculate sum of displayed values only
+  const sum = displayItems.reduce((total, item) => {
+    const value = typeof item.value === "number" ? item.value : 0;
+    return total + value;
+  }, 0);
+
+  const currencyFormatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        m: 1,
+        border: "solid",
+        borderWidth: 2,
+        borderColor: "divider",
+        table: { borderSpacing: 0 },
+        thead: {
+          td: {
+            px: 1.5,
+            py: 0.75,
+            borderBottom: "solid",
+            borderWidth: 2,
+            borderColor: "divider",
+          },
+        },
+        tbody: {
+          "tr:first-of-type": { td: { paddingTop: 1.5 } },
+          "tr:last-of-type": { td: { paddingBottom: 1.5 } },
+          tr: {
+            "td:first-of-type": { paddingLeft: 1.5 },
+            "td:last-of-type": { paddingRight: 1.5 },
+            td: {
+              paddingRight: "7px",
+              paddingBottom: "10px",
+            },
+          },
+        },
+      }}
+      onMouseLeave={() => setHighlightedSeriesId(null)}
+    >
+      <table>
+        <thead>
+          <tr>
+            <td colSpan={3}>
+              <Typography>{axisData.axisFormattedValue}</Typography>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          {displayItems.map((seriesItem) => {
+            const isHighlighted = highlightedSeriesId === seriesItem.seriesId;
+            return (
+              <tr
+                key={seriesItem.seriesId}
+                onMouseEnter={() => setHighlightedSeriesId(seriesItem.seriesId)}
+                style={{ cursor: "pointer" }}
+              >
+                <td aria-label={`${seriesItem.formattedLabel}-series-color`}>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      backgroundColor: seriesItem.color,
+                      opacity: highlightedSeriesId && !isHighlighted ? 0.3 : 1,
+                    }}
+                  />
+                </td>
+                <td>
+                  <Typography
+                    fontWeight={isHighlighted ? "bold" : "light"}
+                    sx={{ opacity: highlightedSeriesId && !isHighlighted ? 0.3 : 1 }}
+                  >
+                    {seriesItem.formattedLabel}
+                  </Typography>
+                </td>
+                <td>
+                  <Typography
+                    fontWeight={isHighlighted ? "bold" : "normal"}
+                    sx={{ opacity: highlightedSeriesId && !isHighlighted ? 0.3 : 1 }}
+                  >
+                    {seriesItem.formattedValue}
+                  </Typography>
+                </td>
+              </tr>
+            );
+          })}
+          {displayItems.length > 1 && (
+            <tr>
+              <td colSpan={2}>
+                <Typography fontWeight="bold">Total</Typography>
+              </td>
+              <td>
+                <Typography fontWeight="bold">{currencyFormatter.format(sum)}</Typography>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </Paper>
+  );
+}
+
+// Custom tooltip wrapper that follows mouse
+function CustomAxisTooltip({ highlightedItem }: { highlightedItem: HighlightItemData | null }) {
+  return (
+    <ChartsTooltipContainer trigger="axis">
+      <CustomTooltipContent highlightedItem={highlightedItem} />
+    </ChartsTooltipContainer>
+  );
+}
+
 export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
   const { data, loading, error } = useSalesOrderLineItemsChartReportQuery({
     variables: { salesOrderId },
@@ -56,6 +222,10 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
   // Build chart data
   const [dataset, setDataset] = React.useState<any[]>([]);
   const [series, setSeries] = React.useState<any[]>([]);
+  const [allSeries, setAllSeries] = React.useState<any[]>([]);
+  const [visibleSeriesIds, setVisibleSeriesIds] = React.useState<Set<string>>(new Set());
+  const [highlightedItem, setHighlightedItem] = React.useState<HighlightItemData | null>(null);
+  const [hoveredSeriesId, setHoveredSeriesId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!data?.getSalesOrderById?.line_items) return;
@@ -108,40 +278,114 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     const datasetArr = allDays.map((day) => dayToRow[day]);
 
     // Build series array: sales first, then rentals
+    const currencyFormatter = (value: number | null) => {
+      if (value === null) return "";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value);
+    };
+
+    const highlightScope: HighlightScope = {
+      highlight: "series",
+      fade: "global",
+    };
+
+    let colorIndex = 0;
     const salesSeries = saleItems.map((li, idx: number) => {
-      if (li?.__typename === "SaleSalesOrderLineItem")
-        return {
+      if (li?.__typename === "SaleSalesOrderLineItem") {
+        const series = {
           id: li.id,
           label: li.so_pim_product?.name || li.so_pim_category?.name || `Sale Item ${idx + 1}`,
           dataKey: li.so_pim_product?.name || li.id,
           area: true,
           showMark: false,
           stack: "total",
-          color: ["#43a047", "#ffd600", "#ff7043", "#8d6e63"][idx % 4],
+          color: CHART_COLORS[colorIndex % CHART_COLORS.length],
+          valueFormatter: currencyFormatter,
+          highlightScope,
         };
+        colorIndex++;
+        return series;
+      }
       return null;
     });
     const rentalSeries = rentalItems.map((li: any, idx: number) => {
-      if (li?.__typename === "RentalSalesOrderLineItem")
-        return {
+      if (li?.__typename === "RentalSalesOrderLineItem") {
+        const series = {
           id: li.id,
           label: li.so_pim_product?.name || li.so_pim_category?.name || `Rental Item ${idx + 1}`,
           dataKey: li.so_pim_product?.name || li.id,
           area: true,
           showMark: false,
           stack: "total",
-          color: ["#1976d2", "#64b5f6", "#ab47bc", "#00bcd4"][idx % 4],
+          color: CHART_COLORS[colorIndex % CHART_COLORS.length],
+          valueFormatter: currencyFormatter,
+          highlightScope,
         };
+        colorIndex++;
+        return series;
+      }
       return null;
     });
 
+    const allSeriesArray = [...salesSeries, ...rentalSeries].filter(Boolean) as any[];
+
     setDataset(datasetArr);
-    setSeries([...salesSeries, ...rentalSeries]);
+    setAllSeries(allSeriesArray);
+
+    // Initialize all series as visible
+    if (visibleSeriesIds.size === 0) {
+      setVisibleSeriesIds(new Set(allSeriesArray.map((s) => s.id)));
+    }
   }, [data]);
+
+  // Update visible series when checkboxes change
+  React.useEffect(() => {
+    const visibleSeries = allSeries.filter((s) => visibleSeriesIds.has(s.id));
+    setSeries(visibleSeries);
+  }, [allSeries, visibleSeriesIds]);
+
+  const handleSeriesToggle = (seriesId: string) => {
+    setVisibleSeriesIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(seriesId)) {
+        // Don't allow unchecking if it's the last visible series
+        if (newSet.size > 1) {
+          newSet.delete(seriesId);
+        }
+      } else {
+        newSet.add(seriesId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle hover to highlight series in chart
+  React.useEffect(() => {
+    if (hoveredSeriesId) {
+      const seriesIndex = allSeries.findIndex((s) => s.id === hoveredSeriesId);
+      if (seriesIndex !== -1) {
+        setHighlightedItem({
+          seriesId: hoveredSeriesId,
+          dataIndex: undefined,
+        } as HighlightItemData);
+      }
+    } else {
+      setHighlightedItem(null);
+    }
+  }, [hoveredSeriesId, allSeries]);
+
+  // Create a custom tooltip component that has access to highlightedItem
+  const TooltipWithHighlight = React.useCallback(() => {
+    return <CustomAxisTooltip highlightedItem={highlightedItem} />;
+  }, [highlightedItem]);
 
   if (loading) return <div>Loading price forecast...</div>;
   if (error) return <div>Error loading forecast: {error.message}</div>;
-  if (!dataset.length || !series.length) return <div>No forecast data available.</div>;
+  if (!dataset.length || !allSeries.length) return <div>No forecast data available.</div>;
 
   return (
     <div>
@@ -160,12 +404,72 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
         ]}
         yAxis={[
           {
-            width: 70,
+            width: 80,
+            valueFormatter: (value: number) => {
+              return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(value);
+            },
           },
         ]}
         series={series}
         height={400}
+        highlightedItem={highlightedItem}
+        onHighlightChange={setHighlightedItem}
+        slots={{
+          tooltip: TooltipWithHighlight,
+          legend: () => null,
+        }}
+        slotProps={{
+          tooltip: {
+            trigger: "axis",
+          },
+        }}
       />
+
+      {/* Checkbox Legend */}
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+        {allSeries.map((s) => (
+          <FormControlLabel
+            key={s.id}
+            onMouseEnter={() => setHoveredSeriesId(s.id)}
+            onMouseLeave={() => setHoveredSeriesId(null)}
+            control={
+              <Checkbox
+                size="small"
+                checked={visibleSeriesIds.has(s.id)}
+                onChange={() => handleSeriesToggle(s.id)}
+                sx={{ py: 0 }}
+              />
+            }
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    backgroundColor: s.color,
+                    borderRadius: "2px",
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.875rem",
+                    opacity: highlightedItem && highlightedItem.seriesId !== s.id ? 0.5 : 1,
+                  }}
+                >
+                  {s.label}
+                </Typography>
+              </Box>
+            }
+            sx={{ m: 0, mr: 2, cursor: "pointer" }}
+          />
+        ))}
+      </Box>
     </div>
   );
 }
