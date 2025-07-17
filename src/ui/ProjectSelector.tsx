@@ -72,28 +72,40 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ projectId, onC
     .filter((d) => d.deleted === false);
 
   const prepareTree = () => {
+    const searchLower = search.toLowerCase();
     const rootProjects = projects.filter((d) => !d?.parent_project);
+
     const findChildren = (
       item: { id: string; label: string },
       lineageSoFar: string,
-    ): ProjectTreeItem => {
+    ): ProjectTreeItem | null => {
       const fullLineage = lineageSoFar ? `${lineageSoFar} > ${item.label}` : item.label;
       const children = projects
         .filter((p) => p.parent_project === item.id)
-        .map((i) => findChildren({ id: i.id, label: i.name }, fullLineage));
-      const searchterms = [item.label, ...children.map((c) => c.label)].join(" ");
-      console.log(fullLineage);
-      return {
-        id: item.id,
-        label: item.label,
-        searchterms: searchterms,
-        fullLineageLabel: fullLineage,
-        children: children.filter((i) => i.searchterms.includes(search)),
-      };
+        .map((i) => findChildren({ id: i.id, label: i.name }, fullLineage))
+        .filter((c): c is ProjectTreeItem => c !== null);
+
+      // Check if this node matches the search
+      const matchesSelf = item.label.toLowerCase().includes(searchLower);
+
+      // Check if any children match (already filtered recursively)
+      if (matchesSelf || children.length > 0 || searchLower === "") {
+        return {
+          id: item.id,
+          label: item.label,
+          searchterms: item.label,
+          fullLineageLabel: fullLineage,
+          children,
+        };
+      }
+      // If neither this node nor any children match, exclude this node
+      return null;
     };
+
     const items = rootProjects
       .map((i) => findChildren({ id: i.id, label: i.name }, ""))
-      .filter((i) => i.searchterms.includes(search));
+      .filter((i): i is ProjectTreeItem => i !== null);
+
     return items;
   };
 
