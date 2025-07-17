@@ -9,7 +9,7 @@ import DateRangeIcon from "@mui/icons-material/DateRange";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
-import { DataGridPro, GridColDef, Toolbar } from "@mui/x-data-grid-pro";
+import { DataGridPremium, GridColDef, Toolbar } from "@mui/x-data-grid-premium";
 import { addDays, format } from "date-fns";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
@@ -486,10 +486,11 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
           </Box>
         ) : (
           <>
-            <DataGridPro
+            <DataGridPremium
               rows={lineItems}
               columns={columns}
               loading={loading}
+              pinnedColumns={{ right: ["actions"] }}
               disableRowSelectionOnClick
               autoHeight
               getRowId={(row) => row.id}
