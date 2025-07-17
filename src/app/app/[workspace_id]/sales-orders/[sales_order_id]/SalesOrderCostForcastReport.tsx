@@ -15,6 +15,9 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
           so_pim_product {
             name
           }
+          so_pim_category{
+            name
+          }
           calulate_price {
             forecast {
               days {
@@ -28,6 +31,9 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
         ... on SaleSalesOrderLineItem {
           id
           so_pim_product {
+            name
+          }
+          so_pim_category{
             name
           }
           unit_cost_in_cents
@@ -107,7 +113,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
         return {
           id: li.id,
           label:
-            li.so_pim_product?.name || (li as any).so_pim_category?.name || `Sale Item ${idx + 1}`,
+            li.so_pim_product?.name || li.so_pim_category?.name || `Sale Item ${idx + 1}`,
           dataKey: li.so_pim_product?.name || li.id,
           area: true,
           showMark: false,
