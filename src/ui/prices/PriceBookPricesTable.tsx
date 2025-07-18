@@ -2,11 +2,14 @@
 
 import { PriceType } from "@/graphql/graphql";
 import { useListPricesQuery, type RentalPriceFields, type SalePriceFields } from "@/ui/prices/api";
-import { Autocomplete, Box, Button, TextField, Typography } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { Autocomplete, Box, Button, IconButton, TextField, Typography } from "@mui/material";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { AddNewPriceDialog } from "./AddNewPriceDialog";
+import { EditRentalPriceDialog } from "./EditRentalPriceDialog";
+import { EditSalePriceDialog } from "./EditSalePriceDialog";
 
 function formatCentsToUSD(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -15,7 +18,9 @@ function formatCentsToUSD(cents: number): string {
   }).format(cents / 100);
 }
 
-const columns: GridColDef[] = [
+const createColumns = (
+  handleEditPrice: (price: RentalPriceFields | SalePriceFields) => void,
+): GridColDef[] => [
   { field: "pimCategoryName", headerName: "Category", width: 230 },
   {
     field: "name",
@@ -93,6 +98,18 @@ const columns: GridColDef[] = [
       return <span>{updatedAt}</span>;
     },
   },
+  {
+    field: "actions",
+    headerName: "Actions",
+    width: 100,
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => (
+      <IconButton onClick={() => handleEditPrice(params.row)} size="small" aria-label="edit price">
+        <EditIcon />
+      </IconButton>
+    ),
+  },
 ];
 
 export function PricesTable() {
@@ -102,6 +119,12 @@ export function PricesTable() {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
   const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
+
+  // State for edit dialogs
+  const [editingRentalPrice, setEditingRentalPrice] = React.useState<RentalPriceFields | null>(
+    null,
+  );
+  const [editingSalePrice, setEditingSalePrice] = React.useState<SalePriceFields | null>(null);
 
   const priceTypeOptions = [
     { label: "Rental", value: PriceType.Rental },
@@ -159,6 +182,18 @@ export function PricesTable() {
 
   // State for Add Price dialog
   const [addDialogOpen, setAddDialogOpen] = React.useState(false);
+
+  // Handle edit price
+  const handleEditPrice = (price: RentalPriceFields | SalePriceFields) => {
+    if (price.__typename === "RentalPrice") {
+      setEditingRentalPrice(price as RentalPriceFields);
+    } else if (price.__typename === "SalePrice") {
+      setEditingSalePrice(price as SalePriceFields);
+    }
+  };
+
+  // Create columns with the edit handler
+  const columns = React.useMemo(() => createColumns(handleEditPrice), []);
 
   return (
     <Box>
@@ -243,6 +278,26 @@ export function PricesTable() {
       <div style={{ height: 600, width: "100%" }}>
         <DataGridPro rows={rows} columns={columns} loading={loading} />
       </div>
+
+      {/* Edit Rental Price Dialog */}
+      {editingRentalPrice && (
+        <EditRentalPriceDialog
+          open={!!editingRentalPrice}
+          onClose={() => setEditingRentalPrice(null)}
+          price={editingRentalPrice}
+          onSuccess={() => setEditingRentalPrice(null)}
+        />
+      )}
+
+      {/* Edit Sale Price Dialog */}
+      {editingSalePrice && (
+        <EditSalePriceDialog
+          open={!!editingSalePrice}
+          onClose={() => setEditingSalePrice(null)}
+          price={editingSalePrice}
+          onSuccess={() => setEditingSalePrice(null)}
+        />
+      )}
     </Box>
   );
 }

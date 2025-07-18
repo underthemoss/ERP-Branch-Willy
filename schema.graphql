@@ -824,7 +824,9 @@ type Mutation {
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
+  updateSalePrice(input: UpdateSalePriceInput!): SalePrice
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
@@ -1675,6 +1677,15 @@ input UpdatePurchaseOrderLineItemInput {
   po_quantity: Int
 }
 
+input UpdateRentalPriceInput {
+  id: ID!
+  name: String
+  pimProductId: ID
+  pricePerDayInCents: Int
+  pricePerMonthInCents: Int
+  pricePerWeekInCents: Int
+}
+
 input UpdateRentalSalesOrderLineItemInput {
   delivery_charge_in_cents: Int
   delivery_date: String
@@ -1690,6 +1701,14 @@ input UpdateRentalSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
+}
+
+input UpdateSalePriceInput {
+  discounts: JSON
+  id: ID!
+  name: String
+  pimProductId: ID
+  unitCostInCents: Int
 }
 
 input UpdateSalesOrderLineItemInput {
