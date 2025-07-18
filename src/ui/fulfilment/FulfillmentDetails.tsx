@@ -44,7 +44,11 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
   });
   const fulfilment = data?.getFulfilmentById;
 
-  const { data: chargesData, loading: chargesLoading } = useListChargesForFulfilmentQuery({
+  const {
+    data: chargesData,
+    loading: chargesLoading,
+    refetch: refetchCharges,
+  } = useListChargesForFulfilmentQuery({
     variables: { fulfilmentId: fulfillmentId },
   });
   const charges = chargesData?.listCharges?.items || [];
@@ -118,6 +122,10 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
         {isRental(fulfilment) && (
           <RentalFulfillmentDetails
             fulfilment={makeFragmentData(fulfilment as RentalFulfilment, RentalFulfilmentFields)}
+            onDateChange={() => {
+              refetch();
+              refetchCharges();
+            }}
           />
         )}
         {isSale(fulfilment) && <SaleFulfillmentDetails fulfilment={fulfilment} price={price} />}
