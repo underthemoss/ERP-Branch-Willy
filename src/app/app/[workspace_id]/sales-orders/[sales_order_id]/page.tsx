@@ -457,7 +457,26 @@ export default function SalesOrderDetailPage() {
                       <Typography>Phone: {salesOrder.buyer.phone}</Typography>
                     )}
                     {"address" in salesOrder.buyer && salesOrder.buyer.address && (
-                      <Typography>Address: {salesOrder.buyer.address}</Typography>
+                      <Typography>
+                        Address:{" "}
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            salesOrder.buyer.address,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "inherit",
+                            textDecoration: "underline",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          {salesOrder.buyer.address}
+                          <OpenInNewIcon sx={{ fontSize: 16 }} />
+                        </a>
+                      </Typography>
                     )}
                     {"website" in salesOrder.buyer && salesOrder.buyer.website && (
                       <Typography>
