@@ -14,6 +14,8 @@ import * as React from "react";
 import {
   PimCategoryFields,
   PimProductFields,
+  useGetPimCategoryByIdLazyQuery,
+  useGetPimProductByIdLazyQuery,
   useListPimCategoriesLazyQuery,
   useListPimProductsLazyQuery,
 } from "./api";
@@ -259,6 +261,7 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
 export function PimCategoriesTreeView(props: {
   onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
   includeProducts?: boolean;
+  selectedItemId?: string;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
@@ -273,9 +276,58 @@ export function PimCategoriesTreeView(props: {
     useListPimCategoriesLazyQuery();
   const [listProductsQuery, { loading: productsLoading, error: productsError }] =
     useListPimProductsLazyQuery();
+  const [getCategoryById] = useGetPimCategoryByIdLazyQuery();
+  const [getProductById] = useGetPimProductByIdLazyQuery();
 
   const loading = categoriesLoading || productsLoading;
   const error = categoriesError || productsError;
+
+  // Resolve selected item from ID
+  React.useEffect(() => {
+    if (!props.selectedItemId) {
+      setSelectedItem(null);
+      return;
+    }
+
+    const resolveSelectedItem = async () => {
+      // Try to get it as a product first if includeProducts is true
+      if (props.includeProducts && props.selectedItemId) {
+        try {
+          const { data: productData } = await getProductById({
+            variables: {
+              id: props.selectedItemId,
+            },
+          });
+
+          if (productData?.getPimProductById) {
+            setSelectedItem(productData.getPimProductById);
+            return;
+          }
+        } catch (error) {
+          // Product not found, try category
+        }
+      }
+
+      // Try to get it as a category
+      if (props.selectedItemId) {
+        try {
+          const { data: categoryData } = await getCategoryById({
+            variables: {
+              id: props.selectedItemId,
+            },
+          });
+
+          if (categoryData?.getPimCategoryById) {
+            setSelectedItem(categoryData.getPimCategoryById);
+          }
+        } catch (error) {
+          console.error("Failed to resolve selected item:", error);
+        }
+      }
+    };
+
+    resolveSelectedItem();
+  }, [props.selectedItemId, props.includeProducts, getCategoryById, getProductById]);
 
   const getItemsForParent = React.useCallback(
     async (opts: { parentCategoryId?: string }): Promise<PimCategoryTreeViewItem[]> => {

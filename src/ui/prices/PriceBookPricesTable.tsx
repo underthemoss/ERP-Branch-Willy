@@ -7,6 +7,7 @@ import {
   type RentalPriceFields,
   type SalePriceFields,
 } from "@/ui/prices/api";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -26,6 +27,7 @@ import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { AddNewPriceDialog } from "./AddNewPriceDialog";
+import { DuplicatePriceDialog } from "./DuplicatePriceDialog";
 import { EditRentalPriceDialog } from "./EditRentalPriceDialog";
 import { EditSalePriceDialog } from "./EditSalePriceDialog";
 
@@ -39,6 +41,7 @@ function formatCentsToUSD(cents: number): string {
 const createColumns = (
   handleEditPrice: (price: RentalPriceFields | SalePriceFields) => void,
   handleDeletePrice: (price: RentalPriceFields | SalePriceFields) => void,
+  handleDuplicatePrice: (price: RentalPriceFields | SalePriceFields) => void,
 ): GridColDef[] => [
   { field: "pimCategoryName", headerName: "Category", width: 230 },
   {
@@ -133,6 +136,13 @@ const createColumns = (
           <EditIcon />
         </IconButton>
         <IconButton
+          onClick={() => handleDuplicatePrice(params.row)}
+          size="small"
+          aria-label="duplicate price"
+        >
+          <ContentCopyIcon />
+        </IconButton>
+        <IconButton
           onClick={() => handleDeletePrice(params.row)}
           size="small"
           aria-label="delete price"
@@ -164,6 +174,11 @@ export function PricesTable() {
     (RentalPriceFields | SalePriceFields) | null
   >(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
+  // State for duplicate dialog
+  const [priceToDuplicate, setPriceToDuplicate] = React.useState<
+    (RentalPriceFields | SalePriceFields) | null
+  >(null);
 
   // Delete mutation
   const [deletePrice] = useDeletePriceByIdMutation();
@@ -240,6 +255,11 @@ export function PricesTable() {
     setDeleteDialogOpen(true);
   };
 
+  // Handle duplicate price
+  const handleDuplicatePrice = (price: RentalPriceFields | SalePriceFields) => {
+    setPriceToDuplicate(price);
+  };
+
   // Confirm delete
   const confirmDelete = async () => {
     if (!priceToDelete) return;
@@ -257,8 +277,11 @@ export function PricesTable() {
     }
   };
 
-  // Create columns with the edit and delete handlers
-  const columns = React.useMemo(() => createColumns(handleEditPrice, handleDeletePrice), []);
+  // Create columns with the edit, delete, and duplicate handlers
+  const columns = React.useMemo(
+    () => createColumns(handleEditPrice, handleDeletePrice, handleDuplicatePrice),
+    [],
+  );
 
   return (
     <Box>
@@ -368,6 +391,14 @@ export function PricesTable() {
           onSuccess={() => setEditingSalePrice(null)}
         />
       )}
+
+      {/* Duplicate Price Dialog */}
+      <DuplicatePriceDialog
+        open={!!priceToDuplicate}
+        onClose={() => setPriceToDuplicate(null)}
+        price={priceToDuplicate}
+        onSuccess={() => setPriceToDuplicate(null)}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog

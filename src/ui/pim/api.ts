@@ -12,6 +12,9 @@ export {
   useListPimCategoriesLazyQuery,
   useListPimProductsLazyQuery,
   useGetPimCategoryByIdQuery,
+  useGetPimCategoryByIdLazyQuery,
+  useGetPimProductByIdQuery,
+  useGetPimProductByIdLazyQuery,
 } from "@/graphql/hooks";
 
 graphql(`
@@ -70,6 +73,14 @@ graphql(`
   query GetPimCategoryById($id: ID!) {
     getPimCategoryById(id: $id) {
       ...PimCategoryFields
+    }
+  }
+`);
+
+graphql(`
+  query GetPimProductById($id: ID!) {
+    getPimProductById(id: $id) {
+      ...PimProductFields
     }
   }
 `);
