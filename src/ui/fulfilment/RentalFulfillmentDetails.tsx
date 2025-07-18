@@ -22,9 +22,13 @@ import {
 
 type RentalFulfillmentDetailsProps = {
   fulfilment: FragmentType<typeof RentalFulfilmentFields>;
+  onDateChange?: () => void;
 };
 
-export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
+export function RentalFulfillmentDetails({
+  fulfilment: fulfilmentProp,
+  onDateChange,
+}: RentalFulfillmentDetailsProps) {
   const [editingDateField, setEditingDateField] = useState<"start" | "expectedEnd" | null>(null);
   const [endRentalDialogOpen, setEndRentalDialogOpen] = useState(false);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -34,7 +38,7 @@ export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
   const [setRentalEndDate] = useSetRentalEndDateMutation();
   const [setExpectedRentalEndDate] = useSetExpectedRentalEndDateMutation();
 
-  const fulfilment = useFragment(RentalFulfilmentFields, props.fulfilment);
+  const fulfilment = useFragment(RentalFulfilmentFields, fulfilmentProp);
   const b = useFragment(FulfilmentBaseFields, fulfilment);
 
   const rentalStartDateValue = fulfilment.rentalStartDate
@@ -95,6 +99,7 @@ export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
                           },
                         });
                         setEditingDateField(null);
+                        onDateChange?.();
                       } catch (e) {
                         // handle error
                       }
@@ -147,6 +152,7 @@ export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
                           },
                         });
                         setEditingDateField(null);
+                        onDateChange?.();
                       } catch (e) {
                         // handle error
                       }
@@ -227,7 +233,7 @@ export function RentalFulfillmentDetails(props: RentalFulfillmentDetailsProps) {
                       },
                     });
                     setEndRentalDialogOpen(false);
-                    // refetch();
+                    onDateChange?.();
                   } catch (e) {
                     // handle error
                   }
