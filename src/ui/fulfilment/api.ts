@@ -17,6 +17,7 @@ export {
   useSetRentalEndDateMutation,
   useSetRentalStartDateMutation,
   useSetExpectedRentalEndDateMutation,
+  useListChargesForFulfilmentQuery,
 } from "@/graphql/hooks";
 
 export const RentalFulfilmentPriceFields = graphql(`
@@ -222,6 +223,21 @@ export const SetExpectedRentalEndDate = graphql(`
       expectedRentalEndDate: $expectedRentalEndDate
     ) {
       ...RentalFulfilmentFields
+    }
+  }
+`);
+
+export const ListChargesForFulfilment = graphql(`
+  query ListChargesForFulfilment($fulfilmentId: ID!) {
+    listCharges(filter: { fulfilmentId: $fulfilmentId }) {
+      items {
+        id
+        amountInCents
+        description
+        chargeType
+        createdAt
+        invoiceId
+      }
     }
   }
 `);

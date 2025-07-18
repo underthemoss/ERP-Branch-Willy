@@ -11,6 +11,7 @@ import {
   RentalFulfilmentPrice,
   SaleFulfilmentPrice,
   useGetFulfilmentByIdQuery,
+  useListChargesForFulfilmentQuery,
 } from "./api";
 import RentalFulfillmentDetails from "./RentalFulfillmentDetails";
 import SaleFulfillmentDetails from "./SaleFulfillmentDetails";
@@ -42,6 +43,11 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
     variables: { id: fulfillmentId },
   });
   const fulfilment = data?.getFulfilmentById;
+
+  const { data: chargesData, loading: chargesLoading } = useListChargesForFulfilmentQuery({
+    variables: { fulfilmentId: fulfillmentId },
+  });
+  const charges = chargesData?.listCharges?.items || [];
 
   const [updateAssignee, { loading: updatingAssignee }] = useUpdateFulfilmentAssigneeMutation();
 
@@ -88,28 +94,19 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
           padding: 2,
           borderRight: "1px solid #ececec",
           background: "#fff",
+          paddingRight: "20px",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}>
           <div
             style={{
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: 700,
               marginRight: 16,
               color: "#1a1a1a",
             }}
           >
             {price?.name || fulfilment.id}
-            <span
-              style={{
-                fontSize: 16,
-                fontWeight: 400,
-                color: "#888",
-                marginLeft: 12,
-              }}
-            >
-              {fulfilment.salesOrderType}
-            </span>
             <div>
               <Typography variant="caption">
                 {price?.pimCategory?.path}
@@ -127,6 +124,85 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
         {isService(fulfilment) && (
           <ServiceFulfillmentDetails fulfilment={fulfilment} price={price} />
         )}
+        {/* Charges Section */}
+        <div style={{ marginTop: 40, marginBottom: 40 }}>
+          <div style={{ fontWeight: 600, color: "#222", marginBottom: 16, fontSize: 18 }}>
+            Charges
+          </div>
+          {chargesLoading ? (
+            <div style={{ color: "#888", fontSize: 14 }}>Loading charges...</div>
+          ) : charges.length === 0 ? (
+            <div style={{ color: "#888", fontSize: 14 }}>No charges</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {charges.map((charge) => (
+                <div
+                  key={charge.id}
+                  style={{
+                    padding: 16,
+                    background: "#f5f6f8",
+                    borderRadius: 8,
+                    border: "1px solid #ececec",
+                    maxWidth: 600,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, color: "#222", fontSize: 15 }}>
+                        {charge.description || "Charge"}
+                      </div>
+                      <div style={{ color: "#666", fontSize: 13, marginTop: 4 }}>
+                        {charge.chargeType}
+                      </div>
+                    </div>
+                    <div
+                      style={{ fontWeight: 600, color: "#222", fontSize: 16, marginLeft: "16px" }}
+                    >
+                      ${((charge.amountInCents || 0) / 100).toFixed(2)}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 12,
+                      fontSize: 13,
+                      color: "#888",
+                    }}
+                  >
+                    <div>
+                      {charge.createdAt
+                        ? new Date(charge.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </div>
+                    {charge.invoiceId ? (
+                      <Link
+                        href={`/app/${workspace_id}/invoices/${charge.invoiceId}`}
+                        style={{ color: "#1976d2", textDecoration: "underline" }}
+                      >
+                        Invoice #{charge.invoiceId}
+                      </Link>
+                    ) : (
+                      "To be invoiced"
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Add comment box mock */}
         <div
           style={{
