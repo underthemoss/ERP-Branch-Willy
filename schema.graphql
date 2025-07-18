@@ -793,6 +793,7 @@ type Mutation {
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
+  renameFile(file_id: String!, new_file_name: String!): File!
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
   setInvoiceTax(input: SetInvoiceTaxInput!): Invoice!
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
