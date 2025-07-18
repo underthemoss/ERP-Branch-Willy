@@ -84,6 +84,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     loading: pricesLoading,
     refetch: refetchPrices,
   } = useListPricesQuery({
+    fetchPolicy: "cache-and-network",
     variables: {
       priceType: PriceType.Rental,
       shouldListPriceBooks: true,
