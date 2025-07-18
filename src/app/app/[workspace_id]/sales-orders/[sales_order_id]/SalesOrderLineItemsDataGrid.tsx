@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { SalesOrderLineItemsQuery, SalesOrderStatus } from "@/graphql/graphql";
 import { useSalesOrderLineItemsQuery } from "@/graphql/hooks";
+import { parseDate } from "@/lib/parseDate";
 import EmptyStateListViewIcon from "@/ui/icons/EmptyStateListViewIcon";
 import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import DateRangeIcon from "@mui/icons-material/DateRange";
@@ -325,7 +326,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       minWidth: 140,
       flex: 1,
       valueGetter: (_, row) =>
-        row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : "-",
+        row.delivery_date ? (parseDate(row.delivery_date)?.toLocaleDateString() ?? "-") : "-",
     },
     {
       field: "off_rent_date",
@@ -333,7 +334,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       minWidth: 140,
       flex: 1,
       valueGetter: (_, row) =>
-        row.off_rent_date ? new Date(row.off_rent_date).toLocaleDateString() : "-",
+        row.off_rent_date ? (parseDate(row.off_rent_date)?.toLocaleDateString() ?? "-") : "-",
     },
 
     // User and audit
@@ -364,7 +365,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Created At",
       minWidth: 140,
       flex: 1,
-      valueGetter: (_, row) => (row.created_at ? new Date(row.created_at).toLocaleString() : "-"),
+      valueGetter: (_, row) =>
+        row.created_at ? (parseDate(row.created_at)?.toLocaleString() ?? "-") : "-",
     },
     {
       field: "line_item_total_incl_delivery",
@@ -399,7 +401,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Updated At",
       minWidth: 140,
       flex: 1,
-      valueGetter: (_, row) => (row.updated_at ? new Date(row.updated_at).toLocaleString() : "-"),
+      valueGetter: (_, row) =>
+        row.updated_at ? (parseDate(row.updated_at)?.toLocaleString() ?? "-") : "-",
     },
     {
       field: "actions",
@@ -643,11 +646,15 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     </Typography>
                     <Typography variant="body2">
                       <strong>Delivery Date:</strong>{" "}
-                      {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString() : "-"}
+                      {row.delivery_date
+                        ? (parseDate(row.delivery_date)?.toLocaleDateString() ?? "-")
+                        : "-"}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Off-Rent Date:</strong>{" "}
-                      {row.off_rent_date ? new Date(row.off_rent_date).toLocaleDateString() : "-"}
+                      {row.off_rent_date
+                        ? (parseDate(row.off_rent_date)?.toLocaleDateString() ?? "-")
+                        : "-"}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Created By:</strong>{" "}
@@ -663,11 +670,11 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     </Typography>
                     <Typography variant="body2">
                       <strong>Created At:</strong>{" "}
-                      {row.created_at ? new Date(row.created_at).toLocaleString() : "-"}
+                      {row.created_at ? (parseDate(row.created_at)?.toLocaleString() ?? "-") : "-"}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Updated At:</strong>{" "}
-                      {row.updated_at ? new Date(row.updated_at).toLocaleString() : "-"}
+                      {row.updated_at ? (parseDate(row.updated_at)?.toLocaleString() ?? "-") : "-"}
                     </Typography>
 
                     {(row.calulate_price?.forecast?.days?.length ?? 0) > 0 && (
