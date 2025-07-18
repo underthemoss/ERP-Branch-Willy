@@ -3,6 +3,14 @@ input AddInvoiceChargesInput {
   invoiceId: ID!
 }
 
+input AddTaxLineItemInput {
+  description: String!
+  invoiceId: ID!
+  order: Int
+  type: TaxType!
+  value: Float!
+}
+
 type Asset {
   category: AssetCategory
   class: AssetClass
@@ -488,8 +496,10 @@ type Invoice {
   sellerId: String!
   status: InvoiceStatus!
   subTotalInCents: Int!
-  taxPercent: Float!
-  taxesInCents: Int!
+  taxLineItems: [TaxLineItem!]!
+  taxPercent: Float! @deprecated(reason: "Use tax line items to see tax info")
+  taxesInCents: Int! @deprecated(reason: "Use totalTaxesInCents")
+  totalTaxesInCents: Int!
   updatedAt: DateTime!
   updatedBy: String
   updatedByUser: User
@@ -758,7 +768,9 @@ input MarkInvoiceAsSentInput {
 type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
+  addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
+  clearInvoiceTaxes(invoiceId: ID!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createCharge(input: CreateChargeInput!): Charge
@@ -793,9 +805,14 @@ type Mutation {
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
+  removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
   renameFile(file_id: String!, new_file_name: String!): File!
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
-  setInvoiceTax(input: SetInvoiceTaxInput!): Invoice!
+
+  """
+  DEPRECATED: Use addTaxLineItem instead for more flexible tax management
+  """
+  setInvoiceTax(input: SetInvoiceTaxInput!): Invoice! @deprecated(reason: "Use addTaxLineItem instead for more flexible tax management")
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
@@ -829,6 +846,7 @@ type Mutation {
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalePrice(input: UpdateSalePriceInput!): SalePrice
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
+  updateTaxLineItem(input: UpdateTaxLineItemInput!): Invoice!
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
 }
@@ -1217,6 +1235,11 @@ type Query {
 type Quote {
   id: ID
   url: String
+}
+
+input RemoveTaxLineItemInput {
+  invoiceId: ID!
+  taxLineItemId: ID!
 }
 
 type RentalFulfilment implements FulfilmentBase {
@@ -1613,6 +1636,20 @@ enum SupportedContentType {
   IMAGE_PNG
 }
 
+type TaxLineItem {
+  calculatedAmountInCents: Int
+  description: String!
+  id: ID!
+  order: Int!
+  type: TaxType!
+  value: Float!
+}
+
+enum TaxType {
+  FIXED_AMOUNT
+  PERCENTAGE
+}
+
 union Transaction = RentalTransaction | SaleTransaction | ServiceTransaction
 
 input TransactionInput {
@@ -1681,6 +1718,7 @@ input UpdatePurchaseOrderLineItemInput {
 input UpdateRentalPriceInput {
   id: ID!
   name: String
+  pimCategoryId: String
   pimProductId: ID
   pricePerDayInCents: Int
   pricePerMonthInCents: Int
@@ -1708,6 +1746,7 @@ input UpdateSalePriceInput {
   discounts: JSON
   id: ID!
   name: String
+  pimCategoryId: String
   pimProductId: ID
   unitCostInCents: Int
 }
@@ -1728,6 +1767,15 @@ input UpdateSalesOrderLineItemInput {
   so_pim_id: String
   so_quantity: Int
   unit_cost_in_cents: Int
+}
+
+input UpdateTaxLineItemInput {
+  description: String
+  invoiceId: ID!
+  order: Int
+  taxLineItemId: ID!
+  type: TaxType
+  value: Float
 }
 
 input UpdateWorkflowConfigurationInput {

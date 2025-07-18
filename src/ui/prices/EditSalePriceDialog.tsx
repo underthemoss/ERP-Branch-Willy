@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import * as React from "react";
 import { Controller, useForm } from "react-hook-form";
+import { PimProductFields } from "../pim/api";
+import { PimCategoriesTreeView } from "../pim/PimCategoriesTreeView";
 import { SalePriceFields, useUpdateSalePriceMutation } from "./api";
 
 interface EditSalePriceDialogProps {
@@ -23,16 +25,20 @@ interface EditSalePriceDialogProps {
 }
 
 export function EditSalePriceDialog({ open, onClose, price, onSuccess }: EditSalePriceDialogProps) {
+  const [formCategoryId, setFormCategoryId] = React.useState<string | null>(price.pimCategoryId);
+  const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
+
   // react-hook-form setup
   const {
     control,
     handleSubmit: rhfHandleSubmit,
+    setValue,
     reset,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      class: price.name || "",
-      unitCost: price.unitCostInCents ? (price.unitCostInCents / 100).toFixed(2) : "",
+      class: "",
+      unitCost: "",
     },
   });
 
@@ -63,7 +69,8 @@ export function EditSalePriceDialog({ open, onClose, price, onSuccess }: EditSal
             id: price.id,
             name: data.class || undefined,
             unitCostInCents: parseDollarToCents(data.unitCost),
-            // discounts and pimProductId can be updated if needed in the future
+            pimProductId: selectedProduct?.id ?? null,
+            pimCategoryId: formCategoryId,
           },
         },
       });
@@ -91,26 +98,36 @@ export function EditSalePriceDialog({ open, onClose, price, onSuccess }: EditSal
       <DialogTitle>Edit Sale Price</DialogTitle>
       <form onSubmit={rhfHandleSubmit(onFormSubmit)}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Category
-            </Typography>
-            <Typography>{price.pimCategoryName}</Typography>
-          </Box>
-          <Controller
-            name="class"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Class"
-                placeholder="Associated Attributes, e.g. weight class or a dimension"
-                fullWidth
-                error={!!errors.class}
-                helperText={errors.class?.message}
-              />
-            )}
+          <PimCategoriesTreeView
+            includeProducts
+            selectedItemId={price.pimCategoryId}
+            onItemSelected={(item) => {
+              if (item.__typename === "PimCategory") {
+                setFormCategoryId(item.id ?? null);
+                setSelectedProduct(null);
+              } else if (item.__typename === "PimProduct") {
+                setFormCategoryId(item.pim_category_platform_id ?? null);
+                setValue("class", item.name ?? "");
+                setSelectedProduct(item);
+              }
+            }}
           />
+          {!selectedProduct && (
+            <Controller
+              name="class"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Class"
+                  placeholder="Associated Attributes, e.g. weight class or a dimension"
+                  fullWidth
+                  error={!!errors.class}
+                  helperText={errors.class?.message}
+                />
+              )}
+            />
+          )}
           <Controller
             name="unitCost"
             control={control}
