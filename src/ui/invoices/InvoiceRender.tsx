@@ -14,12 +14,21 @@ const invoiceQuery = graphql(`
       id
       subTotalInCents
       taxesInCents
+      totalTaxesInCents
       finalSumInCents
       status
       createdAt
       updatedAt
       invoicePaidDate
       taxPercent
+      taxLineItems {
+        id
+        description
+        type
+        value
+        order
+        calculatedAmountInCents
+      }
       lineItems {
         chargeId
         description
@@ -178,13 +187,44 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
               Subtotal: £{(invoice.subTotalInCents / 100).toFixed(2)}
             </div>
 
-            <div style={{ fontSize: 16, marginBottom: 4 }}>
-              Taxes (
-              {invoice.taxPercent !== undefined && invoice.taxPercent !== null
-                ? `${(invoice.taxPercent * 100).toFixed(0)}%`
-                : "N/A"}
-              ): <span style={{}}>£{(invoice.taxesInCents / 100).toFixed(2)}</span>
-            </div>
+            {/* Tax breakdown */}
+            {invoice.taxLineItems && invoice.taxLineItems.length > 0 ? (
+              <div style={{ marginBottom: 8 }}>
+                {invoice.taxLineItems.map((taxItem) => (
+                  <div key={taxItem.id} style={{ fontSize: 16, marginBottom: 4 }}>
+                    {taxItem.description} (
+                    {taxItem.type === "PERCENTAGE"
+                      ? `${(taxItem.value * 100).toFixed(2)}%`
+                      : `£${(taxItem.value / 100).toFixed(2)}`}
+                    ):{" "}
+                    <span style={{}}>
+                      £{((taxItem.calculatedAmountInCents || 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+                {invoice.taxLineItems.length > 1 && (
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 500,
+                      marginTop: 4,
+                      paddingTop: 4,
+                      borderTop: "1px solid #ddd",
+                    }}
+                  >
+                    Total Taxes: £{((invoice.totalTaxesInCents || 0) / 100).toFixed(2)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: 16, marginBottom: 4 }}>
+                Taxes (
+                {invoice.taxPercent !== undefined && invoice.taxPercent !== null
+                  ? `${(invoice.taxPercent * 100).toFixed(0)}%`
+                  : "N/A"}
+                ): <span style={{}}>£{((invoice.taxesInCents || 0) / 100).toFixed(2)}</span>
+              </div>
+            )}
             <div
               style={{
                 fontSize: 22,

@@ -90,9 +90,18 @@ const InvoiceByIdQuery = graphql(`
       id
       subTotalInCents
       taxPercent
+      totalTaxesInCents
       status
       createdAt
       updatedAt
+      taxLineItems {
+        id
+        description
+        type
+        value
+        order
+        calculatedAmountInCents
+      }
       buyer {
         __typename
         ... on PersonContact {
@@ -466,9 +475,14 @@ export default function InvoiceDisplayPage() {
               </Box>
               <EditInvoiceTaxesDialog
                 open={editTaxesDialogOpen}
-                onClose={() => setEditTaxesDialogOpen(false)}
+                onClose={() => {
+                  setEditTaxesDialogOpen(false);
+                  refetch();
+                  setCacheKey((k) => k + 1);
+                }}
                 invoiceId={invoiceId}
                 currentTaxPercent={invoice.taxPercent ?? 0}
+                taxLineItems={invoice.taxLineItems ?? []}
               />
               {/* Print Dialog */}
               <Dialog open={printDialogOpen} onClose={() => setPrintDialogOpen(false)}>
