@@ -6,12 +6,20 @@ import {
   useUpdateRentalSalesOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
 import { useGetPimCategoryByIdQuery } from "@/ui/pim/api";
-import { useListPricesQuery } from "@/ui/prices/api";
+import { useCreateRentalPriceMutation, useListPricesQuery } from "@/ui/prices/api";
 import {
   Box,
+  Button,
+  Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
   TextField,
   Typography,
 } from "@mui/material";
@@ -71,7 +79,11 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     },
   });
 
-  const { data: pricesData, loading: pricesLoading } = useListPricesQuery({
+  const {
+    data: pricesData,
+    loading: pricesLoading,
+    refetch: refetchPrices,
+  } = useListPricesQuery({
     variables: {
       priceType: PriceType.Rental,
       shouldListPriceBooks: true,
@@ -87,6 +99,16 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     ids: new Set<string>(),
     type: "include",
   });
+  const [showAddPriceDialog, setShowAddPriceDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    priceBookId: "",
+    name: "",
+    pricePerDayInCents: "",
+    pricePerWeekInCents: "",
+    pricePerMonthInCents: "",
+  });
+
+  const [createRentalPrice, { loading: createPriceLoading }] = useCreateRentalPriceMutation();
 
   const rentalPrices: PriceOption[] = useMemo(
     () =>
@@ -158,12 +180,98 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     },
   });
 
+  const priceBooks = useMemo(
+    () => pricesData?.listPriceBooks?.items || [],
+    [pricesData?.listPriceBooks?.items],
+  );
+
+  const handleSavePrice = async () => {
+    try {
+      const input: any = {
+        pimCategoryId,
+        name: formData.name,
+      };
+
+      if (formData.priceBookId) {
+        input.priceBookId = formData.priceBookId;
+      }
+
+      if (formData.pricePerDayInCents) {
+        input.pricePerDayInCents = Math.round(parseFloat(formData.pricePerDayInCents) * 100);
+      }
+
+      if (formData.pricePerWeekInCents) {
+        input.pricePerWeekInCents = Math.round(parseFloat(formData.pricePerWeekInCents) * 100);
+      }
+
+      if (formData.pricePerMonthInCents) {
+        input.pricePerMonthInCents = Math.round(parseFloat(formData.pricePerMonthInCents) * 100);
+      }
+
+      const result = await createRentalPrice({
+        variables: { input },
+      });
+
+      if (result.data?.createRentalPrice?.id) {
+        // Store the price book name to expand
+        const priceBookName = formData.priceBookId
+          ? priceBooks.find((pb) => pb.id === formData.priceBookId)?.name
+          : "Not in price book";
+
+        // Refetch prices
+        await refetchPrices();
+
+        // Select the newly created price
+        setRowSelectionModel({
+          ids: new Set([result.data.createRentalPrice.id]),
+          type: "include",
+        });
+        setSelectedPrice(result.data.createRentalPrice.id);
+
+        // Expand the price book group where the new price was added
+        if (priceBookName && apiRef.current) {
+          // Use setTimeout to ensure the grid has updated with new data
+          setTimeout(() => {
+            if (apiRef.current) {
+              const groupId = `auto-generated-row-priceBookName/${priceBookName}`;
+              apiRef.current.setRowChildrenExpansion(groupId, true);
+            }
+          }, 100);
+        }
+
+        // Close dialog and reset form
+        setShowAddPriceDialog(false);
+        setFormData({
+          priceBookId: "",
+          name: "",
+          pricePerDayInCents: "",
+          pricePerWeekInCents: "",
+          pricePerMonthInCents: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating price:", error);
+    }
+  };
+
   return (
     <>
       <DialogTitle>
-        <Typography variant="caption">{pimCategoryData?.getPimCategoryById?.path}</Typography>
-        <br />
-        Select pricing: {pimCategoryData?.getPimCategoryById?.name}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption">{pimCategoryData?.getPimCategoryById?.path}</Typography>
+            <br />
+            Select pricing: {pimCategoryData?.getPimCategoryById?.name}
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => setShowAddPriceDialog(true)}
+            sx={{ mt: 1, alignSelf: "flex-end" }}
+          >
+            Add New Price
+          </Button>
+        </Box>
       </DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Box sx={{ height: 400, width: "100%" }}>
@@ -229,6 +337,92 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
           await refetch();
         }}
       />
+
+      {/* Add New Price Dialog */}
+      <Dialog
+        open={showAddPriceDialog}
+        onClose={() => setShowAddPriceDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add New Price</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel id="price-book-label">Price Book</InputLabel>
+              <Select
+                labelId="price-book-label"
+                value={formData.priceBookId}
+                label="Price Book"
+                onChange={(e) => setFormData({ ...formData, priceBookId: e.target.value })}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {priceBooks.map((priceBook) => (
+                  <MenuItem key={priceBook.id} value={priceBook.id}>
+                    {priceBook.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Class"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              fullWidth
+            />
+
+            <TextField
+              label="1 Day Price"
+              value={formData.pricePerDayInCents}
+              onChange={(e) => setFormData({ ...formData, pricePerDayInCents: e.target.value })}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
+              type="number"
+              inputProps={{ step: "0.01", min: "0" }}
+              fullWidth
+            />
+
+            <TextField
+              label="1 Week Price"
+              value={formData.pricePerWeekInCents}
+              onChange={(e) => setFormData({ ...formData, pricePerWeekInCents: e.target.value })}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
+              type="number"
+              inputProps={{ step: "0.01", min: "0" }}
+              fullWidth
+            />
+
+            <TextField
+              label="1 Month Price"
+              value={formData.pricePerMonthInCents}
+              onChange={(e) => setFormData({ ...formData, pricePerMonthInCents: e.target.value })}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
+              type="number"
+              inputProps={{ step: "0.01", min: "0" }}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddPriceDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleSavePrice}
+            variant="contained"
+            disabled={!formData.name || createPriceLoading}
+          >
+            {createPriceLoading ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
