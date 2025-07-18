@@ -1,9 +1,27 @@
 "use client";
 
 import { PriceType } from "@/graphql/graphql";
-import { useListPricesQuery, type RentalPriceFields, type SalePriceFields } from "@/ui/prices/api";
+import {
+  useDeletePriceByIdMutation,
+  useListPricesQuery,
+  type RentalPriceFields,
+  type SalePriceFields,
+} from "@/ui/prices/api";
+import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { Autocomplete, Box, Button, IconButton, TextField, Typography } from "@mui/material";
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
 import { useParams } from "next/navigation";
 import * as React from "react";
@@ -20,6 +38,7 @@ function formatCentsToUSD(cents: number): string {
 
 const createColumns = (
   handleEditPrice: (price: RentalPriceFields | SalePriceFields) => void,
+  handleDeletePrice: (price: RentalPriceFields | SalePriceFields) => void,
 ): GridColDef[] => [
   { field: "pimCategoryName", headerName: "Category", width: 230 },
   {
@@ -101,13 +120,27 @@ const createColumns = (
   {
     field: "actions",
     headerName: "Actions",
-    width: 100,
+    width: 120,
     sortable: false,
     filterable: false,
     renderCell: (params) => (
-      <IconButton onClick={() => handleEditPrice(params.row)} size="small" aria-label="edit price">
-        <EditIcon />
-      </IconButton>
+      <Box display="flex" gap={0.5}>
+        <IconButton
+          onClick={() => handleEditPrice(params.row)}
+          size="small"
+          aria-label="edit price"
+        >
+          <EditIcon />
+        </IconButton>
+        <IconButton
+          onClick={() => handleDeletePrice(params.row)}
+          size="small"
+          aria-label="delete price"
+          color="error"
+        >
+          <DeleteIcon />
+        </IconButton>
+      </Box>
     ),
   },
 ];
@@ -125,6 +158,15 @@ export function PricesTable() {
     null,
   );
   const [editingSalePrice, setEditingSalePrice] = React.useState<SalePriceFields | null>(null);
+
+  // State for delete confirmation
+  const [priceToDelete, setPriceToDelete] = React.useState<
+    (RentalPriceFields | SalePriceFields) | null
+  >(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
+  // Delete mutation
+  const [deletePrice] = useDeletePriceByIdMutation();
 
   const priceTypeOptions = [
     { label: "Rental", value: PriceType.Rental },
@@ -192,8 +234,31 @@ export function PricesTable() {
     }
   };
 
-  // Create columns with the edit handler
-  const columns = React.useMemo(() => createColumns(handleEditPrice), []);
+  // Handle delete price
+  const handleDeletePrice = (price: RentalPriceFields | SalePriceFields) => {
+    setPriceToDelete(price);
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!priceToDelete) return;
+
+    try {
+      await deletePrice({
+        variables: {
+          id: priceToDelete.id,
+        },
+      });
+      setDeleteDialogOpen(false);
+      setPriceToDelete(null);
+    } catch (error) {
+      console.error("Error deleting price:", error);
+    }
+  };
+
+  // Create columns with the edit and delete handlers
+  const columns = React.useMemo(() => createColumns(handleEditPrice, handleDeletePrice), []);
 
   return (
     <Box>
@@ -298,6 +363,51 @@ export function PricesTable() {
           onSuccess={() => setEditingSalePrice(null)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this price? This action cannot be undone.
+            {priceToDelete && (
+              <Box mt={2}>
+                <Typography variant="body2">
+                  <strong>Category:</strong> {priceToDelete.pimCategoryName}
+                </Typography>
+                {priceToDelete.name && (
+                  <Typography variant="body2">
+                    <strong>Class:</strong> {priceToDelete.name}
+                  </Typography>
+                )}
+                {priceToDelete.__typename === "RentalPrice" && (
+                  <Typography variant="body2">
+                    <strong>Type:</strong> Rental
+                  </Typography>
+                )}
+                {priceToDelete.__typename === "SalePrice" && (
+                  <Typography variant="body2">
+                    <strong>Type:</strong> Sale
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -4,6 +4,7 @@ import {
   useCreateRentalPriceMutation as _useCreateRentalPriceMutation,
   useCreateSalePriceMutation as _useCreateSalePriceMutation,
   useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
+  useDeletePriceByIdMutation as _useDeletePriceByIdMutation,
   useUpdateRentalPriceMutation as _useUpdateRentalPriceMutation,
   useUpdateSalePriceMutation as _useUpdateSalePriceMutation,
 } from "@/graphql/hooks";
@@ -259,6 +260,21 @@ export function useUpdateSalePriceMutation(
   options?: Parameters<typeof _useUpdateSalePriceMutation>[0],
 ) {
   return _useUpdateSalePriceMutation({
+    ...options,
+    refetchQueries: ["ListPrices"],
+  });
+}
+
+graphql(`
+  mutation DeletePriceById($id: ID!) {
+    deletePriceById(id: $id)
+  }
+`);
+
+export function useDeletePriceByIdMutation(
+  options?: Parameters<typeof _useDeletePriceByIdMutation>[0],
+) {
+  return _useDeletePriceByIdMutation({
     ...options,
     refetchQueries: ["ListPrices"],
   });
