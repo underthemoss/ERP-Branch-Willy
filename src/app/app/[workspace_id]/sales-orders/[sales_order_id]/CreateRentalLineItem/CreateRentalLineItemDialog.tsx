@@ -113,8 +113,12 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
           )}
 
           {/* Step 2: Select price */}
-          {step === 2 && (
-            <CreateRentalLineItemPricingSelectionStep lineItemId={lineItemId} Footer={Footer} />
+          {step === 2 && lineItem.so_pim_id && (
+            <CreateRentalLineItemPricingSelectionStep
+              lineItemId={lineItemId}
+              Footer={Footer}
+              pimCategoryId={lineItem.so_pim_id}
+            />
           )}
 
           {/* Step 3: Fulfillment details */}

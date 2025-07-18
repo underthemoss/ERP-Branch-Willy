@@ -1,297 +1,205 @@
 "use client";
 
-import { UpdateSalesOrderLineItemInput } from "@/graphql/graphql";
 import {
-  useGetPricesSaleCreateDialogQuery,
-  useGetSalesOrderSaleLineItemByIdCreateDialogQuery,
+  PriceType,
+  useGetSalesOrderRentalLineItemByIdCreateDialogQuery,
   useUpdateSaleSalesOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { useGetPimCategoryByIdQuery } from "@/ui/pim/api";
+import { useListPricesQuery } from "@/ui/prices/api";
+import { Box, DialogContent, DialogTitle, Typography } from "@mui/material";
 import {
-  Box,
-  Divider,
-  InputAdornment,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { useParams } from "next/navigation";
-import React, { useEffect } from "react";
+  DataGridPremium,
+  GridColDef,
+  GridRenderCellParams,
+  GridRowSelectionModel,
+  useGridApiRef,
+  useKeepGroupedColumnsHidden,
+} from "@mui/x-data-grid-premium";
+import React, { useMemo, useState } from "react";
 import { CreateSaleLineItemFooter } from "./CreateSaleLineItemDialog";
-
-interface Props {
-  lineItemId: string;
-  Footer: CreateSaleLineItemFooter;
-}
-
-type CustomPriceInputProps = {
-  value: string;
-  onChange: (val: string) => void;
-  placeholder?: string;
-};
-
-const CustomPriceInput: React.FC<CustomPriceInputProps> = ({ value, onChange, placeholder }) => (
-  <TextField
-    size="small"
-    value={value}
-    onChange={(e) => {
-      const val = e.target.value.replace(/[^0-9.]/g, "");
-      onChange(val);
-    }}
-    sx={{ maxWidth: 120 }}
-    onBlur={(ev) => onChange(formatCentsToUSD(Number(ev.target.value) * 100))}
-    InputProps={{
-      startAdornment: <InputAdornment position="start">$</InputAdornment>,
-      inputMode: "decimal",
-    }}
-    placeholder={placeholder || "0.00"}
-  />
-);
 
 const formatCentsToUSD = (cents: number | null): string => {
   if (cents === null || cents === undefined) return "";
   return (cents / 100).toFixed(2);
 };
 
-const parseUSDToCents = (usd: string): number | null => {
-  const floatVal = parseFloat(usd);
-  if (isNaN(floatVal)) return null;
-  return Math.round(floatVal * 100);
+type PriceOption = {
+  id: string;
+  name: string;
+  unitCostInCents: number;
+  priceBookName: string;
+  priceBook?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
-const CreateSaleLineItemPricingStep: React.FC<Props> = ({ lineItemId, Footer }) => {
-  const params = useParams();
+export interface PricingSelectionStepProps {
+  lineItemId: string;
+  Footer: CreateSaleLineItemFooter;
+  pimCategoryId: string;
+}
 
-  const workspace_id = params?.workspace_id || "";
-  const [selectedPriceId, setSelectedPriceId] = React.useState<string | null>(null);
-  // Quantity state
-  const [quantity, setQuantity] = React.useState<number>(1);
-  // Custom price state (as string for input)
-  const [customPriceInput, setCustomPriceInput] = React.useState<string>("");
+const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps> = ({
+  lineItemId,
+  Footer,
+  pimCategoryId,
+}) => {
+  const [updateLineItem, { loading: mutationLoading }] =
+    useUpdateSaleSalesOrderLineCreateDialogMutation();
 
-  const { data } = useGetSalesOrderSaleLineItemByIdCreateDialogQuery({
+  const { data, loading, error, refetch } = useGetSalesOrderRentalLineItemByIdCreateDialogQuery({
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
-  const { data: pricesData, loading: pricesLoading } = useGetPricesSaleCreateDialogQuery({
-    variables: {},
-    fetchPolicy: "cache-and-network",
+
+  const { data: pimCategoryData } = useGetPimCategoryByIdQuery({
+    variables: {
+      id: pimCategoryId,
+    },
   });
-  const [updateItem] = useUpdateSaleSalesOrderLineCreateDialogMutation();
 
-  // Filter prices to match the line item's product or category
-  const lineItem = data?.getSalesOrderLineItemById;
-  const isSaleLineItem = lineItem?.__typename === "SaleSalesOrderLineItem";
-  const lineItemProductOrCat = isSaleLineItem ? lineItem?.so_pim_id : undefined;
-  const item = isSaleLineItem ? lineItem : undefined;
+  const { data: pricesData, loading: pricesLoading } = useListPricesQuery({
+    variables: {
+      priceType: PriceType.Sale,
+      shouldListPriceBooks: true,
+      pimCategoryId: pimCategoryId,
+      page: {
+        size: 1000,
+      },
+    },
+  });
 
-  useEffect(() => {
-    setQuantity(item?.so_quantity || 1);
-    // Set custom price input if present
-    if (item?.unit_cost_in_cents) {
-      setCustomPriceInput(formatCentsToUSD(item.unit_cost_in_cents));
-      setSelectedPriceId("custom");
-    } else {
-      setCustomPriceInput("");
-      setSelectedPriceId(item?.price_id || null);
-    }
-  }, [item?.price_id, item?.so_quantity, item?.unit_cost_in_cents]);
+  const [selectedPrice, setSelectedPrice] = useState("");
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
+    ids: new Set<string>(),
+    type: "include",
+  });
 
-  const prices =
-    pricesData?.listPrices?.items?.filter((item) => {
-      if (item.__typename !== "SalePrice") return false;
-      return (
-        item.pimCategoryId === lineItemProductOrCat || item.pimProductId === lineItemProductOrCat
-      );
-    }) || [];
+  const rentalPrices: PriceOption[] = useMemo(
+    () =>
+      (pricesData?.listPrices?.items || [])
+        ?.map((p) => (p.__typename === "SalePrice" ? p : null))
+        .filter(Boolean)
+        .map((p) => ({
+          id: p?.id || "",
+          name: p?.name || "",
+          priceBookName: p?.priceBook?.name || "Not in price book",
+          priceBookId: p?.priceBook?.id || undefined,
+          priceBook: p?.priceBook || undefined,
+          unitCostInCents: p?.unitCostInCents || 0,
+        })),
+    [pricesData],
+  );
+
+  const columns: GridColDef[] = [
+    {
+      field: "name",
+      headerName: "Class",
+      flex: 1,
+    },
+    {
+      field: "priceBookName",
+      headerName: "Price Book",
+    },
+    {
+      field: "unitCostInCents",
+      headerName: "Unit Cost",
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params: GridRenderCellParams) => {
+        return params.value != null ? `$${formatCentsToUSD(params.value as number)}` : "-";
+      },
+    },
+  ];
+
+  const rowGroupingModel = ["priceBookName"];
+
+  const apiRef = useGridApiRef();
+
+  const initialState = useKeepGroupedColumnsHidden({
+    apiRef,
+    initialState: {
+      rowGrouping: {
+        model: rowGroupingModel,
+      },
+    },
+  });
 
   return (
-    <Box>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Set Pricing
-        </Typography>
-        {pricesLoading ? (
-          <Typography variant="body2" color="text.secondary">
-            Loading price options...
-          </Typography>
-        ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {prices.map((price) => {
-              if (price.__typename !== "SalePrice") return null;
-              return (
-                <Box
-                  key={price.id}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    border: "1px solid",
-                    borderColor: selectedPriceId === price.id ? "primary.main" : "grey.300",
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1.5,
-                    cursor: "pointer",
-                    background:
-                      selectedPriceId === price.id
-                        ? "rgba(25, 118, 210, 0.04)"
-                        : "background.paper",
-                  }}
-                  onClick={() => setSelectedPriceId(price.id)}
-                  data-testid={`price-option-${price.id}`}
-                >
-                  <Box sx={{ display: "flex", flexDirection: "column" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <input
-                        type="radio"
-                        checked={selectedPriceId === price.id}
-                        onChange={() => setSelectedPriceId(price.id)}
-                        style={{ marginRight: 8 }}
-                        name="price-option"
-                      />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                        {price.pimProduct?.name || price.pimCategory?.name}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                      {price.priceBook?.id && price.priceBook?.name ? (
-                        <a
-                          href={`/app/${workspace_id}/prices/price-books/${price.priceBook.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#1976d2",
-                            textDecoration: "underline",
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {price.priceBook.name}
-                          <OpenInNewIcon fontSize="inherit" sx={{ ml: 0.5, fontSize: 16 }} />
-                        </a>
-                      ) : (
-                        price.priceBook?.name || "-"
-                      )}
-                    </Typography>
-                  </Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                    {price.unitCostInCents != null
-                      ? `$${formatCentsToUSD(price.unitCostInCents)}`
-                      : "-"}
-                  </Typography>
-                </Box>
+    <>
+      <DialogTitle>
+        <Typography variant="caption">{pimCategoryData?.getPimCategoryById?.path}</Typography>
+        <br />
+        Select pricing: {pimCategoryData?.getPimCategoryById?.name}
+      </DialogTitle>
+      <DialogContent sx={{ pt: 1, pb: 0 }}>
+        <Box sx={{ height: 400, width: "100%" }}>
+          <DataGridPremium
+            apiRef={apiRef}
+            rows={rentalPrices}
+            columns={columns}
+            loading={loading || pricesLoading}
+            rowGroupingModel={rowGroupingModel}
+            checkboxSelection
+            disableMultipleRowSelection
+            rowSelectionModel={rowSelectionModel}
+            onRowSelectionModelChange={({ ids, type }) => {
+              const idArray = Array.from(ids).filter(
+                (value) => !value.toString().startsWith("auto-generated-row"),
               );
-            })}
-            {/* Custom Price Option */}
-            <Box
-              key="custom-price"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                border: "1px solid",
-                borderColor: selectedPriceId === "custom" ? "primary.main" : "grey.300",
-                borderRadius: 2,
-                px: 2,
-                py: 1.5,
+              if (idArray.length <= 1) {
+                setRowSelectionModel({
+                  ids,
+                  type,
+                });
+                if (idArray.length === 0) {
+                  setSelectedPrice("");
+                }
+                if (idArray[0]) {
+                  setSelectedPrice(idArray[0] as string);
+                }
+              }
+            }}
+            sx={{
+              "& .MuiDataGrid-row": {
                 cursor: "pointer",
-                background:
-                  selectedPriceId === "custom" ? "rgba(25, 118, 210, 0.04)" : "background.paper",
-              }}
-              onClick={() => setSelectedPriceId("custom")}
-              data-testid="price-option-custom"
-            >
-              <Box sx={{ display: "flex", flexDirection: "column" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <input
-                    type="radio"
-                    checked={selectedPriceId === "custom"}
-                    onChange={() => setSelectedPriceId("custom")}
-                    style={{ marginRight: 8 }}
-                    name="price-option"
-                  />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                    Custom Price
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                  Enter a custom price per unit
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CustomPriceInput
-                  value={selectedPriceId === "custom" ? customPriceInput : ""}
-                  onChange={(val) => setCustomPriceInput(val)}
-                  placeholder="0.00"
-                />
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </Box>
-      <Divider sx={{ m: 2 }} />
-      {/* Select Quantity Dropdown */}
-      <Box sx={{ px: 3, pb: 2 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          Select Quantity
-        </Typography>
-        <Select
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          fullWidth
-          displayEmpty
-          variant="outlined"
-          data-testid="select-quantity"
-          sx={{
-            fontSize: "1.25rem",
-            background: "background.paper",
-            borderRadius: 2,
-          }}
-          MenuProps={{
-            PaperProps: {
-              style: { maxHeight: 300 },
-            },
-          }}
-        >
-          {Array.from({ length: 100 }, (_, i) => i + 1).map((val) => (
-            <MenuItem key={val} value={val}>
-              {val}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
+              },
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-cell:focus-within": {
+                outline: "none",
+              },
+            }}
+            hideFooter
+            density="compact"
+            groupingColDef={{
+              flex: 1,
+            }}
+            initialState={initialState}
+          />
+        </Box>
+      </DialogContent>
       <Footer
-        nextEnabled={
-          quantity > 0 &&
-          ((selectedPriceId && selectedPriceId !== "custom") ||
-            (selectedPriceId === "custom" &&
-              parseUSDToCents(customPriceInput) !== null &&
-              parseUSDToCents(customPriceInput)! > 0))
-        }
-        loading={pricesLoading}
+        loading={loading || mutationLoading}
+        nextEnabled={!!selectedPrice}
         onNextClick={async () => {
-          const input: UpdateSalesOrderLineItemInput = {
-            id: lineItemId,
-            so_quantity: quantity,
-          };
-          if (selectedPriceId === "custom") {
-            input.unit_cost_in_cents = parseUSDToCents(customPriceInput);
-            input.price_id = null;
-          } else {
-            input.price_id = selectedPriceId;
-            input.unit_cost_in_cents = null;
-          }
-          await updateItem({
+          await updateLineItem({
             variables: {
-              input,
+              input: {
+                id: lineItemId,
+                price_id: selectedPrice,
+              },
             },
           });
+
+          await refetch();
         }}
       />
-    </Box>
+    </>
   );
 };
 
-export default CreateSaleLineItemPricingStep;
+export default CreateSaleLineItemPricingSelectionStep;
