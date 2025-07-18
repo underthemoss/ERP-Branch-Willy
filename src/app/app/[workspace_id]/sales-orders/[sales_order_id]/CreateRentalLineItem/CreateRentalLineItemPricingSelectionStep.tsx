@@ -213,6 +213,11 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
       });
 
       if (result.data?.createRentalPrice?.id) {
+        // Store the price book name to expand
+        const priceBookName = formData.priceBookId
+          ? priceBooks.find((pb) => pb.id === formData.priceBookId)?.name
+          : "Not in price book";
+
         // Refetch prices
         await refetchPrices();
 
@@ -222,6 +227,17 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
           type: "include",
         });
         setSelectedPrice(result.data.createRentalPrice.id);
+
+        // Expand the price book group where the new price was added
+        if (priceBookName && apiRef.current) {
+          // Use setTimeout to ensure the grid has updated with new data
+          setTimeout(() => {
+            if (apiRef.current) {
+              const groupId = `auto-generated-row-priceBookName/${priceBookName}`;
+              apiRef.current.setRowChildrenExpansion(groupId, true);
+            }
+          }, 100);
+        }
 
         // Close dialog and reset form
         setShowAddPriceDialog(false);
@@ -242,7 +258,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
     <>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="caption">{pimCategoryData?.getPimCategoryById?.path}</Typography>
             <br />
             Select pricing: {pimCategoryData?.getPimCategoryById?.name}
@@ -251,7 +267,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
             variant="contained"
             size="small"
             onClick={() => setShowAddPriceDialog(true)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, alignSelf: "flex-end" }}
           >
             Add New Price
           </Button>
