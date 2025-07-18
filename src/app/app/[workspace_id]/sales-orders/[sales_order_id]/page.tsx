@@ -6,11 +6,13 @@ import {
   useGetSalesOrderByIdQuery,
   useSubmitSalesOrderSalesOrderPageMutation,
 } from "@/graphql/hooks";
+import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
   Alert,
@@ -194,11 +196,11 @@ export default function SalesOrderDetailPage() {
 
   const salesOrder = data?.getSalesOrderById;
 
-  // Helper to format ISO date strings
-  function formatDate(dateString?: string | null) {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
+  // Helper to format dates (handles ISO strings, Unix timestamps, etc.)
+  function formatDate(value?: string | number | null) {
+    if (!value) return "";
+    const date = parseDate(value);
+    if (!date) return String(value); // Fallback to original value if parsing fails
     return date.toLocaleString(undefined, {
       year: "numeric",
       month: "short",
@@ -391,30 +393,6 @@ export default function SalesOrderDetailPage() {
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Company ID
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {salesOrder.company_id}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Project ID
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {salesOrder.project_id}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Buyer ID
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {salesOrder.buyer_id}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
                     Created At
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
@@ -482,7 +460,41 @@ export default function SalesOrderDetailPage() {
                       <Typography>Address: {salesOrder.buyer.address}</Typography>
                     )}
                     {"website" in salesOrder.buyer && salesOrder.buyer.website && (
-                      <Typography>Website: {salesOrder.buyer.website}</Typography>
+                      <Typography>
+                        Website:{" "}
+                        {(() => {
+                          const website = salesOrder.buyer.website;
+                          // Validate URL format
+                          let url = website;
+                          if (!website.match(/^https?:\/\//i)) {
+                            url = `https://${website}`;
+                          }
+                          try {
+                            // Validate URL
+                            new URL(url);
+                            return (
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "inherit",
+                                  textDecoration: "underline",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                {website}
+                                <OpenInNewIcon sx={{ fontSize: 16 }} />
+                              </a>
+                            );
+                          } catch {
+                            // Invalid URL, just display as text
+                            return website;
+                          }
+                        })()}
+                      </Typography>
                     )}
                     {"taxId" in salesOrder.buyer && salesOrder.buyer.taxId && (
                       <Typography>Tax ID: {salesOrder.buyer.taxId}</Typography>

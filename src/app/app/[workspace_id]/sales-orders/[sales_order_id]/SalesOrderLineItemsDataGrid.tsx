@@ -537,11 +537,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                 footer: () => {
                   const pricing = data?.getSalesOrderById?.pricing;
                   const subTotalCents = pricing?.sub_total_in_cents ?? 0;
-                  const taxCents = pricing?.tax_total_in_cents ?? 0;
-                  const totalCents = pricing?.total_in_cents ?? 0;
                   const subTotalFormatted = `$${(subTotalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                  const taxFormatted = `$${(taxCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                  const totalFormatted = `$${(totalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   return (
                     <Box
                       sx={{
@@ -555,10 +551,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                         borderColor: "divider",
                       }}
                     >
-                      <Typography variant="body2">Subtotal: {subTotalFormatted}</Typography>
-                      <Typography variant="body2">Tax: {taxFormatted}</Typography>
                       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                        Total: {totalFormatted}
+                        Subtotal: {subTotalFormatted}
                       </Typography>
                     </Box>
                   );
