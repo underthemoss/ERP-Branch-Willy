@@ -80,6 +80,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
     loading: pricesLoading,
     refetch: refetchPrices,
   } = useListPricesQuery({
+    fetchPolicy: "cache-and-network",
     variables: {
       priceType: PriceType.Sale,
       shouldListPriceBooks: true,
