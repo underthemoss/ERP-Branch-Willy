@@ -341,7 +341,12 @@ export function PricesTable() {
       {/* {loading && <Typography>Loading prices...</Typography>} */}
       {error && <Typography color="error">Error: {error.message}</Typography>}
       <div style={{ height: 600, width: "100%" }}>
-        <DataGridPro rows={rows} columns={columns} loading={loading} />
+        <DataGridPro
+          rows={rows}
+          columns={columns}
+          loading={loading}
+          pinnedColumns={{ right: ["actions"] }}
+        />
       </div>
 
       {/* Edit Rental Price Dialog */}
