@@ -176,7 +176,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 <tr key={item.chargeId}>
                   <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{item.description}</td>
                   <td style={{ borderBottom: "1px solid #eee", textAlign: "right", padding: 8 }}>
-                    £{(item.totalInCents / 100).toFixed(2)}
+                    ${(item.totalInCents / 100).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -184,7 +184,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           </table>
           <div style={{ textAlign: "right", marginTop: 24 }}>
             <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 4 }}>
-              Subtotal: £{(invoice.subTotalInCents / 100).toFixed(2)}
+              Subtotal: ${(invoice.subTotalInCents / 100).toFixed(2)}
             </div>
 
             {/* Tax breakdown */}
@@ -195,10 +195,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     {taxItem.description} (
                     {taxItem.type === "PERCENTAGE"
                       ? `${(taxItem.value * 100).toFixed(2)}%`
-                      : `£${(taxItem.value / 100).toFixed(2)}`}
+                      : `$${(taxItem.value / 100).toFixed(2)}`}
                     ):{" "}
                     <span style={{}}>
-                      £{((taxItem.calculatedAmountInCents || 0) / 100).toFixed(2)}
+                      ${((taxItem.calculatedAmountInCents || 0) / 100).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -212,7 +212,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                       borderTop: "1px solid #ddd",
                     }}
                   >
-                    Total Taxes: £{((invoice.totalTaxesInCents || 0) / 100).toFixed(2)}
+                    Total Taxes: ${((invoice.totalTaxesInCents || 0) / 100).toFixed(2)}
                   </div>
                 )}
               </div>
@@ -222,7 +222,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 {invoice.taxPercent !== undefined && invoice.taxPercent !== null
                   ? `${(invoice.taxPercent * 100).toFixed(0)}%`
                   : "N/A"}
-                ): <span style={{}}>£{((invoice.taxesInCents || 0) / 100).toFixed(2)}</span>
+                ): <span style={{}}>${((invoice.taxesInCents || 0) / 100).toFixed(2)}</span>
               </div>
             )}
             <div
@@ -234,7 +234,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 paddingTop: 8,
               }}
             >
-              Total: £{(invoice.finalSumInCents / 100).toFixed(2)}
+              Total: ${(invoice.finalSumInCents / 100).toFixed(2)}
             </div>
           </div>
         </div>

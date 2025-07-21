@@ -222,13 +222,13 @@ function buildInvoiceDescription(invoice: any): string {
     parts.push("\nLine Items:");
     invoice.lineItems.forEach((item: any, index: number) => {
       const amount = (item.totalInCents / 100).toFixed(2);
-      parts.push(`${index + 1}. ${item.description} = £${amount}`);
+      parts.push(`${index + 1}. ${item.description} = $${amount}`);
     });
   }
 
   // Add subtotal
   if (invoice.subTotalInCents != null) {
-    parts.push(`\nSubtotal: £${(invoice.subTotalInCents / 100).toFixed(2)}`);
+    parts.push(`\nSubtotal: $${(invoice.subTotalInCents / 100).toFixed(2)}`);
   }
 
   return parts.join("\n");
@@ -919,7 +919,7 @@ export default function EditInvoiceTaxesDialog({
                                     color="text.secondary"
                                     sx={{ mb: 0.5, display: "block" }}
                                   >
-                                    {item.type === TaxType.Percentage ? "Percentage" : "Amount (£)"}
+                                    {item.type === TaxType.Percentage ? "Percentage" : "Amount ($)"}
                                   </Typography>
                                   <TextField
                                     value={inputValues[item.id] || ""}
@@ -949,7 +949,7 @@ export default function EditInvoiceTaxesDialog({
                                     InputProps={{
                                       startAdornment:
                                         item.type === TaxType.Percentage ? null : (
-                                          <InputAdornment position="start">£</InputAdornment>
+                                          <InputAdornment position="start">$</InputAdornment>
                                         ),
                                       endAdornment:
                                         item.type === TaxType.Percentage ? (
@@ -987,7 +987,7 @@ export default function EditInvoiceTaxesDialog({
                                         color: "primary.main",
                                       }}
                                     >
-                                      £{(item.calculatedAmountInCents / 100).toFixed(2)}
+                                      ${(item.calculatedAmountInCents / 100).toFixed(2)}
                                     </Typography>
                                   </Grid>
                                 )}
@@ -1060,7 +1060,7 @@ export default function EditInvoiceTaxesDialog({
                         fontSize: "1.5rem",
                       }}
                     >
-                      £{(totalTaxesInCents / 100).toFixed(2)}
+                      ${(totalTaxesInCents / 100).toFixed(2)}
                     </Typography>
                   </Box>
                 </Paper>
@@ -1152,7 +1152,7 @@ export default function EditInvoiceTaxesDialog({
                         color="text.secondary"
                         sx={{ mb: 0.5, display: "block" }}
                       >
-                        {newItem.type === TaxType.Percentage ? "Percentage" : "Amount (£)"}
+                        {newItem.type === TaxType.Percentage ? "Percentage" : "Amount ($)"}
                       </Typography>
                       <TextField
                         value={newItemInputValue}
@@ -1180,7 +1180,7 @@ export default function EditInvoiceTaxesDialog({
                         InputProps={{
                           startAdornment:
                             newItem.type === TaxType.Percentage ? null : (
-                              <InputAdornment position="start">£</InputAdornment>
+                              <InputAdornment position="start">$</InputAdornment>
                             ),
                           endAdornment:
                             newItem.type === TaxType.Percentage ? (
