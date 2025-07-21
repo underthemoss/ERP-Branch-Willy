@@ -129,6 +129,11 @@ graphql(`
             }
           }
           unit_cost_in_cents
+          delivery_location
+          delivery_date
+          delivery_method
+          delivery_charge_in_cents
+          deliveryNotes
           created_at
           updated_at
           lineitem_status
