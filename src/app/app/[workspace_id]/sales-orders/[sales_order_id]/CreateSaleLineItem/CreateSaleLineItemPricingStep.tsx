@@ -113,7 +113,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
         .map((p) => ({
           id: p?.id || "",
           name: p?.name || "",
-          priceBookName: p?.priceBook?.name || "Not in price book",
+          priceBookName: p?.priceBook?.name || "Custom Prices",
           priceBookId: p?.priceBook?.id || undefined,
           priceBook: p?.priceBook || undefined,
           unitCostInCents: p?.unitCostInCents || 0,
@@ -183,7 +183,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
         // Store the price book name to expand
         const priceBookName = formData.priceBookId
           ? priceBooks.find((pb) => pb.id === formData.priceBookId)?.name
-          : "Not in price book";
+          : "Custom Prices";
 
         // Refetch prices
         await refetchPrices();
