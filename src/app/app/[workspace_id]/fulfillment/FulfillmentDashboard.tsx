@@ -80,6 +80,29 @@ graphql(`
           }
         }
       }
+      ... on SaleSalesOrderLineItem {
+        id
+        so_pim_category {
+          id
+          name
+        }
+        so_pim_product {
+          id
+          name
+        }
+        price {
+          __typename
+          ... on SalePrice {
+            id
+            name
+            pimCategory {
+              id
+              name
+            }
+            pimCategoryPath
+          }
+        }
+      }
     }
     assignedTo {
       id
@@ -108,6 +131,14 @@ graphql(`
       items {
         __typename
         ...BaseFulfilmentFields
+        ... on SaleFulfilment {
+          quantity
+          unitCostInCents
+        }
+        ... on ServiceFulfilment {
+          serviceDate
+          unitCostInCents
+        }
       }
     }
   }
@@ -212,26 +243,52 @@ export default function FulfillmentDashboard() {
     const tickets: Ticket[] =
       fulfillments?.listFulfilments?.items
         .map((i) => {
-          if (i.__typename === "RentalFulfilment")
+          // Common fields for all fulfillment types
+          const baseTicket = {
+            id: i.id,
+            assignee: i.assignedTo?.firstName
+              ? `${i.assignedTo?.firstName} ${i.assignedTo?.lastName}`
+              : "Unassigned",
+            customer: i.contact?.name || "",
+            status: i.workflowColumnId || "",
+            workflowId: i.workflowId ?? null,
+          };
+
+          if (i.__typename === "RentalFulfilment") {
             return {
-              id: i.id,
-              assignee: i.assignedTo?.firstName
-                ? `${i.assignedTo?.firstName} ${i.assignedTo?.lastName}`
-                : "Unassigned",
-              customer: i.contact?.name || "",
+              ...baseTicket,
               description:
                 (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.pimCategory?.name}`) ||
-                "",
-              status: i.workflowColumnId || "",
+                "Rental",
               title:
                 (i.salesOrderLineItem?.__typename === "RentalSalesOrderLineItem" &&
                   i.salesOrderLineItem.price?.__typename === "RentalPrice" &&
                   `${i.salesOrderLineItem.price.name}`) ||
-                "",
-              workflowId: i.workflowId ?? null,
+                "Rental Item",
             } as Ticket;
+          } else if (i.__typename === "SaleFulfilment") {
+            return {
+              ...baseTicket,
+              description:
+                (i.salesOrderLineItem?.__typename === "SaleSalesOrderLineItem" &&
+                  i.salesOrderLineItem.so_pim_category?.name) ||
+                "Sale",
+              title:
+                (i.salesOrderLineItem?.__typename === "SaleSalesOrderLineItem" &&
+                  i.salesOrderLineItem.so_pim_product?.name) ||
+                `Sale Item (Qty: ${i.quantity || 1})`,
+            } as Ticket;
+          } else if (i.__typename === "ServiceFulfilment") {
+            return {
+              ...baseTicket,
+              description: "Service",
+              title: `Service - ${i.serviceDate ? new Date(i.serviceDate).toLocaleDateString() : "No date"}`,
+            } as Ticket;
+          }
+
+          return null;
         })
         .filter(Boolean)
         .map((i) => i as Ticket) || [];
