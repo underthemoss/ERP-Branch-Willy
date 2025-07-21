@@ -73,8 +73,8 @@ const CreateSaleLineItemProductSelectionStep: React.FC<Props> = ({ lineItemId, F
     }
   };
 
-  const isValid =
-    Boolean(item.so_pim_id) && !quantityError && quantity && parseInt(quantity, 10) > 0;
+  const isValid: boolean =
+    Boolean(item.so_pim_id) && !quantityError && Boolean(quantity) && parseInt(quantity, 10) > 0;
 
   return (
     <Box>
