@@ -333,6 +333,7 @@ input CreateRentalPriceInput {
 }
 
 input CreateRentalSalesOrderLineItemInput {
+  deliveryNotes: String
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String
@@ -372,6 +373,7 @@ input CreateSalePriceInput {
 }
 
 input CreateSaleSalesOrderLineItemInput {
+  deliveryNotes: String
   lineitem_status: LineItemStatus
   price_id: String
   sales_order_id: String!
@@ -1312,6 +1314,7 @@ type RentalSalesOrderLineItem {
   created_by: String
   created_by_user: User
   deleted_at: String
+  deliveryNotes: String
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String
@@ -1429,6 +1432,7 @@ type SaleSalesOrderLineItem {
   created_by: String
   created_by_user: User
   deleted_at: String
+  deliveryNotes: String
   id: String!
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
@@ -1754,6 +1758,7 @@ input UpdateRentalPriceInput {
 }
 
 input UpdateRentalSalesOrderLineItemInput {
+  deliveryNotes: String
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String
@@ -1780,6 +1785,7 @@ input UpdateSalePriceInput {
 }
 
 input UpdateSalesOrderLineItemInput {
+  deliveryNotes: String
   delivery_charge_in_cents: Int
   delivery_date: String
   delivery_location: String

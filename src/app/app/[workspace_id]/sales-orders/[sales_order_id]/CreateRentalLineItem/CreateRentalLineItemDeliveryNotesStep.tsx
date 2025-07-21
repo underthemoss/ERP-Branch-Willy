@@ -35,6 +35,13 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
+
+  // Initialize deliveryNotes from fetched data
+  React.useEffect(() => {
+    if (data?.getSalesOrderLineItemById && "deliveryNotes" in data.getSalesOrderLineItemById) {
+      setDeliveryNotes(data.getSalesOrderLineItemById.deliveryNotes || "");
+    }
+  }, [data]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -42,7 +49,7 @@ const CreateRentalLineItemDeliveryNotesStep: React.FC<DeliveryNotesStepProps> = 
         variables: {
           input: {
             id: lineItemId,
-            delivery_location: deliveryNotes,
+            deliveryNotes: deliveryNotes,
           },
         },
       });

@@ -48,6 +48,7 @@ graphql(`
         price_per_week_in_cents
         price_per_month_in_cents
         delivery_location
+        deliveryNotes
         delivery_date
         delivery_method
         delivery_charge_in_cents

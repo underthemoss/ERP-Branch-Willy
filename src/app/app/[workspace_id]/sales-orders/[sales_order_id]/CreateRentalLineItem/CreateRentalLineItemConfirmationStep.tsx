@@ -119,6 +119,9 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
             {lineItem?.delivery_location && (
               <Typography variant="body2">Location: {lineItem?.delivery_location}</Typography>
             )}
+            {lineItem?.deliveryNotes && (
+              <Typography variant="body2">Notes: {lineItem?.deliveryNotes}</Typography>
+            )}
             {lineItem?.delivery_date && (
               <Typography variant="body2">
                 Date: {new Date(lineItem?.delivery_date).toLocaleDateString()}
