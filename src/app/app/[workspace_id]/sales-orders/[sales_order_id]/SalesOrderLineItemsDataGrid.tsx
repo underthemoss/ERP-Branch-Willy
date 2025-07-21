@@ -621,24 +621,6 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     </Box>
 
                     <Typography variant="body2">
-                      <strong>Custom Price/Day:</strong>{" "}
-                      {row.price_per_day_in_cents
-                        ? `$${(row.price_per_day_in_cents / 100).toFixed(2)}`
-                        : "-"}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Custom Price/Week:</strong>{" "}
-                      {row.price_per_week_in_cents
-                        ? `$${(row.price_per_week_in_cents / 100).toFixed(2)}`
-                        : "-"}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Custom Price/Month:</strong>{" "}
-                      {row.price_per_month_in_cents
-                        ? `$${(row.price_per_month_in_cents / 100).toFixed(2)}`
-                        : "-"}
-                    </Typography>
-                    <Typography variant="body2">
                       <strong>Delivery Method:</strong> {row.delivery_method ?? "-"}
                     </Typography>
                     <Typography variant="body2">
