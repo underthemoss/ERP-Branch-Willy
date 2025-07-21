@@ -1,8 +1,11 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { RentalSalesOrderLineItem, SalesOrderLineItem } from "@/graphql/graphql";
-import { useGetSalesOrderRentalLineItemByIdCreateDialogQuery } from "@/graphql/hooks";
+import { LineItemStatus, RentalSalesOrderLineItem, SalesOrderLineItem } from "@/graphql/graphql";
+import {
+  useGetSalesOrderRentalLineItemByIdCreateDialogQuery,
+  useUpdateRentalSalesOrderLineCreateDialogMutation,
+} from "@/graphql/hooks";
 import {
   Box,
   Button,
@@ -36,6 +39,8 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
+  const [updateLineItem, { loading: updateLoading }] =
+    useUpdateRentalSalesOrderLineCreateDialogMutation();
   const lineItem = data?.getSalesOrderLineItemById as RentalSalesOrderLineItem | null;
 
   if (loading) {
@@ -149,7 +154,21 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
         </Box>
       </DialogContent>
 
-      <Footer nextEnabled={true} loading={false} onNextClick={async () => {}} />
+      <Footer
+        nextEnabled={true}
+        loading={loading || updateLoading}
+        onNextClick={async () => {
+          // Update the line item status to CONFIRMED
+          await updateLineItem({
+            variables: {
+              input: {
+                id: lineItemId,
+                lineitem_status: LineItemStatus.Confirmed,
+              },
+            },
+          });
+        }}
+      />
     </form>
   );
 };

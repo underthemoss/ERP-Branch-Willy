@@ -131,6 +131,7 @@ graphql(`
           unit_cost_in_cents
           created_at
           updated_at
+          lineitem_status
         }
       }
     }

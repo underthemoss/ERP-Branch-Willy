@@ -596,6 +596,7 @@ type LineItemRentalPeriod {
 }
 
 enum LineItemStatus {
+  CONFIRMED
   DRAFT
   SUBMITTED
 }

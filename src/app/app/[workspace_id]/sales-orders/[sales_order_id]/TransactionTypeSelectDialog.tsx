@@ -1,5 +1,6 @@
 import { graphql } from "@/graphql";
 import {
+  LineItemStatus,
   useCreateInitialRentalSalesOrderLineItemMutation,
   useCreateSaleSalesOrderLineItemMutation,
 } from "@/graphql/hooks";
@@ -97,6 +98,7 @@ const TransactionTypeSelectDialog: React.FC<TransactionTypeSelectDialogProps> = 
             input: {
               sales_order_id: salesOrderId,
               so_quantity: 1,
+              lineitem_status: LineItemStatus.Draft,
             },
           },
         });
@@ -116,6 +118,7 @@ const TransactionTypeSelectDialog: React.FC<TransactionTypeSelectDialogProps> = 
             input: {
               sales_order_id: salesOrderId,
               so_quantity: 1,
+              lineitem_status: LineItemStatus.Draft,
             },
           },
         });
