@@ -45,6 +45,8 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
           so_pim_category {
             name
           }
+          delivery_date
+          off_rent_date
           calulate_price {
             forecast {
               days {
@@ -63,6 +65,7 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
           so_pim_category {
             name
           }
+          delivery_date
           price {
             __typename
             ... on SalePrice {
@@ -255,24 +258,71 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
 
     const allDays = Array.from(allDaysSet).sort((a, b) => a - b);
 
+    // Find the earliest delivery date from rental items
+    let earliestDeliveryDate: Date | null = null;
+    rentalItems.forEach((li: any) => {
+      if (li.delivery_date) {
+        const deliveryDate = new Date(li.delivery_date);
+        if (!earliestDeliveryDate || deliveryDate < earliestDeliveryDate) {
+          earliestDeliveryDate = deliveryDate;
+        }
+      }
+    });
+
+    // Use today's date or the earliest delivery date, whichever is earlier
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    let baseDeliveryDate: Date;
+    if (!earliestDeliveryDate) {
+      baseDeliveryDate = today;
+    } else {
+      // Compare dates and use the earlier one
+      const deliveryDateCopy = new Date(earliestDeliveryDate);
+      deliveryDateCopy.setHours(0, 0, 0, 0); // Reset time to start of day
+      baseDeliveryDate = deliveryDateCopy < today ? deliveryDateCopy : today;
+    }
+
     // Build a map of date (day) to chart row
     const dayToRow: Record<number, any> = {};
     allDays.forEach((day) => {
-      // Use today as base date, add day offset for each
-      const base = new Date();
-      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + day - 1);
+      // Use the base delivery date and add day offset
+      const date = new Date(baseDeliveryDate!);
+      date.setDate(date.getDate() + day - 1);
       dayToRow[day] = { date };
     });
 
     // Add rental item series
     rentalItems.forEach((li: any) => {
       const label = li.so_pim_product?.name || li.id;
+
+      // Calculate the offset between the item's delivery date and the base date
+      let dayOffset = 0;
+      if (li.delivery_date) {
+        const itemDeliveryDate = new Date(li.delivery_date);
+        itemDeliveryDate.setHours(0, 0, 0, 0);
+        dayOffset = Math.floor(
+          (itemDeliveryDate.getTime() - baseDeliveryDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+      }
+
+      // Only add costs starting from the item's delivery date
       li.calulate_price.forecast.days.forEach((d: any) => {
-        dayToRow[d.day][label] = d.accumulative_cost_in_cents / 100;
+        const adjustedDay = d.day + dayOffset;
+        if (dayToRow[adjustedDay]) {
+          dayToRow[adjustedDay][label] = d.accumulative_cost_in_cents / 100;
+        }
+      });
+
+      // Fill in zero values for days before the item's delivery date
+      allDays.forEach((day) => {
+        if (day < 1 + dayOffset && dayToRow[day]) {
+          dayToRow[day][label] = 0;
+        }
       });
     });
 
-    // Add sale item series (flat cost at all days)
+    // Add sale item series (flat cost starting from their delivery date)
     saleItems.forEach((li: any) => {
       if (li?.__typename === "SaleSalesOrderLineItem") {
         const label = li.so_pim_product?.name || li.id;
@@ -287,8 +337,24 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
         }
 
         const cost = (unitCost * quantity) / 100;
+
+        // Calculate the offset between the item's delivery date and the base date
+        let dayOffset = 0;
+        if (li.delivery_date) {
+          const itemDeliveryDate = new Date(li.delivery_date);
+          itemDeliveryDate.setHours(0, 0, 0, 0);
+          dayOffset = Math.floor(
+            (itemDeliveryDate.getTime() - baseDeliveryDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+        }
+
+        // Add the cost starting from the delivery date
         allDays.forEach((day) => {
-          dayToRow[day][label] = cost;
+          if (day >= 1 + dayOffset && dayToRow[day]) {
+            dayToRow[day][label] = cost;
+          } else if (dayToRow[day]) {
+            dayToRow[day][label] = 0;
+          }
         });
       }
     });
@@ -296,7 +362,14 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     // Build dataset array
     const datasetArr = allDays.map((day) => dayToRow[day]);
 
-    // Build series array: sales first, then rentals
+    // Sort rental items by off-rent date (earliest first)
+    const sortedRentalItems = [...rentalItems].sort((a: any, b: any) => {
+      const dateA = a.off_rent_date ? new Date(a.off_rent_date).getTime() : Infinity;
+      const dateB = b.off_rent_date ? new Date(b.off_rent_date).getTime() : Infinity;
+      return dateA - dateB;
+    });
+
+    // Build series array: sales first, then rentals ordered by off-rent date
     const currencyFormatter = (value: number | null) => {
       if (value === null) return "";
       return new Intl.NumberFormat("en-US", {
@@ -331,7 +404,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
       }
       return null;
     });
-    const rentalSeries = rentalItems.map((li: any, idx: number) => {
+    const rentalSeries = sortedRentalItems.map((li: any, idx: number) => {
       if (li?.__typename === "RentalSalesOrderLineItem") {
         const series = {
           id: li.id,
