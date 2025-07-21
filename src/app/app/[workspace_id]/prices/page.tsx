@@ -85,7 +85,7 @@ export default function AllPrices() {
       width: 200,
       renderCell: (params) => {
         const priceBookId = params.row.priceBookId;
-        const priceBookName = params.value || "Not in Price Book";
+        const priceBookName = params.value || "Custom Prices";
         // Use workspace_id in the route
         return priceBookId ? (
           <Box display="flex" alignItems="center" height="100%">

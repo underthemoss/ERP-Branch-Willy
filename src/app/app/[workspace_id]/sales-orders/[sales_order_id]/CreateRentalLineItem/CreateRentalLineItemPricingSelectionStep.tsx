@@ -119,7 +119,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
         .map((p) => ({
           id: p?.id || "",
           name: p?.name || "",
-          priceBookName: p?.priceBook?.name || "Not in price book",
+          priceBookName: p?.priceBook?.name || "Custom Prices",
           priceBookId: p?.priceBook?.id || undefined,
           priceBook: p?.priceBook || undefined,
           pricePerDayInCents: p?.pricePerDayInCents,
@@ -193,7 +193,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
         name: formData.name,
       };
 
-      if (formData.priceBookId) {
+      if (formData.priceBookId && formData.priceBookId !== "custom-price") {
         input.priceBookId = formData.priceBookId;
       }
 
@@ -217,7 +217,7 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
         // Store the price book name to expand
         const priceBookName = formData.priceBookId
           ? priceBooks.find((pb) => pb.id === formData.priceBookId)?.name
-          : "Not in price book";
+          : "Custom Prices";
 
         // Refetch prices
         await refetchPrices();
@@ -357,8 +357,8 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
                 label="Price Book"
                 onChange={(e) => setFormData({ ...formData, priceBookId: e.target.value })}
               >
-                <MenuItem value="">
-                  <em>None</em>
+                <MenuItem key="custom-price" value="custom-price">
+                  <em>Custom Price</em>
                 </MenuItem>
                 {priceBooks.map((priceBook) => (
                   <MenuItem key={priceBook.id} value={priceBook.id}>
