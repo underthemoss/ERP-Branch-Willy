@@ -286,7 +286,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
             disabled={isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={16} /> : <SendIcon />}
           >
-            Submit
+            Add Comment
           </Button>
         </Box>
       </Box>
