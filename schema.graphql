@@ -854,6 +854,7 @@ type Mutation {
   updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalePrice(input: UpdateSalePriceInput!): SalePrice
+  updateSalesOrder(input: UpdateSalesOrderInput): SalesOrder
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
   updateTaxLineItem(input: UpdateTaxLineItemInput!): Invoice!
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
@@ -1782,6 +1783,13 @@ input UpdateSalePriceInput {
   pimCategoryId: String
   pimProductId: ID
   unitCostInCents: Int
+}
+
+input UpdateSalesOrderInput {
+  buyer_id: String
+  id: String!
+  project_id: String
+  purchase_order_number: String
 }
 
 input UpdateSalesOrderLineItemInput {

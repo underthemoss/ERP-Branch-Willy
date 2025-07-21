@@ -1,10 +1,10 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { useUpdateSalesOrderMutation } from "@/graphql/hooks";
 import ContactSelector from "@/ui/ContactSelector";
 import ProjectSelector from "@/ui/ProjectSelector";
 import {
-  Alert,
   Box,
   Button,
   Dialog,
@@ -16,6 +16,17 @@ import {
 } from "@mui/material";
 import { useParams } from "next/navigation";
 import * as React from "react";
+
+graphql(`
+  mutation UpdateSalesOrder($input: UpdateSalesOrderInput) {
+    updateSalesOrder(input: $input) {
+      id
+      buyer_id
+      purchase_order_number
+      project_id
+    }
+  }
+`);
 
 interface EditSalesOrderDialogProps {
   open: boolean;
@@ -36,6 +47,7 @@ export default function EditSalesOrderDialog({
   onSuccess,
 }: EditSalesOrderDialogProps) {
   const { workspace_id } = useParams<{ workspace_id: string }>();
+  const [updateSalesOrder] = useUpdateSalesOrderMutation();
 
   // Form state
   const [buyerId, setBuyerId] = React.useState(salesOrder.buyer_id);
@@ -54,30 +66,26 @@ export default function EditSalesOrderDialog({
 
   const handleSubmit = async () => {
     setLoading(true);
-    // For now, we'll just show an alert since the mutation doesn't exist
-    alert(
-      "Note: The updateSalesOrder mutation is not yet implemented in the GraphQL schema. " +
-        "This would update the sales order with:\n" +
-        `- Buyer ID: ${buyerId}\n` +
-        `- PO Number: ${poNumber}\n` +
-        `- Project ID: ${projectId || "(none)"}`,
-    );
-    setLoading(false);
-    onSuccess?.();
-    onClose();
-
-    // When the mutation is available, uncomment this:
-    /*
-    await updateSalesOrder({
-      variables: {
-        id: salesOrder.id,
-        buyer_id: buyerId,
-        purchase_order_number: poNumber,
-        project_id: projectId || null,
-      },
-      refetchQueries: ["GetSalesOrderById"],
-    });
-    */
+    try {
+      await updateSalesOrder({
+        variables: {
+          input: {
+            id: salesOrder.id,
+            buyer_id: buyerId,
+            purchase_order_number: poNumber,
+            project_id: projectId || null,
+          },
+        },
+        refetchQueries: ["GetSalesOrderById"],
+      });
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("Error updating sales order:", error);
+      alert("Failed to update sales order. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -116,12 +124,6 @@ export default function EditSalesOrderDialog({
               onChange={(value) => setProjectId(value || "")}
             />
           </Box>
-
-          {/* Note about missing mutation */}
-          <Alert severity="info">
-            Note: The backend mutation for updating sales orders is not yet implemented. This dialog
-            shows the UI that would be used once the mutation is available.
-          </Alert>
         </Box>
       </DialogContent>
       <DialogActions>
