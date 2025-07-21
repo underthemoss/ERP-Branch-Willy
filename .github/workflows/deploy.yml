@@ -49,7 +49,7 @@ jobs:
         run: |
           npm install -g @openai/codex
           export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          CODEX_QUIET_MODE=1 CI=1 npx @openai/codex -q -a auto-edit "You are investigating the root cause of a docker build failure. Read the contents of ./docker_build_log.txt. Summarise your findings in plain text and write it to slack_message.txt with the section headers 'Summary' 'Details' 'Suggested fix'. Try and identify the user from git. Use emojiis, don't run linting or tests or change code."
+          codex exec --full-auto "You are investigating the root cause of a docker build failure. Read the contents of ./docker_build_log.txt. Summarise your findings in plain text and write it to slack_message.txt with the section headers 'Summary' 'Details' 'Suggested fix'. Try and identify the user from git. Use emojiis, don't run linting or tests or change code."
           node scripts/slack-message-post.js
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

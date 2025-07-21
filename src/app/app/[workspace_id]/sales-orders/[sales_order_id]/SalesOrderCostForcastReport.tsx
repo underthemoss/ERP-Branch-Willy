@@ -2,7 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useSalesOrderLineItemsChartReportQuery } from "@/graphql/hooks";
-import { Box, Checkbox, FormControlLabel, Paper, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControlLabel, Paper, Typography } from "@mui/material";
 import {
   ChartsTooltipContainer,
   useAxesTooltip,
@@ -444,15 +444,20 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     setVisibleSeriesIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(seriesId)) {
-        // Don't allow unchecking if it's the last visible series
-        if (newSet.size > 1) {
-          newSet.delete(seriesId);
-        }
+        newSet.delete(seriesId);
       } else {
         newSet.add(seriesId);
       }
       return newSet;
     });
+  };
+
+  const handleSelectAll = () => {
+    setVisibleSeriesIds(new Set(allSeries.map((s) => s.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setVisibleSeriesIds(new Set());
   };
 
   // Handle hover to highlight series in chart
@@ -481,86 +486,143 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
 
   return (
     <div>
-      <LineChart
-        dataset={dataset}
-        xAxis={[
-          {
-            id: "Date",
-            dataKey: "date",
-            scaleType: "time",
-            min: dataset[0]?.date,
-            max: dataset[dataset.length - 1]?.date,
-            valueFormatter: (date) =>
-              date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          },
-        ]}
-        yAxis={[
-          {
-            width: 80,
-            valueFormatter: (value: number) => {
-              return new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              }).format(value);
+      {series.length > 0 ? (
+        <LineChart
+          dataset={dataset}
+          xAxis={[
+            {
+              id: "Date",
+              dataKey: "date",
+              scaleType: "time",
+              min: dataset[0]?.date,
+              max: dataset[dataset.length - 1]?.date,
+              valueFormatter: (date) =>
+                date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
             },
-          },
-        ]}
-        series={series}
-        height={400}
-        highlightedItem={highlightedItem}
-        onHighlightChange={setHighlightedItem}
-        slots={{
-          tooltip: TooltipWithHighlight,
-          legend: () => null,
-        }}
-        slotProps={{
-          tooltip: {
-            trigger: "axis",
-          },
-        }}
-      />
+          ]}
+          yAxis={[
+            {
+              width: 80,
+              valueFormatter: (value: number) => {
+                return new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }).format(value);
+              },
+            },
+          ]}
+          series={series}
+          height={400}
+          highlightedItem={highlightedItem}
+          onHighlightChange={setHighlightedItem}
+          slots={{
+            tooltip: TooltipWithHighlight,
+            legend: () => null,
+          }}
+          slotProps={{
+            tooltip: {
+              trigger: "axis",
+            },
+          }}
+        />
+      ) : (
+        <Box
+          sx={{
+            height: 400,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1,
+            backgroundColor: "background.paper",
+          }}
+        >
+          <Typography color="text.secondary">
+            Select one or more items below to view the cost forecast
+          </Typography>
+        </Box>
+      )}
 
       {/* Checkbox Legend */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
-        {allSeries.map((s) => (
-          <FormControlLabel
-            key={s.id}
-            onMouseEnter={() => setHoveredSeriesId(s.id)}
-            onMouseLeave={() => setHoveredSeriesId(null)}
-            control={
-              <Checkbox
-                size="small"
-                checked={visibleSeriesIds.has(s.id)}
-                onChange={() => handleSeriesToggle(s.id)}
-                sx={{ py: 0 }}
-              />
-            }
-            label={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    backgroundColor: s.color,
-                    borderRadius: "2px",
-                  }}
+      <Box sx={{ mt: 1 }}>
+        {/* Select/Deselect All buttons */}
+        <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+          <Button
+            size="small"
+            onClick={handleSelectAll}
+            sx={{
+              textTransform: "none",
+              color: "primary.main",
+              padding: "2px 8px",
+              minWidth: "auto",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
+            Select All
+          </Button>
+          <Typography sx={{ color: "text.secondary", alignSelf: "center" }}>|</Typography>
+          <Button
+            size="small"
+            onClick={handleDeselectAll}
+            sx={{
+              textTransform: "none",
+              color: "primary.main",
+              padding: "2px 8px",
+              minWidth: "auto",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
+            Deselect All
+          </Button>
+        </Box>
+
+        {/* Checkboxes */}
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {allSeries.map((s) => (
+            <FormControlLabel
+              key={s.id}
+              onMouseEnter={() => setHoveredSeriesId(s.id)}
+              onMouseLeave={() => setHoveredSeriesId(null)}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={visibleSeriesIds.has(s.id)}
+                  onChange={() => handleSeriesToggle(s.id)}
+                  sx={{ py: 0 }}
                 />
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontSize: "0.875rem",
-                    opacity: highlightedItem && highlightedItem.seriesId !== s.id ? 0.5 : 1,
-                  }}
-                >
-                  {s.label}
-                </Typography>
-              </Box>
-            }
-            sx={{ m: 0, mr: 2, cursor: "pointer" }}
-          />
-        ))}
+              }
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      backgroundColor: s.color,
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.875rem",
+                      opacity: highlightedItem && highlightedItem.seriesId !== s.id ? 0.5 : 1,
+                    }}
+                  >
+                    {s.label}
+                  </Typography>
+                </Box>
+              }
+              sx={{ m: 0, mr: 2, cursor: "pointer" }}
+            />
+          ))}
+        </Box>
       </Box>
     </div>
   );
