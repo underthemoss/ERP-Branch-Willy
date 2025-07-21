@@ -63,7 +63,14 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
           so_pim_category {
             name
           }
+          price {
+            __typename
+            ... on SalePrice {
+              unitCostInCents
+            }
+          }
           unit_cost_in_cents
+          so_quantity
         }
       }
     }
@@ -232,7 +239,11 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
 
     const lineItems = data.getSalesOrderById.line_items;
     const rentalItems = lineItems.filter((li: any) => li.calulate_price?.forecast?.days);
-    const saleItems = lineItems.filter((li: any) => li.unit_cost_in_cents != null);
+    const saleItems = lineItems.filter(
+      (li: any) =>
+        li.unit_cost_in_cents != null ||
+        (li.price?.__typename === "SalePrice" && li.price.unitCostInCents != null),
+    );
 
     // Collect all unique days from all rental forecasts
     const allDaysSet = new Set<number>();
@@ -262,12 +273,20 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     });
 
     // Add sale item series (flat cost at all days)
-    saleItems.forEach((li) => {
+    saleItems.forEach((li: any) => {
       if (li?.__typename === "SaleSalesOrderLineItem") {
         const label = li.so_pim_product?.name || li.id;
-        const cost = li.unit_cost_in_cents
-          ? (li.unit_cost_in_cents * ((li as any).so_quantity || 1)) / 100
-          : 0;
+        const quantity = li.so_quantity || 1;
+
+        // Use price from price node if available, otherwise fall back to unit_cost_in_cents
+        let unitCost = 0;
+        if (li.price?.__typename === "SalePrice" && li.price.unitCostInCents) {
+          unitCost = li.price.unitCostInCents;
+        } else if (li.unit_cost_in_cents) {
+          unitCost = li.unit_cost_in_cents;
+        }
+
+        const cost = (unitCost * quantity) / 100;
         allDays.forEach((day) => {
           dayToRow[day][label] = cost;
         });
