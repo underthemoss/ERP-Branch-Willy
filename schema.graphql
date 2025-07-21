@@ -374,6 +374,10 @@ input CreateSalePriceInput {
 
 input CreateSaleSalesOrderLineItemInput {
   deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
   lineitem_status: LineItemStatus
   price_id: String
   sales_order_id: String!
@@ -855,8 +859,9 @@ type Mutation {
   updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalePrice(input: UpdateSalePriceInput!): SalePrice
+  updateSaleSalesOrderLineItem(input: UpdateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   updateSalesOrder(input: UpdateSalesOrderInput): SalesOrder
-  updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem
+  updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem @deprecated(reason: "use updateSaleSalesOrderLineItem")
   updateTaxLineItem(input: UpdateTaxLineItemInput!): Invoice!
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
@@ -1435,6 +1440,10 @@ type SaleSalesOrderLineItem {
   created_by_user: User
   deleted_at: String
   deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
   id: String!
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
@@ -1784,6 +1793,20 @@ input UpdateSalePriceInput {
   pimCategoryId: String
   pimProductId: ID
   unitCostInCents: Int
+}
+
+input UpdateSaleSalesOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: LineItemStatus
+  price_id: String
+  so_pim_id: String
+  so_quantity: Int
+  unit_cost_in_cents: Int
 }
 
 input UpdateSalesOrderInput {

@@ -57,17 +57,20 @@ graphql(`
         created_at
         updated_at
         lineitem_status
+        deliveryNotes
+        delivery_date
+        delivery_location
+        delivery_method
+        delivery_charge_in_cents
       }
     }
   }
 `);
 
 graphql(`
-  mutation updateSaleSalesOrderLineCreateDialog($input: UpdateSalesOrderLineItemInput!) {
-    updateSalesOrderLineItem(input: $input) {
-      ... on SaleSalesOrderLineItem {
-        id
-      }
+  mutation updateSaleSalesOrderLineCreateDialog($input: UpdateSaleSalesOrderLineItemInput!) {
+    updateSaleSalesOrderLineItem(input: $input) {
+      id
     }
   }
 `);

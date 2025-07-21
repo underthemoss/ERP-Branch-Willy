@@ -4,6 +4,8 @@ import { useGetSalesOrderSaleLineItemByIdCreateDialogQuery } from "@/graphql/hoo
 import { Box, Button, Dialog, DialogActions } from "@mui/material";
 import React, { useState } from "react";
 import CreateSaleLineItemConfirmationStep from "./CreateSaleLineItemConfirmationStep";
+import CreateSaleLineItemDeliveryStep from "./CreateSaleLineItemDeliveryStep";
+import CreateSaleLineItemFulfillmentDetailsStep from "./CreateSaleLineItemFulfillmentDetailsStep";
 import CreateSaleLineItemPricingStep from "./CreateSaleLineItemPricingStep";
 import CreateSaleLineItemProductSelectionStep from "./CreateSaleLineItemProductSelectionStep";
 
@@ -77,7 +79,7 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
               if (onNextClick) {
                 await onNextClick();
               }
-              if (step === 3) {
+              if (step === 5) {
                 handleClose();
               } else {
                 setStep((s) => s + 1);
@@ -109,8 +111,16 @@ export const CreateSaleLineItemDialog: React.FC<CreateSaleLineItemDialogProps> =
             />
           )}
 
-          {/* Step 3: Confirmation */}
+          {/* Step 3: Fulfillment Details */}
           {step === 3 && (
+            <CreateSaleLineItemFulfillmentDetailsStep lineItemId={lineItemId} Footer={Footer} />
+          )}
+
+          {/* Step 4: Delivery Information */}
+          {step === 4 && <CreateSaleLineItemDeliveryStep lineItemId={lineItemId} Footer={Footer} />}
+
+          {/* Step 5: Confirmation */}
+          {step === 5 && (
             <CreateSaleLineItemConfirmationStep lineItemId={lineItemId} Footer={Footer} />
           )}
         </>
