@@ -14,6 +14,7 @@ import { DataGridPremium, GridColDef, Toolbar } from "@mui/x-data-grid-premium";
 import { addDays, format } from "date-fns";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
+import EditLineItemButton from "./EditLineItemButton";
 
 // --- GQL Query (for codegen) ---
 graphql(`
@@ -140,6 +141,10 @@ export interface SalesOrderLineItemsDataGridProps {
   salesOrderId: string;
   salesOrderStatus: SalesOrderStatus;
   onAddNewItem?: () => void;
+  onEditItem?: (
+    lineItemId: string,
+    lineItemType: "RentalSalesOrderLineItem" | "SaleSalesOrderLineItem",
+  ) => void;
 }
 type RowType = NonNullable<
   NonNullable<NonNullable<SalesOrderLineItemsQuery["getSalesOrderById"]>["line_items"]>[number]
@@ -149,6 +154,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
   salesOrderId,
   onAddNewItem,
   salesOrderStatus,
+  onEditItem,
 }) => {
   const { data, loading, error, refetch } = useSalesOrderLineItemsQuery({
     variables: { salesOrderId },
@@ -407,13 +413,20 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
     {
       field: "actions",
       headerName: "Actions",
-      minWidth: 80,
+      minWidth: 120,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
       align: "center",
       renderCell: (params) => (
-        <DeleteLineItemButton lineItemId={params.row.id} onDeleted={refetch} />
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <EditLineItemButton
+            lineItemId={params.row.id}
+            lineItemType={params.row.__typename}
+            onEdit={() => onEditItem?.(params.row.id, params.row.__typename)}
+          />
+          <DeleteLineItemButton lineItemId={params.row.id} onDeleted={refetch} />
+        </Box>
       ),
     },
   ];

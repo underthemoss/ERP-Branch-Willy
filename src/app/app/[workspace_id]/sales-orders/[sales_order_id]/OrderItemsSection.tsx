@@ -34,6 +34,18 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({
     else setOpenDialog("none");
   };
 
+  const handleEditItem = (
+    itemId: string,
+    itemType: "RentalSalesOrderLineItem" | "SaleSalesOrderLineItem",
+  ) => {
+    setLineItemId(itemId);
+    if (itemType === "RentalSalesOrderLineItem") {
+      setOpenDialog("rental");
+    } else if (itemType === "SaleSalesOrderLineItem") {
+      setOpenDialog("sale");
+    }
+  };
+
   const handleCloseDialog = () => {
     setOpenDialog("none");
   };
@@ -76,6 +88,7 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({
           key={`${salesOrderId}-${openDialog}`}
           salesOrderId={salesOrderId}
           onAddNewItem={() => setOpenDialog("type")}
+          onEditItem={handleEditItem}
           salesOrderStatus={salesOrderStatus}
         />
       </Paper>
