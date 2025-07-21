@@ -38,6 +38,7 @@ const CreateRentalLineItemProductSelectionStep: React.FC<ProductSelectionStepPro
           Search and select a product to add to this sales order.
         </Typography>
         <PimCategoriesTreeView
+          selectedItemId={item?.so_pim_category?.id}
           onItemSelected={async (val) => {
             await updateLineItem({
               variables: {

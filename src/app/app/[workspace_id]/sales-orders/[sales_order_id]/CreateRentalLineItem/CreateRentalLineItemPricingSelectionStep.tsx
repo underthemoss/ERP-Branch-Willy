@@ -32,7 +32,7 @@ import {
   useKeepGroupedColumnsHidden,
 } from "@mui/x-data-grid-premium";
 import { useParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { CreateRentalLineItemFooter } from "./CreateRentalLineItemDialog";
 
 const formatCentsToUSD = (cents: number | null): string => {
@@ -171,6 +171,31 @@ const CreateRentalLineItemPricingSelectionStep: React.FC<PricingSelectionStepPro
   const rowGroupingModel = ["priceBookName"];
 
   const apiRef = useGridApiRef();
+
+  // Set initial price selection from line item data
+  useEffect(() => {
+    if (data?.getSalesOrderLineItemById?.__typename === "RentalSalesOrderLineItem") {
+      const lineItem = data.getSalesOrderLineItemById;
+      if (lineItem.price_id && !selectedPrice) {
+        setSelectedPrice(lineItem.price_id);
+        setRowSelectionModel({
+          ids: new Set([lineItem.price_id]),
+          type: "include",
+        });
+
+        // // Find and expand the price book containing this price
+        const selectedPriceData = rentalPrices.find((p) => p.id === lineItem.price_id);
+        if (selectedPriceData && apiRef.current) {
+          setTimeout(() => {
+            if (apiRef.current) {
+              const groupId = `auto-generated-row-priceBookName/${selectedPriceData.priceBookName}`;
+              apiRef.current.setRowChildrenExpansion(groupId, true);
+            }
+          }, 100);
+        }
+      }
+    }
+  }, [data, selectedPrice, rentalPrices, apiRef]);
 
   const initialState = useKeepGroupedColumnsHidden({
     apiRef,
