@@ -5,16 +5,20 @@ import { TaxType } from "@/graphql/graphql";
 import {
   useAddTaxLineItemMutation,
   useClearInvoiceTaxesMutation,
+  useInvoiceForTaxSuggestionsQuery,
   useRemoveTaxLineItemMutation,
+  useSuggestTaxObligationsLazyQuery,
   useUpdateTaxLineItemMutation,
 } from "@/graphql/hooks";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import AddIcon from "@mui/icons-material/Add";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -47,7 +51,6 @@ interface EditInvoiceTaxesDialogProps {
   open: boolean;
   onClose: () => void;
   invoiceId: string;
-  currentTaxPercent?: number;
   taxLineItems?: TaxLineItem[];
 }
 
@@ -124,6 +127,61 @@ graphql(`
   }
 `);
 
+// GraphQL query for tax suggestions
+graphql(`
+  query SuggestTaxObligations($invoiceDescription: String!) {
+    llm {
+      suggestTaxObligations(invoiceDescription: $invoiceDescription) {
+        location {
+          state
+          county
+          city
+          zipCode
+        }
+        lineItems {
+          description
+          category
+          amount
+        }
+        taxes {
+          description
+          type
+          value
+          order
+          reason
+        }
+      }
+    }
+  }
+`);
+
+// GraphQL query to fetch invoice details for building description
+graphql(`
+  query InvoiceForTaxSuggestions($id: String!) {
+    invoiceById(id: $id) {
+      id
+      subTotalInCents
+      lineItems {
+        chargeId
+        description
+        totalInCents
+      }
+      buyer {
+        __typename
+        ... on BusinessContact {
+          id
+          name
+          address
+        }
+        ... on PersonContact {
+          id
+          name
+        }
+      }
+    }
+  }
+`);
+
 interface NewTaxLineItem {
   description: string;
   type: TaxType;
@@ -136,128 +194,50 @@ interface PresetTaxItem {
   type: TaxType;
   value: number;
   category: string;
+  reason?: string;
 }
 
-const PRESET_TAX_ITEMS: PresetTaxItem[] = [
-  // State Sales Tax
-  {
-    id: "ca-sales",
-    description: "California Sales Tax",
-    type: TaxType.Percentage,
-    value: 0.0725,
-    category: "State Sales Tax",
-  },
-  {
-    id: "ny-sales",
-    description: "New York Sales Tax",
-    type: TaxType.Percentage,
-    value: 0.04,
-    category: "State Sales Tax",
-  },
-  {
-    id: "tx-sales",
-    description: "Texas Sales Tax",
-    type: TaxType.Percentage,
-    value: 0.0625,
-    category: "State Sales Tax",
-  },
-  {
-    id: "fl-sales",
-    description: "Florida Sales Tax",
-    type: TaxType.Percentage,
-    value: 0.06,
-    category: "State Sales Tax",
-  },
-  {
-    id: "wa-sales",
-    description: "Washington Sales Tax",
-    type: TaxType.Percentage,
-    value: 0.065,
-    category: "State Sales Tax",
-  },
+// Empty array since we'll only use AI suggestions
+const PRESET_TAX_ITEMS: PresetTaxItem[] = [];
 
-  // Local/City Tax
-  {
-    id: "nyc-local",
-    description: "NYC Local Tax",
-    type: TaxType.Percentage,
-    value: 0.045,
-    category: "Local/City Tax",
-  },
-  {
-    id: "la-local",
-    description: "Los Angeles Local Tax",
-    type: TaxType.Percentage,
-    value: 0.025,
-    category: "Local/City Tax",
-  },
-  {
-    id: "chicago-local",
-    description: "Chicago Local Tax",
-    type: TaxType.Percentage,
-    value: 0.0125,
-    category: "Local/City Tax",
-  },
+// Helper function to build invoice description for tax suggestions
+function buildInvoiceDescription(invoice: any): string {
+  if (!invoice) return "";
 
-  // Special Taxes
-  {
-    id: "luxury-tax",
-    description: "Luxury Tax",
-    type: TaxType.Percentage,
-    value: 0.1,
-    category: "Special Taxes",
-  },
-  {
-    id: "env-fee",
-    description: "Environmental Fee",
-    type: TaxType.FixedAmount,
-    value: 500,
-    category: "Special Taxes",
-  },
-  {
-    id: "recycling-fee",
-    description: "Recycling Fee",
-    type: TaxType.FixedAmount,
-    value: 250,
-    category: "Special Taxes",
-  },
-  {
-    id: "tourism-tax",
-    description: "Tourism/Hotel Tax",
-    type: TaxType.Percentage,
-    value: 0.14,
-    category: "Special Taxes",
-  },
+  const parts: string[] = [];
 
-  // Equipment Rental Specific
-  {
-    id: "rental-tax",
-    description: "Equipment Rental Tax",
-    type: TaxType.Percentage,
-    value: 0.07,
-    category: "Equipment Specific",
-  },
-  {
-    id: "heavy-equip",
-    description: "Heavy Equipment Surcharge",
-    type: TaxType.Percentage,
-    value: 0.02,
-    category: "Equipment Specific",
-  },
-  {
-    id: "delivery-fee",
-    description: "Delivery Fee",
-    type: TaxType.FixedAmount,
-    value: 7500,
-    category: "Equipment Specific",
-  },
-];
+  // Add invoice ID
+  parts.push(`Invoice #${invoice.id}`);
+
+  // Add buyer info
+  if (invoice.buyer) {
+    parts.push(`Customer: ${invoice.buyer.name}`);
+    if (invoice.buyer.__typename === "BusinessContact" && invoice.buyer.address) {
+      parts.push(`Location: ${invoice.buyer.address}`);
+    }
+  }
+
+  // Add line items
+  if (invoice.lineItems && invoice.lineItems.length > 0) {
+    parts.push("\nLine Items:");
+    invoice.lineItems.forEach((item: any, index: number) => {
+      const amount = (item.totalInCents / 100).toFixed(2);
+      parts.push(`${index + 1}. ${item.description} = £${amount}`);
+    });
+  }
+
+  // Add subtotal
+  if (invoice.subTotalInCents != null) {
+    parts.push(`\nSubtotal: £${(invoice.subTotalInCents / 100).toFixed(2)}`);
+  }
+
+  return parts.join("\n");
+}
 
 export default function EditInvoiceTaxesDialog({
   open,
   onClose,
   invoiceId,
-  currentTaxPercent,
   taxLineItems = [],
 }: EditInvoiceTaxesDialogProps) {
   const [editedItems, setEditedItems] = useState<TaxLineItem[]>([]);
@@ -273,6 +253,9 @@ export default function EditInvoiceTaxesDialog({
   // Local state for input values to allow empty strings
   const [inputValues, setInputValues] = useState<{ [key: string]: string }>({});
   const [newItemInputValue, setNewItemInputValue] = useState<string>("0");
+
+  // State for suggested tax items
+  const [suggestedTaxItems, setSuggestedTaxItems] = useState<PresetTaxItem[]>([]);
 
   const [addTaxLineItem, { loading: addLoading }] = useAddTaxLineItemMutation({
     onCompleted: (data) => {
@@ -301,6 +284,36 @@ export default function EditInvoiceTaxesDialog({
         setTotalTaxesInCents(data.clearInvoiceTaxes.totalTaxesInCents);
       }
     },
+  });
+
+  const [suggestTaxObligations, { loading: suggestLoading }] = useSuggestTaxObligationsLazyQuery({
+    fetchPolicy: "cache-and-network",
+    onCompleted: (data: any) => {
+      if (data.llm?.suggestTaxObligations?.taxes) {
+        const suggestedTaxes = data.llm.suggestTaxObligations.taxes;
+
+        // Convert suggested taxes to preset tax items format
+        const newSuggestedItems: PresetTaxItem[] = suggestedTaxes.map(
+          (tax: any, index: number) => ({
+            id: `suggested-${index}-${Date.now()}`,
+            description: tax.description,
+            type: tax.type,
+            value: tax.type === TaxType.FixedAmount ? tax.value * 100 : tax.value, // Convert to cents for fixed amounts
+            category: "AI Suggested Taxes",
+            reason: tax.reason,
+          }),
+        );
+
+        setSuggestedTaxItems(newSuggestedItems);
+      }
+    },
+  });
+
+  // Fetch invoice data to build description
+  const { data: invoiceData } = useInvoiceForTaxSuggestionsQuery({
+    variables: { id: invoiceId },
+    skip: !open,
+    fetchPolicy: "cache-and-network",
   });
 
   const loading = addLoading || updateLoading || removeLoading || clearLoading;
@@ -337,8 +350,25 @@ export default function EditInvoiceTaxesDialog({
       });
       setNewItemInputValue("0");
       setErrors([]);
+    } else if (!open) {
+      // Clear suggested items when dialog closes
+      setSuggestedTaxItems([]);
     }
   }, [open, taxLineItems, isReordering]);
+
+  // Fetch tax suggestions when invoice data is loaded
+  useEffect(() => {
+    if (open && invoiceData?.invoiceById) {
+      const invoiceDescription = buildInvoiceDescription(invoiceData.invoiceById);
+      if (invoiceDescription) {
+        suggestTaxObligations({
+          variables: {
+            invoiceDescription,
+          },
+        });
+      }
+    }
+  }, [open, invoiceData, suggestTaxObligations]);
 
   const handleUpdateItem = (index: number, field: keyof TaxLineItem, value: any) => {
     const updated = [...editedItems];
@@ -440,7 +470,7 @@ export default function EditInvoiceTaxesDialog({
       result.source.droppableId === "preset-items" &&
       result.destination.droppableId === "tax-items"
     ) {
-      const presetItem = PRESET_TAX_ITEMS.find((item) => item.id === result.draggableId);
+      const presetItem = suggestedTaxItems.find((item) => item.id === result.draggableId);
       if (presetItem) {
         try {
           await addTaxLineItem({
@@ -515,8 +545,8 @@ export default function EditInvoiceTaxesDialog({
     }
   };
 
-  // Group preset items by category
-  const groupedPresetItems = PRESET_TAX_ITEMS.reduce(
+  // Group suggested items by category
+  const groupedPresetItems = suggestedTaxItems.reduce(
     (acc, item) => {
       if (!acc[item.category]) {
         acc[item.category] = [];
@@ -553,14 +583,14 @@ export default function EditInvoiceTaxesDialog({
           Edit Taxes
         </DialogTitle>
         {loading && (
-          <LinearProgress 
-            sx={{ 
-              position: 'absolute',
-              top: '64px',
+          <LinearProgress
+            sx={{
+              position: "absolute",
+              top: "64px",
               left: 0,
               right: 0,
               zIndex: 1,
-            }} 
+            }}
           />
         )}
         <Divider />
@@ -585,77 +615,90 @@ export default function EditInvoiceTaxesDialog({
                 color: "text.primary",
               }}
             >
-              Common Tax Items
+              Suggested Tax Items
             </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                display: "block",
-                mb: 2,
-                color: "text.secondary",
-              }}
-            >
-              Drag items to add them to your invoice
-            </Typography>
+            {suggestLoading ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 4,
+                  gap: 2,
+                }}
+              >
+                <CircularProgress size={40} thickness={4} />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    textAlign: "center",
+                  }}
+                >
+                  Analyzing invoice details and generating tax suggestions...
+                </Typography>
+              </Box>
+            ) : (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mb: 2,
+                  color: "text.secondary",
+                }}
+              >
+                {suggestedTaxItems.length > 0
+                  ? "Drag items to add them to your invoice"
+                  : "No tax suggestions available"}
+              </Typography>
+            )}
 
-            <Droppable droppableId="preset-items" isDropDisabled={true}>
-              {(provided) => (
-                <div ref={provided.innerRef} {...provided.droppableProps}>
-                  {Object.entries(groupedPresetItems).map(([category, items]) => (
-                    <Box key={category} sx={{ mb: 3 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          mb: 1,
-                          fontWeight: 600,
-                          color: "text.secondary",
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        {category}
-                      </Typography>
-                      <Stack spacing={1}>
-                        {items.map((item, index) => (
-                          <Draggable key={item.id} draggableId={item.id} index={index}>
-                            {(provided, snapshot) => (
-                              <>
-                                <Paper
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  elevation={snapshot.isDragging ? 4 : 0}
-                                  sx={{
-                                    p: 1.5,
-                                    cursor: "grab",
-                                    border: "1px solid",
-                                    borderColor: snapshot.isDragging ? "primary.main" : "divider",
-                                    backgroundColor: snapshot.isDragging
-                                      ? "primary.50"
-                                      : "background.paper",
-                                    "&:hover": {
-                                      borderColor: "primary.light",
-                                      backgroundColor: "action.hover",
-                                    },
-                                  }}
-                                >
-                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                    {item.description}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {item.type === TaxType.Percentage
-                                      ? `${(item.value * 100).toFixed(2)}%`
-                                      : `$${(item.value / 100).toFixed(2)}`}
-                                  </Typography>
-                                </Paper>
-                                {snapshot.isDragging && (
+            {!suggestLoading && (
+              <Droppable droppableId="preset-items" isDropDisabled={true}>
+                {(provided) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}>
+                    {Object.entries(groupedPresetItems).map(([category, items]) => (
+                      <Box key={category} sx={{ mb: 3 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            mb: 1,
+                            fontWeight: 600,
+                            color: "primary.main",
+                            fontSize: "0.875rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <AutoAwesomeIcon sx={{ fontSize: 16 }} />
+                          {category}
+                        </Typography>
+                        <Stack spacing={1}>
+                          {items.map((item, index) => (
+                            <Draggable key={item.id} draggableId={item.id} index={index}>
+                              {(provided, snapshot) => (
+                                <>
                                   <Paper
-                                    elevation={0}
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    elevation={snapshot.isDragging ? 4 : 0}
                                     sx={{
                                       p: 1.5,
-                                      border: "1px dashed",
-                                      borderColor: "divider",
-                                      backgroundColor: "grey.100",
-                                      opacity: 0.5,
+                                      cursor: "grab",
+                                      border: "1px solid",
+                                      borderColor: snapshot.isDragging
+                                        ? "primary.main"
+                                        : "primary.light",
+                                      backgroundColor: snapshot.isDragging
+                                        ? "primary.50"
+                                        : "primary.50",
+                                      "&:hover": {
+                                        borderColor: "primary.main",
+                                        backgroundColor: "primary.100",
+                                      },
                                     }}
                                   >
                                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -666,19 +709,53 @@ export default function EditInvoiceTaxesDialog({
                                         ? `${(item.value * 100).toFixed(2)}%`
                                         : `$${(item.value / 100).toFixed(2)}`}
                                     </Typography>
+                                    {item.reason && (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                          display: "block",
+                                          mt: 0.5,
+                                          fontStyle: "italic",
+                                        }}
+                                      >
+                                        {item.reason}
+                                      </Typography>
+                                    )}
                                   </Paper>
-                                )}
-                              </>
-                            )}
-                          </Draggable>
-                        ))}
-                      </Stack>
-                    </Box>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+                                  {snapshot.isDragging && (
+                                    <Paper
+                                      elevation={0}
+                                      sx={{
+                                        p: 1.5,
+                                        border: "1px dashed",
+                                        borderColor: "divider",
+                                        backgroundColor: "grey.100",
+                                        opacity: 0.5,
+                                      }}
+                                    >
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {item.description}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {item.type === TaxType.Percentage
+                                          ? `${(item.value * 100).toFixed(2)}%`
+                                          : `$${(item.value / 100).toFixed(2)}`}
+                                      </Typography>
+                                    </Paper>
+                                  )}
+                                </>
+                              )}
+                            </Draggable>
+                          ))}
+                        </Stack>
+                      </Box>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            )}
           </Box>
 
           {/* Main Content Area */}
@@ -712,20 +789,20 @@ export default function EditInvoiceTaxesDialog({
                         <Paper
                           sx={{
                             p: 4,
-                            border: '2px dashed',
-                            borderColor: snapshot.isDraggingOver ? 'primary.main' : 'grey.300',
+                            border: "2px dashed",
+                            borderColor: snapshot.isDraggingOver ? "primary.main" : "grey.300",
                             borderRadius: 2,
-                            backgroundColor: snapshot.isDraggingOver ? 'primary.50' : 'grey.50',
-                            textAlign: 'center',
-                            transition: 'all 0.2s ease',
+                            backgroundColor: snapshot.isDraggingOver ? "primary.50" : "grey.50",
+                            textAlign: "center",
+                            transition: "all 0.2s ease",
                           }}
                         >
                           <Typography
                             variant="h6"
                             sx={{
-                              color: 'text.secondary',
+                              color: "text.secondary",
                               mb: 1,
-                              fontSize: '1rem',
+                              fontSize: "1rem",
                             }}
                           >
                             No tax items added yet
@@ -733,7 +810,7 @@ export default function EditInvoiceTaxesDialog({
                           <Typography
                             variant="body2"
                             sx={{
-                              color: 'text.secondary',
+                              color: "text.secondary",
                             }}
                           >
                             Drag tax items from the left sidebar or create a new one below
@@ -741,223 +818,221 @@ export default function EditInvoiceTaxesDialog({
                         </Paper>
                       )}
                       {editedItems.map((item, index) => (
-                          <Draggable key={item.id} draggableId={item.id} index={index}>
-                            {(provided, snapshot) => (
-                              <Paper
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                elevation={snapshot.isDragging ? 8 : 0}
-                                sx={{
-                                  p: 2,
-                                  border: "1px solid",
-                                  borderColor: snapshot.isDragging ? "primary.main" : "divider",
-                                  borderRadius: 2,
-                                  backgroundColor: snapshot.isDragging
-                                    ? "primary.50"
-                                    : "background.paper",
-                                  transition: "all 0.2s ease",
-                                  "&:hover": {
-                                    borderColor: "primary.light",
-                                    backgroundColor: "action.hover",
-                                  },
-                                }}
-                              >
-                                <Grid container spacing={2} alignItems="center">
-                                  <Grid size={{ xs: "auto" }}>
-                                    <Box
-                                      {...provided.dragHandleProps}
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        cursor: "grab",
-                                        color: "text.secondary",
-                                        "&:active": {
-                                          cursor: "grabbing",
-                                        },
-                                      }}
-                                    >
-                                      <DragIndicatorIcon />
-                                    </Box>
-                                  </Grid>
-
-                                  <Grid size={{ xs: 12, sm: 3 }}>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ mb: 0.5, display: "block" }}
-                                    >
-                                      Description
-                                    </Typography>
-                                    <TextField
-                                      value={item.description}
-                                      onChange={(e) =>
-                                        handleUpdateItem(index, "description", e.target.value)
-                                      }
-                                      size="small"
-                                      fullWidth
-                                      variant="outlined"
-                                      sx={{
-                                        "& .MuiOutlinedInput-root": {
-                                          backgroundColor: "background.default",
-                                        },
-                                      }}
-                                    />
-                                  </Grid>
-
-                                  <Grid size={{ xs: 12, sm: 2 }}>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ mb: 0.5, display: "block" }}
-                                    >
-                                      Type
-                                    </Typography>
-                                    <Select
-                                      value={item.type}
-                                      onChange={(e) => {
-                                        handleUpdateItem(index, "type", e.target.value);
-                                        const currentVal = parseFloat(inputValues[item.id] || "0");
-                                        if (!isNaN(currentVal)) {
-                                          const newValue =
-                                            e.target.value === TaxType.Percentage
-                                              ? (currentVal * 100).toString()
-                                              : (currentVal / 100).toString();
-                                          setInputValues({ ...inputValues, [item.id]: newValue });
-                                        }
-                                      }}
-                                      size="small"
-                                      fullWidth
-                                      sx={{
-                                        backgroundColor: "background.default",
-                                      }}
-                                    >
-                                      <MenuItem value={TaxType.Percentage}>Percentage</MenuItem>
-                                      <MenuItem value={TaxType.FixedAmount}>Fixed Amount</MenuItem>
-                                    </Select>
-                                  </Grid>
-
-                                  <Grid size={{ xs: 12, sm: 2 }}>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ mb: 0.5, display: "block" }}
-                                    >
-                                      {item.type === TaxType.Percentage
-                                        ? "Percentage"
-                                        : "Amount (£)"}
-                                    </Typography>
-                                    <TextField
-                                      value={inputValues[item.id] || ""}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setInputValues({ ...inputValues, [item.id]: val });
-                                        const numVal = parseFloat(val);
-                                        if (!isNaN(numVal)) {
-                                          handleUpdateItem(
-                                            index,
-                                            "value",
-                                            item.type === TaxType.Percentage
-                                              ? numVal / 100
-                                              : numVal * 100,
-                                          );
-                                        }
-                                      }}
-                                      onBlur={(e) => {
-                                        if (
-                                          e.target.value === "" ||
-                                          isNaN(parseFloat(e.target.value))
-                                        ) {
-                                          handleUpdateItem(index, "value", 0);
-                                          setInputValues({ ...inputValues, [item.id]: "0" });
-                                        }
-                                      }}
-                                      InputProps={{
-                                        startAdornment:
-                                          item.type === TaxType.Percentage ? null : (
-                                            <InputAdornment position="start">£</InputAdornment>
-                                          ),
-                                        endAdornment:
-                                          item.type === TaxType.Percentage ? (
-                                            <InputAdornment position="end">%</InputAdornment>
-                                          ) : null,
-                                      }}
-                                      inputProps={{
-                                        min: 0,
-                                        max: item.type === TaxType.Percentage ? 100 : undefined,
-                                        step: 0.01,
-                                      }}
-                                      size="small"
-                                      fullWidth
-                                      sx={{
-                                        "& .MuiOutlinedInput-root": {
-                                          backgroundColor: "background.default",
-                                        },
-                                      }}
-                                    />
-                                  </Grid>
-
-                                  {item.calculatedAmountInCents != null && (
-                                    <Grid size={{ xs: 12, sm: 1.5 }}>
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ mb: 0.5, display: "block" }}
-                                      >
-                                        Total
-                                      </Typography>
-                                      <Typography
-                                        variant="body1"
-                                        sx={{
-                                          fontWeight: 600,
-                                          color: "primary.main",
-                                        }}
-                                      >
-                                        £{(item.calculatedAmountInCents / 100).toFixed(2)}
-                                      </Typography>
-                                    </Grid>
-                                  )}
-
-                                  <Grid size={{ xs: 12, sm: "auto" }}>
-                                    <Box sx={{ display: "flex", gap: 1, mt: { xs: 1, sm: 2.5 } }}>
-                                      <Button
-                                        size="small"
-                                        variant="contained"
-                                        onClick={() => handleUpdateExistingItem(item)}
-                                        disabled={loading}
-                                        sx={{
-                                          textTransform: "none",
-                                          boxShadow: "none",
-                                          "&:hover": {
-                                            boxShadow: 1,
-                                          },
-                                        }}
-                                      >
-                                        Update
-                                      </Button>
-                                      <IconButton
-                                        size="small"
-                                        color="error"
-                                        onClick={() => handleRemoveItem(item.id)}
-                                        disabled={loading}
-                                        sx={{
-                                          "&:hover": {
-                                            backgroundColor: "error.50",
-                                          },
-                                        }}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Box>
-                                  </Grid>
+                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                          {(provided, snapshot) => (
+                            <Paper
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              elevation={snapshot.isDragging ? 8 : 0}
+                              sx={{
+                                p: 2,
+                                border: "1px solid",
+                                borderColor: snapshot.isDragging ? "primary.main" : "divider",
+                                borderRadius: 2,
+                                backgroundColor: snapshot.isDragging
+                                  ? "primary.50"
+                                  : "background.paper",
+                                transition: "all 0.2s ease",
+                                "&:hover": {
+                                  borderColor: "primary.light",
+                                  backgroundColor: "action.hover",
+                                },
+                              }}
+                            >
+                              <Grid container spacing={2} alignItems="center">
+                                <Grid size={{ xs: "auto" }}>
+                                  <Box
+                                    {...provided.dragHandleProps}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      cursor: "grab",
+                                      color: "text.secondary",
+                                      "&:active": {
+                                        cursor: "grabbing",
+                                      },
+                                    }}
+                                  >
+                                    <DragIndicatorIcon />
+                                  </Box>
                                 </Grid>
-                              </Paper>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Stack>
-                    )}
-                  </Droppable>
+
+                                <Grid size={{ xs: 12, sm: 3 }}>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mb: 0.5, display: "block" }}
+                                  >
+                                    Description
+                                  </Typography>
+                                  <TextField
+                                    value={item.description}
+                                    onChange={(e) =>
+                                      handleUpdateItem(index, "description", e.target.value)
+                                    }
+                                    size="small"
+                                    fullWidth
+                                    variant="outlined"
+                                    sx={{
+                                      "& .MuiOutlinedInput-root": {
+                                        backgroundColor: "background.default",
+                                      },
+                                    }}
+                                  />
+                                </Grid>
+
+                                <Grid size={{ xs: 12, sm: 2 }}>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mb: 0.5, display: "block" }}
+                                  >
+                                    Type
+                                  </Typography>
+                                  <Select
+                                    value={item.type}
+                                    onChange={(e) => {
+                                      handleUpdateItem(index, "type", e.target.value);
+                                      const currentVal = parseFloat(inputValues[item.id] || "0");
+                                      if (!isNaN(currentVal)) {
+                                        const newValue =
+                                          e.target.value === TaxType.Percentage
+                                            ? (currentVal * 100).toString()
+                                            : (currentVal / 100).toString();
+                                        setInputValues({ ...inputValues, [item.id]: newValue });
+                                      }
+                                    }}
+                                    size="small"
+                                    fullWidth
+                                    sx={{
+                                      backgroundColor: "background.default",
+                                    }}
+                                  >
+                                    <MenuItem value={TaxType.Percentage}>Percentage</MenuItem>
+                                    <MenuItem value={TaxType.FixedAmount}>Fixed Amount</MenuItem>
+                                  </Select>
+                                </Grid>
+
+                                <Grid size={{ xs: 12, sm: 2 }}>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mb: 0.5, display: "block" }}
+                                  >
+                                    {item.type === TaxType.Percentage ? "Percentage" : "Amount (£)"}
+                                  </Typography>
+                                  <TextField
+                                    value={inputValues[item.id] || ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setInputValues({ ...inputValues, [item.id]: val });
+                                      const numVal = parseFloat(val);
+                                      if (!isNaN(numVal)) {
+                                        handleUpdateItem(
+                                          index,
+                                          "value",
+                                          item.type === TaxType.Percentage
+                                            ? numVal / 100
+                                            : numVal * 100,
+                                        );
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      if (
+                                        e.target.value === "" ||
+                                        isNaN(parseFloat(e.target.value))
+                                      ) {
+                                        handleUpdateItem(index, "value", 0);
+                                        setInputValues({ ...inputValues, [item.id]: "0" });
+                                      }
+                                    }}
+                                    InputProps={{
+                                      startAdornment:
+                                        item.type === TaxType.Percentage ? null : (
+                                          <InputAdornment position="start">£</InputAdornment>
+                                        ),
+                                      endAdornment:
+                                        item.type === TaxType.Percentage ? (
+                                          <InputAdornment position="end">%</InputAdornment>
+                                        ) : null,
+                                    }}
+                                    inputProps={{
+                                      min: 0,
+                                      max: item.type === TaxType.Percentage ? 100 : undefined,
+                                      step: 0.01,
+                                    }}
+                                    size="small"
+                                    fullWidth
+                                    sx={{
+                                      "& .MuiOutlinedInput-root": {
+                                        backgroundColor: "background.default",
+                                      },
+                                    }}
+                                  />
+                                </Grid>
+
+                                {item.calculatedAmountInCents != null && (
+                                  <Grid size={{ xs: 12, sm: 1.5 }}>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ mb: 0.5, display: "block" }}
+                                    >
+                                      Total
+                                    </Typography>
+                                    <Typography
+                                      variant="body1"
+                                      sx={{
+                                        fontWeight: 600,
+                                        color: "primary.main",
+                                      }}
+                                    >
+                                      £{(item.calculatedAmountInCents / 100).toFixed(2)}
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                <Grid size={{ xs: 12, sm: "auto" }}>
+                                  <Box sx={{ display: "flex", gap: 1, mt: { xs: 1, sm: 2.5 } }}>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      onClick={() => handleUpdateExistingItem(item)}
+                                      disabled={loading}
+                                      sx={{
+                                        textTransform: "none",
+                                        boxShadow: "none",
+                                        "&:hover": {
+                                          boxShadow: 1,
+                                        },
+                                      }}
+                                    >
+                                      Update
+                                    </Button>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => handleRemoveItem(item.id)}
+                                      disabled={loading}
+                                      sx={{
+                                        "&:hover": {
+                                          backgroundColor: "error.50",
+                                        },
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                </Grid>
+                              </Grid>
+                            </Paper>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Stack>
+                  )}
+                </Droppable>
               </Box>
 
               {/* Total Tax Amount */}
@@ -965,22 +1040,24 @@ export default function EditInvoiceTaxesDialog({
                 <Paper
                   sx={{
                     p: 2,
-                    backgroundColor: 'grey.50',
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    backgroundColor: "grey.50",
+                    border: "1px solid",
+                    borderColor: "divider",
                     borderRadius: 2,
                   }}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                  >
+                    <Typography variant="h6" sx={{ fontSize: "1.1rem", fontWeight: 600 }}>
                       Total Tax Amount
                     </Typography>
-                    <Typography 
-                      variant="h5" 
-                      sx={{ 
+                    <Typography
+                      variant="h5"
+                      sx={{
                         fontWeight: 700,
-                        color: 'primary.main',
-                        fontSize: '1.5rem'
+                        color: "primary.main",
+                        fontSize: "1.5rem",
                       }}
                     >
                       £{(totalTaxesInCents / 100).toFixed(2)}

@@ -511,6 +511,12 @@ type InvoiceLineItem {
   totalInCents: Int!
 }
 
+type InvoiceLineItemAnalysis {
+  amount: Float
+  category: String!
+  description: String!
+}
+
 enum InvoiceStatus {
   CANCELLED
   DRAFT
@@ -753,6 +759,7 @@ type ListWorkspacesResult {
 
 type Llm {
   exampleTicket: ExampleTicket
+  suggestTaxObligations(invoiceDescription: String!): TaxAnalysisResult
 }
 
 input MarkInvoiceAsPaidInput {
@@ -1636,11 +1643,32 @@ enum SupportedContentType {
   IMAGE_PNG
 }
 
+type TaxAnalysisResult {
+  lineItems: [InvoiceLineItemAnalysis!]!
+  location: TaxLocation!
+  taxes: [TaxObligation!]!
+}
+
 type TaxLineItem {
   calculatedAmountInCents: Int
   description: String!
   id: ID!
   order: Int!
+  type: TaxType!
+  value: Float!
+}
+
+type TaxLocation {
+  city: String
+  county: String
+  state: String!
+  zipCode: String
+}
+
+type TaxObligation {
+  description: String!
+  order: Int!
+  reason: String!
   type: TaxType!
   value: Float!
 }

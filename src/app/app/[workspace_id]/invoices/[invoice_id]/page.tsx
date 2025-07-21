@@ -481,7 +481,6 @@ export default function InvoiceDisplayPage() {
                   setCacheKey((k) => k + 1);
                 }}
                 invoiceId={invoiceId}
-                currentTaxPercent={invoice.taxPercent ?? 0}
                 taxLineItems={invoice.taxLineItems ?? []}
               />
               {/* Print Dialog */}
