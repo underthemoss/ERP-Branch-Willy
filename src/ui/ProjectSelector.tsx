@@ -131,7 +131,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ projectId, onC
       {projectId ? (
         <Chip
           icon={<FolderIcon />}
-          label={projectMap[projectId].fullLineageLabel || "Unknown Project"}
+          label={projectMap[projectId]?.fullLineageLabel || "Unknown Project"}
           onDelete={() => {
             onChange("");
             setPopoverOpen(false);

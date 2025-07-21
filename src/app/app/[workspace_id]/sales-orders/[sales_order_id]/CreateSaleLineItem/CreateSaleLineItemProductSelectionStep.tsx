@@ -25,6 +25,11 @@ const CreateSaleLineItemProductSelectionStep: React.FC<Props> = ({ lineItemId, F
     return null;
   }
   const item = data.getSalesOrderLineItemById;
+
+  // Get the existing product info for display
+  const existingProduct = item.so_pim_product;
+  const existingCategory = item.so_pim_category;
+
   return (
     <Box>
       <Box p={3}>
@@ -32,10 +37,13 @@ const CreateSaleLineItemProductSelectionStep: React.FC<Props> = ({ lineItemId, F
           Select Product
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Select a product to add to this sales order.
+          {item.so_pim_id && existingProduct
+            ? `Currently selected: ${existingProduct.name || existingCategory?.name || "Unknown"}`
+            : "Select a product to add to this sales order."}
         </Typography>
         <Box sx={{ mb: 3 }}>
           <PimCategoriesTreeView
+            selectedItemId={item.so_pim_id || undefined}
             onItemSelected={async (val) => {
               await updateItem({
                 variables: {

@@ -2,7 +2,7 @@
 
 import {
   PriceType,
-  useGetSalesOrderRentalLineItemByIdCreateDialogQuery,
+  useGetSalesOrderSaleLineItemByIdCreateDialogQuery,
   useUpdateSaleSalesOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
 import { useGetPimCategoryByIdQuery } from "@/ui/pim/api";
@@ -64,7 +64,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
   const [updateLineItem, { loading: mutationLoading }] =
     useUpdateSaleSalesOrderLineCreateDialogMutation();
 
-  const { data, loading, error, refetch } = useGetSalesOrderRentalLineItemByIdCreateDialogQuery({
+  const { data, loading, error, refetch } = useGetSalesOrderSaleLineItemByIdCreateDialogQuery({
     variables: { id: lineItemId },
     fetchPolicy: "cache-and-network",
   });
@@ -96,6 +96,21 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
     ids: new Set<string>(),
     type: "include",
   });
+
+  // Pre-select the existing price when editing
+  React.useEffect(() => {
+    if (data?.getSalesOrderLineItemById?.__typename === "SaleSalesOrderLineItem") {
+      const lineItem = data.getSalesOrderLineItemById;
+      const existingPriceId = lineItem.price_id;
+      if (existingPriceId && !selectedPrice) {
+        setSelectedPrice(existingPriceId);
+        setRowSelectionModel({
+          ids: new Set([existingPriceId]),
+          type: "include",
+        });
+      }
+    }
+  }, [data, selectedPrice]);
   const [showAddPriceDialog, setShowAddPriceDialog] = useState(false);
   const [formData, setFormData] = useState({
     priceBookId: "",

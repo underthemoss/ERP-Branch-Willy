@@ -31,6 +31,7 @@ import {
 } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
+import EditSalesOrderDialog from "./EditSalesOrderDialog";
 import OrderItemsSection from "./OrderItemsSection";
 import SalesOrderCostForcastReport from "./SalesOrderCostForcastReport";
 
@@ -166,6 +167,7 @@ export default function SalesOrderDetailPage() {
   const router = useRouter();
 
   const [cachekey, setCacheKey] = React.useState(0);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
 
   const { data, loading, error } = useGetSalesOrderByIdQuery({
     variables: { id: sales_order_id },
@@ -277,7 +279,11 @@ export default function SalesOrderDetailPage() {
                     </Button>
                     {salesOrder.status !== "SUBMITTED" && (
                       <>
-                        <Button color="secondary" startIcon={<EditOutlinedIcon />}>
+                        <Button
+                          color="secondary"
+                          startIcon={<EditOutlinedIcon />}
+                          onClick={() => setEditDialogOpen(true)}
+                        >
                           Edit
                         </Button>
                         <Button
@@ -665,6 +671,24 @@ export default function SalesOrderDetailPage() {
           Sales order submitted successfully!
         </Alert>
       </Snackbar>
+
+      {/* Edit Sales Order Dialog */}
+      {salesOrder && (
+        <EditSalesOrderDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          salesOrder={{
+            id: salesOrder.id,
+            buyer_id: salesOrder.buyer_id,
+            purchase_order_number: salesOrder.purchase_order_number,
+            project_id: salesOrder.project_id,
+          }}
+          onSuccess={() => {
+            // Optionally refresh the data or show a success message
+            setSnackbarOpen(true);
+          }}
+        />
+      )}
     </Container>
   );
 }
