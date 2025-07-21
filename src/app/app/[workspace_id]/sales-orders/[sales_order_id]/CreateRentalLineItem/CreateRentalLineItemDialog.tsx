@@ -65,7 +65,7 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
           justifyContent: "space-between",
         }}
       >
-        <Button onClick={() => {}} color="inherit" loading={loading}>
+        <Button onClick={handleClose} color="inherit" disabled={loading}>
           Cancel
         </Button>
         <Box sx={{ display: "flex", gap: 1 }}>
@@ -74,7 +74,7 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
               onClick={() => {
                 setStep((s) => s - 1);
               }}
-              loading={loading}
+              disabled={loading}
               color="inherit"
             >
               Back
@@ -83,8 +83,7 @@ export const CreateRentalLineItemDialog: React.FC<CreateRentalLineItemDialogProp
           <Button
             variant="contained"
             color="primary"
-            loading={loading}
-            disabled={!nextEnabled}
+            disabled={!nextEnabled || loading}
             onClick={async () => {
               if (onNextClick) {
                 await onNextClick();
