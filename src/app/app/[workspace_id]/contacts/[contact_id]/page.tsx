@@ -46,6 +46,22 @@ graphql(`
         resource_map_entries {
           path
         }
+        business {
+          id
+          name
+          phone
+          address
+          website
+          employees {
+            items {
+              id
+              name
+              email
+              role
+              phone
+            }
+          }
+        }
       }
       ... on BusinessContact {
         id
@@ -59,6 +75,15 @@ graphql(`
         updatedAt
         resource_map_entries {
           path
+        }
+        employees {
+          items {
+            id
+            name
+            email
+            role
+            phone
+          }
         }
       }
     }
@@ -200,6 +225,124 @@ export default function ContactDisplayPage() {
                 </Typography>
               </Box>
             </Paper>
+            {/* Business Information for Person */}
+            {isPerson && contact.business && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Associated Business
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Typography>
+                    <strong>Name:</strong>{" "}
+                    <Button
+                      variant="text"
+                      color="primary"
+                      onClick={() =>
+                        router.push(`/app/${workspace_id}/contacts/${contact.business?.id}`)
+                      }
+                      sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
+                    >
+                      {contact.business.name}
+                    </Button>
+                  </Typography>
+                  <Typography>
+                    <strong>Phone:</strong> {contact.business.phone || "—"}
+                  </Typography>
+                  <Typography>
+                    <strong>Address:</strong> {contact.business.address || "—"}
+                  </Typography>
+                  <Typography>
+                    <strong>Website:</strong> {contact.business.website || "—"}
+                  </Typography>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Colleagues for Person */}
+            {isPerson &&
+              contact.business &&
+              contact.business.employees &&
+              contact.business.employees.items.length > 1 && (
+                <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Colleagues at {contact.business.name}
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    {contact.business.employees.items
+                      .filter((colleague) => colleague.id !== contact.id)
+                      .map((colleague) => (
+                        <Box key={colleague.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                          <Typography variant="subtitle1">
+                            <Button
+                              variant="text"
+                              color="primary"
+                              onClick={() =>
+                                router.push(`/app/${workspace_id}/contacts/${colleague.id}`)
+                              }
+                              sx={{
+                                textTransform: "none",
+                                p: 0,
+                                minWidth: "auto",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {colleague.name}
+                            </Button>
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Role:</strong> {colleague.role || "—"}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Email:</strong> {colleague.email || "—"}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Phone:</strong> {colleague.phone || "—"}
+                          </Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </Paper>
+              )}
+
+            {/* Employees List for Business */}
+            {isBusiness && contact.employees && contact.employees.items.length > 0 && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Employees ({contact.employees.items.length})
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {contact.employees.items.map((employee) => (
+                    <Box key={employee.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                      <Typography variant="subtitle1">
+                        <Button
+                          variant="text"
+                          color="primary"
+                          onClick={() =>
+                            router.push(`/app/${workspace_id}/contacts/${employee.id}`)
+                          }
+                          sx={{ textTransform: "none", p: 0, minWidth: "auto", fontWeight: 600 }}
+                        >
+                          {employee.name}
+                        </Button>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Role:</strong> {employee.role || "—"}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Email:</strong> {employee.email || "—"}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Phone:</strong> {employee.phone || "—"}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Paper>
+            )}
+
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
               <NotesSection entityId={contact.id} />

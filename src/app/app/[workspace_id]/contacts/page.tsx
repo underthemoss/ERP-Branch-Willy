@@ -210,8 +210,8 @@ export default function ContactsPage() {
           >
             <MenuItem value="All">All Types</MenuItem>
 
-            <MenuItem value="PERSON">People</MenuItem>
-            <MenuItem value="BUSINESS">Businesses</MenuItem>
+            <MenuItem value="PERSON">Person</MenuItem>
+            <MenuItem value="BUSINESS">Business</MenuItem>
           </Select>
         </Box>
         <Box sx={{ height: 600 }}>
