@@ -338,7 +338,7 @@ export default function SalesOrderDetailPage() {
                           await createPdf({
                             variables: {
                               entity_id: salesOrder.id,
-                              path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
+                              path: `print/sales-order/${workspace_id}/${sales_order_id}`,
                               file_name: fileName,
                             },
                           });
