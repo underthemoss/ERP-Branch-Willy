@@ -37,6 +37,7 @@ export interface AddInvoiceLineItemDialogProps {
   onClose: () => void;
   invoiceId: string;
   buyerId: string;
+  buyerName: string;
 }
 
 export const AddInvoiceChargesMutation = graphql(`
@@ -125,6 +126,7 @@ export default function AddInvoiceLineItemDialog({
   onClose,
   invoiceId,
   buyerId,
+  buyerName,
 }: AddInvoiceLineItemDialogProps) {
   const params = useParams();
   const workspaceId = params.workspace_id as string;
@@ -198,6 +200,22 @@ export default function AddInvoiceLineItemDialog({
     {
       field: "customerName",
       headerName: "Customer",
+      width: 180,
+      renderCell: (params) => {
+        if (!params.row.contactId || !params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/contacts/${params.row.contactId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
+    {
+      field: "contactId",
+      headerName: "Contact ID",
       width: 180,
       renderCell: (params) => {
         if (!params.row.contactId || !params.value) return params.value;
@@ -459,7 +477,13 @@ export default function AddInvoiceLineItemDialog({
                 initialState={{
                   filter: {
                     filterModel: {
-                      items: [],
+                      items: [
+                        {
+                          field: "customerName",
+                          operator: "equals",
+                          value: buyerName,
+                        },
+                      ],
                       quickFilterValues: [""],
                     },
                   },
@@ -470,6 +494,7 @@ export default function AddInvoiceLineItemDialog({
                       salesOrderPONumber: false,
                       salesOrderLineItemQuantity: false,
                       fulfilmentId: false,
+                      contactId: false,
                     },
                   },
                 }}
