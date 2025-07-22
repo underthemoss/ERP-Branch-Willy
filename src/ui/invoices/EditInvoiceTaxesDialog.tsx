@@ -132,17 +132,6 @@ graphql(`
   query SuggestTaxObligations($invoiceDescription: String!) {
     llm {
       suggestTaxObligations(invoiceDescription: $invoiceDescription) {
-        location {
-          state
-          county
-          city
-          zipCode
-        }
-        lineItems {
-          description
-          category
-          amount
-        }
         taxes {
           description
           type
@@ -160,6 +149,8 @@ graphql(`
   query InvoiceForTaxSuggestions($id: String!) {
     invoiceById(id: $id) {
       id
+      createdAt
+      status
       subTotalInCents
       lineItems {
         chargeId
@@ -172,11 +163,44 @@ graphql(`
           id
           name
           address
+          phone
         }
         ... on PersonContact {
           id
           name
+          phone
+          business {
+            id
+            name
+            address
+          }
         }
+      }
+      seller {
+        __typename
+        ... on BusinessContact {
+          id
+          name
+          address
+          phone
+        }
+        ... on PersonContact {
+          id
+          name
+          phone
+          business {
+            id
+            name
+            address
+          }
+        }
+      }
+      taxLineItems {
+        id
+        description
+        type
+        value
+        order
       }
     }
   }
@@ -200,35 +224,117 @@ interface PresetTaxItem {
 // Empty array since we'll only use AI suggestions
 const PRESET_TAX_ITEMS: PresetTaxItem[] = [];
 
+// Helper function to format date
+function formatDate(dateString?: string | null): string {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+}
+
 // Helper function to build invoice description for tax suggestions
 function buildInvoiceDescription(invoice: any): string {
   if (!invoice) return "";
 
   const parts: string[] = [];
 
-  // Add invoice ID
+  // Header with invoice details
   parts.push(`Invoice #${invoice.id}`);
+  if (invoice.createdAt) {
+    parts.push(`Date: ${formatDate(invoice.createdAt)}`);
+  }
+  if (invoice.status) {
+    parts.push(`Status: ${invoice.status}`);
+  }
+  parts.push("");
 
-  // Add buyer info
-  if (invoice.buyer) {
-    parts.push(`Customer: ${invoice.buyer.name}`);
-    if (invoice.buyer.__typename === "BusinessContact" && invoice.buyer.address) {
-      parts.push(`Location: ${invoice.buyer.address}`);
+  // Seller information
+  parts.push("SELLER INFORMATION:");
+  if (invoice.seller) {
+    parts.push(`Seller: ${invoice.seller.name}`);
+    if (invoice.seller.__typename === "BusinessContact") {
+      if (invoice.seller.address) {
+        parts.push(`Address: ${invoice.seller.address}`);
+      }
+      if (invoice.seller.phone) {
+        parts.push(`Phone: ${invoice.seller.phone}`);
+      }
+    } else if (invoice.seller.__typename === "PersonContact") {
+      if (invoice.seller.phone) {
+        parts.push(`Phone: ${invoice.seller.phone}`);
+      }
+      if (invoice.seller.business) {
+        parts.push(`Business: ${invoice.seller.business.name}`);
+        if (invoice.seller.business.address) {
+          parts.push(`Business Address: ${invoice.seller.business.address}`);
+        }
+      }
     }
   }
+  parts.push("");
 
-  // Add line items
+  // Buyer information
+  parts.push("BUYER INFORMATION:");
+  if (invoice.buyer) {
+    parts.push(`Buyer: ${invoice.buyer.name}`);
+    parts.push(`Type: ${invoice.buyer.__typename === "BusinessContact" ? "Business" : "Person"}`);
+
+    if (invoice.buyer.__typename === "BusinessContact") {
+      if (invoice.buyer.address) {
+        parts.push(`Address: ${invoice.buyer.address}`);
+      }
+      if (invoice.buyer.phone) {
+        parts.push(`Phone: ${invoice.buyer.phone}`);
+      }
+    } else if (invoice.buyer.__typename === "PersonContact") {
+      if (invoice.buyer.phone) {
+        parts.push(`Phone: ${invoice.buyer.phone}`);
+      }
+      if (invoice.buyer.business) {
+        parts.push(`Business: ${invoice.buyer.business.name}`);
+        if (invoice.buyer.business.address) {
+          parts.push(`Business Address: ${invoice.buyer.business.address}`);
+        }
+      }
+    }
+  }
+  parts.push("");
+
+  // Line items
   if (invoice.lineItems && invoice.lineItems.length > 0) {
-    parts.push("\nLine Items:");
+    parts.push("LINE ITEMS:");
     invoice.lineItems.forEach((item: any, index: number) => {
       const amount = (item.totalInCents / 100).toFixed(2);
       parts.push(`${index + 1}. ${item.description} = $${amount}`);
+      // Note: Additional charge details would need to be fetched separately
+      // For now, we're providing the basic information available
     });
   }
+  parts.push("");
 
-  // Add subtotal
+  // Subtotal
   if (invoice.subTotalInCents != null) {
-    parts.push(`\nSubtotal: $${(invoice.subTotalInCents / 100).toFixed(2)}`);
+    parts.push(`SUBTOTAL: $${(invoice.subTotalInCents / 100).toFixed(2)}`);
+  }
+
+  // Existing taxes
+  if (invoice.taxLineItems && invoice.taxLineItems.length > 0) {
+    parts.push("");
+    parts.push("EXISTING TAXES:");
+    invoice.taxLineItems.forEach((tax: any) => {
+      const valueStr =
+        tax.type === "PERCENTAGE"
+          ? `${(tax.value * 100).toFixed(2)}%`
+          : `$${(tax.value / 100).toFixed(2)}`;
+      parts.push(`- ${tax.description}: ${valueStr}`);
+    });
   }
 
   return parts.join("\n");

@@ -519,12 +519,6 @@ type InvoiceLineItem {
   totalInCents: Int!
 }
 
-type InvoiceLineItemAnalysis {
-  amount: Float
-  category: String!
-  description: String!
-}
-
 enum InvoiceStatus {
   CANCELLED
   DRAFT
@@ -1661,8 +1655,6 @@ enum SupportedContentType {
 }
 
 type TaxAnalysisResult {
-  lineItems: [InvoiceLineItemAnalysis!]!
-  location: TaxLocation!
   taxes: [TaxObligation!]!
 }
 
@@ -1673,13 +1665,6 @@ type TaxLineItem {
   order: Int!
   type: TaxType!
   value: Float!
-}
-
-type TaxLocation {
-  city: String
-  county: String
-  state: String!
-  zipCode: String
 }
 
 type TaxObligation {
