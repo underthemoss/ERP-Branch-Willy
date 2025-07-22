@@ -431,6 +431,7 @@ export default function AddInvoiceLineItemDialog({
                 rowGroupingModel={rowGroupingModel}
                 onRowGroupingModelChange={setRowGroupingModel}
                 rowSelectionModel={{ type: "include", ids: new Set(rowSelectionModel) }}
+                defaultGroupingExpansionDepth={-1}
                 onRowSelectionModelChange={(newSelection) =>
                   setRowSelectionModel([...newSelection.ids].map((i) => i.toString()))
                 }
