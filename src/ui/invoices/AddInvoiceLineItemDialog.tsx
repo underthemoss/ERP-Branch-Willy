@@ -27,6 +27,9 @@ import {
 import { DataGridPremium, GridColDef, GridToolbar } from "@mui/x-data-grid-premium";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { format } from "date-fns";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import React from "react";
 
 export interface AddInvoiceLineItemDialogProps {
@@ -89,6 +92,8 @@ const LIST_CHARGES_QUERY = graphql(`
           }
         }
         createdAt
+        billingPeriodStart
+        billingPeriodEnd
         projectId
         project {
           id
@@ -121,6 +126,8 @@ export default function AddInvoiceLineItemDialog({
   invoiceId,
   buyerId,
 }: AddInvoiceLineItemDialogProps) {
+  const params = useParams();
+  const workspaceId = params.workspace_id as string;
   const [tab, setTab] = React.useState(0);
   const [addInvoiceCharges, { loading: addChargesLoading, error: addChargesError }] =
     useAddInvoiceChargesMutation();
@@ -155,6 +162,8 @@ export default function AddInvoiceLineItemDialog({
     chargeType?: string;
     contactId?: string;
     createdAt?: string;
+    billingPeriodStart?: string;
+    billingPeriodEnd?: string;
     projectId?: string;
     projectName?: string;
     salesOrderId?: string;
@@ -176,6 +185,8 @@ export default function AddInvoiceLineItemDialog({
         projectName: charge.project?.name || "",
         salesOrderPONumber: charge.purchaseOrderNumber,
         amountInCents: charge.amountInCents,
+        billingPeriodStart: charge.billingPeriodStart,
+        billingPeriodEnd: charge.billingPeriodEnd,
         salesOrderLineItemQuantity:
           charge.chargeType === ChargeType.Sale && charge.salesOrderLineItem?.so_quantity
             ? charge.salesOrderLineItem.so_quantity
@@ -184,7 +195,38 @@ export default function AddInvoiceLineItemDialog({
 
   const chargeColumns: GridColDef[] = [
     { field: "_id", headerName: "ID", width: 90 },
-    { field: "customerName", headerName: "Customer Name", width: 180 },
+    {
+      field: "customerName",
+      headerName: "Customer",
+      width: 180,
+      renderCell: (params) => {
+        if (!params.row.contactId || !params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/contacts/${params.row.contactId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
+    {
+      field: "projectName",
+      headerName: "Project",
+      width: 150,
+      renderCell: (params) => {
+        if (!params.row.projectId || !params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/projects/${params.row.projectId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
     { field: "description", headerName: "Charge Description", width: 220, flex: 1 },
     {
       field: "amountInCents",
@@ -193,9 +235,24 @@ export default function AddInvoiceLineItemDialog({
       valueFormatter: (value: number) => {
         return typeof value === "number" ? `$${(value / 100).toFixed(2)}` : "";
       },
+      type: "number",
     },
-    { field: "projectName", headerName: "Project", width: 150 },
-    { field: "salesOrderId", headerName: "Sales Order ID", width: 130 },
+    {
+      field: "salesOrderId",
+      headerName: "Sales Order ID",
+      width: 130,
+      renderCell: (params) => {
+        if (!params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/sales-orders/${params.value}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
     { field: "salesOrderPONumber", headerName: "PO Number", width: 110 },
     {
       field: "salesOrderLineItemQuantity",
@@ -203,6 +260,41 @@ export default function AddInvoiceLineItemDialog({
       width: 90,
       valueGetter: (value: number | undefined, row: ChargeRow) => {
         return row.chargeType === ChargeType.Sale && value ? value : "";
+      },
+      type: "number",
+    },
+    {
+      field: "billingPeriodStart",
+      headerName: "Billing Start",
+      width: 110,
+      valueFormatter: (value: string) => {
+        return value ? format(new Date(value), "MMM dd, yyyy") : "";
+      },
+      type: "date",
+    },
+    {
+      field: "billingPeriodEnd",
+      headerName: "Billing End",
+      width: 110,
+      valueFormatter: (value: string) => {
+        return value ? format(new Date(value), "MMM dd, yyyy") : "";
+      },
+      type: "date",
+    },
+    {
+      field: "fulfilmentId",
+      headerName: "Fulfilment ID",
+      width: 130,
+      renderCell: (params) => {
+        if (!params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/fulfillment/${params.value}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
       },
     },
   ];
@@ -362,6 +454,14 @@ export default function AddInvoiceLineItemDialog({
                     },
                   },
                   pagination: { paginationModel: { pageSize: 5 } },
+                  columns: {
+                    columnVisibilityModel: {
+                      _id: false,
+                      salesOrderPONumber: false,
+                      salesOrderLineItemQuantity: false,
+                      fulfilmentId: false,
+                    },
+                  },
                 }}
                 pageSizeOptions={[5, 10, 20]}
                 checkboxSelection
