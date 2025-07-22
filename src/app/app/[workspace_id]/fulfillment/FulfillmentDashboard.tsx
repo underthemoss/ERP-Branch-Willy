@@ -196,6 +196,8 @@ function TicketCard({
   borderColor: string;
   workspaceId: string;
 }) {
+  const searchParams = useSearchParams();
+
   return (
     <Card
       sx={{
@@ -220,7 +222,7 @@ function TicketCard({
       }}
     >
       <Link
-        href={`/app/${workspaceId}/fulfillment/${ticket.id}`}
+        href={`/app/${workspaceId}/fulfillment/${ticket.id}?${searchParams.toString()}`}
         scroll={false}
         style={{
           textDecoration: "none",
