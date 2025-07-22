@@ -47,6 +47,7 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
           }
           delivery_date
           off_rent_date
+          delivery_charge_in_cents
           calulate_price {
             forecast {
               days {
@@ -66,6 +67,7 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
             name
           }
           delivery_date
+          delivery_charge_in_cents
           price {
             __typename
             ... on SalePrice {
@@ -114,8 +116,8 @@ function CustomTooltipContent({ highlightedItem }: { highlightedItem: HighlightI
   const currencyFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
 
   return (
@@ -295,6 +297,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     // Add rental item series
     rentalItems.forEach((li: any) => {
       const label = li.so_pim_product?.name || li.id;
+      const deliveryCharge = (li.delivery_charge_in_cents || 0) / 100;
 
       // Calculate the offset between the item's delivery date and the base date
       let dayOffset = 0;
@@ -310,7 +313,8 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
       li.calulate_price.forecast.days.forEach((d: any) => {
         const adjustedDay = d.day + dayOffset;
         if (dayToRow[adjustedDay]) {
-          dayToRow[adjustedDay][label] = d.accumulative_cost_in_cents / 100;
+          // Add delivery charge to the accumulative cost
+          dayToRow[adjustedDay][label] = d.accumulative_cost_in_cents / 100 + deliveryCharge;
         }
       });
 
@@ -336,7 +340,9 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
           unitCost = li.unit_cost_in_cents;
         }
 
-        const cost = (unitCost * quantity) / 100;
+        // Add delivery charge to the unit cost
+        const deliveryCharge = (li.delivery_charge_in_cents || 0) / 100;
+        const cost = (unitCost * quantity) / 100 + deliveryCharge;
 
         // Calculate the offset between the item's delivery date and the base date
         let dayOffset = 0;
@@ -375,8 +381,8 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }).format(value);
     };
 
@@ -507,8 +513,8 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
                 return new Intl.NumberFormat("en-US", {
                   style: "currency",
                   currency: "USD",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
                 }).format(value);
               },
             },
