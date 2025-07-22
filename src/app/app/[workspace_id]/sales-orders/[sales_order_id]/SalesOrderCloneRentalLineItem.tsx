@@ -5,6 +5,8 @@ import {
   useCreateRentalSalesOrderLineItemMutation,
   useGetRentalLineItemForCloneQuery,
 } from "@/graphql/hooks";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import {
   Alert,
   Box,
@@ -15,6 +17,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   TextField,
 } from "@mui/material";
 import * as React from "react";
@@ -208,12 +212,39 @@ export const SalesOrderCloneRentalLineItem: React.FC<SalesOrderCloneRentalLineIt
                     setDuplicateCount(value);
                   }
                 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <IconButton
+                        onClick={() => setDuplicateCount(Math.max(1, duplicateCount - 1))}
+                        disabled={isCloning || duplicateCount <= 1}
+                        edge="start"
+                        size="small"
+                      >
+                        <RemoveIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setDuplicateCount(Math.min(100, duplicateCount + 1))}
+                        disabled={isCloning || duplicateCount >= 100}
+                        edge="end"
+                        size="small"
+                      >
+                        <AddIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
                 inputProps={{
                   min: 1,
                   max: 100,
                   step: 1,
+                  style: { textAlign: "center" },
                 }}
-                fullWidth
+                sx={{ width: 200 }}
                 helperText="Enter a number between 1 and 100"
                 error={duplicateCount < 1 || duplicateCount > 100}
                 disabled={isCloning}
