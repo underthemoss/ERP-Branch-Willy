@@ -670,20 +670,24 @@ export default function InvoiceDisplayPage() {
                 Upgrade Plan (stub)
               </Button>
             </Paper>
-            {/* Delete Invoice Card */}
-            <Paper elevation={2} sx={{ p: 2, mt: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Danger Zone
-              </Typography>
-              <Button
-                variant="contained"
-                color="error"
-                sx={{ width: "100%", fontWeight: "bold" }}
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                Delete Invoice
-              </Button>
-            </Paper>
+            {/* Delete Invoice Card - Only show for DRAFT status */}
+            {invoice.status === "DRAFT" && (
+              <Paper elevation={2} sx={{ p: 2, mt: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Delete Invoice
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Delete this draft invoice to unallocate its line items.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  sx={{ width: "100%" }}
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  Delete Draft Invoice
+                </Button>
+              </Paper>
+            )}
           </Grid>
         </Grid>
       )}
@@ -790,8 +794,10 @@ export default function InvoiceDisplayPage() {
         <DialogTitle>Delete Invoice</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
-            Are you sure you want to delete this invoice? This action cannot be undone.
+            Deleting this invoice will unallocate all associated charges and line items. These items
+            will be available to add to other invoices.
           </Typography>
+          <Typography sx={{ mb: 2 }}>This action cannot be undone.</Typography>
           {deleteError && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {deleteError.message}
@@ -807,7 +813,7 @@ export default function InvoiceDisplayPage() {
               if (!invoiceId) return;
               await deleteInvoice({ variables: { id: invoiceId } });
             }}
-            color="error"
+            color="primary"
             variant="contained"
             disabled={deleteLoading}
           >
