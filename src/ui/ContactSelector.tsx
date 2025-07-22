@@ -149,8 +149,39 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
   }
 
   // Build tree items for RichTreeView, memoized for performance
-  const treeItems: ContactTreeItem[] = useMemo(
-    () => [
+  const treeItems: ContactTreeItem[] = useMemo(() => {
+    // If type is "business", only show business contacts without children
+    if (type === "business") {
+      return contacts
+        .filter((c) => c.__typename === "BusinessContact")
+        .map((business) => ({
+          id: business.id,
+          label: business.name,
+          type: "business" as const,
+          profilePicture: business.profilePicture ?? undefined,
+          children: [], // Don't show employees when selecting businesses only
+        }));
+    }
+
+    // If type is "person", only show person contacts
+    if (type === "person") {
+      return contacts
+        .filter((c) => c.__typename === "PersonContact")
+        .map((contact) => ({
+          id: contact.id,
+          label: contact.name,
+          type: "person" as const,
+          profilePicture: contact.profilePicture ?? undefined,
+          email: contact.email ?? undefined,
+          business:
+            contact.business && contact.business.id && contact.business.name
+              ? { id: contact.business.id, name: contact.business.name }
+              : undefined,
+        }));
+    }
+
+    // Default "any" type - show businesses with their employees and standalone persons
+    return [
       ...contacts
         .filter((c) => c.__typename === "BusinessContact")
         .map((business) => ({
@@ -182,9 +213,8 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
               ? { id: contact.business.id, name: contact.business.name }
               : undefined,
         })),
-    ],
-    [contacts],
-  );
+    ];
+  }, [contacts, type]);
 
   // Filter tree items based on search state
   const filteredTreeItems = useMemo(() => {
@@ -323,28 +353,51 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
       {contactId ? (
         (() => {
           const selectedContact = contacts.find((c) => c.id === contactId);
+
+          // Format the label for the chip
+          let chipLabel = "Unknown";
+          if (selectedContact) {
+            if (selectedContact.__typename === "PersonContact" && selectedContact.business) {
+              // For person contacts with a business, show "Business > Person"
+              chipLabel = `${selectedContact.business.name} > ${selectedContact.name}`;
+            } else {
+              // For business contacts or person contacts without a business
+              chipLabel = selectedContact.name;
+            }
+          }
+
           return (
-            <Chip
-              size="medium"
-              variant="filled"
-              icon={
-                <Box p={1} pt={1.5}>
-                  {selectedContact?.__typename === "PersonContact" ? (
-                    <PersonIcon />
-                  ) : selectedContact?.__typename === "BusinessContact" ? (
-                    <BusinessIcon />
-                  ) : (
-                    "?"
-                  )}
-                </Box>
-              }
-              label={selectedContact?.name || "Unknown"}
-              onDelete={() => {
-                onChange("");
-                setPopoverOpen(false);
-              }}
-              data-testid="contact-selector-chip"
-            />
+            <Tooltip title={chipLabel} arrow>
+              <Chip
+                size="medium"
+                variant="filled"
+                icon={
+                  <Box p={1} pt={1.5}>
+                    {selectedContact?.__typename === "PersonContact" ? (
+                      <PersonIcon />
+                    ) : selectedContact?.__typename === "BusinessContact" ? (
+                      <BusinessIcon />
+                    ) : (
+                      "?"
+                    )}
+                  </Box>
+                }
+                label={chipLabel}
+                onDelete={() => {
+                  onChange("");
+                  setPopoverOpen(false);
+                }}
+                data-testid="contact-selector-chip"
+                sx={{
+                  maxWidth: "100%",
+                  "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  },
+                }}
+              />
+            </Tooltip>
           );
         })()
       ) : (
@@ -360,6 +413,7 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
             placeholder="Search contacts…"
             size="small"
             fullWidth
+            autoComplete="off"
             sx={{ mb: 1.5 }}
           />
           <Popover

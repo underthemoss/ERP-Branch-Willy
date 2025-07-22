@@ -12,12 +12,16 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
 export default function CreateEmployeePage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get businessId from query params
+  const businessIdFromQuery = searchParams.get("businessId") || "";
 
   const [form, setForm] = React.useState<{
     name: string;
@@ -31,7 +35,7 @@ export default function CreateEmployeePage() {
     phone: "",
     email: "",
     role: "",
-    businessId: "",
+    businessId: businessIdFromQuery,
     resourceMapIds: [],
   });
   const [error, setError] = React.useState<string | null>(null);

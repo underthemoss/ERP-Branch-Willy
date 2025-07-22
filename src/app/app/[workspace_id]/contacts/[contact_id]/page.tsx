@@ -307,38 +307,56 @@ export default function ContactDisplayPage() {
               )}
 
             {/* Employees List for Business */}
-            {isBusiness && contact.employees && contact.employees.items.length > 0 && (
+            {isBusiness && contact.employees && (
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Employees ({contact.employees.items.length})
-                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">Employees ({contact.employees.items.length})</Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={() =>
+                      router.push(
+                        `/app/${workspace_id}/contacts/create-employee?businessId=${contact.id}`,
+                      )
+                    }
+                  >
+                    Add Employee
+                  </Button>
+                </Box>
                 <Divider sx={{ mb: 2 }} />
                 <Box display="flex" flexDirection="column" gap={2}>
-                  {contact.employees.items.map((employee) => (
-                    <Box key={employee.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
-                      <Typography variant="subtitle1">
-                        <Button
-                          variant="text"
-                          color="primary"
-                          onClick={() =>
-                            router.push(`/app/${workspace_id}/contacts/${employee.id}`)
-                          }
-                          sx={{ textTransform: "none", p: 0, minWidth: "auto", fontWeight: 600 }}
-                        >
-                          {employee.name}
-                        </Button>
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Role:</strong> {employee.role || "—"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Email:</strong> {employee.email || "—"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Phone:</strong> {employee.phone || "—"}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {contact.employees.items.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No employees added yet.
+                    </Typography>
+                  ) : (
+                    contact.employees.items.map((employee) => (
+                      <Box key={employee.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                        <Typography variant="subtitle1">
+                          <Button
+                            variant="text"
+                            color="primary"
+                            onClick={() =>
+                              router.push(`/app/${workspace_id}/contacts/${employee.id}`)
+                            }
+                            sx={{ textTransform: "none", p: 0, minWidth: "auto", fontWeight: 600 }}
+                          >
+                            {employee.name}
+                          </Button>
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Role:</strong> {employee.role || "—"}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Email:</strong> {employee.email || "—"}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Phone:</strong> {employee.phone || "—"}
+                        </Typography>
+                      </Box>
+                    ))
+                  )}
                 </Box>
               </Paper>
             )}
