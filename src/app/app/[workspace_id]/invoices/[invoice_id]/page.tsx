@@ -831,6 +831,7 @@ export default function InvoiceDisplayPage() {
         }}
         invoiceId={invoiceId}
         buyerId={invoice?.buyer?.id || ""}
+        buyerName={invoice?.buyer?.name || ""}
       />
       {/* Snackbar for print success */}
       <Snackbar
