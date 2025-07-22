@@ -226,15 +226,21 @@ type Charge {
   billingPeriodStart: DateTime
   chargeType: ChargeType!
   companyId: ID!
+  contact: Contact
   contactId: ID!
   createdAt: DateTime!
   description: String!
+  fulfilment: Fulfilment
   fulfilmentId: ID
   id: ID!
+  invoice: Invoice
   invoiceId: ID
+  project: Project
   projectId: ID
   purchaseOrderNumber: String
+  salesOrder: SalesOrder
   salesOrderId: ID
+  salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID
 }
 

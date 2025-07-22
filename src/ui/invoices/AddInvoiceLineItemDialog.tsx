@@ -78,11 +78,37 @@ const LIST_CHARGES_QUERY = graphql(`
         description
         chargeType
         contactId
+        contact {
+          ... on BusinessContact {
+            id
+            name
+          }
+          ... on PersonContact {
+            id
+            name
+          }
+        }
         createdAt
         projectId
+        project {
+          id
+          name
+        }
         salesOrderId
         purchaseOrderNumber
         salesOrderLineItemId
+        salesOrderLineItem {
+          ... on RentalSalesOrderLineItem {
+            id
+            so_quantity
+            lineitem_type
+          }
+          ... on SaleSalesOrderLineItem {
+            id
+            so_quantity
+            lineitem_type
+          }
+        }
         fulfilmentId
         invoiceId
       }
@@ -130,9 +156,11 @@ export default function AddInvoiceLineItemDialog({
     contactId?: string;
     createdAt?: string;
     projectId?: string;
+    projectName?: string;
     salesOrderId?: string;
     salesOrderPONumber?: string;
     salesOrderLineItemId?: string;
+    salesOrderLineItemQuantity?: number;
     fulfilmentId?: string;
     invoiceId?: string;
     customerName?: string;
@@ -144,9 +172,14 @@ export default function AddInvoiceLineItemDialog({
       .map((charge: any) => ({
         ...charge,
         _id: charge.id,
-        customerName: "", // TODO: If customer name is needed, fetch/join from related entity
+        customerName: charge.contact?.name || "",
+        projectName: charge.project?.name || "",
         salesOrderPONumber: charge.purchaseOrderNumber,
         amountInCents: charge.amountInCents,
+        salesOrderLineItemQuantity:
+          charge.chargeType === ChargeType.Sale && charge.salesOrderLineItem?.so_quantity
+            ? charge.salesOrderLineItem.so_quantity
+            : undefined,
       })) ?? [];
 
   const chargeColumns: GridColDef[] = [
@@ -161,10 +194,17 @@ export default function AddInvoiceLineItemDialog({
         return typeof value === "number" ? `$${(value / 100).toFixed(2)}` : "";
       },
     },
-    { field: "projectId", headerName: "Project ID", width: 120 },
+    { field: "projectName", headerName: "Project", width: 150 },
     { field: "salesOrderId", headerName: "Sales Order ID", width: 130 },
     { field: "salesOrderPONumber", headerName: "PO Number", width: 110 },
-    { field: "fulfilmentId", headerName: "Fulfilment ID", width: 130 },
+    {
+      field: "salesOrderLineItemQuantity",
+      headerName: "Quantity",
+      width: 90,
+      valueGetter: (value: number | undefined, row: ChargeRow) => {
+        return row.chargeType === ChargeType.Sale && value ? value : "";
+      },
+    },
   ];
 
   // Row grouping state for DataGridPremium
@@ -239,8 +279,8 @@ export default function AddInvoiceLineItemDialog({
                     label={
                       group === "customerName"
                         ? "Customer Name"
-                        : group === "projectId"
-                          ? "Project ID"
+                        : group === "projectName"
+                          ? "Project"
                           : group === "salesOrderId"
                             ? "Sales Order ID"
                             : group === "salesOrderPONumber"
@@ -274,8 +314,8 @@ export default function AddInvoiceLineItemDialog({
                   {!rowGroupingModel.includes("customerName") && (
                     <MenuItem value="customerName">Customer Name</MenuItem>
                   )}
-                  {!rowGroupingModel.includes("projectId") && (
-                    <MenuItem value="projectId">Project ID</MenuItem>
+                  {!rowGroupingModel.includes("projectName") && (
+                    <MenuItem value="projectName">Project</MenuItem>
                   )}
                   {!rowGroupingModel.includes("salesOrderId") && (
                     <MenuItem value="salesOrderId">Sales Order ID</MenuItem>
