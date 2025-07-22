@@ -831,6 +831,7 @@ type Mutation {
   setInvoiceTax(input: SetInvoiceTaxInput!): Invoice! @deprecated(reason: "Use addTaxLineItem instead for more flexible tax management")
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
+  softDeleteSalesOrder(id: String): SalesOrder
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   submitSalesOrder(id: ID!): SalesOrder
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
@@ -1490,6 +1491,7 @@ type SalesOrder {
   created_at: String!
   created_by: String!
   created_by_user: User
+  deleted_at: String
   id: String!
   line_items: [SalesOrderLineItem]
   order_id: String!

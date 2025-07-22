@@ -1,9 +1,11 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { SalesOrderStatus } from "@/graphql/graphql";
 import {
   useCreatePdfFromPageAndAttachToEntityIdMutation,
   useGetSalesOrderByIdQuery,
+  useSoftDeleteSalesOrderMutation,
   useSubmitSalesOrderSalesOrderPageMutation,
 } from "@/graphql/hooks";
 import { parseDate } from "@/lib/parseDate";
@@ -11,6 +13,7 @@ import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
@@ -20,6 +23,11 @@ import {
   Button,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -159,6 +167,15 @@ const SUBMIT_SALES_ORDER_MUTATION = graphql(`
   }
 `);
 
+// Soft Delete Sales Order mutation
+const SOFT_DELETE_SALES_ORDER_MUTATION = graphql(`
+  mutation SoftDeleteSalesOrder($id: String) {
+    softDeleteSalesOrder(id: $id) {
+      id
+    }
+  }
+`);
+
 export default function SalesOrderDetailPage() {
   const { sales_order_id, workspace_id } = useParams<{
     sales_order_id: string;
@@ -168,6 +185,7 @@ export default function SalesOrderDetailPage() {
 
   const [cachekey, setCacheKey] = React.useState(0);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const { data, loading, error } = useGetSalesOrderByIdQuery({
     variables: { id: sales_order_id },
@@ -181,10 +199,17 @@ export default function SalesOrderDetailPage() {
   const [submitSalesOrder, { loading: submitLoading, data: submitData, error: submitError }] =
     useSubmitSalesOrderSalesOrderPageMutation();
 
+  // Soft Delete Sales Order mutation
+  const [softDeleteSalesOrder, { loading: deleteLoading }] = useSoftDeleteSalesOrderMutation();
+
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+  const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = React.useState<"success" | "error">("success");
 
   React.useEffect(() => {
     if (submitData?.submitSalesOrder?.id) {
+      setSnackbarMessage("Sales order submitted successfully!");
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }
   }, [submitData]);
@@ -197,6 +222,26 @@ export default function SalesOrderDetailPage() {
   };
 
   const salesOrder = data?.getSalesOrderById;
+
+  const handleDelete = async () => {
+    try {
+      await softDeleteSalesOrder({
+        variables: { id: sales_order_id },
+      });
+      setSnackbarMessage("Sales order deleted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+      // Redirect to sales orders list after successful deletion
+      setTimeout(() => {
+        router.push(`/app/${workspace_id}/sales-orders`);
+      }, 1500);
+    } catch (error) {
+      setSnackbarMessage("Failed to delete sales order");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
 
   // Helper to format dates (handles ISO strings, Unix timestamps, etc.)
   function formatDate(value?: string | number | null) {
@@ -252,58 +297,78 @@ export default function SalesOrderDetailPage() {
                   </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Button
-                      color="secondary"
-                      startIcon={<PrintOutlinedIcon />}
-                      disabled={pdfLoading}
-                      onClick={async () => {
-                        if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
-                        // Format file name as sales-order-YYYY-MM-DD
-                        const today = new Date();
-                        const yyyy = today.getFullYear();
-                        const mm = String(today.getMonth() + 1).padStart(2, "0");
-                        const dd = String(today.getDate()).padStart(2, "0");
-                        const fileName = `sales-order-${yyyy}-${mm}-${dd}`;
-                        await createPdf({
-                          variables: {
-                            entity_id: salesOrder.id,
-                            path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
-                            file_name: fileName,
-                          },
-                        });
-                        setCacheKey((k) => k + 1);
-                      }}
-                    >
-                      {pdfLoading ? "Generating PDF..." : "Print"}
-                    </Button>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    gap={1}
+                    alignItems={{ md: "flex-end", xs: "flex-start" }}
+                  >
                     {salesOrder.status !== "SUBMITTED" && (
-                      <>
-                        <Button
-                          color="secondary"
-                          startIcon={<EditOutlinedIcon />}
-                          onClick={() => setEditDialogOpen(true)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          disabled={submitLoading}
-                          loading={submitLoading}
-                          onClick={async () => {
-                            if (!salesOrder?.id) return;
-                            await submitSalesOrder({
-                              variables: { id: salesOrder.id },
-                              refetchQueries: ["GetSalesOrderById"],
-                              awaitRefetchQueries: true,
-                            });
-                          }}
-                        >
-                          Submit
-                        </Button>
-                      </>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={submitLoading}
+                        loading={submitLoading}
+                        onClick={async () => {
+                          if (!salesOrder?.id) return;
+                          await submitSalesOrder({
+                            variables: { id: salesOrder.id },
+                            refetchQueries: ["GetSalesOrderById"],
+                            awaitRefetchQueries: true,
+                          });
+                        }}
+                        sx={{ mb: 1 }}
+                      >
+                        Submit
+                      </Button>
                     )}
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Button
+                        color="secondary"
+                        startIcon={<PrintOutlinedIcon />}
+                        disabled={pdfLoading}
+                        onClick={async () => {
+                          if (!salesOrder?.id || !workspace_id || !sales_order_id) return;
+                          // Format file name as sales-order-YYYY-MM-DD
+                          const today = new Date();
+                          const yyyy = today.getFullYear();
+                          const mm = String(today.getMonth() + 1).padStart(2, "0");
+                          const dd = String(today.getDate()).padStart(2, "0");
+                          const fileName = `sales-order-${yyyy}-${mm}-${dd}`;
+                          await createPdf({
+                            variables: {
+                              entity_id: salesOrder.id,
+                              path: `app/${workspace_id}/sales-orders/${sales_order_id}/print`,
+                              file_name: fileName,
+                            },
+                          });
+                          setCacheKey((k) => k + 1);
+                        }}
+                      >
+                        {pdfLoading ? "Generating PDF..." : "Print"}
+                      </Button>
+                      {salesOrder.status !== "SUBMITTED" && (
+                        <>
+                          <Button
+                            color="secondary"
+                            startIcon={<EditOutlinedIcon />}
+                            onClick={() => setEditDialogOpen(true)}
+                          >
+                            Edit
+                          </Button>
+                          {salesOrder.status === "DRAFT" && (
+                            <Button
+                              color="error"
+                              startIcon={<DeleteOutlineIcon />}
+                              onClick={() => setDeleteDialogOpen(true)}
+                              disabled={deleteLoading}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </Box>
                   </Box>
                   {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
                     <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
@@ -664,13 +729,36 @@ export default function SalesOrderDetailPage() {
       >
         <Alert
           onClose={handleSnackbarClose}
-          severity="success"
+          severity={snackbarSeverity}
           sx={{ width: "100%" }}
           variant="filled"
         >
-          Sales order submitted successfully!
+          {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Delete Sales Order</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this sales order? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={deleteLoading}>
+            {deleteLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Edit Sales Order Dialog */}
       {salesOrder && (

@@ -402,8 +402,10 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
           const customUnitProce = row.unit_cost_in_cents;
           const unitPrice = priceBookUnitPrice || customUnitProce;
           if (!unitPrice) return "-";
-          const total = unitPrice * quantity;
-          return `$${(total / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          const subtotal = unitPrice * quantity;
+          const deliveryCharge = row.delivery_charge_in_cents || 0;
+          const totalIncludingDelivery = subtotal + deliveryCharge;
+          return `$${(totalIncludingDelivery / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         return "-";
       },
@@ -557,9 +559,34 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
               slots={{
                 toolbar: Toolbar,
                 footer: () => {
+                  // Calculate subtotal including delivery charges
+                  let totalIncludingDelivery = 0;
+
+                  lineItems.forEach((item) => {
+                    if (!item) return;
+
+                    if (item.__typename === "RentalSalesOrderLineItem") {
+                      if (item.calulate_price?.total_including_delivery_in_cents) {
+                        totalIncludingDelivery +=
+                          item.calulate_price.total_including_delivery_in_cents;
+                      }
+                    } else if (item.__typename === "SaleSalesOrderLineItem") {
+                      const quantity = item.so_quantity || 1;
+                      const priceBookUnitPrice =
+                        item.price?.__typename === "SalePrice" ? item.price.unitCostInCents : null;
+                      const customUnitPrice = item.unit_cost_in_cents;
+                      const unitPrice = priceBookUnitPrice || customUnitPrice || 0;
+                      const subtotal = unitPrice * quantity;
+                      const deliveryCharge = item.delivery_charge_in_cents || 0;
+                      totalIncludingDelivery += subtotal + deliveryCharge;
+                    }
+                  });
+
                   const pricing = data?.getSalesOrderById?.pricing;
-                  const subTotalCents = pricing?.sub_total_in_cents ?? 0;
-                  const subTotalFormatted = `$${(subTotalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  const backendSubTotalCents = pricing?.sub_total_in_cents ?? 0;
+                  const backendSubTotalFormatted = `$${(backendSubTotalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  const totalIncludingDeliveryFormatted = `$${(totalIncludingDelivery / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
                   return (
                     <Box
                       sx={{
@@ -574,7 +601,13 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                       }}
                     >
                       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                        Subtotal: {subTotalFormatted}
+                        Subtotal: {backendSubTotalFormatted}
+                      </Typography>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: "bold", color: "primary.main" }}
+                      >
+                        Total (incl. delivery): {totalIncludingDeliveryFormatted}
                       </Typography>
                     </Box>
                   );
