@@ -14,7 +14,9 @@ import { DataGridPremium, GridColDef, Toolbar } from "@mui/x-data-grid-premium";
 import { addDays, differenceInDays, format } from "date-fns";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
+import DuplicateRentalLineItemButton from "./DuplicateRentalLineItemButton";
 import EditLineItemButton from "./EditLineItemButton";
+import SalesOrderCloneRentalLineItem from "./SalesOrderCloneRentalLineItem";
 
 // --- GQL Query (for codegen) ---
 graphql(`
@@ -166,6 +168,10 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
     variables: { salesOrderId },
     fetchPolicy: "cache-and-network",
   });
+
+  // State for duplicate dialog
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = React.useState(false);
+  const [selectedLineItemId, setSelectedLineItemId] = React.useState<string | null>(null);
 
   const handleAddNewItem = async () => {
     if (onAddNewItem) {
@@ -438,13 +444,31 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
     {
       field: "actions",
       headerName: "Actions",
-      minWidth: 120,
+      minWidth: 140,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
-      align: "center",
+      align: "right",
+      headerAlign: "right",
       renderCell: (params) => (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.5,
+            alignItems: "center",
+            justifyContent: "flex-end",
+            pt: 1,
+          }}
+        >
+          <DuplicateRentalLineItemButton
+            lineItemId={params.row.id}
+            lineItemType={params.row.__typename}
+            onDuplicate={() => {
+              setSelectedLineItemId(params.row.id);
+              setDuplicateDialogOpen(true);
+            }}
+            disabled={salesOrderStatus === SalesOrderStatus.Submitted}
+          />
           <EditLineItemButton
             lineItemId={params.row.id}
             lineItemType={params.row.__typename}
@@ -792,6 +816,21 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
         )}
       </Box>
       {/* Dialog for adding items is now handled by parent */}
+
+      {/* Duplicate rental dialog */}
+      {selectedLineItemId && (
+        <SalesOrderCloneRentalLineItem
+          open={duplicateDialogOpen}
+          onClose={() => {
+            setDuplicateDialogOpen(false);
+            setSelectedLineItemId(null);
+          }}
+          lineItemId={selectedLineItemId}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
     </Box>
   );
 };
