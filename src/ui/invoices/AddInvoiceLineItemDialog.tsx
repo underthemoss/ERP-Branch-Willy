@@ -27,6 +27,9 @@ import {
 import { DataGridPremium, GridColDef, GridToolbar } from "@mui/x-data-grid-premium";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { format } from "date-fns";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import React from "react";
 
 export interface AddInvoiceLineItemDialogProps {
@@ -78,11 +81,39 @@ const LIST_CHARGES_QUERY = graphql(`
         description
         chargeType
         contactId
+        contact {
+          ... on BusinessContact {
+            id
+            name
+          }
+          ... on PersonContact {
+            id
+            name
+          }
+        }
         createdAt
+        billingPeriodStart
+        billingPeriodEnd
         projectId
+        project {
+          id
+          name
+        }
         salesOrderId
         purchaseOrderNumber
         salesOrderLineItemId
+        salesOrderLineItem {
+          ... on RentalSalesOrderLineItem {
+            id
+            so_quantity
+            lineitem_type
+          }
+          ... on SaleSalesOrderLineItem {
+            id
+            so_quantity
+            lineitem_type
+          }
+        }
         fulfilmentId
         invoiceId
       }
@@ -95,6 +126,8 @@ export default function AddInvoiceLineItemDialog({
   invoiceId,
   buyerId,
 }: AddInvoiceLineItemDialogProps) {
+  const params = useParams();
+  const workspaceId = params.workspace_id as string;
   const [tab, setTab] = React.useState(0);
   const [addInvoiceCharges, { loading: addChargesLoading, error: addChargesError }] =
     useAddInvoiceChargesMutation();
@@ -129,10 +162,14 @@ export default function AddInvoiceLineItemDialog({
     chargeType?: string;
     contactId?: string;
     createdAt?: string;
+    billingPeriodStart?: string;
+    billingPeriodEnd?: string;
     projectId?: string;
+    projectName?: string;
     salesOrderId?: string;
     salesOrderPONumber?: string;
     salesOrderLineItemId?: string;
+    salesOrderLineItemQuantity?: number;
     fulfilmentId?: string;
     invoiceId?: string;
     customerName?: string;
@@ -144,14 +181,52 @@ export default function AddInvoiceLineItemDialog({
       .map((charge: any) => ({
         ...charge,
         _id: charge.id,
-        customerName: "", // TODO: If customer name is needed, fetch/join from related entity
+        customerName: charge.contact?.name || "",
+        projectName: charge.project?.name || "",
         salesOrderPONumber: charge.purchaseOrderNumber,
         amountInCents: charge.amountInCents,
+        billingPeriodStart: charge.billingPeriodStart,
+        billingPeriodEnd: charge.billingPeriodEnd,
+        salesOrderLineItemQuantity:
+          charge.chargeType === ChargeType.Sale && charge.salesOrderLineItem?.so_quantity
+            ? charge.salesOrderLineItem.so_quantity
+            : undefined,
       })) ?? [];
 
   const chargeColumns: GridColDef[] = [
     { field: "_id", headerName: "ID", width: 90 },
-    { field: "customerName", headerName: "Customer Name", width: 180 },
+    {
+      field: "customerName",
+      headerName: "Customer",
+      width: 180,
+      renderCell: (params) => {
+        if (!params.row.contactId || !params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/contacts/${params.row.contactId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
+    {
+      field: "projectName",
+      headerName: "Project",
+      width: 150,
+      renderCell: (params) => {
+        if (!params.row.projectId || !params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/projects/${params.row.projectId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
     { field: "description", headerName: "Charge Description", width: 220, flex: 1 },
     {
       field: "amountInCents",
@@ -160,11 +235,68 @@ export default function AddInvoiceLineItemDialog({
       valueFormatter: (value: number) => {
         return typeof value === "number" ? `$${(value / 100).toFixed(2)}` : "";
       },
+      type: "number",
     },
-    { field: "projectId", headerName: "Project ID", width: 120 },
-    { field: "salesOrderId", headerName: "Sales Order ID", width: 130 },
+    {
+      field: "salesOrderId",
+      headerName: "Sales Order ID",
+      width: 130,
+      renderCell: (params) => {
+        if (!params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/sales-orders/${params.value}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
     { field: "salesOrderPONumber", headerName: "PO Number", width: 110 },
-    { field: "fulfilmentId", headerName: "Fulfilment ID", width: 130 },
+    {
+      field: "salesOrderLineItemQuantity",
+      headerName: "Quantity",
+      width: 90,
+      valueGetter: (value: number | undefined, row: ChargeRow) => {
+        return row.chargeType === ChargeType.Sale && value ? value : "";
+      },
+      type: "number",
+    },
+    {
+      field: "billingPeriodStart",
+      headerName: "Billing Start",
+      width: 110,
+      valueFormatter: (value: string) => {
+        return value ? format(new Date(value), "MMM dd, yyyy") : "";
+      },
+      type: "date",
+    },
+    {
+      field: "billingPeriodEnd",
+      headerName: "Billing End",
+      width: 110,
+      valueFormatter: (value: string) => {
+        return value ? format(new Date(value), "MMM dd, yyyy") : "";
+      },
+      type: "date",
+    },
+    {
+      field: "fulfilmentId",
+      headerName: "Fulfilment ID",
+      width: 130,
+      renderCell: (params) => {
+        if (!params.value) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/fulfillment/${params.value}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
   ];
 
   // Row grouping state for DataGridPremium
@@ -239,8 +371,8 @@ export default function AddInvoiceLineItemDialog({
                     label={
                       group === "customerName"
                         ? "Customer Name"
-                        : group === "projectId"
-                          ? "Project ID"
+                        : group === "projectName"
+                          ? "Project"
                           : group === "salesOrderId"
                             ? "Sales Order ID"
                             : group === "salesOrderPONumber"
@@ -274,8 +406,8 @@ export default function AddInvoiceLineItemDialog({
                   {!rowGroupingModel.includes("customerName") && (
                     <MenuItem value="customerName">Customer Name</MenuItem>
                   )}
-                  {!rowGroupingModel.includes("projectId") && (
-                    <MenuItem value="projectId">Project ID</MenuItem>
+                  {!rowGroupingModel.includes("projectName") && (
+                    <MenuItem value="projectName">Project</MenuItem>
                   )}
                   {!rowGroupingModel.includes("salesOrderId") && (
                     <MenuItem value="salesOrderId">Sales Order ID</MenuItem>
@@ -322,6 +454,14 @@ export default function AddInvoiceLineItemDialog({
                     },
                   },
                   pagination: { paginationModel: { pageSize: 5 } },
+                  columns: {
+                    columnVisibilityModel: {
+                      _id: false,
+                      salesOrderPONumber: false,
+                      salesOrderLineItemQuantity: false,
+                      fulfilmentId: false,
+                    },
+                  },
                 }}
                 pageSizeOptions={[5, 10, 20]}
                 checkboxSelection
