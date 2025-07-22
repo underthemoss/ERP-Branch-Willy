@@ -229,6 +229,15 @@ export default function AddInvoiceLineItemDialog({
     },
     { field: "description", headerName: "Charge Description", width: 220, flex: 1 },
     {
+      field: "chargeType",
+      headerName: "Type",
+      width: 100,
+      valueFormatter: (value: string) => {
+        // Format the charge type for display (e.g., "SALE" -> "Sale")
+        return value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : "";
+      },
+    },
+    {
       field: "amountInCents",
       headerName: "Amount",
       width: 120,
