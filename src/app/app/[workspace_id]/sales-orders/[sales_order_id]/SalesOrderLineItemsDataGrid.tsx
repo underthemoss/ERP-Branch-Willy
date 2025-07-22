@@ -11,7 +11,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { DataGridPremium, GridColDef, Toolbar } from "@mui/x-data-grid-premium";
-import { addDays, format } from "date-fns";
+import { addDays, differenceInDays, format } from "date-fns";
 import * as React from "react";
 import DeleteLineItemButton from "./DeleteLineItemButton";
 import EditLineItemButton from "./EditLineItemButton";
@@ -175,6 +175,23 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
   };
 
   const lineItems = data?.getSalesOrderById?.line_items || [];
+
+  // Helper function to calculate days on rent
+  const calculateDaysOnRent = (
+    deliveryDate: string | null | undefined,
+    offRentDate: string | null | undefined,
+  ): number | null => {
+    if (!deliveryDate || !offRentDate) return null;
+
+    const startDate = parseDate(deliveryDate);
+    const endDate = parseDate(offRentDate);
+
+    if (!startDate || !endDate) return null;
+
+    // Calculate difference in days (inclusive of start date, exclusive of end date)
+    const days = differenceInDays(endDate, startDate);
+    return days;
+  };
 
   const columns: GridColDef[] = [
     // Line item type icon column (first)
@@ -689,6 +706,13 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                       {row.off_rent_date
                         ? (parseDate(row.off_rent_date)?.toLocaleDateString() ?? "-")
                         : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Days on Rent:</strong>{" "}
+                      {(() => {
+                        const days = calculateDaysOnRent(row.delivery_date, row.off_rent_date);
+                        return days !== null ? `${days} days` : "-";
+                      })()}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Created By:</strong>{" "}
