@@ -237,6 +237,8 @@ export const ListChargesForFulfilment = graphql(`
         chargeType
         createdAt
         invoiceId
+        billingPeriodStart
+        billingPeriodEnd
       }
     }
   }

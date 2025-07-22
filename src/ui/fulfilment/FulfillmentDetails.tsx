@@ -3,6 +3,7 @@ import { useUpdateFulfilmentAssigneeMutation } from "@/graphql/hooks";
 import { RentalFulfilment } from "@/ui/fulfilment/api";
 import UserPicker from "@/ui/UserPicker";
 import { Typography } from "@mui/material";
+import { differenceInCalendarDays } from "date-fns";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import React from "react";
@@ -51,7 +52,11 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
   } = useListChargesForFulfilmentQuery({
     variables: { fulfilmentId: fulfillmentId },
   });
-  const charges = chargesData?.listCharges?.items || [];
+  const charges = (chargesData?.listCharges?.items || []).slice().sort((a, b) => {
+    const aDate = a.billingPeriodEnd ? new Date(a.billingPeriodEnd).getTime() : 0;
+    const bDate = b.billingPeriodEnd ? new Date(b.billingPeriodEnd).getTime() : 0;
+    return aDate - bDate;
+  });
 
   const [updateAssignee, { loading: updatingAssignee }] = useUpdateFulfilmentAssigneeMutation();
 
@@ -186,15 +191,49 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
                       color: "#888",
                     }}
                   >
-                    <div>
-                      {charge.createdAt
-                        ? new Date(charge.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "-"}
-                    </div>
+                    {/* Billing Period */}
+                    {charge.billingPeriodStart && charge.billingPeriodEnd && (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#666" }}>
+                        {(() => {
+                          const startDate = new Date(charge.billingPeriodStart);
+                          const endDate = new Date(charge.billingPeriodEnd);
+                          const isSameDate = startDate.toDateString() === endDate.toDateString();
+
+                          if (isSameDate) {
+                            return (
+                              <div>
+                                {startDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                            );
+                          } else {
+                            const diffDays = differenceInCalendarDays(endDate, startDate);
+
+                            return (
+                              <div>
+                                {startDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                                {" - "}
+                                {endDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                                <span style={{ marginLeft: 8, color: "#999" }}>
+                                  ({diffDays} day{diffDays !== 1 ? "s" : ""})
+                                </span>
+                              </div>
+                            );
+                          }
+                        })()}
+                      </div>
+                    )}
                     {charge.invoiceId ? (
                       <Link
                         href={`/app/${workspace_id}/invoices/${charge.invoiceId}`}

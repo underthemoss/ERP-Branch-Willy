@@ -222,6 +222,8 @@ input CancelInvoiceInput {
 
 type Charge {
   amountInCents: Int!
+  billingPeriodEnd: DateTime
+  billingPeriodStart: DateTime
   chargeType: ChargeType!
   companyId: ID!
   contactId: ID!
