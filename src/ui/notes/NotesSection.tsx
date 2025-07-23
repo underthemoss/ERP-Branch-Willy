@@ -1,6 +1,5 @@
 "use client";
 
-import type { BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SendIcon from "@mui/icons-material/Send";
 import {
@@ -39,13 +38,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
-  // State for the input editor
-  const [blocks, setBlocks] = useState<PartialBlock[]>([
-    {
-      type: "paragraph",
-      content: "",
-    },
-  ]);
+  // State for the input text
+  const [commentText, setCommentText] = useState("");
 
   // Fetch notes
   const { data, loading, error } = useListNotesByEntityIdQuery({
@@ -63,35 +57,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
 
   // Handle submit comment
   const handleSubmitComment = async () => {
-    // Remove trailing empty blocks
-    let lastIndex = blocks.length;
-    for (let i = blocks.length - 1; i >= 0; i--) {
-      const block = blocks[i];
-      const isEmpty =
-        !block.content ||
-        (typeof block.content === "string" && block.content.trim() === "") ||
-        (Array.isArray(block.content) && block.content.length === 0);
-
-      if (isEmpty) {
-        lastIndex = i;
-      } else {
-        break;
-      }
-    }
-    const nonEmptyBlocks = blocks.slice(0, lastIndex);
-
-    // Check if there's any content left
-    if (nonEmptyBlocks.length === 0) return;
-
-    // Check if all remaining blocks are empty
-    const hasContent = nonEmptyBlocks.some((block: PartialBlock) => {
-      if (!block.content) return false;
-      if (typeof block.content === "string") return block.content.trim() !== "";
-      if (Array.isArray(block.content)) return block.content.length > 0;
-      return false;
-    });
-
-    if (!hasContent) return;
+    const trimmedText = commentText.trim();
+    if (!trimmedText) return;
 
     setIsSubmitting(true);
     try {
@@ -99,17 +66,12 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
         variables: {
           input: {
             parent_entity_id: entityId,
-            value: nonEmptyBlocks,
+            value: { plainText: trimmedText },
           },
         },
       });
-      // Reset the editor state
-      setBlocks([
-        {
-          type: "paragraph",
-          content: "",
-        },
-      ]);
+      // Reset the input
+      setCommentText("");
     } catch (error) {
       console.error("Failed to create comment:", error);
     } finally {
@@ -178,6 +140,37 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
     return `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown User";
   };
 
+  // Extract text content from note value
+  const getNoteContent = (value: any): string => {
+    if (!value) return "";
+
+    // Handle new format { plainText: "..." }
+    if (typeof value === "object" && value.plainText) {
+      return value.plainText;
+    }
+
+    // Handle old block format
+    if (Array.isArray(value)) {
+      return value
+        .map((block: any) => {
+          if (typeof block.content === "string") return block.content;
+          if (Array.isArray(block.content)) {
+            return block.content
+              .map((item: any) => (typeof item === "string" ? item : item.text || ""))
+              .join("");
+          }
+          return "";
+        })
+        .join("\n")
+        .trim();
+    }
+
+    // Fallback for string
+    if (typeof value === "string") return value;
+
+    return "";
+  };
+
   if (loading && !data) {
     return (
       <Box display="flex" alignItems="center" justifyContent="center" p={2}>
@@ -204,16 +197,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Comments
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
       {/* Comments list */}
-      {sortedNotes.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-          No comments yet. Be the first to comment!
-        </Typography>
-      ) : (
+      {sortedNotes.length > 0 && (
         <Stack spacing={2} sx={{ mb: 3 }}>
           {sortedNotes.map((note) => (
             <Box key={note._id} display="flex" gap={1.5}>
@@ -244,15 +229,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
                   sx={{
                     maxWidth: 640,
                     overflow: "auto",
-                    "& .bn-container": {
-                      fontSize: "14px",
-                      "& .bn-editor": {
-                        padding: 0,
-                      },
-                    },
                   }}
                 >
-                  <Note initialContent={note.value} readOnly={true} />
+                  <Note initialContent={getNoteContent(note.value)} readOnly={true} />
                 </Box>
               </Box>
             </Box>
@@ -264,30 +243,53 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
       <Box sx={{ mt: 3 }}>
         <Box
           sx={{
+            display: "flex",
             border: 1,
-            borderColor: "divider",
+            borderColor: "grey.300",
             borderRadius: 1,
-            p: 1,
-            backgroundColor: "background.paper",
+            backgroundColor: "grey.50",
+            overflow: "hidden",
+            "&:focus-within": {
+              borderColor: "primary.main",
+              backgroundColor: "background.paper",
+            },
+            transition: "all 0.2s ease",
           }}
         >
-          <Note
-            key={"comment-" + blocks.length}
-            initialContent={undefined}
-            onChange={setBlocks}
-            className="min-h-[80px]"
-          />
-        </Box>
-        <Box display="flex" justifyContent="flex-end" mt={1}>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleSubmitComment}
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={16} /> : <SendIcon />}
+          <Box sx={{ flex: 1, p: 1 }}>
+            <Note
+              initialContent={commentText}
+              onChange={setCommentText}
+              onSubmit={handleSubmitComment}
+              className="min-h-[40px]"
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "stretch",
+            }}
           >
-            Add Comment
-          </Button>
+            <IconButton
+              onClick={handleSubmitComment}
+              disabled={isSubmitting || !commentText.trim()}
+              sx={{
+                borderRadius: 0,
+                px: 2,
+                color: "grey.600",
+                backgroundColor: "transparent",
+                "&:hover": {
+                  backgroundColor: "grey.100",
+                  color: "primary.main",
+                },
+                "&:disabled": {
+                  color: "grey.400",
+                },
+              }}
+            >
+              {isSubmitting ? <CircularProgress size={20} /> : <SendIcon />}
+            </IconButton>
+          </Box>
         </Box>
       </Box>
 

@@ -1,6 +1,7 @@
 import { FragmentType, graphql, makeFragmentData, useFragment } from "@/graphql";
 import { useUpdateFulfilmentAssigneeMutation } from "@/graphql/hooks";
 import { RentalFulfilment } from "@/ui/fulfilment/api";
+import NotesSection from "@/ui/notes/NotesSection";
 import UserPicker from "@/ui/UserPicker";
 import { Typography } from "@mui/material";
 import { differenceInCalendarDays } from "date-fns";
@@ -250,30 +251,9 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
             </div>
           )}
         </div>
-        {/* Add comment box mock */}
-        <div
-          style={{
-            marginTop: 40,
-            background: "#f5f6f8",
-            borderRadius: 8,
-            padding: "18px 20px",
-            border: "1px solid #ececec",
-            maxWidth: 600,
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Leave a comment..."
-            style={{
-              width: "100%",
-              border: "none",
-              background: "transparent",
-              fontSize: 15,
-              outline: "none",
-              color: "#222",
-            }}
-            disabled
-          />
+        {/* Notes Section */}
+        <div style={{ marginTop: 40, maxWidth: 600 }}>
+          <NotesSection entityId={fulfillmentId} />
         </div>
       </div>
       {/* Sidebar */}
