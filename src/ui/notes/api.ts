@@ -35,6 +35,20 @@ export const NoteFieldsFragment = graphql(`
     parent_entity_id
     sub_notes {
       _id
+      company_id
+      created_at
+      created_by
+      created_by_user {
+        id
+        firstName
+        lastName
+        email
+      }
+      deleted
+      parent_entity_id
+      updated_at
+      updated_by
+      value
     }
     updated_at
     updated_by
@@ -92,21 +106,41 @@ export function useCreateNoteMutation(options?: Parameters<typeof _useCreateNote
     update(cache, result, opts) {
       const newNote = result.data?.createNote;
       if (newNote) {
-        // Update the cache for listNotesByEntityId query
-        cache.modify({
-          fields: {
-            listNotesByEntityId(existing = [], { readField, toReference }) {
-              // Check if this is for the same parent_entity_id
-              const newNoteRef = cache.writeFragment({
-                data: newNote,
-                fragment: NoteFieldsFragment,
-              });
+        // Check if this is a reply by looking at the parent_entity_id
+        const parentEntityId = newNote.parent_entity_id;
 
-              // Add the new note to the beginning of the list
-              return [newNoteRef, ...existing];
-            },
-          },
+        // Try to find if the parent is a note (reply scenario)
+        const parentNoteFragment = cache.readFragment({
+          id: cache.identify({ __typename: "Note", _id: parentEntityId }),
+          fragment: NoteFieldsFragment,
         });
+
+        if (parentNoteFragment) {
+          // This is a reply - update the parent note's sub_notes
+          cache.writeFragment({
+            id: cache.identify({ __typename: "Note", _id: parentEntityId }),
+            fragment: NoteFieldsFragment,
+            data: {
+              ...parentNoteFragment,
+              sub_notes: [...(parentNoteFragment.sub_notes || []), newNote],
+            },
+          });
+        } else {
+          // This is a top-level note - update the listNotesByEntityId query
+          cache.modify({
+            fields: {
+              listNotesByEntityId(existing = [], { readField, toReference }) {
+                const newNoteRef = cache.writeFragment({
+                  data: newNote,
+                  fragment: NoteFieldsFragment,
+                });
+
+                // Add the new note to the beginning of the list
+                return [newNoteRef, ...existing];
+              },
+            },
+          });
+        }
       }
 
       // Call user-provided update if passed

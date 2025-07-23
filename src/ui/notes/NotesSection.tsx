@@ -1,12 +1,14 @@
 "use client";
 
 import DeleteIcon from "@mui/icons-material/Delete";
+import ReplyIcon from "@mui/icons-material/Reply";
 import SendIcon from "@mui/icons-material/Send";
 import {
   Alert,
   Avatar,
   Box,
   Button,
+  Card,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -16,6 +18,7 @@ import {
   Divider,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { format } from "date-fns";
@@ -28,6 +31,7 @@ import {
   type Note as NoteType,
 } from "./api";
 import Note from "./Note";
+import NoteWithSubmit from "./NoteWithSubmit";
 
 interface NotesSectionProps {
   entityId: string;
@@ -37,6 +41,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
 
   // State for the input text
   const [commentText, setCommentText] = useState("");
@@ -77,6 +84,43 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle submit reply
+  const handleSubmitReply = async (noteId: string) => {
+    const trimmedText = replyText.trim();
+    if (!trimmedText) return;
+
+    setIsSubmitting(true);
+    try {
+      await createNote({
+        variables: {
+          input: {
+            parent_entity_id: noteId, // Use the note ID directly
+            value: { plainText: trimmedText },
+          },
+        },
+      });
+      // Reset the reply state
+      setReplyText("");
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Failed to create reply:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle reply click
+  const handleReplyClick = (noteId: string) => {
+    setReplyingTo(noteId);
+    setReplyText("");
+  };
+
+  // Handle cancel reply
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setReplyText("");
   };
 
   // Handle delete note
@@ -195,27 +239,60 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 
-  return (
-    <Box>
-      {/* Comments list */}
-      {sortedNotes.length > 0 && (
-        <Stack spacing={2} sx={{ mb: 3 }}>
-          {sortedNotes.map((note) => (
-            <Box key={note._id} display="flex" gap={1.5}>
-              <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
-                {getUserInitials(note.created_by_user)}
-              </Avatar>
-              <Box flex={1}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {getUserFullName(note.created_by_user)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(note.created_at)}
-                    </Typography>
-                  </Box>
-                  {currentUserId === note.created_by && (
+  // Render a single note with its replies
+  const renderNote = (note: any, isReply = false, parentNoteId?: string) => (
+    <Box key={note._id}>
+      <Card
+        onMouseEnter={(e) => {
+          e.stopPropagation();
+          setHoveredNoteId(note._id);
+        }}
+        onMouseLeave={(e) => {
+          e.stopPropagation();
+          setHoveredNoteId(null);
+        }}
+        sx={{
+          p: 1,
+          boxShadow: 0,
+          border: "none",
+        }}
+      >
+        <Box display="flex" gap={1}>
+          <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
+            {getUserInitials(note.created_by_user)}
+          </Avatar>
+          <Box flex={1}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <Typography variant="body2" fontWeight={600}>
+                  {getUserFullName(note.created_by_user)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatDate(note.created_at)}
+                </Typography>
+              </Box>
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={0.5}
+                sx={{
+                  opacity: hoveredNoteId === note._id ? 1 : 0,
+                  transition: "opacity 0.2s ease-in-out",
+                }}
+              >
+                <Tooltip title="Reply to this comment">
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      handleReplyClick(isReply && parentNoteId ? parentNoteId : note._id)
+                    }
+                    sx={{ ml: 1 }}
+                  >
+                    <ReplyIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {currentUserId === note.created_by && (
+                  <Tooltip title="Delete this comment">
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteClick(note._id)}
@@ -223,75 +300,81 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
-                  )}
-                </Box>
-                <Box
-                  sx={{
-                    maxWidth: 640,
-                    overflow: "auto",
-                  }}
-                >
-                  <Note initialContent={getNoteContent(note.value)} readOnly={true} />
-                </Box>
+                  </Tooltip>
+                )}
               </Box>
             </Box>
-          ))}
+            <Box
+              sx={{
+                overflow: "auto",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {getNoteContent(note.value)}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Card>
+
+      {/* Render replies */}
+      {note.sub_notes && note.sub_notes.length > 0 && (
+        <Box sx={{ mt: 1, ml: 3, borderLeft: "2px solid", borderColor: "divider", pl: 1.5 }}>
+          <Stack spacing={1}>
+            {note.sub_notes
+              .filter((reply: any) => !reply.deleted)
+              .sort(
+                (a: any, b: any) =>
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+              )
+              .map((reply: any) => renderNote(reply, true, note._id))}
+          </Stack>
+        </Box>
+      )}
+
+      {/* Reply input */}
+      {replyingTo === note._id && (
+        <Box sx={{ mt: 1 }}>
+          <NoteWithSubmit
+            initialContent={replyText}
+            onChange={setReplyText}
+            onSubmit={() => replyingTo && handleSubmitReply(replyingTo)}
+            isSubmitting={isSubmitting}
+          />
+          <Button size="small" onClick={handleCancelReply} sx={{ mt: 1 }}>
+            Cancel
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+
+  return (
+    <Box>
+      {/* Comments list */}
+      {sortedNotes.length > 0 && (
+        <Stack spacing={1} sx={{ mb: 2 }}>
+          {sortedNotes.map((note) => renderNote(note))}
         </Stack>
       )}
 
-      {/* Comment input */}
-      <Box sx={{ mt: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            border: 1,
-            borderColor: "grey.300",
-            borderRadius: 1,
-            backgroundColor: "grey.50",
-            overflow: "hidden",
-            "&:focus-within": {
-              borderColor: "primary.main",
-              backgroundColor: "background.paper",
-            },
-            transition: "all 0.2s ease",
-          }}
-        >
-          <Box sx={{ flex: 1, p: 1 }}>
-            <Note
-              initialContent={commentText}
-              onChange={setCommentText}
-              onSubmit={handleSubmitComment}
-              className="min-h-[40px]"
-            />
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "stretch",
-            }}
-          >
-            <IconButton
-              onClick={handleSubmitComment}
-              disabled={isSubmitting || !commentText.trim()}
-              sx={{
-                borderRadius: 0,
-                px: 2,
-                color: "grey.600",
-                backgroundColor: "transparent",
-                "&:hover": {
-                  backgroundColor: "grey.100",
-                  color: "primary.main",
-                },
-                "&:disabled": {
-                  color: "grey.400",
-                },
-              }}
-            >
-              {isSubmitting ? <CircularProgress size={20} /> : <SendIcon />}
-            </IconButton>
-          </Box>
+      {/* Comment input - hide when replying */}
+      {!replyingTo && (
+        <Box sx={{ mt: 2 }}>
+          <NoteWithSubmit
+            initialContent={commentText}
+            onChange={setCommentText}
+            onSubmit={handleSubmitComment}
+            isSubmitting={isSubmitting}
+          />
         </Box>
-      </Box>
+      )}
 
       {/* Delete confirmation dialog */}
       <Dialog
