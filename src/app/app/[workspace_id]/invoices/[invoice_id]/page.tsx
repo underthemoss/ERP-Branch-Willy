@@ -519,7 +519,7 @@ export default function InvoiceDisplayPage() {
                       await createPdf({
                         variables: {
                           entity_id: invoice.id,
-                          path: `app/${workspaceId}/invoices/${invoiceId}/print`,
+                          path: `print/invoice/${workspaceId}/${invoiceId}`,
                           file_name: printFileName,
                         },
                       });
