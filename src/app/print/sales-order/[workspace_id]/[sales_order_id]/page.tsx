@@ -88,7 +88,6 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
       }
       pricing {
         sub_total_in_cents
-        tax_total_in_cents
         total_in_cents
       }
       line_items {
@@ -144,6 +143,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
           created_at
           updated_at
           lineitem_status
+          totalDaysOnRent
         }
         ... on SaleSalesOrderLineItem {
           id
@@ -175,6 +175,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
               unitCostInCents
             }
           }
+          delivery_charge_in_cents
           created_at
           updated_at
           lineitem_status
@@ -280,9 +281,28 @@ export default function SalesOrderPrintPage() {
     return item.so_pim_product?.name || item.so_pim_category?.name || "—";
   }
 
+  function getRateDetails(item: any): string {
+    if (!item || item.__typename !== "RentalSalesOrderLineItem") return "";
+
+    const price = item.price;
+    if (!price || price.__typename !== "RentalPrice") return "";
+
+    const rates = [];
+    if (price.pricePerDayInCents) {
+      rates.push(`${formatCurrency(price.pricePerDayInCents / 100)}/day`);
+    }
+    if (price.pricePerWeekInCents) {
+      rates.push(`${formatCurrency(price.pricePerWeekInCents / 100)}/week`);
+    }
+    if (price.pricePerMonthInCents) {
+      rates.push(`${formatCurrency(price.pricePerMonthInCents / 100)}/month`);
+    }
+
+    return rates.length > 0 ? rates.join(", ") : "";
+  }
+
   const pricing = salesOrder?.pricing;
   const subtotal = (pricing?.sub_total_in_cents ?? 0) / 100;
-  const tax = (pricing?.tax_total_in_cents ?? 0) / 100;
   const total = (pricing?.total_in_cents ?? 0) / 100;
 
   // Seller info (project.company)
@@ -590,37 +610,92 @@ export default function SalesOrderPrintPage() {
           </div>
         </div>
 
-        <div className="info-section allow-break">
-          <h2>Order Items</h2>
-          <table className="allow-break">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th style={{ width: "80px" }}>Qty</th>
-                <th style={{ width: "120px" }}>Unit Price</th>
-                <th style={{ width: "120px" }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lineItems.length === 0 ? (
+        {/* Sales Items Section */}
+        {lineItems.filter((item: any) => item.__typename === "SaleSalesOrderLineItem").length >
+          0 && (
+          <div className="info-section allow-break">
+            <h2>Sales Items</h2>
+            <table className="allow-break">
+              <thead>
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", color: "#888" }}>
+                  <th>Description</th>
+                  <th style={{ width: "80px" }}>Qty</th>
+                  <th style={{ width: "120px" }}>Unit Price</th>
+                  <th style={{ width: "120px" }}>Delivery Charge</th>
+                  <th style={{ width: "120px" }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems
+                  .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
+                  .map((item: any, idx: number) => (
+                    <tr key={item.id || idx}>
+                      <td>{getDescription(item)}</td>
+                      <td>{item.so_quantity ?? "—"}</td>
+                      <td>{formatCurrency(getUnitPrice(item))}</td>
+                      <td>{formatCurrency((item.delivery_charge_in_cents ?? 0) / 100)}</td>
+                      <td>{formatCurrency(getLineItemTotal(item))}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Rental Items Section */}
+        {lineItems.filter((item: any) => item.__typename === "RentalSalesOrderLineItem").length >
+          0 && (
+          <div className="info-section allow-break">
+            <h2>Rental Items</h2>
+            <table className="allow-break">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th style={{ width: "100px" }}>Start Date</th>
+                  <th style={{ width: "100px" }}>End Date</th>
+                  <th style={{ width: "80px" }}>Total Days</th>
+                  <th style={{ width: "120px" }}>Delivery Charge</th>
+                  <th style={{ width: "120px" }}>Total Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems
+                  .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
+                  .map((item: any, idx: number) => (
+                    <tr key={item.id || idx}>
+                      <td>
+                        <div>{getDescription(item)}</div>
+                        <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                          {getRateDetails(item)}
+                        </div>
+                      </td>
+                      <td>{formatDate(item.delivery_date)}</td>
+                      <td>{formatDate(item.off_rent_date)}</td>
+                      <td>{item.totalDaysOnRent ?? "—"}</td>
+                      <td>{formatCurrency((item.delivery_charge_in_cents ?? 0) / 100)}</td>
+                      <td>{formatCurrency(getLineItemTotal(item))}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Show message if no items */}
+        {lineItems.length === 0 && (
+          <div className="info-section allow-break">
+            <h2>Order Items</h2>
+            <table className="allow-break">
+              <tbody>
+                <tr>
+                  <td style={{ textAlign: "center", color: "#888", padding: "20px" }}>
                     No order items
                   </td>
                 </tr>
-              ) : (
-                lineItems.map((item: any, idx: number) => (
-                  <tr key={item.id || idx}>
-                    <td>{getDescription(item)}</td>
-                    <td>{item.so_quantity ?? "—"}</td>
-                    <td>{formatCurrency(getUnitPrice(item))}</td>
-                    <td>{formatCurrency(getLineItemTotal(item))}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div className="totals avoid-break">
           <table className="totals-table">
@@ -628,10 +703,6 @@ export default function SalesOrderPrintPage() {
               <tr>
                 <td>Subtotal:</td>
                 <td>{formatCurrency(subtotal)}</td>
-              </tr>
-              <tr>
-                <td>Tax (8%):</td>
-                <td>{formatCurrency(tax)}</td>
               </tr>
               <tr>
                 <td>Total:</td>

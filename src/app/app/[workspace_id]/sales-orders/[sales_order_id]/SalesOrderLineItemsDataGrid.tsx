@@ -24,7 +24,6 @@ graphql(`
     getSalesOrderById(id: $salesOrderId) {
       pricing {
         sub_total_in_cents
-        tax_total_in_cents
         total_in_cents
       }
       line_items {
@@ -107,6 +106,7 @@ graphql(`
           created_at
           updated_at
           lineitem_status
+          totalDaysOnRent
         }
         ... on SaleSalesOrderLineItem {
           id
@@ -189,23 +189,6 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
   };
 
   const lineItems = data?.getSalesOrderById?.line_items || [];
-
-  // Helper function to calculate days on rent
-  const calculateDaysOnRent = (
-    deliveryDate: string | null | undefined,
-    offRentDate: string | null | undefined,
-  ): number | null => {
-    if (!deliveryDate || !offRentDate) return null;
-
-    const startDate = parseDate(deliveryDate);
-    const endDate = parseDate(offRentDate);
-
-    if (!startDate || !endDate) return null;
-
-    // Calculate difference in days (inclusive of start date, exclusive of end date)
-    const days = differenceInDays(endDate, startDate);
-    return days;
-  };
 
   const columns: GridColDef[] = [
     // Line item type icon column (first)
@@ -738,10 +721,9 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     </Typography>
                     <Typography variant="body2">
                       <strong>Days on Rent:</strong>{" "}
-                      {(() => {
-                        const days = calculateDaysOnRent(row.delivery_date, row.off_rent_date);
-                        return days !== null ? `${days} days` : "-";
-                      })()}
+                      {row.totalDaysOnRent !== null && row.totalDaysOnRent !== undefined
+                        ? `${row.totalDaysOnRent} days`
+                        : "-"}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Created By:</strong>{" "}

@@ -1335,6 +1335,9 @@ type RentalSalesOrderLineItem {
   so_pim_id: String
   so_pim_product: PimProduct
   so_quantity: Int
+
+  """Total days on rent (inclusive of start date, exclusive of end date)"""
+  totalDaysOnRent: Int
   updated_at: String
   updated_by: String
   updated_by_user: User
@@ -1409,7 +1412,7 @@ type SalePrice {
   companyId: String!
   createdAt: DateTime!
   createdBy: String!
-  discounts: JSON!
+  discounts: JSON
   id: ID!
   name: String
   parentPrice: Price
@@ -1538,10 +1541,7 @@ type SalesOrderPricing {
   """Sum of all line item totals (pre-tax)"""
   sub_total_in_cents: Int
 
-  """Tax total (8% of sub_total_in_cents, rounded)"""
-  tax_total_in_cents: Int
-
-  """sub_total_in_cents + tax_total_in_cents"""
+  """Total amount (same as sub_total_in_cents, no tax included)"""
   total_in_cents: Int
 }
 
