@@ -25,15 +25,28 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 graphql(`
-  query SalesOrdersWithLookups(
-    $limit: Int = 20
-    $offset: Int = 0
-    $contactsFilter: ListContactsFilter!
-    $contactsPage: ListContactsPage
-  ) {
+  query SalesOrdersWithLookups($limit: Int = 20, $offset: Int = 0) {
     listSalesOrders(limit: $limit, offset: $offset) {
       items {
         id
+        project {
+          id
+          name
+        }
+        buyer {
+          ... on BusinessContact {
+            id
+            name
+          }
+          ... on PersonContact {
+            id
+            name
+            business {
+              id
+              name
+            }
+          }
+        }
         order_id
         buyer_id
         status
@@ -63,22 +76,6 @@ graphql(`
       limit
       offset
     }
-    listProjects {
-      id
-      name
-    }
-    listContacts(filter: $contactsFilter, page: $contactsPage) {
-      items {
-        ... on BusinessContact {
-          id
-          name
-        }
-        ... on PersonContact {
-          id
-          name
-        }
-      }
-    }
   }
 `);
 
@@ -88,14 +85,12 @@ export default function SalesOrdersPage() {
   );
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Fetch sales orders, projects, and contacts
+  // Fetch sales orders
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading, error } = useSalesOrdersWithLookupsQuery({
     variables: {
       limit: 100,
       offset: 0,
-      contactsFilter: { workspaceId: workspace_id },
-      contactsPage: { number: 1, size: 100 },
     },
     fetchPolicy: "cache-and-network",
   });
@@ -104,7 +99,8 @@ export default function SalesOrdersPage() {
   type SalesOrderRow = {
     id: string;
     order_id: string;
-    buyer: string;
+    business: string;
+    contact: string;
     project: string;
     status: SalesOrderStatus;
     total: string;
@@ -115,26 +111,31 @@ export default function SalesOrdersPage() {
   };
 
   const rows: SalesOrderRow[] = React.useMemo(() => {
-    if (!data?.listSalesOrders?.items || !data.listProjects || !data.listContacts?.items) return [];
+    if (!data?.listSalesOrders?.items) return [];
 
-    // Build lookup maps
-    const projectMap = new Map(
-      data.listProjects
-        .filter((proj): proj is { id: string; name: string } => !!proj)
-        .map((proj) => [proj.id, proj.name]),
-    );
-    const contactMap = new Map(
-      data.listContacts.items
-        .filter((contact): contact is { id: string; name: string } => !!contact)
-        .map((contact) => [contact.id, contact.name]),
-    );
+    return data.listSalesOrders.items.map((order): SalesOrderRow => {
+      let businessName = "";
+      let contactName = "";
 
-    return data.listSalesOrders.items.map(
-      (order): SalesOrderRow => ({
+      if (order.buyer) {
+        // Check if buyer is a PersonContact (has business property)
+        if ("business" in order.buyer) {
+          // PersonContact
+          businessName = order.buyer.business?.name ?? "";
+          contactName = order.buyer.name;
+        } else {
+          // BusinessContact
+          businessName = order.buyer.name;
+          contactName = "-";
+        }
+      }
+
+      return {
         id: order.id,
         order_id: order.order_id,
-        buyer: contactMap.get(order.buyer_id ?? "") ?? order.buyer_id ?? "not implemented",
-        project: projectMap.get(order.project_id ?? "") ?? order.project_id ?? "not implemented",
+        business: businessName,
+        contact: contactName,
+        project: order.project?.name ?? "not implemented",
         status: order.status,
         total: `$${((order.pricing?.total_in_cents || 0) / 100).toFixed(2)}`,
         created_by: order.created_by_user
@@ -153,8 +154,8 @@ export default function SalesOrdersPage() {
           : "not implemented",
         created_at: order.created_at ?? "not implemented",
         updated_at: order.updated_at ?? "not implemented",
-      }),
-    );
+      };
+    });
   }, [data]);
 
   const filteredRows = React.useMemo(() => {
@@ -171,7 +172,8 @@ export default function SalesOrdersPage() {
 
   const columns: GridColDef[] = [
     { field: "id", headerName: "Order #", width: 120 },
-    { field: "buyer", headerName: "Buyer", flex: 2, minWidth: 180 },
+    { field: "business", headerName: "Business", flex: 2, minWidth: 180 },
+    { field: "contact", headerName: "Contact", flex: 1, minWidth: 150 },
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
     { field: "total", headerName: "Total", width: 120 },
     {
@@ -291,9 +293,6 @@ export default function SalesOrdersPage() {
               disableRowSelectionOnClick
               hideFooter
               getRowId={(row: SalesOrderRow) => row.id}
-              initialState={{
-                pinnedColumns: { left: ["id"] },
-              }}
               sx={{
                 cursor: "pointer",
                 "& .MuiDataGrid-row:hover": {
