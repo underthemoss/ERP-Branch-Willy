@@ -349,13 +349,9 @@ input CreateRentalSalesOrderLineItemInput {
   lineitem_status: LineItemStatus
   off_rent_date: String
   price_id: String
-  price_per_day_in_cents: Int
-  price_per_month_in_cents: Int
-  price_per_week_in_cents: Int
   sales_order_id: String!
   so_pim_id: String
   so_quantity: Int
-  unit_cost_in_cents: Int
 }
 
 input CreateSaleFulfilmentInput {
@@ -391,7 +387,6 @@ input CreateSaleSalesOrderLineItemInput {
   sales_order_id: String!
   so_pim_id: String
   so_quantity: Int
-  unit_cost_in_cents: Int
 }
 
 input CreateServiceFulfilmentInput {
@@ -1335,9 +1330,6 @@ type RentalSalesOrderLineItem {
   off_rent_date: String
   price: Price
   price_id: String
-  price_per_day_in_cents: Int
-  price_per_month_in_cents: Int
-  price_per_week_in_cents: Int
   sales_order_id: String!
   so_pim_category: PimCategory
   so_pim_id: String
@@ -1457,7 +1449,6 @@ type SaleSalesOrderLineItem {
   so_pim_id: String
   so_pim_product: PimProduct
   so_quantity: Int
-  unit_cost_in_cents: Int
   updated_at: String
   updated_by: String
   updated_by_user: User
@@ -1773,12 +1764,8 @@ input UpdateRentalSalesOrderLineItemInput {
   lineitem_status: LineItemStatus
   off_rent_date: String
   price_id: String
-  price_per_day_in_cents: Int
-  price_per_month_in_cents: Int
-  price_per_week_in_cents: Int
   so_pim_id: String
   so_quantity: Int
-  unit_cost_in_cents: Int
 }
 
 input UpdateSalePriceInput {
@@ -1801,7 +1788,6 @@ input UpdateSaleSalesOrderLineItemInput {
   price_id: String
   so_pim_id: String
   so_quantity: Int
-  unit_cost_in_cents: Int
 }
 
 input UpdateSalesOrderInput {
@@ -1822,12 +1808,8 @@ input UpdateSalesOrderLineItemInput {
   lineitem_type: LineItemType
   off_rent_date: String
   price_id: String
-  price_per_day_in_cents: Int
-  price_per_month_in_cents: Int
-  price_per_week_in_cents: Int
   so_pim_id: String
   so_quantity: Int
-  unit_cost_in_cents: Int
 }
 
 input UpdateTaxLineItemInput {

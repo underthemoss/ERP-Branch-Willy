@@ -101,21 +101,23 @@ const CreateRentalLineItemConfirmationStep: React.FC<ConfirmationStepProps> = ({
             <Typography variant="subtitle2" color="text.secondary">
               Pricing
             </Typography>
-            {lineItem?.price_per_day_in_cents && (
+            {lineItem?.price?.__typename === "RentalPrice" && lineItem.price.pricePerDayInCents && (
               <Typography variant="body2">
-                Daily Rate: ${(lineItem?.price_per_day_in_cents / 100).toFixed(2)}
+                Daily Rate: ${(lineItem.price.pricePerDayInCents / 100).toFixed(2)}
               </Typography>
             )}
-            {lineItem?.price_per_week_in_cents && (
-              <Typography variant="body2">
-                Weekly Rate: ${(lineItem?.price_per_week_in_cents / 100).toFixed(2)}
-              </Typography>
-            )}
-            {lineItem?.price_per_month_in_cents && (
-              <Typography variant="body2">
-                Monthly Rate: ${(lineItem?.price_per_month_in_cents / 100).toFixed(2)}
-              </Typography>
-            )}
+            {lineItem?.price?.__typename === "RentalPrice" &&
+              lineItem.price.pricePerWeekInCents && (
+                <Typography variant="body2">
+                  Weekly Rate: ${(lineItem.price.pricePerWeekInCents / 100).toFixed(2)}
+                </Typography>
+              )}
+            {lineItem?.price?.__typename === "RentalPrice" &&
+              lineItem.price.pricePerMonthInCents && (
+                <Typography variant="body2">
+                  Monthly Rate: ${(lineItem.price.pricePerMonthInCents / 100).toFixed(2)}
+                </Typography>
+              )}
           </Box>
           <Box>
             <Typography variant="subtitle2" color="text.secondary">

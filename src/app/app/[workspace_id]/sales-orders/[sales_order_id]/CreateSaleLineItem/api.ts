@@ -40,7 +40,11 @@ graphql(`
         id
         so_pim_id
         so_quantity
-        unit_cost_in_cents
+        price {
+          ... on SalePrice {
+            unitCostInCents
+          }
+        }
         so_pim_product {
           name
           model

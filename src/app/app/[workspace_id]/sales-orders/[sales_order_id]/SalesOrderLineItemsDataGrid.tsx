@@ -92,9 +92,13 @@ graphql(`
           }
 
           price_id
-          price_per_day_in_cents
-          price_per_week_in_cents
-          price_per_month_in_cents
+          price {
+            ... on RentalPrice {
+              pricePerDayInCents
+              pricePerWeekInCents
+              pricePerMonthInCents
+            }
+          }
           delivery_location
           delivery_date
           delivery_method
@@ -130,7 +134,11 @@ graphql(`
               }
             }
           }
-          unit_cost_in_cents
+          price {
+            ... on SalePrice {
+              unitCostInCents
+            }
+          }
           delivery_location
           delivery_date
           delivery_method
@@ -421,11 +429,9 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
         if (row.__typename === "SaleSalesOrderLineItem") {
           const quantity = row.so_quantity || 1;
           const priceBookUnitPrice =
-            row.price?.__typename === "SalePrice" && row.price.unitCostInCents;
-          const customUnitProce = row.unit_cost_in_cents;
-          const unitPrice = priceBookUnitPrice || customUnitProce;
-          if (!unitPrice) return "-";
-          const subtotal = unitPrice * quantity;
+            row.price?.__typename === "SalePrice" ? row.price.unitCostInCents : null;
+          if (!priceBookUnitPrice) return "-";
+          const subtotal = priceBookUnitPrice * quantity;
           const deliveryCharge = row.delivery_charge_in_cents || 0;
           const totalIncludingDelivery = subtotal + deliveryCharge;
           return `$${(totalIncludingDelivery / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -581,10 +587,6 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     "so_pim_category.id": false,
                     "price.priceBook.name": false,
                     "price.priceBook.id": false,
-                    price_per_day_in_cents: false,
-                    price_per_week_in_cents: false,
-                    price_per_month_in_cents: false,
-                    unit_cost_in_cents: false,
                     price_id: false,
                     delivery_location: false,
                     delivery_charge_in_cents: false,
@@ -614,10 +616,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     } else if (item.__typename === "SaleSalesOrderLineItem") {
                       const quantity = item.so_quantity || 1;
                       const priceBookUnitPrice =
-                        item.price?.__typename === "SalePrice" ? item.price.unitCostInCents : null;
-                      const customUnitPrice = item.unit_cost_in_cents;
-                      const unitPrice = priceBookUnitPrice || customUnitPrice || 0;
-                      const subtotal = unitPrice * quantity;
+                        item.price?.__typename === "SalePrice" ? item.price.unitCostInCents : 0;
+                      const subtotal = priceBookUnitPrice * quantity;
                       const deliveryCharge = item.delivery_charge_in_cents || 0;
                       totalIncludingDelivery += subtotal + deliveryCharge;
                     }

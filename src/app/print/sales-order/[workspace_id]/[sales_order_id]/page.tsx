@@ -129,9 +129,13 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
             total_including_delivery_in_cents
           }
           price_id
-          price_per_day_in_cents
-          price_per_week_in_cents
-          price_per_month_in_cents
+          price {
+            ... on RentalPrice {
+              pricePerDayInCents
+              pricePerWeekInCents
+              pricePerMonthInCents
+            }
+          }
           delivery_location
           delivery_date
           delivery_method
@@ -166,7 +170,11 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
             lastName
           }
           price_id
-          unit_cost_in_cents
+          price {
+            ... on SalePrice {
+              unitCostInCents
+            }
+          }
           created_at
           updated_at
           lineitem_status
@@ -238,10 +246,11 @@ export default function SalesOrderPrintPage() {
     }
     if (
       item.__typename === "SaleSalesOrderLineItem" &&
-      typeof item.unit_cost_in_cents === "number" &&
+      item.price?.__typename === "SalePrice" &&
+      typeof item.price.unitCostInCents === "number" &&
       typeof item.so_quantity === "number"
     ) {
-      return (item.unit_cost_in_cents * item.so_quantity) / 100;
+      return (item.price.unitCostInCents * item.so_quantity) / 100;
     }
     return 0;
   }
@@ -250,16 +259,18 @@ export default function SalesOrderPrintPage() {
     if (!item) return 0;
     if (
       item.__typename === "RentalSalesOrderLineItem" &&
-      typeof item.price_per_day_in_cents === "number"
+      item.price?.__typename === "RentalPrice" &&
+      typeof item.price.pricePerDayInCents === "number"
     ) {
       // For print, show price per day if available
-      return item.price_per_day_in_cents / 100;
+      return item.price.pricePerDayInCents / 100;
     }
     if (
       item.__typename === "SaleSalesOrderLineItem" &&
-      typeof item.unit_cost_in_cents === "number"
+      item.price?.__typename === "SalePrice" &&
+      typeof item.price.unitCostInCents === "number"
     ) {
-      return item.unit_cost_in_cents / 100;
+      return item.price.unitCostInCents / 100;
     }
     return 0;
   }

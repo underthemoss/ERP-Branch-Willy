@@ -74,7 +74,6 @@ const SALES_ORDER_LINE_ITEMS_CHART_REPORT = graphql(`
               unitCostInCents
             }
           }
-          unit_cost_in_cents
           so_quantity
         }
       }
@@ -245,9 +244,7 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
     const lineItems = data.getSalesOrderById.line_items;
     const rentalItems = lineItems.filter((li: any) => li.calulate_price?.forecast?.days);
     const saleItems = lineItems.filter(
-      (li: any) =>
-        li.unit_cost_in_cents != null ||
-        (li.price?.__typename === "SalePrice" && li.price.unitCostInCents != null),
+      (li: any) => li.price?.__typename === "SalePrice" && li.price.unitCostInCents != null,
     );
 
     // Collect all unique days from all rental forecasts
@@ -332,12 +329,10 @@ export default function SalesOrderCostForcastReport({ salesOrderId }: Props) {
         const label = li.so_pim_product?.name || li.id;
         const quantity = li.so_quantity || 1;
 
-        // Use price from price node if available, otherwise fall back to unit_cost_in_cents
+        // Use price from price node
         let unitCost = 0;
         if (li.price?.__typename === "SalePrice" && li.price.unitCostInCents) {
           unitCost = li.price.unitCostInCents;
-        } else if (li.unit_cost_in_cents) {
-          unitCost = li.unit_cost_in_cents;
         }
 
         // Add delivery charge to the unit cost

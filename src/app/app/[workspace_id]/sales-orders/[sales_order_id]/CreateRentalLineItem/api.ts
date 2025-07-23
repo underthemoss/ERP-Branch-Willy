@@ -44,9 +44,13 @@ graphql(`
           description
         }
         price_id
-        price_per_day_in_cents
-        price_per_week_in_cents
-        price_per_month_in_cents
+        price {
+          ... on RentalPrice {
+            pricePerDayInCents
+            pricePerWeekInCents
+            pricePerMonthInCents
+          }
+        }
         delivery_location
         deliveryNotes
         delivery_date

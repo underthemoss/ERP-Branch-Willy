@@ -33,9 +33,6 @@ graphql(`
         so_pim_id
         so_quantity
         price_id
-        price_per_day_in_cents
-        price_per_week_in_cents
-        price_per_month_in_cents
         delivery_location
         delivery_date
         delivery_method
@@ -117,9 +114,6 @@ export const SalesOrderCloneRentalLineItem: React.FC<SalesOrderCloneRentalLineIt
         so_pim_id: lineItem.so_pim_id,
         so_quantity: lineItem.so_quantity,
         price_id: lineItem.price_id,
-        price_per_day_in_cents: lineItem.price_per_day_in_cents,
-        price_per_week_in_cents: lineItem.price_per_week_in_cents,
-        price_per_month_in_cents: lineItem.price_per_month_in_cents,
         delivery_location: lineItem.delivery_location,
         delivery_date: lineItem.delivery_date,
         delivery_method: lineItem.delivery_method,

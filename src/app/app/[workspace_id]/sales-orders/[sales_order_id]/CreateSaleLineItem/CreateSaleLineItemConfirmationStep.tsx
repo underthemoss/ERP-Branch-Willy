@@ -93,13 +93,20 @@ const CreateSaleLineItemConfirmationStep: React.FC<Props> = ({ lineItemId, Foote
               </Typography>
               <Box sx={{ pl: 2 }}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  <strong>Unit Cost:</strong> {formatCurrency(lineItem.unit_cost_in_cents)}
+                  <strong>Unit Cost:</strong>{" "}
+                  {formatCurrency(
+                    lineItem.price?.__typename === "SalePrice"
+                      ? lineItem.price.unitCostInCents
+                      : null,
+                  )}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   <strong>Total Cost:</strong>{" "}
                   {formatCurrency(
-                    lineItem.unit_cost_in_cents && lineItem.so_quantity
-                      ? lineItem.unit_cost_in_cents * lineItem.so_quantity
+                    lineItem.price?.__typename === "SalePrice" &&
+                      lineItem.price.unitCostInCents &&
+                      lineItem.so_quantity
+                      ? lineItem.price.unitCostInCents * lineItem.so_quantity
                       : null,
                   )}
                 </Typography>
