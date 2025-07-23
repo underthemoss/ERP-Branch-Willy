@@ -444,12 +444,20 @@ export default function InvoiceDisplayPage() {
                 </Box>
               </Box>
               <Box mt={2} display="flex" gap={2}>
-                <Button variant="outlined" size="small" onClick={() => setAddItemDialogOpen(true)}>
-                  Add Line Item
-                </Button>
-                <Button variant="outlined" onClick={() => setEditTaxesDialogOpen(true)}>
-                  Edit Taxes
-                </Button>
+                {invoice.status === "DRAFT" && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setAddItemDialogOpen(true)}
+                    >
+                      Add Line Item
+                    </Button>
+                    <Button variant="outlined" onClick={() => setEditTaxesDialogOpen(true)}>
+                      Edit Taxes
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="outlined"
                   color="secondary"
