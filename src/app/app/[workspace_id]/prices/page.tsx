@@ -5,7 +5,6 @@ import { useListPricesQuery } from "@/ui/prices/api";
 import {
   Autocomplete,
   Box,
-  Button,
   FormControl,
   InputLabel,
   MenuItem,
@@ -14,13 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  DataGridPremium,
-  GridColDef,
-  GridRowGroupingModel,
-  useGridApiRef,
-  useKeepGroupedColumnsHidden,
-} from "@mui/x-data-grid-premium";
+import { DataGridPremium, GridColDef, useGridApiRef } from "@mui/x-data-grid-premium";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -138,33 +131,9 @@ export default function AllPrices() {
     },
   ];
 
-  // Row grouping model: group by PIM Category, then Name, then Price Book (by id)
-  const rowGroupingModel: GridRowGroupingModel = ["pimCategoryName", "priceBookName"];
-
-  // State for grouping expansion depth
-  const [defaultGroupingExpansionDepth, setDefaultGroupingExpansionDepth] =
-    React.useState<number>(0);
-
-  const initialState = useKeepGroupedColumnsHidden({
-    apiRef,
-    initialState: {
-      rowGrouping: {
-        model: rowGroupingModel,
-      },
-    },
-  });
-
   return (
     <PageContainer>
       <Stack spacing={2}>
-        <Box display="flex" gap={2}>
-          <Button variant="outlined" onClick={() => setDefaultGroupingExpansionDepth(-1)}>
-            Expand All
-          </Button>
-          <Button variant="outlined" onClick={() => setDefaultGroupingExpansionDepth(0)}>
-            Collapse All
-          </Button>
-        </Box>
         <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
           <FormControl sx={{ minWidth: 240 }}>
             <InputLabel id="price-book-label">Price Book</InputLabel>
@@ -256,14 +225,9 @@ export default function AllPrices() {
             rows={rows}
             columns={columns}
             loading={loading}
-            rowGroupingModel={rowGroupingModel}
             disableRowSelectionOnClick
             getRowId={(row) => row.id}
-            defaultGroupingExpansionDepth={defaultGroupingExpansionDepth}
-            initialState={initialState}
-            groupingColDef={{
-              headerName: "Category / Price Book",
-            }}
+            showToolbar
           />
         </Box>
       </Stack>
