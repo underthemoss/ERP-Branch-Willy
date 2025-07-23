@@ -201,8 +201,8 @@ export default function SalesOrdersPage() {
         if (!params?.value) return "";
         const date = new Date(Number(params.value));
         return (
-          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
-            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MM/dd/yy, h:mm:ss a")}</span>
           </Tooltip>
         );
       },
@@ -215,8 +215,8 @@ export default function SalesOrdersPage() {
         if (!params?.value) return "";
         const date = new Date(Number(params.value));
         return (
-          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
-            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MM/dd/yy, h:mm:ss a")}</span>
           </Tooltip>
         );
       },
