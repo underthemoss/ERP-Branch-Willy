@@ -189,46 +189,46 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           }
 
           .invoice-title {
-            font-size: 1.8rem !important;
+            font-size: 1.4rem !important;
           }
 
           .invoice-status {
-            font-size: 0.9rem !important;
+            font-size: 0.75rem !important;
           }
 
           .section-header {
-            font-size: 0.9rem !important;
+            font-size: 0.7rem !important;
           }
 
           .company-name {
-            font-size: 0.95rem !important;
+            font-size: 0.8rem !important;
           }
 
           .contact-details {
-            font-size: 0.8rem !important;
+            font-size: 0.65rem !important;
           }
 
           .invoice-number {
-            font-size: 0.95rem !important;
-          }
-
-          .invoice-dates {
             font-size: 0.8rem !important;
           }
 
+          .invoice-dates {
+            font-size: 0.65rem !important;
+          }
+
           .table-header {
-            font-size: 0.75rem !important;
-            padding: 6px 8px !important;
+            font-size: 0.65rem !important;
+            padding: 4px 6px !important;
           }
 
           .table-cell {
-            font-size: 0.85rem !important;
-            padding: 8px 6px !important;
+            font-size: 0.7rem !important;
+            padding: 6px 4px !important;
           }
 
           .project-header {
-            font-size: 0.9rem !important;
-            padding: 6px 8px !important;
+            font-size: 0.75rem !important;
+            padding: 4px 6px !important;
           }
 
           .description-cell {
@@ -247,11 +247,11 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           }
 
           .summary-text {
-            font-size: 0.9rem !important;
+            font-size: 0.75rem !important;
           }
 
           .total-due {
-            font-size: 1.1rem !important;
+            font-size: 0.9rem !important;
           }
         }
       `}</style>
@@ -307,7 +307,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: "50px",
+            gap: "20px",
             marginBottom: 40,
             paddingBottom: 30,
           }}
@@ -347,7 +347,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             )}
           </div>
 
-          <div style={{ flex: 2 }}>
+          <div style={{ flex: 1 }}>
             <h2
               className="section-header"
               style={{
