@@ -262,6 +262,7 @@ export function PimCategoriesTreeView(props: {
   onItemSelected: (item: PimCategoryFields | PimProductFields) => void;
   includeProducts?: boolean;
   selectedItemId?: string;
+  disabled?: boolean;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
@@ -513,9 +514,11 @@ export function PimCategoriesTreeView(props: {
             }}
           >
             <Typography variant="h6">{selectedItem.name}</Typography>
-            <IconButton onClick={handleClearSelection} size="small">
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            {!props.disabled && (
+              <IconButton onClick={handleClearSelection} size="small">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
 
           <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>

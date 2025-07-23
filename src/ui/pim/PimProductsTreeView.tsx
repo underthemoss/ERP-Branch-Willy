@@ -133,7 +133,10 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
   );
 });
 
-export function PimProductsTreeView(props: { onProductSelected: (productId: string) => void }) {
+export function PimProductsTreeView(props: {
+  onProductSelected: (productId: string) => void;
+  disabled?: boolean;
+}) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
@@ -198,9 +201,11 @@ export function PimProductsTreeView(props: { onProductSelected: (productId: stri
             }}
           >
             <Typography variant="h6">{selectedProduct.name}</Typography>
-            <IconButton onClick={handleClearSelection} size="small">
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            {!props.disabled && (
+              <IconButton onClick={handleClearSelection} size="small">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
 
           <Typography variant="body2" color="grey.400" sx={{ mt: 0.5 }}>

@@ -35,10 +35,13 @@ const CreateRentalLineItemProductSelectionStep: React.FC<ProductSelectionStepPro
       <DialogTitle>Select a catalog</DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Search and select a product to add to this sales order.
+          {item?.lineitem_status === "CONFIRMED"
+            ? "This product selection cannot be changed after the line item has been added to the sales order. Please create a new line item if you need a different product."
+            : "Search and select a product to add to this sales order."}
         </Typography>
         <PimCategoriesTreeView
           selectedItemId={item?.so_pim_category?.id}
+          disabled={item?.lineitem_status === "CONFIRMED"}
           onItemSelected={async (val) => {
             await updateLineItem({
               variables: {

@@ -83,14 +83,17 @@ const CreateSaleLineItemProductSelectionStep: React.FC<Props> = ({ lineItemId, F
           Select Product & Quantity
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {item.so_pim_id && existingProduct
-            ? `Currently selected: ${existingProduct.name || existingCategory?.name || "Unknown"}`
-            : "Select a product to add to this sales order."}
+          {item.lineitem_status === "CONFIRMED"
+            ? "This product selection cannot be changed after the line item has been added to the sales order. Please create a new line item if you need a different product."
+            : item.so_pim_id && existingProduct
+              ? `Currently selected: ${existingProduct.name || existingCategory?.name || "Unknown"}`
+              : "Select a product to add to this sales order."}
         </Typography>
 
         <Box sx={{ mb: 3 }}>
           <PimCategoriesTreeView
             selectedItemId={item.so_pim_id || undefined}
+            disabled={item.lineitem_status === "CONFIRMED"}
             onItemSelected={async (val) => {
               await updateItem({
                 variables: {
