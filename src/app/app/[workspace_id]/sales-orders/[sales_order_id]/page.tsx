@@ -74,6 +74,14 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
       buyer_id
       project_id
       status
+      line_items {
+        ... on RentalSalesOrderLineItem {
+          id
+        }
+        ... on SaleSalesOrderLineItem {
+          id
+        }
+      }
       buyer {
         ... on BusinessContact {
           id
@@ -222,6 +230,7 @@ export default function SalesOrderDetailPage() {
   };
 
   const salesOrder = data?.getSalesOrderById;
+  const hasLineItems = (salesOrder?.line_items?.length ?? 0) > 0;
 
   const handleDelete = async () => {
     try {
@@ -304,23 +313,34 @@ export default function SalesOrderDetailPage() {
                     alignItems={{ md: "flex-end", xs: "flex-start" }}
                   >
                     {salesOrder.status !== "SUBMITTED" && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        disabled={submitLoading}
-                        loading={submitLoading}
-                        onClick={async () => {
-                          if (!salesOrder?.id) return;
-                          await submitSalesOrder({
-                            variables: { id: salesOrder.id },
-                            refetchQueries: ["GetSalesOrderById"],
-                            awaitRefetchQueries: true,
-                          });
-                        }}
-                        sx={{ mb: 1 }}
+                      <Tooltip
+                        title={
+                          !hasLineItems
+                            ? "Cannot submit an empty sales order. Please add at least one line item."
+                            : ""
+                        }
+                        arrow
                       >
-                        Submit
-                      </Button>
+                        <span>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={submitLoading || !hasLineItems}
+                            loading={submitLoading}
+                            onClick={async () => {
+                              if (!salesOrder?.id) return;
+                              await submitSalesOrder({
+                                variables: { id: salesOrder.id },
+                                refetchQueries: ["GetSalesOrderById"],
+                                awaitRefetchQueries: true,
+                              });
+                            }}
+                            sx={{ mb: 1 }}
+                          >
+                            Submit
+                          </Button>
+                        </span>
+                      </Tooltip>
                     )}
                     <Box display="flex" alignItems="center" gap={1}>
                       <Button
