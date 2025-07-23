@@ -446,7 +446,7 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
             gap: 0.5,
             alignItems: "center",
             justifyContent: "flex-end",
-            pt: 1,
+            height: "100%",
           }}
         >
           <DuplicateRentalLineItemButton
@@ -629,14 +629,11 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                         borderColor: "divider",
                       }}
                     >
-                      <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                        Subtotal: {backendSubTotalFormatted}
-                      </Typography>
                       <Typography
                         variant="subtitle1"
                         sx={{ fontWeight: "bold", color: "primary.main" }}
                       >
-                        Total (incl. delivery): {totalIncludingDeliveryFormatted}
+                        Total: {totalIncludingDeliveryFormatted}
                       </Typography>
                     </Box>
                   );

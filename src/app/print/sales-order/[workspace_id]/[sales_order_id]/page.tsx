@@ -303,9 +303,32 @@ export default function SalesOrderPrintPage() {
     return rates.length > 0 ? rates.join(", ") : "";
   }
 
-  const pricing = salesOrder?.pricing;
-  const subtotal = (pricing?.sub_total_in_cents ?? 0) / 100;
-  const total = (pricing?.total_in_cents ?? 0) / 100;
+  // Calculate totals from line items
+  let subtotal = 0;
+  let deliveryTotal = 0;
+
+  lineItems.forEach((item: any) => {
+    if (!item) return;
+
+    if (item.__typename === "RentalSalesOrderLineItem") {
+      const itemDeliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+      const itemTotal = getLineItemTotal(item);
+      const itemSubtotal = itemTotal - itemDeliveryCharge;
+
+      subtotal += itemSubtotal;
+      deliveryTotal += itemDeliveryCharge;
+    } else if (item.__typename === "SaleSalesOrderLineItem") {
+      const quantity = item.so_quantity || 1;
+      const unitPrice = getUnitPrice(item);
+      const itemSubtotal = unitPrice * quantity;
+      const itemDeliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+
+      subtotal += itemSubtotal;
+      deliveryTotal += itemDeliveryCharge;
+    }
+  });
+
+  const total = subtotal + deliveryTotal;
 
   // Seller info (project.company)
   const seller =
@@ -621,25 +644,67 @@ export default function SalesOrderPrintPage() {
               <thead>
                 <tr>
                   <th>Description</th>
-                  <th style={{ width: "80px" }}>Qty</th>
-                  <th style={{ width: "120px" }}>Unit Price</th>
-                  <th style={{ width: "120px" }}>Delivery Charge</th>
-                  <th style={{ width: "120px" }}>Total</th>
+                  <th style={{ width: "80px" }}>Quantity</th>
+                  <th style={{ width: "120px" }}>Rate</th>
+                  <th style={{ width: "120px" }}>Amount</th>
+                  <th style={{ width: "120px" }}>Delivery</th>
+                  <th style={{ width: "120px" }}>Line Total</th>
                 </tr>
               </thead>
               <tbody>
                 {lineItems
                   .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
-                  .map((item: any, idx: number) => (
-                    <tr key={item.id || idx}>
-                      <td>{getDescription(item)}</td>
-                      <td>{item.so_quantity ?? "—"}</td>
-                      <td>{formatCurrency(getUnitPrice(item))}</td>
-                      <td>{formatCurrency((item.delivery_charge_in_cents ?? 0) / 100)}</td>
-                      <td>{formatCurrency(getLineItemTotal(item))}</td>
-                    </tr>
-                  ))}
+                  .map((item: any, idx: number) => {
+                    const quantity = item.so_quantity || 1;
+                    const unitPrice = getUnitPrice(item);
+                    const subtotal = unitPrice * quantity;
+                    const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                    return (
+                      <tr key={item.id || idx}>
+                        <td>{getDescription(item)}</td>
+                        <td>{item.so_quantity ?? "—"}</td>
+                        <td>{formatCurrency(unitPrice)}</td>
+                        <td>{formatCurrency(subtotal)}</td>
+                        <td>{formatCurrency(deliveryCharge)}</td>
+                        <td>{formatCurrency(getLineItemTotal(item))}</td>
+                      </tr>
+                    );
+                  })}
               </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid #333", fontWeight: "bold" }}>
+                  <td colSpan={3} style={{ textAlign: "right" }}></td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          const quantity = item.so_quantity || 1;
+                          const unitPrice = getUnitPrice(item);
+                          return sum + unitPrice * quantity;
+                        }, 0),
+                    )}
+                  </td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          return sum + (item.delivery_charge_in_cents ?? 0) / 100;
+                        }, 0),
+                    )}
+                  </td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          return sum + getLineItemTotal(item);
+                        }, 0),
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
@@ -655,30 +720,72 @@ export default function SalesOrderPrintPage() {
                   <th>Description</th>
                   <th style={{ width: "100px" }}>Start Date</th>
                   <th style={{ width: "100px" }}>End Date</th>
-                  <th style={{ width: "80px" }}>Total Days</th>
-                  <th style={{ width: "120px" }}>Delivery Charge</th>
-                  <th style={{ width: "120px" }}>Total Price</th>
+                  <th style={{ width: "80px" }}>Days</th>
+                  <th style={{ width: "120px" }}>Amount</th>
+                  <th style={{ width: "120px" }}>Delivery</th>
+                  <th style={{ width: "120px" }}>Line Total</th>
                 </tr>
               </thead>
               <tbody>
                 {lineItems
                   .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
-                  .map((item: any, idx: number) => (
-                    <tr key={item.id || idx}>
-                      <td>
-                        <div>{getDescription(item)}</div>
-                        <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                          {getRateDetails(item)}
-                        </div>
-                      </td>
-                      <td>{formatDate(item.delivery_date)}</td>
-                      <td>{formatDate(item.off_rent_date)}</td>
-                      <td>{item.totalDaysOnRent ?? "—"}</td>
-                      <td>{formatCurrency((item.delivery_charge_in_cents ?? 0) / 100)}</td>
-                      <td>{formatCurrency(getLineItemTotal(item))}</td>
-                    </tr>
-                  ))}
+                  .map((item: any, idx: number) => {
+                    const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                    const total = getLineItemTotal(item);
+                    const subtotal = total - deliveryCharge;
+                    return (
+                      <tr key={item.id || idx}>
+                        <td>
+                          <div>{getDescription(item)}</div>
+                          <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                            {getRateDetails(item)}
+                          </div>
+                        </td>
+                        <td>{formatDate(item.delivery_date)}</td>
+                        <td>{formatDate(item.off_rent_date)}</td>
+                        <td>{item.totalDaysOnRent ?? "—"}</td>
+                        <td>{formatCurrency(subtotal)}</td>
+                        <td>{formatCurrency(deliveryCharge)}</td>
+                        <td>{formatCurrency(total)}</td>
+                      </tr>
+                    );
+                  })}
               </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid #333", fontWeight: "bold" }}>
+                  <td colSpan={4} style={{ textAlign: "right" }}></td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                          const total = getLineItemTotal(item);
+                          const subtotal = total - deliveryCharge;
+                          return sum + subtotal;
+                        }, 0),
+                    )}
+                  </td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          return sum + (item.delivery_charge_in_cents ?? 0) / 100;
+                        }, 0),
+                    )}
+                  </td>
+                  <td>
+                    {formatCurrency(
+                      lineItems
+                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
+                        .reduce((sum: number, item: any) => {
+                          return sum + getLineItemTotal(item);
+                        }, 0),
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
@@ -703,11 +810,15 @@ export default function SalesOrderPrintPage() {
           <table className="totals-table">
             <tbody>
               <tr>
-                <td>Subtotal:</td>
+                <td>Subtotal</td>
                 <td>{formatCurrency(subtotal)}</td>
               </tr>
               <tr>
-                <td>Total:</td>
+                <td>Delivery</td>
+                <td>{formatCurrency(deliveryTotal)}</td>
+              </tr>
+              <tr>
+                <td>Total</td>
                 <td>{formatCurrency(total)}</td>
               </tr>
             </tbody>
