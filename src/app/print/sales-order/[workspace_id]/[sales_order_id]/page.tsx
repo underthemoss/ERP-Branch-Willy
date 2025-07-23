@@ -251,7 +251,9 @@ export default function SalesOrderPrintPage() {
       typeof item.price.unitCostInCents === "number" &&
       typeof item.so_quantity === "number"
     ) {
-      return (item.price.unitCostInCents * item.so_quantity) / 100;
+      const itemTotal = (item.price.unitCostInCents * item.so_quantity) / 100;
+      const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+      return itemTotal + deliveryCharge;
     }
     return 0;
   }
