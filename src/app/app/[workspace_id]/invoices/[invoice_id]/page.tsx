@@ -277,6 +277,7 @@ export default function InvoiceDisplayPage() {
         return "default";
     }
   }
+  const invoicePreviewScale = 0.7;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
@@ -422,7 +423,27 @@ export default function InvoiceDisplayPage() {
                 Invoice Preview
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <Box
+              <div
+                style={{
+                  width: 794 * invoicePreviewScale,
+                  height: 1123 * invoicePreviewScale,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: 794,
+                    height: 1123,
+                    transform: `scale(${invoicePreviewScale})`,
+                    transformOrigin: "top left",
+                    background: "white",
+                    boxShadow: "0 0 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <InvoiceRender key={cachekey} invoiceId={invoiceId} />
+                </div>
+              </div>
+              {/* <Box
                 sx={{
                   maxHeight: "450px",
                   overflow: "scroll",
@@ -442,7 +463,7 @@ export default function InvoiceDisplayPage() {
                 >
                   <InvoiceRender key={cachekey} invoiceId={invoiceId} scale={1} />
                 </Box>
-              </Box>
+              </Box> */}
               <Box mt={2} display="flex" gap={2}>
                 {invoice.status === "DRAFT" && (
                   <>
