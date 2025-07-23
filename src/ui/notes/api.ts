@@ -46,6 +46,23 @@ export const NoteFieldsFragment = graphql(`
       }
       deleted
       parent_entity_id
+      sub_notes {
+        _id
+        company_id
+        created_at
+        created_by
+        created_by_user {
+          id
+          firstName
+          lastName
+          email
+        }
+        deleted
+        parent_entity_id
+        updated_at
+        updated_by
+        value
+      }
       updated_at
       updated_by
       value
