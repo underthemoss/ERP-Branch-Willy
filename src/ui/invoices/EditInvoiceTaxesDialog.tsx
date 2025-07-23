@@ -462,9 +462,9 @@ export default function EditInvoiceTaxesDialog({
     }
   }, [open, taxLineItems, isReordering]);
 
-  // Fetch tax suggestions when invoice data is loaded
+  // Fetch tax suggestions only once when dialog opens
   useEffect(() => {
-    if (open && invoiceData?.invoiceById) {
+    if (open && invoiceData?.invoiceById && suggestedTaxItems.length === 0 && !suggestLoading) {
       const invoiceDescription = buildInvoiceDescription(invoiceData.invoiceById);
       if (invoiceDescription) {
         suggestTaxObligations({
@@ -474,7 +474,7 @@ export default function EditInvoiceTaxesDialog({
         });
       }
     }
-  }, [open, invoiceData, suggestTaxObligations]);
+  }, [open, invoiceData?.invoiceById?.id]); // Only depend on invoice ID to prevent refetching
 
   const handleUpdateItem = (index: number, field: keyof TaxLineItem, value: any) => {
     const updated = [...editedItems];
@@ -578,6 +578,9 @@ export default function EditInvoiceTaxesDialog({
     ) {
       const presetItem = suggestedTaxItems.find((item) => item.id === result.draggableId);
       if (presetItem) {
+        // Remove the dragged item from the suggested items list immediately
+        setSuggestedTaxItems(suggestedTaxItems.filter((item) => item.id !== result.draggableId));
+
         try {
           await addTaxLineItem({
             variables: {
@@ -595,6 +598,8 @@ export default function EditInvoiceTaxesDialog({
           });
         } catch (error) {
           setErrors([`Failed to add preset tax item: ${error}`]);
+          // Restore the item if the mutation failed
+          setSuggestedTaxItems((prev) => [...prev, presetItem]);
         }
       }
       return;
