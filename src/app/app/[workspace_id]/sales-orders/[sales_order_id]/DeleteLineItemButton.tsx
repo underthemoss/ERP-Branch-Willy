@@ -31,11 +31,13 @@ graphql(`
 export interface DeleteLineItemButtonProps {
   lineItemId: string;
   onDeleted?: () => void;
+  disabled?: boolean;
 }
 
 export const DeleteLineItemButton: React.FC<DeleteLineItemButtonProps> = ({
   lineItemId,
   onDeleted,
+  disabled = false,
 }) => {
   const [open, setOpen] = React.useState(false);
   const [softDelete, { loading }] = useSoftDeleteSalesOrderLineItemMutation();
@@ -55,6 +57,7 @@ export const DeleteLineItemButton: React.FC<DeleteLineItemButtonProps> = ({
         color="error"
         onClick={() => setOpen(true)}
         size="small"
+        disabled={disabled}
       >
         <DeleteIcon />
       </IconButton>

@@ -479,8 +479,13 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
             lineItemId={params.row.id}
             lineItemType={params.row.__typename}
             onEdit={() => onEditItem?.(params.row.id, params.row.__typename)}
+            disabled={salesOrderStatus === SalesOrderStatus.Submitted}
           />
-          <DeleteLineItemButton lineItemId={params.row.id} onDeleted={refetch} />
+          <DeleteLineItemButton
+            lineItemId={params.row.id}
+            onDeleted={refetch}
+            disabled={salesOrderStatus === SalesOrderStatus.Submitted}
+          />
         </Box>
       ),
     },
