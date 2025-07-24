@@ -40,6 +40,10 @@ const ListInvoicesQuery = graphql(`
           ... on PersonContact {
             id
             name
+            business {
+              id
+              name
+            }
           }
         }
         buyer {
@@ -51,6 +55,10 @@ const ListInvoicesQuery = graphql(`
           ... on PersonContact {
             id
             name
+            business {
+              id
+              name
+            }
           }
         }
         createdByUser {
@@ -92,8 +100,8 @@ const columns: GridColDef[] = [
       );
     },
   },
-  { field: "buyer", headerName: "Buyer", width: 120 },
-  { field: "seller", headerName: "Seller", width: 120 },
+  { field: "buyer", headerName: "Bill To", width: 120 },
+  { field: "seller", headerName: "From", width: 120 },
   {
     field: "total",
     headerName: "Total",
@@ -227,8 +235,14 @@ export default function InvoicesPage() {
       id: inv.id,
       number: inv.id,
       createdAt: inv.createdAt ? new Date(inv.createdAt) : null,
-      buyer: inv.buyer?.name || "",
-      seller: inv.seller?.name || "-",
+      buyer:
+        inv.buyer?.__typename === "PersonContact"
+          ? inv.buyer.business?.name || inv.buyer.name || ""
+          : inv.buyer?.name || "",
+      seller:
+        inv.seller?.__typename === "PersonContact"
+          ? inv.seller.business?.name || inv.seller.name || "-"
+          : inv.seller?.name || "-",
       subtotal: inv.subTotalInCents != null ? inv.subTotalInCents / 100 : null,
       taxes: inv.totalTaxesInCents != null ? inv.totalTaxesInCents / 100 : null,
       total: inv.finalSumInCents != null ? inv.finalSumInCents / 100 : null,

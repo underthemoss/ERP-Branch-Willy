@@ -37,7 +37,7 @@ export interface AddInvoiceLineItemDialogProps {
   onClose: () => void;
   invoiceId: string;
   buyerId: string;
-  buyerName: string;
+  businessName: string;
 }
 
 export const AddInvoiceChargesMutation = graphql(`
@@ -90,6 +90,10 @@ const LIST_CHARGES_QUERY = graphql(`
           ... on PersonContact {
             id
             name
+            business {
+              id
+              name
+            }
           }
         }
         createdAt
@@ -126,7 +130,7 @@ export default function AddInvoiceLineItemDialog({
   onClose,
   invoiceId,
   buyerId,
-  buyerName,
+  businessName,
 }: AddInvoiceLineItemDialogProps) {
   const params = useParams();
   const workspaceId = params.workspace_id as string;
@@ -174,35 +178,73 @@ export default function AddInvoiceLineItemDialog({
     salesOrderLineItemQuantity?: number;
     fulfilmentId?: string;
     invoiceId?: string;
-    customerName?: string;
+    businessName?: string;
+    businessId?: string;
+    contactName?: string;
   };
 
   const chargeRows: ChargeRow[] =
     chargesData?.listCharges?.items
       ?.filter((i) => !i.invoiceId)
-      .map((charge: any) => ({
-        ...charge,
-        _id: charge.id,
-        customerName: charge.contact?.name || "",
-        projectName: charge.project?.name || "",
-        salesOrderPONumber: charge.purchaseOrderNumber,
-        amountInCents: charge.amountInCents,
-        billingPeriodStart: charge.billingPeriodStart,
-        billingPeriodEnd: charge.billingPeriodEnd,
-        salesOrderLineItemQuantity:
-          charge.chargeType === ChargeType.Sale && charge.salesOrderLineItem?.so_quantity
-            ? charge.salesOrderLineItem.so_quantity
-            : undefined,
-      })) ?? [];
+      .map((charge: any) => {
+        // Determine business name, business ID, and contact name based on contact type
+        let businessName = "";
+        let businessId = "";
+        let contactName = "";
+
+        if (charge.contact?.__typename === "BusinessContact") {
+          businessName = charge.contact.name || "";
+          businessId = charge.contact.id || "";
+        } else if (charge.contact?.__typename === "PersonContact") {
+          businessName = charge.contact.business?.name || "";
+          businessId = charge.contact.business?.id || "";
+          contactName = charge.contact.name || "";
+        }
+
+        return {
+          ...charge,
+          _id: charge.id,
+          businessName,
+          businessId,
+          contactName,
+          projectName: charge.project?.name || "",
+          salesOrderPONumber: charge.purchaseOrderNumber,
+          amountInCents: charge.amountInCents,
+          billingPeriodStart: charge.billingPeriodStart,
+          billingPeriodEnd: charge.billingPeriodEnd,
+          salesOrderLineItemQuantity:
+            charge.chargeType === ChargeType.Sale && charge.salesOrderLineItem?.so_quantity
+              ? charge.salesOrderLineItem.so_quantity
+              : undefined,
+        };
+      }) ?? [];
 
   const chargeColumns: GridColDef[] = [
     { field: "_id", headerName: "ID", width: 90 },
     {
-      field: "customerName",
-      headerName: "Customer",
+      field: "businessName",
+      headerName: "Business",
       width: 180,
       renderCell: (params) => {
-        if (!params.row.contactId || !params.value) return params.value;
+        if (!params.value) return "-";
+        if (!params.row.businessId) return params.value;
+        return (
+          <Link
+            href={`/app/${workspaceId}/contacts/${params.row.businessId}`}
+            style={{ color: "#1976d2", textDecoration: "none" }}
+          >
+            {params.value}
+          </Link>
+        );
+      },
+    },
+    {
+      field: "contactName",
+      headerName: "Contact",
+      width: 180,
+      renderCell: (params) => {
+        if (!params.value) return "-";
+        if (!params.row.contactId) return params.value;
         return (
           <Link
             href={`/app/${workspaceId}/contacts/${params.row.contactId}`}
@@ -396,15 +438,17 @@ export default function AddInvoiceLineItemDialog({
                   <Chip
                     key={group}
                     label={
-                      group === "customerName"
-                        ? "Customer Name"
-                        : group === "projectName"
-                          ? "Project"
-                          : group === "salesOrderId"
-                            ? "Sales Order ID"
-                            : group === "salesOrderPONumber"
-                              ? "PO Number"
-                              : group
+                      group === "businessName"
+                        ? "Business"
+                        : group === "contactName"
+                          ? "Contact"
+                          : group === "projectName"
+                            ? "Project"
+                            : group === "salesOrderId"
+                              ? "Sales Order ID"
+                              : group === "salesOrderPONumber"
+                                ? "PO Number"
+                                : group
                     }
                     onDelete={() =>
                       setRowGroupingModel(rowGroupingModel.filter((g) => g !== group))
@@ -430,8 +474,11 @@ export default function AddInvoiceLineItemDialog({
                   <MenuItem value="" disabled>
                     Select...
                   </MenuItem>
-                  {!rowGroupingModel.includes("customerName") && (
-                    <MenuItem value="customerName">Customer Name</MenuItem>
+                  {!rowGroupingModel.includes("businessName") && (
+                    <MenuItem value="businessName">Business</MenuItem>
+                  )}
+                  {!rowGroupingModel.includes("contactName") && (
+                    <MenuItem value="contactName">Contact</MenuItem>
                   )}
                   {!rowGroupingModel.includes("projectName") && (
                     <MenuItem value="projectName">Project</MenuItem>
@@ -479,9 +526,9 @@ export default function AddInvoiceLineItemDialog({
                     filterModel: {
                       items: [
                         {
-                          field: "customerName",
+                          field: "businessName",
                           operator: "equals",
-                          value: buyerName,
+                          value: businessName,
                         },
                       ],
                       quickFilterValues: [""],
