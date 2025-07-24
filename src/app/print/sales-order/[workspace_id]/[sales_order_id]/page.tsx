@@ -552,7 +552,7 @@ export default function SalesOrderPrintPage() {
             <strong>Date:</strong> {formatDate(new Date().toISOString())}
           </div>
           <div>
-            <strong>Order #:</strong> {salesOrder?.order_id || "—"}
+            <strong>Order #:</strong> {salesOrder?.id || "—"}
           </div>
           <div>
             <strong>PO #:</strong> {salesOrder?.purchase_order_number || "—"}
@@ -616,24 +616,6 @@ export default function SalesOrderPrintPage() {
           <div className="info-row">
             <span className="info-label">Code:</span>
             <span>{salesOrder?.project?.project_code || "—"}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Description:</span>
-            <span style={{ whiteSpace: "pre-wrap" }}>
-              {salesOrder?.project?.description || "—"}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Status:</span>
-            <span>{salesOrder?.project?.status || "—"}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Scope:</span>
-            <span>
-              {Array.isArray(salesOrder?.project?.scope_of_work)
-                ? salesOrder.project.scope_of_work.join(", ")
-                : "—"}
-            </span>
           </div>
         </div>
 
