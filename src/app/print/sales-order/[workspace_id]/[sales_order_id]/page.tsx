@@ -476,8 +476,15 @@ export default function SalesOrderPrintPage() {
           display: table-row-group;
         }
 
+        /* Remove tfoot display property to prevent repetition on each page */
         tfoot {
-          display: table-footer-group;
+          display: table-row-group;
+        }
+
+        .table-footer-row {
+          page-break-inside: avoid;
+          border-top: 2px solid #333;
+          font-weight: bold;
         }
 
         .info-grid {
