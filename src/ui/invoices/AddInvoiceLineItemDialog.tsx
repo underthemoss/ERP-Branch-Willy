@@ -37,7 +37,7 @@ export interface AddInvoiceLineItemDialogProps {
   onClose: () => void;
   invoiceId: string;
   buyerId: string;
-  businessName: string;
+  businessName?: string;
 }
 
 export const AddInvoiceChargesMutation = graphql(`
@@ -524,13 +524,15 @@ export default function AddInvoiceLineItemDialog({
                 initialState={{
                   filter: {
                     filterModel: {
-                      items: [
-                        {
-                          field: "businessName",
-                          operator: "equals",
-                          value: businessName,
-                        },
-                      ],
+                      items: businessName
+                        ? [
+                            {
+                              field: "businessName",
+                              operator: "equals",
+                              value: businessName,
+                            },
+                          ]
+                        : [],
                       quickFilterValues: [""],
                     },
                   },
