@@ -309,9 +309,13 @@ export default function InvoiceDisplayPage() {
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Buyer: {invoice.buyer?.name ?? ""}
+                    {invoice.buyer?.__typename === "PersonContact" &&
+                      invoice.buyer.business?.name && <> ({invoice.buyer.business.name})</>}
                   </Typography>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Seller: {invoice.seller?.name ?? ""}
+                    {invoice.seller?.__typename === "PersonContact" &&
+                      invoice.seller.business?.name && <> ({invoice.seller.business.name})</>}
                   </Typography>
                 </Grid>
                 <Grid
@@ -334,17 +338,12 @@ export default function InvoiceDisplayPage() {
                     gap={2}
                     width="100%"
                     flexDirection={{ xs: "column", sm: "row" }}
+                    justifyContent="flex-end"
                   >
                     {invoice.status === "DRAFT" && (
                       <Button
                         variant="contained"
                         color="primary"
-                        sx={{
-                          minWidth: 140,
-                          whiteSpace: "nowrap",
-                          flex: 1,
-                          maxWidth: { xs: "100%", sm: "unset" },
-                        }}
                         onClick={() => setSendDialogOpen(true)}
                       >
                         Mark as sent
@@ -354,12 +353,6 @@ export default function InvoiceDisplayPage() {
                       <Button
                         variant="contained"
                         color="success"
-                        sx={{
-                          minWidth: 140,
-                          whiteSpace: "nowrap",
-                          flex: 1,
-                          maxWidth: { xs: "100%", sm: "unset" },
-                        }}
                         onClick={() => setPaidDialogOpen(true)}
                       >
                         Mark as paid
@@ -610,6 +603,11 @@ export default function InvoiceDisplayPage() {
                   Buyer
                 </Typography>
                 <Typography>{invoice.buyer?.name ?? "—"}</Typography>
+                {invoice.buyer?.__typename === "PersonContact" && invoice.buyer.business?.name && (
+                  <Typography color="text.secondary" variant="body2">
+                    Business: {invoice.buyer.business.name}
+                  </Typography>
+                )}
                 {invoice.buyer?.__typename === "BusinessContact" && (
                   <Typography color="text.secondary" variant="body2">
                     {invoice.buyer.website ? `Website: ${invoice.buyer.website}` : ""}
@@ -627,6 +625,12 @@ export default function InvoiceDisplayPage() {
                   Seller
                 </Typography>
                 <Typography>{invoice.seller?.name ?? "—"}</Typography>
+                {invoice.seller?.__typename === "PersonContact" &&
+                  invoice.seller.business?.name && (
+                    <Typography color="text.secondary" variant="body2">
+                      Business: {invoice.seller.business.name}
+                    </Typography>
+                  )}
                 {invoice.seller?.__typename === "BusinessContact" && (
                   <Typography color="text.secondary" variant="body2">
                     {invoice.seller.website ? `Website: ${invoice.seller.website}` : ""}
@@ -844,7 +848,11 @@ export default function InvoiceDisplayPage() {
         }}
         invoiceId={invoiceId}
         buyerId={invoice?.buyer?.id || ""}
-        buyerName={invoice?.buyer?.name || ""}
+        businessName={
+          invoice?.buyer?.__typename === "PersonContact"
+            ? invoice.buyer.business?.name
+            : invoice?.buyer?.name
+        }
       />
       {/* Snackbar for print success */}
       <Snackbar
