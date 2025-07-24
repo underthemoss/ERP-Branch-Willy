@@ -240,8 +240,25 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Product Name",
       minWidth: 180,
       flex: 1,
-      valueGetter: (_, row: RowType) =>
-        row.so_pim_product?.name ?? row.so_pim_category?.name ?? "-",
+      valueGetter: (_, row: RowType) => {
+        // Try product name first
+        if (row.so_pim_product?.name) {
+          return row.so_pim_product.name;
+        }
+        // Fall back to category name
+        if (row.so_pim_category?.name) {
+          return row.so_pim_category.name;
+        }
+        // Fall back to model if available
+        if (row.so_pim_product?.model) {
+          return `Model: ${row.so_pim_product.model}`;
+        }
+        // Try SKU
+        if (row.so_pim_product?.sku) {
+          return `SKU: ${row.so_pim_product.sku}`;
+        }
+        return "-";
+      },
     },
     {
       field: "so_pim_product.model",
@@ -645,15 +662,43 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                 row: NonNullable<
                   NonNullable<NonNullable<typeof data>["getSalesOrderById"]>["line_items"]
                 >[number];
-              }) =>
-                row?.__typename === "RentalSalesOrderLineItem" ? (
+              }) => {
+                // Helper function to build product description
+                const getProductDescription = (row: RowType): string => {
+                  const productName = row.so_pim_product?.name;
+                  const productModel = row.so_pim_product?.model;
+                  const categoryName = row.so_pim_category?.name;
+                  const sku = row.so_pim_product?.sku;
+                  const manufacturerPartNumber = row.so_pim_product?.manufacturer_part_number;
+
+                  // Build product info based on what's available
+                  if (productName && productModel) {
+                    return `${productName} (${productModel})`;
+                  } else if (productName) {
+                    return productName;
+                  } else if (productModel) {
+                    return `Model: ${productModel}`;
+                  } else if (categoryName) {
+                    // If no product info, fall back to category
+                    return `Category: ${categoryName}`;
+                  } else if (sku) {
+                    // If no name/model/category, try SKU
+                    return `SKU: ${sku}`;
+                  } else if (manufacturerPartNumber) {
+                    // Last resort: manufacturer part number
+                    return `Part #: ${manufacturerPartNumber}`;
+                  }
+
+                  return "Product information not available";
+                };
+
+                return row?.__typename === "RentalSalesOrderLineItem" ? (
                   <Box sx={{ p: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       Rental Line Item Details
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Product:</strong> {row.so_pim_product?.name} (
-                      {row.so_pim_product?.model})
+                      <strong>Product:</strong> {getProductDescription(row)}
                     </Typography>
 
                     <Box sx={{ mt: 2 }}>
@@ -784,8 +829,8 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                       </Box>
                     )}
                   </Box>
-                ) : null
-              }
+                ) : null;
+              }}
             />
             <Button
               variant="outlined"
