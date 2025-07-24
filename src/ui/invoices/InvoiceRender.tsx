@@ -109,7 +109,7 @@ function formatDate(date: string | null | undefined) {
 }
 
 function formatDateRange(start: string | null | undefined, end: string | null | undefined) {
-  if (!start || !end) return "";
+  if (!start || !end) return { start: "", end: "" };
 
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -120,18 +120,13 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
     year: "numeric",
   });
 
-  // If start and end dates are the same, just show one date
-  if (startDate.getTime() === endDate.getTime()) {
-    return formattedStart;
-  }
-
   const formattedEnd = endDate.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
-  return `${formattedStart} - ${formattedEnd}`;
+  return { start: formattedStart, end: formattedEnd };
 }
 
 function groupChargesByProjectAndType(lineItems: any[]): GroupedCharges {
@@ -182,7 +177,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
 
           .invoice-container {
             margin: 0 !important;
-            padding: 10px !important;
+            padding: 5px !important;
             transform: none !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -218,17 +213,17 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
 
           .table-header {
             font-size: 0.65rem !important;
-            padding: 4px 6px !important;
+            padding: 2px 3px !important;
           }
 
           .table-cell {
             font-size: 0.7rem !important;
-            padding: 6px 4px !important;
+            padding: 3px 2px !important;
           }
 
           .project-header {
             font-size: 0.75rem !important;
-            padding: 4px 6px !important;
+            padding: 2px 3px !important;
           }
 
           .description-cell {
@@ -242,8 +237,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           }
 
           .summary-section {
-            margin-top: 15px !important;
-            padding: 15px !important;
+            margin-top: 7px !important;
+            padding: 7px !important;
           }
 
           .summary-text {
@@ -269,12 +264,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           width: "100%",
         }}
       >
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 20 }}>
           <h1
             className="invoice-title"
             style={{
               textAlign: "center",
-              marginBottom: 12,
+              marginBottom: 6,
               fontSize: "2.8rem",
               fontWeight: 300,
               letterSpacing: "1px",
@@ -304,16 +299,16 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: "30px",
-            marginBottom: 50,
-            paddingBottom: 40,
+            gap: "15px",
+            marginBottom: 25,
+            paddingBottom: 20,
           }}
         >
           <div style={{ flex: 1 }}>
             <h2
               className="section-header"
               style={{
-                margin: "0 0 16px 0",
+                margin: "0 0 8px 0",
                 fontSize: "1.2rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -325,14 +320,14 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             </h2>
             <div
               className="company-name"
-              style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: 8 }}
+              style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: 4 }}
             >
               {invoice.seller?.name}
             </div>
             {invoice.seller?.__typename === "BusinessContact" && invoice.seller.address && (
               <div
                 className="contact-details"
-                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
+                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 2 }}
               >
                 {invoice.seller.address}
               </div>
@@ -419,7 +414,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           </div>
         </div>
         {invoice.lineItems && invoice.lineItems.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
+          <div style={{ marginBottom: 20 }}>
             <div
               style={{
                 border: "1px solid #e0e0e0",
@@ -440,7 +435,23 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "16px 24px",
+                        padding: "8px 12px",
+                        textAlign: "left",
+                        fontWeight: 600,
+                        fontSize: "0.95rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.8px",
+                        color: "#666",
+                        borderBottom: "2px solid #e0e0e0",
+                        width: "120px",
+                      }}
+                    >
+                      Date
+                    </th>
+                    <th
+                      className="table-header"
+                      style={{
+                        padding: "8px 12px",
                         textAlign: "left",
                         fontWeight: 600,
                         fontSize: "0.95rem",
@@ -456,24 +467,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "16px 24px",
-                        textAlign: "left",
-                        fontWeight: 600,
-                        fontSize: "0.95rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.8px",
-                        color: "#666",
-                        borderBottom: "2px solid #e0e0e0",
-                        whiteSpace: "nowrap",
-                        width: "auto",
-                      }}
-                    >
-                      Date
-                    </th>
-                    <th
-                      className="table-header"
-                      style={{
-                        padding: "16px 24px",
+                        padding: "8px 12px",
                         textAlign: "right",
                         fontWeight: 600,
                         fontSize: "0.95rem",
@@ -498,7 +492,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                           className="project-header"
                           style={{
                             backgroundColor: "#f5f5f5",
-                            padding: "16px 24px",
+                            padding: "8px 12px",
                             borderBottom: "1px solid #e0e0e0",
                             fontWeight: 600,
                             fontSize: "1.15rem",
@@ -509,7 +503,6 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                           {projectData.project.project_code && (
                             <span
                               style={{
-                                fontSize: "0.9rem",
                                 color: "#666",
                                 fontWeight: 400,
                                 marginLeft: 10,
@@ -521,50 +514,57 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                         </td>
                       </tr>
                       {Object.entries(projectData.chargeTypes).map(([chargeType, charges]) =>
-                        charges.map((item, index) => (
-                          <tr key={item.chargeId}>
-                            <td
-                              className="table-cell description-cell"
-                              style={{
-                                padding: "20px 24px",
-                                borderBottom: "1px solid #f0f0f0",
-                                verticalAlign: "top",
-                                width: "auto",
-                              }}
-                            >
-                              <div style={{ fontWeight: 500 }}>{item.description}</div>
-                            </td>
-                            <td
-                              className="table-cell date-cell"
-                              style={{
-                                padding: "20px 24px",
-                                borderBottom: "1px solid #f0f0f0",
-                                color: "#666",
-                                fontSize: "1rem",
-                                verticalAlign: "top",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {formatDateRange(
-                                item.charge?.billingPeriodStart,
-                                item.charge?.billingPeriodEnd,
-                              )}
-                            </td>
-                            <td
-                              className="table-cell"
-                              style={{
-                                padding: "20px 24px",
-                                textAlign: "right",
-                                borderBottom: "1px solid #f0f0f0",
-                                fontWeight: 500,
-                                verticalAlign: "top",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              ${(item.totalInCents / 100).toFixed(2)}
-                            </td>
-                          </tr>
-                        )),
+                        charges.map((item, index) => {
+                          const dateRange = formatDateRange(
+                            item.charge?.billingPeriodStart,
+                            item.charge?.billingPeriodEnd,
+                          );
+                          return (
+                            <tr key={item.chargeId}>
+                              <td
+                                className="table-cell date-cell"
+                                style={{
+                                  padding: "10px 12px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  color: "#666",
+                                  fontSize: "1rem",
+                                  verticalAlign: "top",
+                                  width: "120px",
+                                }}
+                              >
+                                <div>
+                                  {dateRange.start}
+                                  {dateRange.start !== dateRange.end && <span> &ndash;</span>}
+                                </div>
+                                {dateRange.start !== dateRange.end && <div>{dateRange.end}</div>}
+                              </td>
+                              <td
+                                className="table-cell description-cell"
+                                style={{
+                                  padding: "10px 12px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  verticalAlign: "top",
+                                  width: "auto",
+                                }}
+                              >
+                                <div style={{ fontWeight: 500 }}>{item.description}</div>
+                              </td>
+                              <td
+                                className="table-cell"
+                                style={{
+                                  padding: "10px 12px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  fontWeight: 500,
+                                  verticalAlign: "top",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                ${(item.totalInCents / 100).toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        }),
                       )}
                     </>
                   ))}
@@ -574,8 +574,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             <div
               className="summary-section"
               style={{
-                marginTop: 50,
-                padding: "40px",
+                marginTop: 25,
+                padding: "20px",
                 backgroundColor: "#f8f9fa",
                 borderRadius: 8,
                 display: "flex",
@@ -588,7 +588,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    marginBottom: 16,
+                    marginBottom: 8,
                     fontSize: "1.1rem",
                   }}
                 >
@@ -602,9 +602,9 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 {invoice.taxLineItems && invoice.taxLineItems.length > 0 ? (
                   <div
                     style={{
-                      paddingTop: 12,
+                      paddingTop: 6,
                       borderTop: "1px solid #e0e0e0",
-                      marginBottom: 12,
+                      marginBottom: 6,
                     }}
                   >
                     {invoice.taxLineItems.map((taxItem) => (
@@ -613,7 +613,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
-                          marginBottom: 10,
+                          marginBottom: 5,
                           fontSize: "1.05rem",
                           color: "#666",
                         }}
@@ -636,8 +636,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                           justifyContent: "space-between",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          marginTop: 8,
-                          paddingTop: 8,
+                          marginTop: 4,
+                          paddingTop: 4,
                           borderTop: "1px solid #e0e0e0",
                         }}
                       >
@@ -652,8 +652,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      marginBottom: 12,
-                      paddingTop: 12,
+                      marginBottom: 6,
+                      paddingTop: 6,
                       borderTop: "1px solid #e0e0e0",
                       fontSize: "0.95rem",
                       color: "#666",
@@ -677,8 +677,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     justifyContent: "space-between",
                     fontSize: "1.6rem",
                     fontWeight: "bold",
-                    marginTop: 20,
-                    paddingTop: 20,
+                    marginTop: 10,
+                    paddingTop: 10,
                     borderTop: "3px double #333",
                   }}
                 >
