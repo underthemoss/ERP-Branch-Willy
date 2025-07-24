@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useGetSalesOrderByIdPrintQuery } from "@/graphql/hooks";
+import { addDays } from "date-fns";
 import { useParams } from "next/navigation";
 import * as React from "react";
 
@@ -197,23 +198,39 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
   }
 `);
 
-function formatDate(dateString?: string | null) {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+function formatDate(date: string | null | undefined) {
+  if (!date) return "";
+  try {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return "";
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return "";
+  }
+}
+
+function formatDateShort(date: string | null | undefined) {
+  if (!date) return "";
+  try {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return "";
+    // Format as YYYY-MM-DD
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return "";
+  }
 }
 
 function formatCurrency(amount: number) {
-  return amount.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
+  // Format with $ symbol without US prefix
+  return `$${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
 }
 
 export default function SalesOrderPrintPage() {
@@ -224,7 +241,21 @@ export default function SalesOrderPrintPage() {
     fetchPolicy: "no-cache",
   });
 
-  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 32, color: "#888" }}>
+        Loading sales order...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 32, color: "#c00" }}>
+        Error loading sales order: {error.message}
+      </div>
+    );
+  }
 
   type SalesOrderType = NonNullable<typeof data>["getSalesOrderById"];
   type LineItemType = SalesOrderType extends { line_items?: (infer T)[] } ? T : any;
@@ -339,483 +370,882 @@ export default function SalesOrderPrintPage() {
   // Buyer info
   const buyer = salesOrder?.buyer;
 
-  if (error) {
-    return (
-      <div style={{ padding: 20, color: "#c00" }}>Error loading sales order: {error.message}</div>
-    );
-  }
+  // Group line items by type
+  const saleItems = lineItems.filter((item: any) => item.__typename === "SaleSalesOrderLineItem");
+  const rentalItems = lineItems.filter(
+    (item: any) => item.__typename === "RentalSalesOrderLineItem",
+  );
 
   return (
-    <>
-      <style jsx global>{`
-        @page {
-          size: letter;
-          margin: 0.5in;
-        }
-
-        * {
-          box-sizing: border-box;
-        }
-
-        html,
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #000;
-          background: #fff;
-          height: auto;
-          overflow: visible;
-        }
-
+    <div>
+      <style>
+        {`
         @media print {
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
+          
           body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            height: auto;
             overflow: visible;
           }
+          
+          /* Avoid page breaks inside important elements */
+          .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Table printing optimizations */
+          table {
+            page-break-inside: auto !important;
+          }
+          
+          thead {
+            display: table-header-group !important;
+          }
+          
+          tfoot {
+            display: table-footer-group !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Keep section headers with their content */
+          h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* Table sections */
+          .table-section {
+            page-break-inside: auto !important;
+          }
         }
-
-        .print-container {
-          width: 100%;
-          max-width: 8.5in;
-          margin: 0 auto;
-          padding: 20px;
-          background: white;
-          min-height: auto;
-          overflow: visible;
-        }
-
-        @media print {
+        
+        @media screen {
           .print-container {
-            max-width: 100%;
-            padding: 0;
-            height: auto;
-            overflow: visible;
+            max-width: 794px;
+            margin: 0 auto;
+            padding: 40px;
           }
         }
-
-        .page-break {
-          page-break-before: always;
-          break-before: page;
-        }
-
-        .avoid-break {
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-
-        .allow-break {
-          page-break-inside: auto;
-          break-inside: auto;
-        }
-
-        .watermark {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) rotate(-45deg);
-          font-size: 120px;
-          font-weight: bold;
-          color: rgba(0, 0, 0, 0.1);
-          z-index: -1;
-          user-select: none;
-          pointer-events: none;
-        }
-
-        @media print {
-          .watermark {
-            display: none; /* Hide watermark for cleaner printing */
-          }
-        }
-
-        h1 {
-          font-size: 24px;
-          margin: 0 0 20px 0;
-        }
-
-        h2 {
-          font-size: 18px;
-          margin: 20px 0 10px 0;
-          padding-bottom: 5px;
-          border-bottom: 1px solid #ddd;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-          page-break-inside: auto;
-        }
-
-        th,
-        td {
-          text-align: left;
-          padding: 8px;
-          border: 1px solid #ddd;
-        }
-
-        th {
-          background-color: #f5f5f5;
-          font-weight: bold;
-        }
-
-        tr {
-          page-break-inside: avoid;
-          page-break-after: auto;
-        }
-
-        thead {
-          display: table-header-group;
-        }
-
-        tbody {
-          display: table-row-group;
-        }
-
-        /* Remove tfoot display property to prevent repetition on each page */
-        tfoot {
-          display: table-row-group;
-        }
-
-        .table-footer-row {
-          page-break-inside: avoid;
-          border-top: 2px solid #333;
-          font-weight: bold;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          margin-bottom: 30px;
-        }
-
-        .info-section {
-          margin-bottom: 20px;
-        }
-
-        .info-row {
-          display: flex;
-          margin-bottom: 5px;
-        }
-
-        .info-label {
-          font-weight: bold;
-          margin-right: 10px;
-          min-width: 100px;
-        }
-
-        .header-info {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 2px solid #333;
-        }
-
-        .totals {
-          margin-top: 30px;
-          display: flex;
-          justify-content: flex-end;
-        }
-
-        .totals-table {
-          width: 300px;
-        }
-
-        .totals-table td {
-          border: none;
-          padding: 5px 10px;
-        }
-
-        .totals-table td:first-child {
-          text-align: right;
-          font-weight: bold;
-        }
-
-        .totals-table tr:last-child {
-          border-top: 2px solid #333;
-          font-size: 16px;
-          font-weight: bold;
-        }
-
-        @media print {
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div className="print-container">
-        <div className="watermark">SAMPLE</div>
-        <h1>Sales Order</h1>
-
-        <div className="header-info">
-          <div>
-            <strong>Date:</strong> {formatDate(new Date().toISOString())}
-          </div>
-          <div>
-            <strong>Order #:</strong> {salesOrder?.id || "—"}
-          </div>
-          <div>
-            <strong>PO #:</strong> {salesOrder?.purchase_order_number || "—"}
-          </div>
-        </div>
-
-        <div className="info-grid avoid-break">
-          <div className="info-section">
-            <h2>Seller</h2>
-            <div className="info-row">
-              <span className="info-label">Name:</span>
-              <span>{seller?.name || "—"}</span>
+        `}
+      </style>
+      <div className="print-container" style={{ 
+        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        color: "#333333",
+        lineHeight: 1.6,
+        backgroundColor: "#ffffff",
+      }}>
+          <div
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-start",
+              backgroundColor: "#ffffff",
+              color: "#333333",
+              lineHeight: 1.6,
+              width: "100%",
+            }}
+          >
+            <div className="avoid-break" style={{ marginBottom: 20 }}>
+              <h1
+                style={{
+                  textAlign: "center",
+                  marginBottom: 4,
+                  fontSize: "1.8rem",
+                  fontWeight: 300,
+                  letterSpacing: "0.5px",
+                  color: "#1a1a1a",
+                }}
+              >
+                SALES ORDER
+              </h1>
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#333",
+                }}
+              >
+                {salesOrder?.purchase_order_number
+                  ? `PO #${salesOrder.purchase_order_number}`
+                  : "DRAFT"}
+              </div>
             </div>
-          </div>
 
-          <div className="info-section">
-            <h2>Buyer</h2>
-            <div className="info-row">
-              <span className="info-label">Name:</span>
-              <span>{buyer?.name || "—"}</span>
+            <div
+              className="avoid-break"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "15px",
+                marginBottom: 25,
+                paddingBottom: 20,
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <h2
+                  style={{
+                    margin: "0 0 6px 0",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "#666",
+                  }}
+                >
+                  From
+                </h2>
+                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
+                  {seller?.name || "—"}
+                </div>
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <h2
+                  style={{
+                    margin: "0 0 6px 0",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "#666",
+                  }}
+                >
+                  Bill To
+                </h2>
+                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
+                  {buyer?.name || "—"}
+                </div>
+                {buyer?.__typename === "BusinessContact" && buyer.address && (
+                  <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
+                    {buyer.address}
+                  </div>
+                )}
+                {buyer?.phone && (
+                  <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.phone}</div>
+                )}
+                {buyer?.__typename === "PersonContact" && buyer.email && (
+                  <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.email}</div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, textAlign: "right" }}>
+                <h2
+                  style={{
+                    margin: "0 0 6px 0",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "#666",
+                  }}
+                >
+                  Order Details
+                </h2>
+                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
+                  {salesOrder?.id || "—"}
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
+                  Date: {formatDate(new Date().toISOString())}
+                </div>
+              </div>
             </div>
-            {buyer?.__typename === "PersonContact" && buyer.email && (
-              <div className="info-row">
-                <span className="info-label">Email:</span>
-                <span>{buyer.email}</span>
-              </div>
-            )}
-            {buyer?.phone && (
-              <div className="info-row">
-                <span className="info-label">Phone:</span>
-                <span>{buyer.phone}</span>
-              </div>
-            )}
-            {buyer?.__typename === "BusinessContact" && buyer.address && (
-              <div className="info-row">
-                <span className="info-label">Address:</span>
-                <span>{buyer.address}</span>
-              </div>
-            )}
-            {buyer?.__typename === "BusinessContact" && buyer.website && (
-              <div className="info-row">
-                <span className="info-label">Website:</span>
-                <span>{buyer.website}</span>
-              </div>
-            )}
-            {buyer?.__typename === "BusinessContact" && buyer.taxId && (
-              <div className="info-row">
-                <span className="info-label">Tax ID:</span>
-                <span>{buyer.taxId}</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="info-section avoid-break">
-          <h2>Project</h2>
-          <div className="info-row">
-            <span className="info-label">Name:</span>
-            <span>{salesOrder?.project?.name || "—"}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Code:</span>
-            <span>{salesOrder?.project?.project_code || "—"}</span>
-          </div>
-        </div>
+            {/* Project Information */}
+            {salesOrder?.project && (
+              <div className="project-info avoid-break" style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    padding: "12px 16px",
+                    borderRadius: 8,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#333" }}>
+                    Project: {salesOrder.project.name}
+                    {salesOrder.project.project_code && (
+                      <span
+                        style={{
+                          color: "#666",
+                          fontWeight: 400,
+                          marginLeft: 8,
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        (Code: {salesOrder.project.project_code})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {/* Sales Items Section */}
-        {lineItems.filter((item: any) => item.__typename === "SaleSalesOrderLineItem").length >
-          0 && (
-          <div className="info-section allow-break">
-            <h2>Sales Items</h2>
-            <table className="allow-break">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th style={{ width: "80px" }}>Quantity</th>
-                  <th style={{ width: "120px" }}>Rate</th>
-                  <th style={{ width: "120px" }}>Amount</th>
-                  <th style={{ width: "120px" }}>Delivery</th>
-                  <th style={{ width: "120px" }}>Line Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lineItems
-                  .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
-                  .map((item: any, idx: number) => {
-                    const quantity = item.so_quantity || 1;
-                    const unitPrice = getUnitPrice(item);
-                    const subtotal = unitPrice * quantity;
-                    const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
-                    return (
-                      <tr key={item.id || idx}>
-                        <td>{getDescription(item)}</td>
-                        <td>{item.so_quantity ?? "—"}</td>
-                        <td>{formatCurrency(unitPrice)}</td>
-                        <td>{formatCurrency(subtotal)}</td>
-                        <td>{formatCurrency(deliveryCharge)}</td>
-                        <td>{formatCurrency(getLineItemTotal(item))}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-              <tfoot>
-                <tr style={{ borderTop: "2px solid #333", fontWeight: "bold" }}>
-                  <td colSpan={3} style={{ textAlign: "right" }}></td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
+            {/* Sales Items */}
+            {saleItems.length > 0 && (() => {
+              // Calculate totals for sales items
+              let saleAmountTotal = 0;
+              let saleDeliveryTotal = 0;
+              let saleTotalTotal = 0;
+              
+              saleItems.forEach((item: any) => {
+                const quantity = item.so_quantity || 1;
+                const unitPrice = getUnitPrice(item);
+                const itemSubtotal = unitPrice * quantity;
+                const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                
+                saleAmountTotal += itemSubtotal;
+                saleDeliveryTotal += deliveryCharge;
+                saleTotalTotal += getLineItemTotal(item);
+              });
+
+              return (
+                <div className="table-section" style={{ marginBottom: 20 }}>
+                  <h2
+                    style={{
+                      margin: "0 0 10px 0",
+                      fontSize: "0.95rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: "#666",
+                    }}
+                  >
+                    Sales Items
+                  </h2>
+                  <div
+                    style={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "0.85rem",
+                        tableLayout: "auto",
+                      }}
+                    >
+                      <thead>
+                        <tr style={{ backgroundColor: "#fafafa" }}>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "left",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                            }}
+                          >
+                            Description
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "center",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "80px",
+                            }}
+                          >
+                            Qty
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Rate
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Amount
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Delivery
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {saleItems.map((item: any, idx: number) => {
                           const quantity = item.so_quantity || 1;
                           const unitPrice = getUnitPrice(item);
-                          return sum + unitPrice * quantity;
-                        }, 0),
-                    )}
-                  </td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
-                          return sum + (item.delivery_charge_in_cents ?? 0) / 100;
-                        }, 0),
-                    )}
-                  </td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "SaleSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
-                          return sum + getLineItemTotal(item);
-                        }, 0),
-                    )}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
+                          const subtotal = unitPrice * quantity;
+                          const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                          return (
+                            <tr key={item.id || idx}>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                <div style={{ fontWeight: 500 }}>{getDescription(item)}</div>
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "center",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  color: "#666",
+                                }}
+                              >
+                                {item.so_quantity ?? "—"}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                              >
+                                {formatCurrency(unitPrice)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                              >
+                                {formatCurrency(subtotal)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                              >
+                                {formatCurrency(deliveryCharge)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {formatCurrency(getLineItemTotal(item))}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ backgroundColor: "#f5f5f5" }}>
+                          <td
+                            colSpan={3}
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            Subtotal:
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(saleAmountTotal)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(saleDeliveryTotal)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(saleTotalTotal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
 
-        {/* Rental Items Section */}
-        {lineItems.filter((item: any) => item.__typename === "RentalSalesOrderLineItem").length >
-          0 && (
-          <div className="info-section allow-break">
-            <h2>Rental Items</h2>
-            <table className="allow-break">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th style={{ width: "100px" }}>Start Date</th>
-                  <th style={{ width: "100px" }}>End Date</th>
-                  <th style={{ width: "80px" }}>Days</th>
-                  <th style={{ width: "120px" }}>Amount</th>
-                  <th style={{ width: "120px" }}>Delivery</th>
-                  <th style={{ width: "120px" }}>Line Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lineItems
-                  .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
-                  .map((item: any, idx: number) => {
-                    const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
-                    const total = getLineItemTotal(item);
-                    const subtotal = total - deliveryCharge;
-                    return (
-                      <tr key={item.id || idx}>
-                        <td>
-                          <div>{getDescription(item)}</div>
-                          <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                            {getRateDetails(item)}
-                          </div>
-                        </td>
-                        <td>{formatDate(item.delivery_date)}</td>
-                        <td>{formatDate(item.off_rent_date)}</td>
-                        <td>{item.totalDaysOnRent ?? "—"}</td>
-                        <td>{formatCurrency(subtotal)}</td>
-                        <td>{formatCurrency(deliveryCharge)}</td>
-                        <td>{formatCurrency(total)}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-              <tfoot>
-                <tr style={{ borderTop: "2px solid #333", fontWeight: "bold" }}>
-                  <td colSpan={4} style={{ textAlign: "right" }}></td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
+            {/* Rental Items */}
+            {rentalItems.length > 0 && (() => {
+              // Calculate totals for rental items
+              let rentalAmountTotal = 0;
+              let rentalDeliveryTotal = 0;
+              let rentalTotalTotal = 0;
+              
+              rentalItems.forEach((item: any) => {
+                const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
+                const itemTotal = getLineItemTotal(item);
+                const itemSubtotal = itemTotal - deliveryCharge;
+                
+                rentalAmountTotal += itemSubtotal;
+                rentalDeliveryTotal += deliveryCharge;
+                rentalTotalTotal += itemTotal;
+              });
+
+              return (
+                <div className="table-section" style={{ marginBottom: 20 }}>
+                  <h2
+                    style={{
+                      margin: "0 0 10px 0",
+                      fontSize: "0.95rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: "#666",
+                    }}
+                  >
+                    Rental Items
+                  </h2>
+                  <div
+                    style={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "0.85rem",
+                        tableLayout: "auto",
+                      }}
+                    >
+                      <thead>
+                        <tr style={{ backgroundColor: "#fafafa" }}>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "left",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                            }}
+                          >
+                            Description
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "left",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "100px",
+                            }}
+                          >
+                            Start Date
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "left",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "100px",
+                            }}
+                          >
+                            End Date
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "center",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "60px",
+                            }}
+                          >
+                            Days
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Amount
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Delivery
+                          </th>
+                          <th
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: "#666",
+                              borderBottom: "2px solid #e0e0e0",
+                              width: "120px",
+                            }}
+                          >
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rentalItems.map((item: any, idx: number) => {
                           const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
                           const total = getLineItemTotal(item);
                           const subtotal = total - deliveryCharge;
-                          return sum + subtotal;
-                        }, 0),
-                    )}
-                  </td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
-                          return sum + (item.delivery_charge_in_cents ?? 0) / 100;
-                        }, 0),
-                    )}
-                  </td>
-                  <td>
-                    {formatCurrency(
-                      lineItems
-                        .filter((item: any) => item.__typename === "RentalSalesOrderLineItem")
-                        .reduce((sum: number, item: any) => {
-                          return sum + getLineItemTotal(item);
-                        }, 0),
-                    )}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
+                          return (
+                            <tr key={item.id || idx}>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  verticalAlign: "top",
+                                }}
+                              >
+                                <div style={{ fontWeight: 500 }}>{getDescription(item)}</div>
+                                <div style={{ fontSize: "0.75rem", color: "#666", marginTop: "2px" }}>
+                                  {getRateDetails(item)}
+                                </div>
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  color: "#666",
+                                  fontSize: "0.8rem",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {formatDateShort(item.delivery_date)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  color: "#666",
+                                  fontSize: "0.8rem",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {formatDateShort(item.off_rent_date)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "center",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  color: "#666",
+                                }}
+                              >
+                                {item.totalDaysOnRent ?? "—"}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                              >
+                                {formatCurrency(subtotal)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                              >
+                                {formatCurrency(deliveryCharge)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  textAlign: "right",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {formatCurrency(total)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ backgroundColor: "#f5f5f5" }}>
+                          <td
+                            colSpan={4}
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            Subtotal:
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(rentalAmountTotal)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(rentalDeliveryTotal)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 8px",
+                              textAlign: "right",
+                              fontWeight: 600,
+                              fontSize: "0.8rem",
+                              borderTop: "2px solid #e0e0e0",
+                            }}
+                          >
+                            {formatCurrency(rentalTotalTotal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
 
-        {/* Show message if no items */}
-        {lineItems.length === 0 && (
-          <div className="info-section allow-break">
-            <h2>Order Items</h2>
-            <table className="allow-break">
-              <tbody>
-                <tr>
-                  <td style={{ textAlign: "center", color: "#888", padding: "20px" }}>
-                    No order items
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+            {/* Show message if no items */}
+            {lineItems.length === 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    <tbody>
+                      <tr>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            color: "#888",
+                            padding: "40px",
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          No order items
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
-        <div className="totals avoid-break">
-          <table className="totals-table">
-            <tbody>
-              <tr>
-                <td>Subtotal</td>
-                <td>{formatCurrency(subtotal)}</td>
-              </tr>
-              <tr>
-                <td>Delivery</td>
-                <td>{formatCurrency(deliveryTotal)}</td>
-              </tr>
-              <tr>
-                <td>Total</td>
-                <td>{formatCurrency(total)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            {/* Summary Section */}
+            <div
+              className="summary-section avoid-break"
+              style={{
+                marginTop: 25,
+                padding: "20px",
+                backgroundColor: "#f8f9fa",
+                borderRadius: 8,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <div style={{ minWidth: 300 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  <span>Subtotal:</span>
+                  <span style={{ fontWeight: 600 }}>{formatCurrency(subtotal)}</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 6,
+                    paddingTop: 6,
+                    borderTop: "1px solid #e0e0e0",
+                    fontSize: "0.85rem",
+                    color: "#666",
+                  }}
+                >
+                  <span>Delivery:</span>
+                  <span>{formatCurrency(deliveryTotal)}</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "1.2rem",
+                    fontWeight: "bold",
+                    marginTop: 10,
+                    paddingTop: 10,
+                    borderTop: "3px double #333",
+                  }}
+                >
+                  <span>Total Due:</span>
+                  <span>{formatCurrency(total)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
       </div>
-    </>
+    </div>
   );
 }
