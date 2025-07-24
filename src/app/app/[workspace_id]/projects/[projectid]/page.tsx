@@ -388,7 +388,7 @@ export default function ProjectDetailAltPage() {
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <Box display="flex" flexDirection="column" gap={2}>
-                <Typography>
+                <Typography sx={{ whiteSpace: "pre-wrap" }}>
                   <strong>Description:</strong> {project.description || "—"}
                 </Typography>
                 <Typography>

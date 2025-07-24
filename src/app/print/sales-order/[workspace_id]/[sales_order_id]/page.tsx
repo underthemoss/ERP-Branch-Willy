@@ -619,7 +619,9 @@ export default function SalesOrderPrintPage() {
           </div>
           <div className="info-row">
             <span className="info-label">Description:</span>
-            <span>{salesOrder?.project?.description || "—"}</span>
+            <span style={{ whiteSpace: "pre-wrap" }}>
+              {salesOrder?.project?.description || "—"}
+            </span>
           </div>
           <div className="info-row">
             <span className="info-label">Status:</span>

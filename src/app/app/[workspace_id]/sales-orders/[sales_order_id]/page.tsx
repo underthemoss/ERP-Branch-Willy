@@ -654,7 +654,9 @@ export default function SalesOrderDetailPage() {
                       Name: <b>{salesOrder.project.name}</b>
                     </Typography>
                     <Typography>Code: {salesOrder.project.project_code}</Typography>
-                    <Typography>Description: {salesOrder.project.description}</Typography>
+                    <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                      Description: {salesOrder.project.description}
+                    </Typography>
                     <Typography>Company: {salesOrder.project.company?.name}</Typography>
                     <Typography>Status: {salesOrder.project.status}</Typography>
                     <Typography>
