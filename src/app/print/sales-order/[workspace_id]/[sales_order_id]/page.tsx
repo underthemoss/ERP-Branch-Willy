@@ -220,8 +220,8 @@ function formatDateShort(date: string | null | undefined) {
     if (isNaN(dateObj.getTime())) return "";
     // Format as YYYY-MM-DD
     const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   } catch {
     return "";
@@ -442,174 +442,178 @@ export default function SalesOrderPrintPage() {
         }
         `}
       </style>
-      <div className="print-container" style={{ 
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
-        color: "#333333",
-        lineHeight: 1.6,
-        backgroundColor: "#ffffff",
-      }}>
-          <div
-            style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              backgroundColor: "#ffffff",
-              color: "#333333",
-              lineHeight: 1.6,
-              width: "100%",
-            }}
-          >
-            <div className="avoid-break" style={{ marginBottom: 20 }}>
-              <h1
-                style={{
-                  textAlign: "center",
-                  marginBottom: 4,
-                  fontSize: "1.8rem",
-                  fontWeight: 300,
-                  letterSpacing: "0.5px",
-                  color: "#1a1a1a",
-                }}
-              >
-                SALES ORDER
-              </h1>
-              <div
-                style={{
-                  textAlign: "center",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  color: "#333",
-                }}
-              >
-                {salesOrder?.purchase_order_number
-                  ? `PO #${salesOrder.purchase_order_number}`
-                  : "DRAFT"}
-              </div>
-            </div>
-
-            <div
-              className="avoid-break"
+      <div
+        className="print-container"
+        style={{
+          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          color: "#333333",
+          lineHeight: 1.6,
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            backgroundColor: "#ffffff",
+            color: "#333333",
+            lineHeight: 1.6,
+            width: "100%",
+          }}
+        >
+          <div className="avoid-break" style={{ marginBottom: 20 }}>
+            <h1
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: "15px",
-                marginBottom: 25,
-                paddingBottom: 20,
+                textAlign: "center",
+                marginBottom: 4,
+                fontSize: "1.8rem",
+                fontWeight: 300,
+                letterSpacing: "0.5px",
+                color: "#1a1a1a",
               }}
             >
-              <div style={{ flex: 1 }}>
-                <h2
-                  style={{
-                    margin: "0 0 6px 0",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: "#666",
-                  }}
-                >
-                  From
-                </h2>
-                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
-                  {seller?.name || "—"}
-                </div>
-              </div>
+              SALES ORDER
+            </h1>
+            <div
+              style={{
+                textAlign: "center",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: "#333",
+              }}
+            >
+              {salesOrder?.purchase_order_number
+                ? `PO #${salesOrder.purchase_order_number}`
+                : "DRAFT"}
+            </div>
+          </div>
 
-              <div style={{ flex: 1 }}>
-                <h2
-                  style={{
-                    margin: "0 0 6px 0",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: "#666",
-                  }}
-                >
-                  Bill To
-                </h2>
-                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
-                  {buyer?.name || "—"}
-                </div>
-                {buyer?.__typename === "BusinessContact" && buyer.address && (
-                  <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
-                    {buyer.address}
-                  </div>
-                )}
-                {buyer?.phone && (
-                  <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.phone}</div>
-                )}
-                {buyer?.__typename === "PersonContact" && buyer.email && (
-                  <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.email}</div>
-                )}
-              </div>
-
-              <div style={{ flex: 1, textAlign: "right" }}>
-                <h2
-                  style={{
-                    margin: "0 0 6px 0",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: "#666",
-                  }}
-                >
-                  Order Details
-                </h2>
-                <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
-                  {salesOrder?.id || "—"}
-                </div>
-                <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
-                  Date: {formatDate(new Date().toISOString())}
-                </div>
+          <div
+            className="avoid-break"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "15px",
+              marginBottom: 25,
+              paddingBottom: 20,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  margin: "0 0 6px 0",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "#666",
+                }}
+              >
+                From
+              </h2>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
+                {seller?.name || "—"}
               </div>
             </div>
 
-            {/* Project Information */}
-            {salesOrder?.project && (
-              <div className="project-info avoid-break" style={{ marginBottom: 20 }}>
-                <div
-                  style={{
-                    backgroundColor: "#f5f5f5",
-                    padding: "12px 16px",
-                    borderRadius: 8,
-                    marginBottom: 20,
-                  }}
-                >
-                  <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#333" }}>
-                    Project: {salesOrder.project.name}
-                    {salesOrder.project.project_code && (
-                      <span
-                        style={{
-                          color: "#666",
-                          fontWeight: 400,
-                          marginLeft: 8,
-                          fontSize: "0.85rem",
-                        }}
-                      >
-                        (Code: {salesOrder.project.project_code})
-                      </span>
-                    )}
-                  </div>
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  margin: "0 0 6px 0",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "#666",
+                }}
+              >
+                Bill To
+              </h2>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
+                {buyer?.name || "—"}
+              </div>
+              {buyer?.__typename === "BusinessContact" && buyer.address && (
+                <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
+                  {buyer.address}
+                </div>
+              )}
+              {buyer?.phone && (
+                <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.phone}</div>
+              )}
+              {buyer?.__typename === "PersonContact" && buyer.email && (
+                <div style={{ fontSize: "0.8rem", color: "#666" }}>{buyer.email}</div>
+              )}
+            </div>
+
+            <div style={{ flex: 1, textAlign: "right" }}>
+              <h2
+                style={{
+                  margin: "0 0 6px 0",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "#666",
+                }}
+              >
+                Order Details
+              </h2>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
+                {salesOrder?.id || "—"}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
+                Date: {formatDate(new Date().toISOString())}
+              </div>
+            </div>
+          </div>
+
+          {/* Project Information */}
+          {salesOrder?.project && (
+            <div className="project-info avoid-break" style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  padding: "12px 16px",
+                  borderRadius: 8,
+                  marginBottom: 20,
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#333" }}>
+                  Project: {salesOrder.project.name}
+                  {salesOrder.project.project_code && (
+                    <span
+                      style={{
+                        color: "#666",
+                        fontWeight: 400,
+                        marginLeft: 8,
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      (Code: {salesOrder.project.project_code})
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Sales Items */}
-            {saleItems.length > 0 && (() => {
+          {/* Sales Items */}
+          {saleItems.length > 0 &&
+            (() => {
               // Calculate totals for sales items
               let saleAmountTotal = 0;
               let saleDeliveryTotal = 0;
               let saleTotalTotal = 0;
-              
+
               saleItems.forEach((item: any) => {
                 const quantity = item.so_quantity || 1;
                 const unitPrice = getUnitPrice(item);
                 const itemSubtotal = unitPrice * quantity;
                 const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
-                
+
                 saleAmountTotal += itemSubtotal;
                 saleDeliveryTotal += deliveryCharge;
                 saleTotalTotal += getLineItemTotal(item);
@@ -860,18 +864,19 @@ export default function SalesOrderPrintPage() {
               );
             })()}
 
-            {/* Rental Items */}
-            {rentalItems.length > 0 && (() => {
+          {/* Rental Items */}
+          {rentalItems.length > 0 &&
+            (() => {
               // Calculate totals for rental items
               let rentalAmountTotal = 0;
               let rentalDeliveryTotal = 0;
               let rentalTotalTotal = 0;
-              
+
               rentalItems.forEach((item: any) => {
                 const deliveryCharge = (item.delivery_charge_in_cents ?? 0) / 100;
                 const itemTotal = getLineItemTotal(item);
                 const itemSubtotal = itemTotal - deliveryCharge;
-                
+
                 rentalAmountTotal += itemSubtotal;
                 rentalDeliveryTotal += deliveryCharge;
                 rentalTotalTotal += itemTotal;
@@ -1029,7 +1034,9 @@ export default function SalesOrderPrintPage() {
                                 }}
                               >
                                 <div style={{ fontWeight: 500 }}>{getDescription(item)}</div>
-                                <div style={{ fontSize: "0.75rem", color: "#666", marginTop: "2px" }}>
+                                <div
+                                  style={{ fontSize: "0.75rem", color: "#666", marginTop: "2px" }}
+                                >
                                   {getRateDetails(item)}
                                 </div>
                               </td>
@@ -1152,99 +1159,99 @@ export default function SalesOrderPrintPage() {
               );
             })()}
 
-            {/* Show message if no items */}
-            {lineItems.length === 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div
+          {/* Show message if no items */}
+          {lineItems.length === 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                }}
+              >
+                <table
                   style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                  }}
-                >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    <tbody>
-                      <tr>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            color: "#888",
-                            padding: "40px",
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          No order items
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Summary Section */}
-            <div
-              className="summary-section avoid-break"
-              style={{
-                marginTop: 25,
-                padding: "20px",
-                backgroundColor: "#f8f9fa",
-                borderRadius: 8,
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              <div style={{ minWidth: 300 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <span>Subtotal:</span>
-                  <span style={{ fontWeight: 600 }}>{formatCurrency(subtotal)}</span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: 6,
-                    paddingTop: 6,
-                    borderTop: "1px solid #e0e0e0",
+                    width: "100%",
+                    borderCollapse: "collapse",
                     fontSize: "0.85rem",
-                    color: "#666",
                   }}
                 >
-                  <span>Delivery:</span>
-                  <span>{formatCurrency(deliveryTotal)}</span>
-                </div>
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          textAlign: "center",
+                          color: "#888",
+                          padding: "40px",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        No order items
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "1.2rem",
-                    fontWeight: "bold",
-                    marginTop: 10,
-                    paddingTop: 10,
-                    borderTop: "3px double #333",
-                  }}
-                >
-                  <span>Total Due:</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
+          {/* Summary Section */}
+          <div
+            className="summary-section avoid-break"
+            style={{
+              marginTop: 25,
+              padding: "20px",
+              backgroundColor: "#f8f9fa",
+              borderRadius: 8,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <div style={{ minWidth: 300 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                  fontSize: "0.9rem",
+                }}
+              >
+                <span>Subtotal:</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(subtotal)}</span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                  paddingTop: 6,
+                  borderTop: "1px solid #e0e0e0",
+                  fontSize: "0.85rem",
+                  color: "#666",
+                }}
+              >
+                <span>Delivery:</span>
+                <span>{formatCurrency(deliveryTotal)}</span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "1.2rem",
+                  fontWeight: "bold",
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: "3px double #333",
+                }}
+              >
+                <span>Total Due:</span>
+                <span>{formatCurrency(total)}</span>
               </div>
             </div>
           </div>
+        </div>
       </div>
     </div>
   );
