@@ -465,40 +465,6 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         whiteSpace: "nowrap",
-                        width: "80px",
-                      }}
-                    >
-                      Type
-                    </th>
-                    <th
-                      className="table-header"
-                      style={{
-                        padding: "16px 24px",
-                        textAlign: "left",
-                        fontWeight: 600,
-                        fontSize: "0.95rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.8px",
-                        color: "#666",
-                        borderBottom: "2px solid #e0e0e0",
-                        whiteSpace: "nowrap",
-                        width: "100px",
-                      }}
-                    >
-                      PO #
-                    </th>
-                    <th
-                      className="table-header"
-                      style={{
-                        padding: "16px 24px",
-                        textAlign: "left",
-                        fontWeight: 600,
-                        fontSize: "0.95rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.8px",
-                        color: "#666",
-                        borderBottom: "2px solid #e0e0e0",
-                        whiteSpace: "nowrap",
                         width: "auto",
                       }}
                     >
@@ -528,7 +494,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <>
                       <tr key={`project-${projectId}`}>
                         <td
-                          colSpan={5}
+                          colSpan={3}
                           className="project-header"
                           style={{
                             backgroundColor: "#f5f5f5",
@@ -567,31 +533,6 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                               }}
                             >
                               <div style={{ fontWeight: 500 }}>{item.description}</div>
-                            </td>
-                            <td
-                              className="table-cell"
-                              style={{
-                                padding: "20px 24px",
-                                borderBottom: "1px solid #f0f0f0",
-                                color: "#666",
-                                verticalAlign: "top",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {chargeType}
-                            </td>
-                            <td
-                              className="table-cell"
-                              style={{
-                                padding: "20px 24px",
-                                borderBottom: "1px solid #f0f0f0",
-                                color: "#666",
-                                fontSize: "1rem",
-                                verticalAlign: "top",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {item.charge?.purchaseOrderNumber || "-"}
                             </td>
                             <td
                               className="table-cell date-cell"
