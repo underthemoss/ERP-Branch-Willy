@@ -424,20 +424,25 @@ export default function InvoiceDisplayPage() {
               <Divider sx={{ mb: 1 }} />
               <Box
                 sx={{
-                  maxHeight: "450px",
-                  overflow: "scroll",
+                  width: "100%",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 1,
+                  p: 2,
+                  overflow: "auto",
+                  maxHeight: "800px",
                 }}
               >
                 <Box
                   sx={{
-                    width: "816px",
-                    minHeight: "70vh",
-                    p: 7,
-                    bgcolor: "#f8f6f1",
-                    border: "1px solid #ccc",
-                    boxShadow: 3,
-                    transform: "scale(0.85) translate(0, 0)",
-                    transformOrigin: "top left",
+                    width: "794px", // A4 width at 96 DPI
+                    margin: "0 auto",
+                    transform: "scale(0.85)",
+                    transformOrigin: "top center",
+                    backgroundColor: "white",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    borderRadius: 1,
+                    padding: 4,
+                    minHeight: "1123px", // A4 height at 96 DPI
                   }}
                 >
                   <InvoiceRender key={cachekey} invoiceId={invoiceId} scale={1} />
