@@ -258,18 +258,15 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
       <div
         className="invoice-container"
         style={{
-          marginLeft: -30,
-          marginRight: -30,
           fontFamily: "'Helvetica Neue', Arial, sans-serif",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-start",
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
           backgroundColor: "#ffffff",
           color: "#333333",
           lineHeight: 1.6,
+          width: "100%",
         }}
       >
         <div style={{ marginBottom: 40 }}>
@@ -277,10 +274,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             className="invoice-title"
             style={{
               textAlign: "center",
-              marginBottom: 8,
-              fontSize: "2.5rem",
+              marginBottom: 12,
+              fontSize: "2.8rem",
               fontWeight: 300,
-              letterSpacing: "0.5px",
+              letterSpacing: "1px",
               color: "#1a1a1a",
             }}
           >
@@ -290,7 +287,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             className="invoice-status"
             style={{
               textAlign: "center",
-              fontSize: "1.1rem",
+              fontSize: "1.2rem",
               fontWeight: 600,
               color:
                 invoice.status === "PAID"
@@ -307,20 +304,20 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: "20px",
-            marginBottom: 40,
-            paddingBottom: 30,
+            gap: "30px",
+            marginBottom: 50,
+            paddingBottom: 40,
           }}
         >
           <div style={{ flex: 1 }}>
             <h2
               className="section-header"
               style={{
-                margin: "0 0 12px 0",
-                fontSize: "1.1rem",
+                margin: "0 0 16px 0",
+                fontSize: "1.2rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
+                letterSpacing: "0.8px",
                 color: "#666",
               }}
             >
@@ -328,20 +325,20 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             </h2>
             <div
               className="company-name"
-              style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 4 }}
+              style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: 8 }}
             >
               {invoice.seller?.name}
             </div>
             {invoice.seller?.__typename === "BusinessContact" && invoice.seller.address && (
               <div
                 className="contact-details"
-                style={{ fontSize: "0.95rem", color: "#666", marginBottom: 2 }}
+                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
               >
                 {invoice.seller.address}
               </div>
             )}
             {invoice.seller?.phone && (
-              <div className="contact-details" style={{ fontSize: "0.95rem", color: "#666" }}>
+              <div className="contact-details" style={{ fontSize: "1.05rem", color: "#666" }}>
                 {invoice.seller.phone}
               </div>
             )}
@@ -351,11 +348,11 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             <h2
               className="section-header"
               style={{
-                margin: "0 0 12px 0",
-                fontSize: "1.1rem",
+                margin: "0 0 16px 0",
+                fontSize: "1.2rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
+                letterSpacing: "0.8px",
                 color: "#666",
               }}
             >
@@ -363,20 +360,20 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             </h2>
             <div
               className="company-name"
-              style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 4 }}
+              style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: 8 }}
             >
               {invoice.buyer?.name}
             </div>
             {invoice.buyer?.__typename === "BusinessContact" && invoice.buyer.address && (
               <div
                 className="contact-details"
-                style={{ fontSize: "0.95rem", color: "#666", marginBottom: 2 }}
+                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
               >
                 {invoice.buyer.address}
               </div>
             )}
             {invoice.buyer?.phone && (
-              <div className="contact-details" style={{ fontSize: "0.95rem", color: "#666" }}>
+              <div className="contact-details" style={{ fontSize: "1.05rem", color: "#666" }}>
                 {invoice.buyer.phone}
               </div>
             )}
@@ -386,11 +383,11 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             <h2
               className="section-header"
               style={{
-                margin: "0 0 12px 0",
-                fontSize: "1.1rem",
+                margin: "0 0 16px 0",
+                fontSize: "1.2rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
+                letterSpacing: "0.8px",
                 color: "#666",
               }}
             >
@@ -398,28 +395,26 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             </h2>
             <div
               className="invoice-number"
-              style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 4 }}
+              style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: 8 }}
             >
               {invoice.id}
             </div>
             <div
               className="invoice-dates"
-              style={{ fontSize: "0.95rem", color: "#666", marginBottom: 2 }}
+              style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
             >
               Date Issued: {formatDate(invoice.createdAt)}
             </div>
             <div
               className="invoice-dates"
-              style={{ fontSize: "0.95rem", color: "#666", marginBottom: 2 }}
+              style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
             >
               Due Date:{" "}
-              {invoice.dueDate
-                ? formatDate(invoice.dueDate)
-                : formatDate(
-                    invoice.createdAt
-                      ? addDays(new Date(invoice.createdAt), 30).toISOString()
-                      : undefined,
-                  )}
+              {formatDate(
+                invoice.createdAt
+                  ? addDays(new Date(invoice.createdAt), 30).toISOString()
+                  : undefined,
+              )}
             </div>
           </div>
         </div>
@@ -436,7 +431,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
-                  fontSize: "0.95rem",
+                  fontSize: "1.05rem",
                   tableLayout: "auto",
                 }}
               >
@@ -445,12 +440,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "12px 20px",
+                        padding: "16px 24px",
                         textAlign: "left",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.95rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.8px",
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         width: "auto",
@@ -461,12 +456,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "12px 20px",
+                        padding: "16px 24px",
                         textAlign: "left",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.95rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.8px",
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         whiteSpace: "nowrap",
@@ -478,12 +473,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "12px 20px",
+                        padding: "16px 24px",
                         textAlign: "left",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.95rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.8px",
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         whiteSpace: "nowrap",
@@ -495,12 +490,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "12px 20px",
+                        padding: "16px 24px",
                         textAlign: "left",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.95rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.8px",
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         whiteSpace: "nowrap",
@@ -512,12 +507,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                     <th
                       className="table-header"
                       style={{
-                        padding: "12px 20px",
+                        padding: "16px 24px",
                         textAlign: "right",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.95rem",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.8px",
                         color: "#666",
                         borderBottom: "2px solid #e0e0e0",
                         whiteSpace: "nowrap",
@@ -537,10 +532,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                           className="project-header"
                           style={{
                             backgroundColor: "#f5f5f5",
-                            padding: "12px 20px",
+                            padding: "16px 24px",
                             borderBottom: "1px solid #e0e0e0",
                             fontWeight: 600,
-                            fontSize: "1rem",
+                            fontSize: "1.15rem",
                             color: "#333",
                           }}
                         >
@@ -565,7 +560,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                             <td
                               className="table-cell description-cell"
                               style={{
-                                padding: "16px 20px",
+                                padding: "20px 24px",
                                 borderBottom: "1px solid #f0f0f0",
                                 verticalAlign: "top",
                                 width: "auto",
@@ -576,7 +571,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                             <td
                               className="table-cell"
                               style={{
-                                padding: "16px 20px",
+                                padding: "20px 24px",
                                 borderBottom: "1px solid #f0f0f0",
                                 color: "#666",
                                 verticalAlign: "top",
@@ -588,10 +583,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                             <td
                               className="table-cell"
                               style={{
-                                padding: "16px 20px",
+                                padding: "20px 24px",
                                 borderBottom: "1px solid #f0f0f0",
                                 color: "#666",
-                                fontSize: "0.9rem",
+                                fontSize: "1rem",
                                 verticalAlign: "top",
                                 whiteSpace: "nowrap",
                               }}
@@ -601,10 +596,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                             <td
                               className="table-cell date-cell"
                               style={{
-                                padding: "16px 20px",
+                                padding: "20px 24px",
                                 borderBottom: "1px solid #f0f0f0",
                                 color: "#666",
-                                fontSize: "0.9rem",
+                                fontSize: "1rem",
                                 verticalAlign: "top",
                                 whiteSpace: "nowrap",
                               }}
@@ -617,7 +612,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                             <td
                               className="table-cell"
                               style={{
-                                padding: "16px 20px",
+                                padding: "20px 24px",
                                 textAlign: "right",
                                 borderBottom: "1px solid #f0f0f0",
                                 fontWeight: 500,
@@ -638,8 +633,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
             <div
               className="summary-section"
               style={{
-                marginTop: 40,
-                padding: "30px",
+                marginTop: 50,
+                padding: "40px",
                 backgroundColor: "#f8f9fa",
                 borderRadius: 8,
                 display: "flex",
@@ -652,8 +647,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    marginBottom: 12,
-                    fontSize: "1rem",
+                    marginBottom: 16,
+                    fontSize: "1.1rem",
                   }}
                 >
                   <span>Subtotal:</span>
@@ -677,8 +672,8 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
-                          marginBottom: 8,
-                          fontSize: "0.95rem",
+                          marginBottom: 10,
+                          fontSize: "1.05rem",
                           color: "#666",
                         }}
                       >
@@ -739,10 +734,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "1.4rem",
+                    fontSize: "1.6rem",
                     fontWeight: "bold",
-                    marginTop: 16,
-                    paddingTop: 16,
+                    marginTop: 20,
+                    paddingTop: 20,
                     borderTop: "3px double #333",
                   }}
                 >

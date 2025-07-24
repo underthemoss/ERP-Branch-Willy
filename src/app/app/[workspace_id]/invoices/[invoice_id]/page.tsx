@@ -277,7 +277,6 @@ export default function InvoiceDisplayPage() {
         return "default";
     }
   }
-  const invoicePreviewScale = 0.7;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
@@ -423,47 +422,32 @@ export default function InvoiceDisplayPage() {
                 Invoice Preview
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <div
-                style={{
-                  width: 794 * invoicePreviewScale,
-                  height: 1123 * invoicePreviewScale,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: 794,
-                    height: 1123,
-                    transform: `scale(${invoicePreviewScale})`,
-                    transformOrigin: "top left",
-                    background: "white",
-                    boxShadow: "0 0 8px rgba(0,0,0,0.1)",
-                  }}
-                >
-                  <InvoiceRender key={cachekey} invoiceId={invoiceId} />
-                </div>
-              </div>
-              {/* <Box
+              <Box
                 sx={{
-                  maxHeight: "450px",
-                  overflow: "scroll",
+                  width: "100%",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 1,
+                  p: 2,
+                  overflow: "auto",
+                  maxHeight: "800px",
                 }}
               >
                 <Box
                   sx={{
-                    width: "816px",
-                    minHeight: "70vh",
-                    p: 7,
-                    bgcolor: "#f8f6f1",
-                    border: "1px solid #ccc",
-                    boxShadow: 3,
-                    transform: "scale(0.85) translate(0, 0)",
-                    transformOrigin: "top left",
+                    width: "794px", // A4 width at 96 DPI
+                    margin: "0 auto",
+                    transform: "scale(0.85)",
+                    transformOrigin: "top center",
+                    backgroundColor: "white",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    borderRadius: 1,
+                    padding: 4,
+                    minHeight: "1123px", // A4 height at 96 DPI
                   }}
                 >
                   <InvoiceRender key={cachekey} invoiceId={invoiceId} scale={1} />
                 </Box>
-              </Box> */}
+              </Box>
               <Box mt={2} display="flex" gap={2}>
                 {invoice.status === "DRAFT" && (
                   <>
