@@ -213,6 +213,7 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
             <Picker
               reactionsDefaultOpen={true}
               onReactionClick={handleReaction}
+              onEmojiClick={handleReaction}
               height={250}
               width={280}
               previewConfig={{ showPreview: false }}

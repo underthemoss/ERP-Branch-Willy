@@ -73,34 +73,66 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
   };
 
   // Helper function to get reactions for a note
-  const getReactionsForNote = (noteId: string, allNotes: any[]): any[] => {
+  const getReactionsForNote = (noteId: string, allNotes: any[], parentNoteId?: string): any[] => {
     const reactions: { [emoji: string]: { emoji: string; users: any[] } } = {};
 
-    // Find the note
-    const note = allNotes.find((n) => n._id === noteId);
-    if (!note || !note.sub_notes) return [];
+    // If this is a reply, we need to look in the parent note's sub_notes
+    if (parentNoteId) {
+      const parentNote = allNotes.find((n) => n._id === parentNoteId);
+      if (!parentNote || !parentNote.sub_notes) return [];
 
-    // Process sub_notes to find reactions
-    note.sub_notes.forEach((subNote: any) => {
-      if (!subNote.deleted && isEmojiReaction(subNote)) {
-        const emoji = subNote.value.reaction;
-        const userId = subNote.created_by;
+      // Find the reply within the parent's sub_notes
+      const reply = parentNote.sub_notes.find((sn: any) => sn._id === noteId);
+      if (!reply || !reply.sub_notes) return [];
 
-        if (!reactions[emoji]) {
-          reactions[emoji] = { emoji, users: [] };
+      // Process the reply's sub_notes to find reactions
+      reply.sub_notes.forEach((subNote: any) => {
+        if (!subNote.deleted && isEmojiReaction(subNote)) {
+          const emoji = subNote.value.reaction;
+          const userId = subNote.created_by;
+
+          if (!reactions[emoji]) {
+            reactions[emoji] = { emoji, users: [] };
+          }
+
+          // Check if user already exists in this reaction
+          const existingUser = reactions[emoji].users.find((u: any) => u.id === userId);
+          if (!existingUser) {
+            reactions[emoji].users.push({
+              id: userId,
+              name: getUserFullName(subNote.created_by_user),
+              timestamp: subNote.created_at,
+            });
+          }
         }
+      });
+    } else {
+      // For top-level notes, look in the note's own sub_notes
+      const note = allNotes.find((n) => n._id === noteId);
+      if (!note || !note.sub_notes) return [];
 
-        // Check if user already exists in this reaction
-        const existingUser = reactions[emoji].users.find((u: any) => u.id === userId);
-        if (!existingUser) {
-          reactions[emoji].users.push({
-            id: userId,
-            name: getUserFullName(subNote.created_by_user),
-            timestamp: subNote.created_at,
-          });
+      // Process sub_notes to find reactions
+      note.sub_notes.forEach((subNote: any) => {
+        if (!subNote.deleted && isEmojiReaction(subNote)) {
+          const emoji = subNote.value.reaction;
+          const userId = subNote.created_by;
+
+          if (!reactions[emoji]) {
+            reactions[emoji] = { emoji, users: [] };
+          }
+
+          // Check if user already exists in this reaction
+          const existingUser = reactions[emoji].users.find((u: any) => u.id === userId);
+          if (!existingUser) {
+            reactions[emoji].users.push({
+              id: userId,
+              name: getUserFullName(subNote.created_by_user),
+              timestamp: subNote.created_at,
+            });
+          }
         }
-      }
-    });
+      });
+    }
 
     return Object.values(reactions);
   };
@@ -125,18 +157,37 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
   };
 
   // Handle removing emoji reaction
-  const handleRemoveReaction = async (noteId: string, emoji: string) => {
-    // Find the reaction note to delete
-    const note = notes.find((n) => n._id === noteId);
-    if (!note || !note.sub_notes) return;
+  const handleRemoveReaction = async (noteId: string, emoji: string, parentNoteId?: string) => {
+    let reactionNote = null;
 
-    const reactionNote = note.sub_notes.find(
-      (subNote: any) =>
-        !subNote.deleted &&
-        isEmojiReaction(subNote) &&
-        subNote.value.reaction === emoji &&
-        subNote.created_by === currentUserId,
-    );
+    if (parentNoteId) {
+      // For replies, look in the parent note's sub_notes
+      const parentNote = notes.find((n) => n._id === parentNoteId);
+      if (!parentNote || !parentNote.sub_notes) return;
+
+      const reply = parentNote.sub_notes.find((sn: any) => sn._id === noteId);
+      if (!reply || !reply.sub_notes) return;
+
+      reactionNote = reply.sub_notes.find(
+        (subNote: any) =>
+          !subNote.deleted &&
+          isEmojiReaction(subNote) &&
+          subNote.value.reaction === emoji &&
+          subNote.created_by === currentUserId,
+      );
+    } else {
+      // For top-level notes
+      const note = notes.find((n) => n._id === noteId);
+      if (!note || !note.sub_notes) return;
+
+      reactionNote = note.sub_notes.find(
+        (subNote: any) =>
+          !subNote.deleted &&
+          isEmojiReaction(subNote) &&
+          subNote.value.reaction === emoji &&
+          subNote.created_by === currentUserId,
+      );
+    }
 
     if (reactionNote) {
       try {
@@ -331,7 +382,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
     // Don't render emoji reactions as regular notes
     if (isEmojiReaction(note)) return null;
 
-    const reactions = getReactionsForNote(note._id, notes);
+    // Get reactions for the note
+    const reactions = getReactionsForNote(note._id, notes, isReply ? parentNoteId : undefined);
 
     return (
       <Box key={note._id}>
@@ -396,7 +448,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
                         (emoji) => !updatedEmojis.includes(emoji),
                       );
                       for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(note._id, emoji);
+                        await handleRemoveReaction(
+                          note._id,
+                          emoji,
+                          isReply ? parentNoteId : undefined,
+                        );
                       }
                     }}
                     showPicker={true}
@@ -465,7 +521,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
                         (emoji) => !updatedEmojis.includes(emoji),
                       );
                       for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(note._id, emoji);
+                        await handleRemoveReaction(
+                          note._id,
+                          emoji,
+                          isReply ? parentNoteId : undefined,
+                        );
                       }
                     }}
                     showPicker={false}
