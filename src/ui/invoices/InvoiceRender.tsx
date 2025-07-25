@@ -54,6 +54,7 @@ const invoiceQuery = graphql(`
         totalInCents
         charge {
           id
+          createdAt
           amountInCents
           description
           chargeType
@@ -87,6 +88,7 @@ const invoiceQuery = graphql(`
                 ... on SalePrice {
                   id
                   name
+                  pimCategoryName
                   unitCostInCents
                 }
               }
@@ -458,422 +460,503 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
 
               Object.entries(groupedCharges).forEach(([projectId, projectData]) => {
                 Object.entries(projectData.chargeTypes).forEach(([chargeType, charges]) => {
-                  if (!chargeTypeGroups[chargeType]) {
-                    chargeTypeGroups[chargeType] = {
-                      items: [],
-                      subtotal: 0,
-                    };
-                  }
-
                   charges.forEach((charge) => {
-                    chargeTypeGroups[chargeType].items.push({
+                    // Check if charge should be grouped as MISC
+                    const isMiscCharge = !charge.charge?.salesOrderId || !charge.charge?.projectId;
+                    const groupType = isMiscCharge ? "MISC" : chargeType;
+
+                    if (!chargeTypeGroups[groupType]) {
+                      chargeTypeGroups[groupType] = {
+                        items: [],
+                        subtotal: 0,
+                      };
+                    }
+
+                    chargeTypeGroups[groupType].items.push({
                       ...charge,
                       projectName: projectData.project.name,
                       projectCode: projectData.project.project_code,
                     });
-                    chargeTypeGroups[chargeType].subtotal += charge.totalInCents;
+                    chargeTypeGroups[groupType].subtotal += charge.totalInCents;
                   });
                 });
               });
 
-              return Object.entries(chargeTypeGroups).map(([chargeType, group], index) => {
-                // Group items by project within this charge type
-                const projectGroups: {
-                  [projectKey: string]: {
-                    projectName: string;
-                    projectCode: string | null;
-                    items: typeof group.items;
-                  };
-                } = {};
+              // Check if there's only one unique project across all charges (excluding null/undefined projectIds)
+              const uniqueProjects = Object.entries(groupedCharges)
+                .filter(([projectId]) => projectId !== "no-project")
+                .map(([_, projectData]) => projectData);
+              const hasOneProject = uniqueProjects.length === 1;
+              const singleProject = hasOneProject ? uniqueProjects[0].project : null;
 
-                group.items.forEach((item) => {
-                  const projectKey = `${item.projectName}:${item.projectCode || ""}`;
-                  if (!projectGroups[projectKey]) {
-                    projectGroups[projectKey] = {
-                      projectName: item.projectName,
-                      projectCode: item.projectCode,
-                      items: [],
-                    };
-                  }
-                  projectGroups[projectKey].items.push(item);
-                });
-
-                return (
-                  <div
-                    key={chargeType}
-                    style={{
-                      marginBottom: index < Object.keys(chargeTypeGroups).length - 1 ? 20 : 0,
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontSize: "1.3rem",
-                        fontWeight: 600,
-                        marginBottom: 10,
-                        color: "#333",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {chargeType} CHARGES
-                    </h3>
-                    <div
-                      style={{
-                        border: "1px solid #e0e0e0",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <table
+              return (
+                <>
+                  {/* Project Information - shown at top if only one project */}
+                  {hasOneProject && singleProject && (
+                    <div style={{ marginBottom: 20 }}>
+                      <div
                         style={{
-                          width: "100%",
-                          borderCollapse: "collapse",
-                          fontSize: "1.05rem",
-                          tableLayout: "auto",
+                          backgroundColor: "#f5f5f5",
+                          padding: "12px 16px",
+                          borderRadius: 8,
                         }}
                       >
-                        <thead>
-                          <tr style={{ backgroundColor: "#fafafa" }}>
-                            {chargeType === "RENTAL" ? (
-                              <>
-                                <th
-                                  className="table-header"
-                                  style={{
-                                    padding: "8px 12px",
-                                    textAlign: "left",
-                                    fontWeight: 600,
-                                    fontSize: "0.95rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.8px",
-                                    color: "#666",
-                                    borderBottom: "2px solid #e0e0e0",
-                                    width: "100px",
-                                  }}
-                                >
-                                  Start Date
-                                </th>
-                                <th
-                                  className="table-header"
-                                  style={{
-                                    padding: "8px 12px",
-                                    textAlign: "left",
-                                    fontWeight: 600,
-                                    fontSize: "0.95rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.8px",
-                                    color: "#666",
-                                    borderBottom: "2px solid #e0e0e0",
-                                    width: "100px",
-                                  }}
-                                >
-                                  End Date
-                                </th>
-                              </>
-                            ) : (
-                              <th
-                                className="table-header"
-                                style={{
-                                  padding: "8px 12px",
-                                  textAlign: "left",
-                                  fontWeight: 600,
-                                  fontSize: "0.95rem",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.8px",
-                                  color: "#666",
-                                  borderBottom: "2px solid #e0e0e0",
-                                  width: "120px",
-                                }}
-                              >
-                                Date
-                              </th>
-                            )}
-                            <th
-                              className="table-header"
+                        <div style={{ fontWeight: 600, fontSize: "1.15rem", color: "#333" }}>
+                          Project: {singleProject.name}
+                          {singleProject.project_code && (
+                            <span
                               style={{
-                                padding: "8px 12px",
-                                textAlign: "left",
-                                fontWeight: 600,
-                                fontSize: "0.95rem",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.8px",
                                 color: "#666",
-                                borderBottom: "2px solid #e0e0e0",
-                                width: "auto",
+                                fontWeight: 400,
+                                marginLeft: 10,
                               }}
                             >
-                              Description
-                            </th>
-                            {chargeType === "SALE" && (
-                              <>
-                                <th
-                                  className="table-header"
-                                  style={{
-                                    padding: "8px 12px",
-                                    textAlign: "right",
-                                    fontWeight: 600,
-                                    fontSize: "0.95rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.8px",
-                                    color: "#666",
-                                    borderBottom: "2px solid #e0e0e0",
-                                    whiteSpace: "nowrap",
-                                    width: "60px",
-                                  }}
-                                >
-                                  QTY
-                                </th>
-                                <th
-                                  className="table-header"
-                                  style={{
-                                    padding: "8px 12px",
-                                    textAlign: "right",
-                                    fontWeight: 600,
-                                    fontSize: "0.95rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.8px",
-                                    color: "#666",
-                                    borderBottom: "2px solid #e0e0e0",
-                                    whiteSpace: "nowrap",
-                                    width: "80px",
-                                  }}
-                                >
-                                  RATE
-                                </th>
-                              </>
-                            )}
-                            <th
-                              className="table-header"
-                              style={{
-                                padding: "8px 12px",
-                                textAlign: "right",
-                                fontWeight: 600,
-                                fontSize: "0.95rem",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.8px",
-                                color: "#666",
-                                borderBottom: "2px solid #e0e0e0",
-                                whiteSpace: "nowrap",
-                                width: "90px",
-                              }}
-                            >
-                              Amount
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(projectGroups).map(([projectKey, projectData]) => (
-                            <>
-                              <tr key={`project-${projectKey}`}>
-                                <td
-                                  colSpan={
-                                    chargeType === "SALE" ? 5 : chargeType === "RENTAL" ? 4 : 3
-                                  }
-                                  className="project-header"
-                                  style={{
-                                    backgroundColor: "#f5f5f5",
-                                    padding: "8px 12px",
-                                    borderBottom: "1px solid #e0e0e0",
-                                    fontWeight: 600,
-                                    fontSize: "1.15rem",
-                                    color: "#333",
-                                  }}
-                                >
-                                  Project: {projectData.projectName}
-                                  {projectData.projectCode && (
-                                    <span
+                              (Code: {singleProject.project_code})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {Object.entries(chargeTypeGroups).map(([chargeType, group], index) => {
+                    // Group items by project within this charge type
+                    const projectGroups: {
+                      [projectKey: string]: {
+                        projectName: string;
+                        projectCode: string | null;
+                        items: typeof group.items;
+                      };
+                    } = {};
+
+                    group.items.forEach((item) => {
+                      const projectKey = `${item.projectName}:${item.projectCode || ""}`;
+                      if (!projectGroups[projectKey]) {
+                        projectGroups[projectKey] = {
+                          projectName: item.projectName,
+                          projectCode: item.projectCode,
+                          items: [],
+                        };
+                      }
+                      projectGroups[projectKey].items.push(item);
+                    });
+
+                    return (
+                      <div
+                        key={chargeType}
+                        style={{
+                          marginBottom: index < Object.keys(chargeTypeGroups).length - 1 ? 20 : 0,
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: "1.3rem",
+                            fontWeight: 600,
+                            marginBottom: 10,
+                            color: "#333",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {chargeType} CHARGES
+                        </h3>
+                        <div
+                          style={{
+                            border: "1px solid #e0e0e0",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <table
+                            style={{
+                              width: "100%",
+                              borderCollapse: "collapse",
+                              fontSize: "1.05rem",
+                              tableLayout: "auto",
+                            }}
+                          >
+                            <thead>
+                              <tr style={{ backgroundColor: "#fafafa" }}>
+                                {chargeType === "RENTAL" ? (
+                                  <>
+                                    <th
+                                      className="table-header"
                                       style={{
+                                        padding: "8px 12px",
+                                        textAlign: "left",
+                                        fontWeight: 600,
+                                        fontSize: "0.95rem",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.8px",
                                         color: "#666",
-                                        fontWeight: 400,
-                                        marginLeft: 10,
+                                        borderBottom: "2px solid #e0e0e0",
+                                        width: "100px",
                                       }}
                                     >
-                                      (Code: {projectData.projectCode})
-                                    </span>
-                                  )}
-                                </td>
+                                      Start Date
+                                    </th>
+                                    <th
+                                      className="table-header"
+                                      style={{
+                                        padding: "8px 12px",
+                                        textAlign: "left",
+                                        fontWeight: 600,
+                                        fontSize: "0.95rem",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.8px",
+                                        color: "#666",
+                                        borderBottom: "2px solid #e0e0e0",
+                                        width: "100px",
+                                      }}
+                                    >
+                                      End Date
+                                    </th>
+                                  </>
+                                ) : (
+                                  <th
+                                    className="table-header"
+                                    style={{
+                                      padding: "8px 12px",
+                                      textAlign: "left",
+                                      fontWeight: 600,
+                                      fontSize: "0.95rem",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.8px",
+                                      color: "#666",
+                                      borderBottom: "2px solid #e0e0e0",
+                                      width: "120px",
+                                    }}
+                                  >
+                                    Date
+                                  </th>
+                                )}
+                                <th
+                                  className="table-header"
+                                  style={{
+                                    padding: "8px 12px",
+                                    textAlign: "left",
+                                    fontWeight: 600,
+                                    fontSize: "0.95rem",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.8px",
+                                    color: "#666",
+                                    borderBottom: "2px solid #e0e0e0",
+                                    width: "auto",
+                                  }}
+                                >
+                                  Description
+                                </th>
+                                {chargeType === "SALE" && (
+                                  <>
+                                    <th
+                                      className="table-header"
+                                      style={{
+                                        padding: "8px 12px",
+                                        textAlign: "right",
+                                        fontWeight: 600,
+                                        fontSize: "0.95rem",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.8px",
+                                        color: "#666",
+                                        borderBottom: "2px solid #e0e0e0",
+                                        whiteSpace: "nowrap",
+                                        width: "60px",
+                                      }}
+                                    >
+                                      QTY
+                                    </th>
+                                    <th
+                                      className="table-header"
+                                      style={{
+                                        padding: "8px 12px",
+                                        textAlign: "right",
+                                        fontWeight: 600,
+                                        fontSize: "0.95rem",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.8px",
+                                        color: "#666",
+                                        borderBottom: "2px solid #e0e0e0",
+                                        whiteSpace: "nowrap",
+                                        width: "80px",
+                                      }}
+                                    >
+                                      RATE
+                                    </th>
+                                  </>
+                                )}
+                                <th
+                                  className="table-header"
+                                  style={{
+                                    padding: "8px 12px",
+                                    textAlign: "right",
+                                    fontWeight: 600,
+                                    fontSize: "0.95rem",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.8px",
+                                    color: "#666",
+                                    borderBottom: "2px solid #e0e0e0",
+                                    whiteSpace: "nowrap",
+                                    width: "90px",
+                                  }}
+                                >
+                                  Amount
+                                </th>
                               </tr>
-                              {projectData.items.map((item) => {
-                                const dateRange = formatDateRange(
-                                  item.charge?.billingPeriodStart,
-                                  item.charge?.billingPeriodEnd,
-                                );
-
-                                // Get the description based on charge type
-                                let description: string;
-                                if (chargeType === "RENTAL") {
-                                  // For rental charges, use charge.description and strip the prefix
-                                  const rawDescription =
-                                    item.charge?.description || item.description;
-                                  const pimCategoryName =
-                                    item.charge?.salesOrderLineItem?.price?.pimCategoryName;
-                                  if (pimCategoryName && rawDescription) {
-                                    const prefixToRemove = `Rental charge for ${pimCategoryName}:`;
-                                    description = rawDescription.replace(prefixToRemove, "").trim();
-                                  } else {
-                                    description = rawDescription;
-                                  }
-                                } else {
-                                  // For other charge types, use salesOrderLineItem.price.name or fallback to charge.description
-                                  description =
-                                    item.charge?.salesOrderLineItem?.price?.name ||
-                                    item.charge?.description ||
-                                    item.description;
-                                }
-
-                                // Get quantity and rate for SALE charge types
-                                const quantity =
-                                  item.charge?.salesOrderLineItem?.__typename ===
-                                  "SaleSalesOrderLineItem"
-                                    ? item.charge.salesOrderLineItem.so_quantity
-                                    : null;
-                                const unitCostInCents =
-                                  item.charge?.salesOrderLineItem?.__typename ===
-                                    "SaleSalesOrderLineItem" &&
-                                  item.charge.salesOrderLineItem.price?.__typename === "SalePrice"
-                                    ? item.charge.salesOrderLineItem.price.unitCostInCents
-                                    : null;
-
-                                return (
-                                  <tr key={item.chargeId}>
-                                    {chargeType === "RENTAL" ? (
-                                      <>
-                                        <td
-                                          className="table-cell date-cell"
-                                          style={{
-                                            padding: "10px 12px",
-                                            borderBottom: "1px solid #f0f0f0",
-                                            color: "#666",
-                                            fontSize: "1rem",
-                                            verticalAlign: "top",
-                                            width: "100px",
-                                          }}
-                                        >
-                                          {dateRange.start || "-"}
-                                        </td>
-                                        <td
-                                          className="table-cell date-cell"
-                                          style={{
-                                            padding: "10px 12px",
-                                            borderBottom: "1px solid #f0f0f0",
-                                            color: "#666",
-                                            fontSize: "1rem",
-                                            verticalAlign: "top",
-                                            width: "100px",
-                                          }}
-                                        >
-                                          {dateRange.end || "-"}
-                                        </td>
-                                      </>
-                                    ) : (
+                            </thead>
+                            <tbody>
+                              {Object.entries(projectGroups).map(([projectKey, projectData]) => (
+                                <>
+                                  {!hasOneProject && chargeType !== "MISC" && (
+                                    <tr key={`project-${projectKey}`}>
                                       <td
-                                        className="table-cell date-cell"
+                                        colSpan={
+                                          chargeType === "SALE"
+                                            ? 5
+                                            : chargeType === "RENTAL"
+                                              ? 4
+                                              : 3
+                                        }
+                                        className="project-header"
                                         style={{
-                                          padding: "10px 12px",
-                                          borderBottom: "1px solid #f0f0f0",
-                                          color: "#666",
-                                          fontSize: "1rem",
-                                          verticalAlign: "top",
-                                          width: "120px",
+                                          backgroundColor: "#f5f5f5",
+                                          padding: "8px 12px",
+                                          borderBottom: "1px solid #e0e0e0",
+                                          fontWeight: 600,
+                                          fontSize: "1.15rem",
+                                          color: "#333",
                                         }}
                                       >
-                                        <div>
-                                          {dateRange.start}
-                                          {dateRange.start !== dateRange.end && (
-                                            <span> &ndash;</span>
-                                          )}
-                                        </div>
-                                        {dateRange.start !== dateRange.end && (
-                                          <div>{dateRange.end}</div>
+                                        Project: {projectData.projectName}
+                                        {projectData.projectCode && (
+                                          <span
+                                            style={{
+                                              color: "#666",
+                                              fontWeight: 400,
+                                              marginLeft: 10,
+                                            }}
+                                          >
+                                            (Code: {projectData.projectCode})
+                                          </span>
                                         )}
                                       </td>
-                                    )}
-                                    <td
-                                      className="table-cell description-cell"
-                                      style={{
-                                        padding: "10px 12px",
-                                        borderBottom: "1px solid #f0f0f0",
-                                        verticalAlign: "top",
-                                        width: "auto",
-                                      }}
-                                    >
-                                      <div style={{ fontWeight: 500 }}>{description}</div>
-                                    </td>
-                                    {chargeType === "SALE" && (
-                                      <>
+                                    </tr>
+                                  )}
+                                  {projectData.items.map((item) => {
+                                    // For non-RENTAL charges, use billingPeriodStart or fallback to createdAt
+                                    const singleDate =
+                                      item.charge?.billingPeriodStart || item.charge?.createdAt;
+
+                                    const dateRange = formatDateRange(
+                                      item.charge?.billingPeriodStart,
+                                      item.charge?.billingPeriodEnd,
+                                    );
+
+                                    // Get the description based on charge type
+                                    let description: string;
+                                    const pimCategoryName =
+                                      item.charge?.salesOrderLineItem?.price?.pimCategoryName;
+
+                                    if (chargeType === "RENTAL") {
+                                      // For rental charges, include pimCategoryName first, then use charge.description and strip the prefix
+                                      const rawDescription =
+                                        item.charge?.description || item.description;
+                                      let cleanDescription = rawDescription;
+
+                                      if (pimCategoryName && rawDescription) {
+                                        const prefixToRemove = `Rental charge for ${pimCategoryName}:`;
+                                        cleanDescription = rawDescription
+                                          .replace(prefixToRemove, "")
+                                          .trim();
+                                      }
+
+                                      // Combine pimCategoryName with cleaned description
+                                      if (pimCategoryName && cleanDescription) {
+                                        description = `${pimCategoryName}: ${cleanDescription}`;
+                                      } else if (pimCategoryName) {
+                                        description = pimCategoryName;
+                                      } else {
+                                        description = cleanDescription;
+                                      }
+                                    } else if (chargeType === "SERVICE") {
+                                      // For service charges, use charge.description
+                                      description = item.charge?.description || item.description;
+                                    } else if (chargeType === "SALE") {
+                                      // For SALE charges, include pimCategoryName first, then price.name or charge.description
+                                      const priceName =
+                                        item.charge?.salesOrderLineItem?.price?.name;
+                                      const baseDescription =
+                                        priceName || item.charge?.description || item.description;
+
+                                      if (
+                                        pimCategoryName &&
+                                        baseDescription &&
+                                        pimCategoryName !== baseDescription
+                                      ) {
+                                        description = `${pimCategoryName}: ${baseDescription}`;
+                                      } else if (pimCategoryName) {
+                                        description = pimCategoryName;
+                                      } else {
+                                        description = baseDescription;
+                                      }
+                                    } else {
+                                      // For other charge types, use salesOrderLineItem.price.name or fallback to charge.description
+                                      description =
+                                        item.charge?.salesOrderLineItem?.price?.name ||
+                                        item.charge?.description ||
+                                        item.description;
+                                    }
+
+                                    // Get quantity and rate for SALE charge types
+                                    const quantity =
+                                      item.charge?.salesOrderLineItem?.__typename ===
+                                      "SaleSalesOrderLineItem"
+                                        ? item.charge.salesOrderLineItem.so_quantity
+                                        : null;
+                                    const unitCostInCents =
+                                      item.charge?.salesOrderLineItem?.__typename ===
+                                        "SaleSalesOrderLineItem" &&
+                                      item.charge.salesOrderLineItem.price?.__typename ===
+                                        "SalePrice"
+                                        ? item.charge.salesOrderLineItem.price.unitCostInCents
+                                        : null;
+
+                                    return (
+                                      <tr key={item.chargeId}>
+                                        {chargeType === "RENTAL" ? (
+                                          <>
+                                            <td
+                                              className="table-cell date-cell"
+                                              style={{
+                                                padding: "10px 12px",
+                                                borderBottom: "1px solid #f0f0f0",
+                                                color: "#666",
+                                                fontSize: "1rem",
+                                                verticalAlign: "top",
+                                                width: "100px",
+                                              }}
+                                            >
+                                              {dateRange.start || "-"}
+                                            </td>
+                                            <td
+                                              className="table-cell date-cell"
+                                              style={{
+                                                padding: "10px 12px",
+                                                borderBottom: "1px solid #f0f0f0",
+                                                color: "#666",
+                                                fontSize: "1rem",
+                                                verticalAlign: "top",
+                                                width: "100px",
+                                              }}
+                                            >
+                                              {dateRange.end || "-"}
+                                            </td>
+                                          </>
+                                        ) : (
+                                          <td
+                                            className="table-cell date-cell"
+                                            style={{
+                                              padding: "10px 12px",
+                                              borderBottom: "1px solid #f0f0f0",
+                                              color: "#666",
+                                              fontSize: "1rem",
+                                              verticalAlign: "top",
+                                              width: "120px",
+                                            }}
+                                          >
+                                            {singleDate ? formatDate(singleDate) : "-"}
+                                          </td>
+                                        )}
+                                        <td
+                                          className="table-cell description-cell"
+                                          style={{
+                                            padding: "10px 12px",
+                                            borderBottom: "1px solid #f0f0f0",
+                                            verticalAlign: "top",
+                                            width: "auto",
+                                          }}
+                                        >
+                                          <div style={{ fontWeight: 500 }}>{description}</div>
+                                        </td>
+                                        {chargeType === "SALE" && (
+                                          <>
+                                            <td
+                                              className="table-cell"
+                                              style={{
+                                                padding: "10px 12px",
+                                                textAlign: "right",
+                                                borderBottom: "1px solid #f0f0f0",
+                                                verticalAlign: "top",
+                                                whiteSpace: "nowrap",
+                                              }}
+                                            >
+                                              {quantity || "-"}
+                                            </td>
+                                            <td
+                                              className="table-cell"
+                                              style={{
+                                                padding: "10px 12px",
+                                                textAlign: "right",
+                                                borderBottom: "1px solid #f0f0f0",
+                                                verticalAlign: "top",
+                                                whiteSpace: "nowrap",
+                                              }}
+                                            >
+                                              {unitCostInCents
+                                                ? `$${(unitCostInCents / 100).toFixed(2)}`
+                                                : "-"}
+                                            </td>
+                                          </>
+                                        )}
                                         <td
                                           className="table-cell"
                                           style={{
                                             padding: "10px 12px",
                                             textAlign: "right",
                                             borderBottom: "1px solid #f0f0f0",
+                                            fontWeight: 500,
                                             verticalAlign: "top",
                                             whiteSpace: "nowrap",
                                           }}
                                         >
-                                          {quantity || "-"}
+                                          ${(item.totalInCents / 100).toFixed(2)}
                                         </td>
-                                        <td
-                                          className="table-cell"
-                                          style={{
-                                            padding: "10px 12px",
-                                            textAlign: "right",
-                                            borderBottom: "1px solid #f0f0f0",
-                                            verticalAlign: "top",
-                                            whiteSpace: "nowrap",
-                                          }}
-                                        >
-                                          {unitCostInCents
-                                            ? `$${(unitCostInCents / 100).toFixed(2)}`
-                                            : "-"}
-                                        </td>
-                                      </>
-                                    )}
-                                    <td
-                                      className="table-cell"
-                                      style={{
-                                        padding: "10px 12px",
-                                        textAlign: "right",
-                                        borderBottom: "1px solid #f0f0f0",
-                                        fontWeight: 500,
-                                        verticalAlign: "top",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      ${(item.totalInCents / 100).toFixed(2)}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </>
-                          ))}
-                          <tr style={{ backgroundColor: "#f8f9fa" }}>
-                            <td
-                              colSpan={chargeType === "SALE" ? 4 : chargeType === "RENTAL" ? 3 : 2}
-                              style={{
-                                padding: "10px 12px",
-                                textAlign: "right",
-                                fontWeight: 600,
-                                fontSize: "1.05rem",
-                              }}
-                            >
-                              Subtotal:
-                            </td>
-                            <td
-                              style={{
-                                padding: "10px 12px",
-                                textAlign: "right",
-                                fontWeight: 600,
-                                fontSize: "1.05rem",
-                              }}
-                            >
-                              ${(group.subtotal / 100).toFixed(2)}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              });
+                                      </tr>
+                                    );
+                                  })}
+                                </>
+                              ))}
+                              <tr style={{ backgroundColor: "#f8f9fa" }}>
+                                <td
+                                  colSpan={
+                                    chargeType === "SALE" ? 4 : chargeType === "RENTAL" ? 3 : 2
+                                  }
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "right",
+                                    fontWeight: 600,
+                                    fontSize: "1.05rem",
+                                  }}
+                                >
+                                  Subtotal:
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "10px 12px",
+                                    textAlign: "right",
+                                    fontWeight: 600,
+                                    fontSize: "1.05rem",
+                                  }}
+                                >
+                                  ${(group.subtotal / 100).toFixed(2)}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              );
             })()}
             <div
               className="summary-section"
