@@ -30,7 +30,7 @@ const AuthWall: React.FC<{
 export const Auth0ClientProvider: React.FC<{
   domain: string;
   clientId: string;
-  redirect: string;
+  redirect?: string;
   audience: string;
   children: React.ReactNode;
 }> = ({ children, clientId, domain, redirect, audience }) => {
@@ -42,6 +42,15 @@ export const Auth0ClientProvider: React.FC<{
     const match = hash.match(/jwt=([^&]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   }, []);
+
+  // Construct redirect URI dynamically
+  const redirectUri = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}`;
+    }
+    // Fallback for SSR - use provided redirect or environment variable
+    return redirect || `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`;
+  }, [redirect]);
 
   if (jwt) {
     // If JWT is present in hash, provide it and skip Auth0 logic
@@ -56,7 +65,7 @@ export const Auth0ClientProvider: React.FC<{
         domain={domain}
         clientId={clientId}
         authorizationParams={{
-          redirect_uri: redirect,
+          redirect_uri: redirectUri,
           audience,
         }}
       >

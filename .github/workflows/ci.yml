@@ -5,42 +5,6 @@ on:
   pull_request:
 
 jobs:
-  # docker-test:
-  #   name: Build and Push Docker Image (Test)
-  #   if: ${{ (github.event_name == 'push' && github.ref != 'refs/heads/main') ||
-  #     (github.event_name == 'pull_request' && github.head_ref != 'main') }}
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: gcr.io/kaniko-project/executor:debug
-  #   env:
-  #     ECR: ${{ secrets.ECR }}
-  #     DOCKER_HUB_BASE64: ${{ secrets.DOCKER_HUB_BASE64 }}
-  #     BUILD_ID: ${{ github.run_number }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Determine branch name
-  #       run: |
-  #         if [ -n "${GITHUB_HEAD_REF}" ]; then
-  #           echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
-  #         else
-  #           echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-  #         fi
-
-  #     - name: Configure Docker credentials
-  #       run: |
-  #         echo "{\"credHelpers\":{\"${ECR}\":\"ecr-login\"},\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"${DOCKER_HUB_BASE64}\"}}}" \
-  #           > /kaniko/.docker/config.json
-
-  #     - name: Build and push Docker image
-  #       run: |
-  #         /kaniko/executor \
-  #           --context $GITHUB_WORKSPACE \
-  #           --dockerfile $GITHUB_WORKSPACE/Dockerfile \
-  #           --destination "${ECR}/es-erp-stage:mr-${BRANCH_NAME}-${BUILD_ID}" \
-  #           --build-arg VERSION="${BUILD_ID}"
-
   tests:
     name: Run tests
     if: ${{ (github.event_name == 'push' && github.ref != 'refs/heads/main') ||
