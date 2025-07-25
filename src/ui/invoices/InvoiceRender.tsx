@@ -678,12 +678,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                       <th
                                         className="table-header"
                                         style={{
-                                          padding: "8px 12px",
+                                          padding: "6px 8px",
                                           textAlign: "left",
                                           fontWeight: 600,
-                                          fontSize: "0.95rem",
+                                          fontSize: "0.75rem",
                                           textTransform: "uppercase",
-                                          letterSpacing: "0.8px",
+                                          letterSpacing: "0.5px",
                                           color: "#666",
                                           borderBottom: "2px solid #e0e0e0",
                                           width: "100px",
@@ -696,12 +696,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                     <th
                                       className="table-header"
                                       style={{
-                                        padding: "8px 12px",
+                                        padding: "6px 8px",
                                         textAlign: "left",
                                         fontWeight: 600,
-                                        fontSize: "0.95rem",
+                                        fontSize: "0.75rem",
                                         textTransform: "uppercase",
-                                        letterSpacing: "0.8px",
+                                        letterSpacing: "0.5px",
                                         color: "#666",
                                         borderBottom: "2px solid #e0e0e0",
                                         width: "120px",
@@ -713,12 +713,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                   <th
                                     className="table-header"
                                     style={{
-                                      padding: "8px 12px",
+                                      padding: "6px 8px",
                                       textAlign: "left",
                                       fontWeight: 600,
-                                      fontSize: "0.95rem",
+                                      fontSize: "0.75rem",
                                       textTransform: "uppercase",
-                                      letterSpacing: "0.8px",
+                                      letterSpacing: "0.5px",
                                       color: "#666",
                                       borderBottom: "2px solid #e0e0e0",
                                       width: "auto",
@@ -748,12 +748,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                       <th
                                         className="table-header"
                                         style={{
-                                          padding: "8px 12px",
+                                          padding: "6px 8px",
                                           textAlign: "right",
                                           fontWeight: 600,
-                                          fontSize: "0.95rem",
+                                          fontSize: "0.75rem",
                                           textTransform: "uppercase",
-                                          letterSpacing: "0.8px",
+                                          letterSpacing: "0.5px",
                                           color: "#666",
                                           borderBottom: "2px solid #e0e0e0",
                                           whiteSpace: "nowrap",
@@ -767,12 +767,12 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                   <th
                                     className="table-header"
                                     style={{
-                                      padding: "8px 12px",
+                                      padding: "6px 8px",
                                       textAlign: "right",
                                       fontWeight: 600,
-                                      fontSize: "0.95rem",
+                                      fontSize: "0.75rem",
                                       textTransform: "uppercase",
-                                      letterSpacing: "0.8px",
+                                      letterSpacing: "0.5px",
                                       color: "#666",
                                       borderBottom: "2px solid #e0e0e0",
                                       whiteSpace: "nowrap",
@@ -920,11 +920,11 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                               <td
                                                 className="table-cell date-cell"
                                                 style={{
-                                                  padding: "10px 12px",
+                                                  padding: "6px 8px",
                                                   borderBottom: "1px solid #f0f0f0",
                                                   color: "#666",
-                                                  fontSize: "1rem",
-                                                  verticalAlign: "top",
+                                                  fontSize: "0.8rem",
+                                                  verticalAlign: "middle",
                                                   width: "100px",
                                                 }}
                                               >
@@ -935,11 +935,11 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                             <td
                                               className="table-cell date-cell"
                                               style={{
-                                                padding: "10px 12px",
+                                                padding: "6px 8px",
                                                 borderBottom: "1px solid #f0f0f0",
                                                 color: "#666",
-                                                fontSize: "1rem",
-                                                verticalAlign: "top",
+                                                fontSize: "0.8rem",
+                                                verticalAlign: "middle",
                                                 width: "120px",
                                               }}
                                             >
@@ -974,10 +974,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                               <td
                                                 className="table-cell"
                                                 style={{
-                                                  padding: "10px 12px",
+                                                  padding: "6px 8px",
                                                   textAlign: "right",
                                                   borderBottom: "1px solid #f0f0f0",
-                                                  verticalAlign: "top",
+                                                  verticalAlign: "middle",
                                                   whiteSpace: "nowrap",
                                                 }}
                                               >
@@ -1022,10 +1022,10 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                                   </td>
                                   <td
                                     style={{
-                                      padding: "10px 12px",
+                                      padding: "6px 8px",
                                       textAlign: "right",
                                       fontWeight: 600,
-                                      fontSize: "1.05rem",
+                                      fontSize: "0.85rem",
                                       borderTop: "2px solid #e0e0e0",
                                     }}
                                   >
