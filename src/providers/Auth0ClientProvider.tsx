@@ -49,9 +49,7 @@ export const Auth0ClientProvider: React.FC<{
       return `${window.location.origin}`;
     }
     // Fallback for SSR - use provided redirect or environment variable
-    return (
-      redirect || `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`
-    );
+    return redirect || `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}`;
   }, [redirect]);
 
   if (jwt) {
