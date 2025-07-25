@@ -39,7 +39,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Auth0ClientProvider
           domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
           clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
-          redirect={process.env.NEXT_PUBLIC_BASE_URL || ""}
           audience={process.env.NEXT_PUBLIC_API_URL || ""}
         >
           <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
