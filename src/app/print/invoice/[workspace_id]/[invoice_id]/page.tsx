@@ -130,7 +130,6 @@ export default function InvoicePrintPage() {
           }
         }
         .print-content {
-          padding: 40px;
           width: 100%;
         }
         `}
