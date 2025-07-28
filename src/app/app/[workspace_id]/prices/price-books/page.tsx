@@ -94,6 +94,11 @@ export default function Prices() {
             router.push(`/app/${workspace_id}/prices/price-books/${params.id}`);
           }}
           disableRowSelectionOnClick
+          initialState={{
+            sorting: {
+              sortModel: [{ field: "updatedAt", sort: "desc" }],
+            },
+          }}
         />
       </Box>
       <Box sx={{ mt: 2 }}>

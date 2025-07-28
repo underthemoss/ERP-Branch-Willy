@@ -295,6 +295,9 @@ export default function InvoicesPage() {
                     paidDate: false,
                   },
                 },
+                sorting: {
+                  sortModel: [{ field: "updatedAt", sort: "desc" }],
+                },
               }}
               sx={{
                 cursor: "pointer",

@@ -117,13 +117,13 @@ export default function ContactsPage() {
     { field: "notes", headerName: "Notes", width: 200 },
     {
       field: "updatedAt",
-      headerName: "Updated Date",
+      headerName: "Updated At",
       width: 180,
       renderCell: (params) => {
         const date = params.value ? parseISO(params.value) : null;
         return date ? (
-          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
-            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MMMM d, yyyy, h:mm a")}</span>
           </Tooltip>
         ) : (
           ""
@@ -217,6 +217,7 @@ export default function ContactsPage() {
         <Box sx={{ height: 600 }}>
           <div data-testid="contact-list" style={{ height: "100%" }}>
             <DataGridPremium
+              showToolbar
               columns={columns}
               rows={filteredRows}
               loading={loading}

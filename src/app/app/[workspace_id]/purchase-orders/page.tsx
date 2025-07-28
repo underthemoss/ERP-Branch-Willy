@@ -377,6 +377,9 @@ export default function PurchaseOrdersListPage() {
             }}
             initialState={{
               pinnedColumns: { left: ["po_number"] },
+              sorting: {
+                sortModel: [{ field: "updated_at", sort: "desc" }],
+              },
             }}
             sx={{
               cursor: "pointer",
