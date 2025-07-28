@@ -105,9 +105,36 @@ export default function ProjectsPage() {
       flex: 2,
       minWidth: 250,
     },
-    { field: "project_code", headerName: "Project Code", flex: 2, minWidth: 200 },
-    { field: "description", headerName: "Description", flex: 2 },
+    { field: "project_code", headerName: "Project Code", flex: 2, minWidth: 100 },
+    {
+      field: "deleted",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.value ? "Deleted" : "Active"}
+          color={params.value ? "default" : "success"}
+          size="small"
+          sx={{ fontWeight: 600 }}
+        />
+      ),
+      sortable: false,
+      filterable: false,
+    },
+    { field: "description", headerName: "Description", flex: 2, minWidth: 200 },
     { field: "company", headerName: "Company", flex: 2, minWidth: 200 },
+    {
+      field: "status",
+      headerName: "Project Status",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => {
+        const value: string = params.value ?? "";
+        if (!value) return "";
+        // Optionally, you could map enum values to friendlier labels here
+        return <Chip label={value.replace(/_/g, " ")} color="info" size="small" />;
+      },
+    },
     {
       field: "scope_of_work",
       headerName: "Scope of Work",
@@ -133,26 +160,14 @@ export default function ProjectsPage() {
       },
     },
     {
-      field: "status",
-      headerName: "Project Status",
-      flex: 1,
-      minWidth: 160,
-      renderCell: (params) => {
-        const value: string = params.value ?? "";
-        if (!value) return "";
-        // Optionally, you could map enum values to friendlier labels here
-        return <Chip label={value.replace(/_/g, " ")} color="info" size="small" />;
-      },
-    },
-    {
       field: "created_at",
       headerName: "Created At",
       width: 180,
       renderCell: (params) => {
         const date = parseDate(params.value);
         return date ? (
-          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
-            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MMMM d, yyyy, h:mm a")}</span>
           </Tooltip>
         ) : (
           ""
@@ -167,8 +182,8 @@ export default function ProjectsPage() {
       renderCell: (params) => {
         const date = parseDate(params.value);
         return date ? (
-          <Tooltip title={format(date, "MMMM d, yyyy, h:mm a")} arrow>
-            <span>{formatDistanceToNow(date, { addSuffix: true })}</span>
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MMMM d, yyyy, h:mm a")}</span>
           </Tooltip>
         ) : (
           ""
@@ -281,6 +296,7 @@ export default function ProjectsPage() {
         <Box sx={{ height: 600 }}>
           <div data-testid="project-list" style={{ height: "100%" }}>
             <DataGridPremium
+              showToolbar
               columns={columns}
               rows={filteredRows}
               loading={loading}
@@ -288,7 +304,14 @@ export default function ProjectsPage() {
               hideFooter
               getRowId={(row) => row.id}
               initialState={{
-                pinnedColumns: { left: ["name"], right: ["actions"] },
+                columns: {
+                  columnVisibilityModel: {
+                    id: false,
+                    description: false,
+                    company: false,
+                    deleted: false,
+                  },
+                },
               }}
               onRowClick={(params) => {
                 if (params.row.id) {
