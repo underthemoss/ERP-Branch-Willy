@@ -42,6 +42,7 @@ export const ContactListItem: FC<{ contact: BusinessContact | PersonContact }> =
         >
           {contact.name
             .split(" ")
+            .slice(-2)
             .map((n) => n[0])
             .join("")
             .toUpperCase()}
