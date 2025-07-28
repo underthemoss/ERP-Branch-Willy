@@ -312,6 +312,9 @@ export default function ProjectsPage() {
                     deleted: false,
                   },
                 },
+                sorting: {
+                  sortModel: [{ field: "updated_at", sort: "desc" }],
+                },
               }}
               onRowClick={(params) => {
                 if (params.row.id) {

@@ -293,6 +293,11 @@ export default function SalesOrdersPage() {
               disableRowSelectionOnClick
               hideFooter
               getRowId={(row: SalesOrderRow) => row.id}
+              initialState={{
+                sorting: {
+                  sortModel: [{ field: "updated_at", sort: "desc" }],
+                },
+              }}
               sx={{
                 cursor: "pointer",
                 "& .MuiDataGrid-row:hover": {
