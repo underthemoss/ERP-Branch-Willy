@@ -1,7 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useCreateSalesOrderMutation } from "@/graphql/hooks";
+import { useCreatePurchaseOrderMutation } from "@/graphql/hooks";
 import ContactSelector from "@/ui/ContactSelector";
 import ProjectSelector from "@/ui/ProjectSelector";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,10 +26,10 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
-// GQL mutation for creating a new sales order
-const CREATE_SALES_ORDER = graphql(`
-  mutation CreateSalesOrder($input: SalesOrderInput!) {
-    createSalesOrder(input: $input) {
+// GQL mutation for creating a new purchase order
+const CREATE_PURCHASE_ORDER = graphql(`
+  mutation CreatePurchaseOrder($input: PurchaseOrderInput!) {
+    createPurchaseOrder(input: $input) {
       id
       order_id
       buyer_id
@@ -43,7 +43,7 @@ const CREATE_SALES_ORDER = graphql(`
   }
 `);
 
-export default function NewSalesOrderPage() {
+export default function NewPurchaseOrderPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
   const [buyerId, setBuyerId] = React.useState<string | undefined>(undefined);
@@ -57,11 +57,15 @@ export default function NewSalesOrderPage() {
     purchaseOrderNumber?: string;
   }>({});
 
-  // GQL mutation for creating a new sales order
+  // GQL mutation for creating a new purchase order
   const [
-    createSalesOrder,
-    { data: createSalesOrderData, loading: createSalesOrderLoading, error: createSalesOrderError },
-  ] = useCreateSalesOrderMutation();
+    createPurchaseOrder,
+    {
+      data: createPurchaseOrderData,
+      loading: createPurchaseOrderLoading,
+      error: createPurchaseOrderError,
+    },
+  ] = useCreatePurchaseOrderMutation();
 
   // Submit handler
   const handleSubmit = async () => {
@@ -73,7 +77,7 @@ export default function NewSalesOrderPage() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      const result = await createSalesOrder({
+      const result = await createPurchaseOrder({
         variables: {
           input: {
             buyer_id: buyerId!,
@@ -82,9 +86,9 @@ export default function NewSalesOrderPage() {
           },
         },
       });
-      const newId = result.data?.createSalesOrder?.id;
+      const newId = result.data?.createPurchaseOrder?.id;
       if (newId) {
-        router.push(`/app/${workspace_id}/sales-orders/${newId}`);
+        router.push(`/app/${workspace_id}/purchase-orders/${newId}`);
       }
     }
   };
@@ -96,7 +100,7 @@ export default function NewSalesOrderPage() {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mb: 4 }}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="h4" sx={{ flexGrow: 1 }}>
-              New sales order
+              New purchase order
             </Typography>
             <Button variant="outlined" onClick={() => router.back()}>
               Cancel
@@ -105,8 +109,8 @@ export default function NewSalesOrderPage() {
               variant="contained"
               sx={{ ml: 2 }}
               onClick={handleSubmit}
-              loading={createSalesOrderLoading}
-              disabled={createSalesOrderLoading}
+              loading={createPurchaseOrderLoading}
+              disabled={createPurchaseOrderLoading}
             >
               Create Order
             </Button>

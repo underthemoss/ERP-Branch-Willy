@@ -1,410 +1,799 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery } from "@/graphql/hooks";
+import { PurchaseOrderStatus } from "@/graphql/graphql";
+import {
+  useCreatePdfFromPageAndAttachToEntityIdMutation,
+  useGetPurchaseOrderByIdQuery,
+  useSoftDeletePurchaseOrderMutation,
+  useSubmitPurchaseOrderMutation,
+} from "@/graphql/hooks";
+import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
+  Alert,
   Box,
   Button,
-  CircularProgress,
+  Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Grid,
+  IconButton,
   Paper,
+  Snackbar,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
-import LineItemsDataGrid from "./LineItemsDataGrid";
+import EditPurchaseOrderDialog from "./EditPurchaseOrderDialog";
+import OrderItemsSection from "./OrderItemsSection";
 
-// --- GQL Query (unique to this component) ---
-const PURCHASE_ORDER_DISPLAY_QUERY = graphql(`
-  query PurchaseOrderDisplayPage_GetPurchaseOrderById($id: String!) {
+const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
+  mutation CreatePdfFromPageAndAttachToEntityId(
+    $entity_id: String!
+    $path: String!
+    $file_name: String!
+  ) {
+    createPdfFromPageAndAttachToEntityId(
+      entity_id: $entity_id
+      path: $path
+      file_name: $file_name
+    ) {
+      success
+      error_message
+    }
+  }
+`);
+
+const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
+  query GetPurchaseOrderById($id: String) {
     getPurchaseOrderById(id: $id) {
       id
-      po_number
-      po_issue_date
+      order_id
+      purchase_order_number
       company_id
       created_at
       created_by
-      created_by_user {
-        firstName
-        lastName
-        email
-      }
       updated_at
       updated_by
-      updated_by_user {
+      buyer_id
+      project_id
+      status
+      line_items {
+        ... on RentalPurchaseOrderLineItem {
+          id
+        }
+        ... on SalePurchaseOrderLineItem {
+          id
+        }
+      }
+      buyer {
+        ... on BusinessContact {
+          id
+          name
+          address
+          phone
+          website
+          taxId
+          notes
+          createdAt
+          updatedAt
+        }
+        ... on PersonContact {
+          id
+          name
+          email
+          phone
+          role
+          notes
+          createdAt
+          updatedAt
+        }
+      }
+      project {
+        id
+        name
+        project_code
+        description
+        company {
+          id
+          name
+        }
+        created_at
+        created_by
+        updated_at
+        updated_by
+        deleted
+        scope_of_work
+        status
+        project_contacts {
+          contact_id
+          relation_to_project
+          contact {
+            ... on BusinessContact {
+              id
+              name
+              address
+              phone
+              website
+              taxId
+              notes
+              createdAt
+              updatedAt
+            }
+            ... on PersonContact {
+              id
+              name
+              email
+              phone
+              role
+              notes
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      }
+      created_by_user {
+        id
         firstName
         lastName
         email
       }
-      buyer_project_id
-      buyer_contact {
-        ... on BusinessContact {
-          id
-          name
-          address
-          phone
-          website
-        }
-        ... on PersonContact {
-          id
-          name
-          email
-          phone
-        }
-      }
-      seller_contact {
-        ... on BusinessContact {
-          id
-          name
-          address
-          phone
-          website
-        }
-        ... on PersonContact {
-          id
-          name
-          email
-          phone
-        }
-      }
-      requester_contact {
-        ... on BusinessContact {
-          id
-          name
-          address
-          phone
-          website
-        }
-        ... on PersonContact {
-          id
-          name
-          email
-          phone
-        }
-      }
-      line_items {
+      updated_by_user {
         id
-        po_pim_id
-        po_quantity
+        firstName
+        lastName
+        email
       }
     }
   }
 `);
 
-// --- Helper: Format date ---
-function formatDate(dateString?: string | null) {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// Submit Purchase Order mutation
+const SUBMIT_PURCHASE_ORDER_MUTATION = graphql(`
+  mutation SubmitPurchaseOrder($id: ID!) {
+    submitPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`);
 
-// --- Main Component ---
-export default function PurchaseOrderDisplayPage() {
-  const params = useParams<{ purchase_order_id: string }>();
-  const purchaseOrderId = params?.purchase_order_id;
-  const { data, loading, error } = usePurchaseOrderDisplayPage_GetPurchaseOrderByIdQuery({
-    variables: { id: purchaseOrderId },
+// Soft Delete Purchase Order mutation
+const SOFT_DELETE_PURCHASE_ORDER_MUTATION = graphql(`
+  mutation SoftDeletePurchaseOrder($id: String) {
+    softDeletePurchaseOrder(id: $id) {
+      id
+    }
+  }
+`);
+
+export default function PurchaseOrderDetailPage() {
+  const { purchase_order_id, workspace_id } = useParams<{
+    purchase_order_id: string;
+    workspace_id: string;
+  }>();
+  const router = useRouter();
+
+  const [cachekey, setCacheKey] = React.useState(0);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
+  const { data, loading, error } = useGetPurchaseOrderByIdQuery({
+    variables: { id: purchase_order_id },
     fetchPolicy: "cache-and-network",
   });
 
-  // --- Data mapping ---
-  const po = data?.getPurchaseOrderById;
+  const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
+    useCreatePdfFromPageAndAttachToEntityIdMutation();
 
-  // Overview fields
-  const overviewFields = [
-    { label: "PO Number", value: po?.po_number || "-" },
-    { label: "Issue Date", value: formatDate(po?.po_issue_date) || "-" },
-    { label: "Buyer", value: po?.buyer_contact?.name || "-" },
-    { label: "Seller", value: po?.seller_contact?.name || "-" },
-    { label: "Requester", value: po?.requester_contact?.name || "-" },
-    { label: "Project ID", value: po?.buyer_project_id || "-" },
-  ];
+  // Submit Purchase Order mutation
+  const [submitPurchaseOrder, { loading: submitLoading, data: submitData, error: submitError }] =
+    useSubmitPurchaseOrderMutation();
 
-  // Info cards
-  const infoCards = [
-    {
-      title: "Buyer Details",
-      content: po?.buyer_contact ? (
-        <Stack spacing={1}>
-          <Typography variant="body2">Name: {po.buyer_contact.name}</Typography>
-          {"address" in po.buyer_contact && po.buyer_contact.address && (
-            <Typography variant="body2">Address: {po.buyer_contact.address}</Typography>
-          )}
-          {"phone" in po.buyer_contact && po.buyer_contact.phone && (
-            <Typography variant="body2">Phone: {po.buyer_contact.phone}</Typography>
-          )}
-          {"website" in po.buyer_contact && po.buyer_contact.website && (
-            <Typography variant="body2">Website: {po.buyer_contact.website}</Typography>
-          )}
-          {"email" in po.buyer_contact && po.buyer_contact.email && (
-            <Typography variant="body2">Email: {po.buyer_contact.email}</Typography>
-          )}
-        </Stack>
-      ) : (
-        <Typography variant="body2" color="text.secondary">
-          No buyer contact info.
-        </Typography>
-      ),
-    },
-    {
-      title: "Seller Details",
-      content: po?.seller_contact ? (
-        <Stack spacing={1}>
-          <Typography variant="body2">Name: {po.seller_contact.name}</Typography>
-          {"address" in po.seller_contact && po.seller_contact.address && (
-            <Typography variant="body2">Address: {po.seller_contact.address}</Typography>
-          )}
-          {"phone" in po.seller_contact && po.seller_contact.phone && (
-            <Typography variant="body2">Phone: {po.seller_contact.phone}</Typography>
-          )}
-          {"website" in po.seller_contact && po.seller_contact.website && (
-            <Typography variant="body2">Website: {po.seller_contact.website}</Typography>
-          )}
-          {"email" in po.seller_contact && po.seller_contact.email && (
-            <Typography variant="body2">Email: {po.seller_contact.email}</Typography>
-          )}
-        </Stack>
-      ) : (
-        <Typography variant="body2" color="text.secondary">
-          No seller contact info.
-        </Typography>
-      ),
-    },
-  ] as const;
+  // Soft Delete Purchase Order mutation
+  const [softDeletePurchaseOrder, { loading: deleteLoading }] =
+    useSoftDeletePurchaseOrderMutation();
 
-  // Metadata
-  const metadata = [
-    { label: "Created At", value: formatDate(po?.created_at) || "-" },
-    {
-      label: "Created By",
-      value: po?.created_by_user
-        ? `${po.created_by_user.firstName} ${po.created_by_user.lastName}`.trim() ||
-          po.created_by_user.email ||
-          po.created_by ||
-          "-"
-        : po?.created_by || "-",
-    },
-    { label: "Updated At", value: formatDate(po?.updated_at) || "-" },
-    {
-      label: "Updated By",
-      value: po?.updated_by_user
-        ? `${po.updated_by_user.firstName} ${po.updated_by_user.lastName}`.trim() ||
-          po.updated_by_user.email ||
-          po.updated_by ||
-          "-"
-        : po?.updated_by || "-",
-    },
-    { label: "Company ID", value: po?.company_id || "-" },
-    { label: "PO ID", value: po?.id || "-" },
-  ];
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+  const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = React.useState<"success" | "error">("success");
 
-  // --- Render ---
+  React.useEffect(() => {
+    if (submitData?.submitPurchaseOrder?.id) {
+      setSnackbarMessage("Purchase order submitted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
+  }, [submitData]);
+
+  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const purchaseOrder = data?.getPurchaseOrderById;
+  const hasLineItems = (purchaseOrder?.line_items?.length ?? 0) > 0;
+
+  const handleDelete = async () => {
+    try {
+      await softDeletePurchaseOrder({
+        variables: { id: purchase_order_id },
+      });
+      setSnackbarMessage("Purchase order deleted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+      // Redirect to purchase orders list after successful deletion
+      setTimeout(() => {
+        router.push(`/app/${workspace_id}/purchase-orders`);
+      }, 1500);
+    } catch (error) {
+      setSnackbarMessage("Failed to delete purchase order");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Helper to format dates (handles ISO strings, Unix timestamps, etc.)
+  function formatDate(value?: string | number | null) {
+    if (!value) return "";
+    const date = parseDate(value);
+    if (!date) return String(value); // Fallback to original value if parsing fails
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   return (
-    <>
-      <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
-        {loading && (
-          <Box display="flex" alignItems="center" justifyContent="center" minHeight={300}>
-            <CircularProgress size={32} sx={{ mr: 2 }} />
-            <Typography variant="body1" color="text.secondary">
-              Loading purchase order details...
-            </Typography>
-          </Box>
-        )}
-        {error && (
-          <Typography variant="body1" color="error">
-            Error loading purchase order: {error.message}
-          </Typography>
-        )}
-        {!loading && !error && po && (
-          <Grid container spacing={3}>
-            {/* Main Content */}
-            <Grid size={{ xs: 12, md: 8 }}>
-              {/* Top Card: PO Overview */}
-              <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                <Grid container alignItems="center" justifyContent="space-between">
-                  <Grid size={{ xs: 12, md: 8 }}>
-                    <Typography variant="h4" gutterBottom>
-                      Purchase Order
-                    </Typography>
-                    {overviewFields.map((field) => (
-                      <Typography
-                        key={field.label}
-                        variant="subtitle1"
-                        color="text.secondary"
-                        gutterBottom
-                      >
-                        {field.label}: {field.value}
-                      </Typography>
-                    ))}
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                    <Button variant="contained" sx={{ mr: 1 }} disabled>
-                      Edit
-                    </Button>
-                    <Button variant="outlined" color="secondary" disabled>
-                      Print
-                    </Button>
-                  </Grid>
-                </Grid>
-                <Divider sx={{ my: 2 }} />
-                {/* Stubbed Progress Bar */}
-                <Box sx={{ width: "100%", mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    Progress
+    <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
+      {loading && (
+        <Typography variant="body1" color="text.secondary">
+          Loading purchase order details...
+        </Typography>
+      )}
+      {error && (
+        <Typography variant="body1" color="error">
+          Error loading purchase order: {error.message}
+        </Typography>
+      )}
+      {purchaseOrder && (
+        <Grid container spacing={3}>
+          {/* Main Content */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            {/* Top Card: Purchase Order Overview */}
+            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+              <Grid container alignItems="center" justifyContent="space-between">
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="h4">Purchase Order</Typography>
+                    <Chip
+                      label={purchaseOrder.status}
+                      color={
+                        purchaseOrder.status === "SUBMITTED"
+                          ? "primary"
+                          : purchaseOrder.status === "DRAFT"
+                            ? "default"
+                            : "default"
+                      }
+                    />
+                  </Box>
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    Purchase Order Number: {purchaseOrder.purchase_order_number}
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box sx={{ width: "80%", mr: 1 }}>
-                      {/* Replace with real progress if available */}
-                      <Box sx={{ bgcolor: "#e0e0e0", borderRadius: 1, height: 10 }}>
-                        <Box
-                          sx={{
-                            width: "40%",
-                            bgcolor: "primary.main",
-                            height: 10,
-                            borderRadius: 1,
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      2 of 5 steps
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-
-              {/* Info Cards */}
-              <Grid container spacing={3} alignItems="stretch" sx={{ mb: 3 }}>
-                {infoCards.map((card, idx) => (
-                  <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex" }} key={card.title}>
-                    <Paper
-                      elevation={2}
-                      sx={{
-                        p: 2,
-                        mb: 3,
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100%",
-                      }}
-                    >
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" gutterBottom>
-                          {card.title}
-                        </Typography>
-                        <Divider sx={{ mb: 1 }} />
-                        {card.content}
-                      </Box>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-
-              {/* Line Items Section */}
-              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <LineItemsDataGrid purchaseOrderId={purchaseOrderId} />
-              </Paper>
-
-              {/* File Upload Card */}
-              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Attached Files
-                </Typography>
-                <Divider sx={{ mb: 1 }} />
-                <AttachedFilesSection entityId={purchaseOrderId} />
-              </Paper>
-              {/* Notes Section */}
-              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <NotesSection entityId={po.id} />
-              </Paper>
-            </Grid>
-
-            {/* Sidebar */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              {/* Metadata Card */}
-              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Metadata
-                </Typography>
-                <Divider sx={{ mb: 1 }} />
-                <Stack spacing={2}>
-                  {metadata.map((meta) => (
-                    <Box key={meta.label}>
-                      <Typography variant="body2" color="text.secondary">
-                        {meta.label}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {meta.value}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Stack>
-              </Paper>
-
-              {/* Stubbed Help/Support Card */}
-              <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
-                <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box
-                    component="span"
-                    sx={{
-                      display: "inline-block",
-                      width: 24,
-                      height: 24,
-                      bgcolor: "#ffe082",
-                      borderRadius: "50%",
-                      mr: 1,
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
+                    display="flex"
+                    flexDirection="column"
+                    gap={1}
+                    alignItems={{ md: "flex-end", xs: "flex-start" }}
                   >
-                    ?
+                    {purchaseOrder.status !== "SUBMITTED" && (
+                      <Tooltip
+                        title={
+                          !hasLineItems
+                            ? "Cannot submit an empty purchase order. Please add at least one line item."
+                            : ""
+                        }
+                        arrow
+                      >
+                        <span>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={submitLoading || !hasLineItems}
+                            loading={submitLoading}
+                            onClick={async () => {
+                              if (!purchaseOrder?.id) return;
+                              await submitPurchaseOrder({
+                                variables: { id: purchaseOrder.id },
+                                refetchQueries: ["GetPurchaseOrderById"],
+                                awaitRefetchQueries: true,
+                              });
+                            }}
+                            sx={{ mb: 1 }}
+                          >
+                            Submit
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    )}
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Button
+                        color="secondary"
+                        startIcon={<PrintOutlinedIcon />}
+                        disabled={pdfLoading}
+                        onClick={async () => {
+                          if (!purchaseOrder?.id || !workspace_id || !purchase_order_id) return;
+                          // Format file name as purchase-order-YYYY-MM-DD
+                          const today = new Date();
+                          const yyyy = today.getFullYear();
+                          const mm = String(today.getMonth() + 1).padStart(2, "0");
+                          const dd = String(today.getDate()).padStart(2, "0");
+                          const fileName = `purchase-order-${yyyy}-${mm}-${dd}`;
+                          await createPdf({
+                            variables: {
+                              entity_id: purchaseOrder.id,
+                              path: `print/purchase-order/${workspace_id}/${purchase_order_id}`,
+                              file_name: fileName,
+                            },
+                          });
+                          setCacheKey((k) => k + 1);
+                        }}
+                      >
+                        {pdfLoading ? "Generating PDF..." : "Print"}
+                      </Button>
+                      {purchaseOrder.status !== "SUBMITTED" && (
+                        <>
+                          <Button
+                            color="secondary"
+                            startIcon={<EditOutlinedIcon />}
+                            onClick={() => setEditDialogOpen(true)}
+                          >
+                            Edit
+                          </Button>
+                          {purchaseOrder.status === "DRAFT" && (
+                            <Button
+                              color="error"
+                              startIcon={<DeleteOutlineIcon />}
+                              onClick={() => setDeleteDialogOpen(true)}
+                              disabled={deleteLoading}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </Box>
                   </Box>
-                  Need help with this purchase order?
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.success && (
+                    <Typography variant="caption" color="success.main" sx={{ ml: 1 }}>
+                      PDF attached!
+                    </Typography>
+                  )}
+                  {pdfError && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfError.message}
+                    </Typography>
+                  )}
+                  {pdfData?.createPdfFromPageAndAttachToEntityId?.error_message && (
+                    <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                      {pdfData.createPdfFromPageAndAttachToEntityId.error_message}
+                    </Typography>
+                  )}
+                </Grid>
+              </Grid>
+              <Divider sx={{ my: 2 }} />
+              {/* Stubbed Progress Bar */}
+              <Box sx={{ width: "100%", mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  Order Progress
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Our team would be happy to help you with any kind of problem you might have!
-                </Typography>
-                <Button variant="contained" color="warning" size="small" disabled>
-                  Get Help (stub)
-                </Button>
-              </Paper>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ width: "80%", mr: 1 }}>
+                    {/* Replace with real progress if available */}
+                    <Box sx={{ bgcolor: "#e0e0e0", borderRadius: 1, height: 10 }}>
+                      <Box
+                        sx={{ width: "40%", bgcolor: "primary.main", height: 10, borderRadius: 1 }}
+                      />
+                    </Box>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    2 of 5 steps
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
 
-              {/* Stubbed Quick Links */}
-              <Paper elevation={1} sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Quick Links
-                </Typography>
-                <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                  Invite Team (stub)
-                </Button>
-                <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                  View All Purchase Orders (stub)
-                </Button>
-                <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
-                  Upgrade Plan (stub)
-                </Button>
-              </Paper>
-            </Grid>
+            {/* Order Items Section */}
+            <OrderItemsSection
+              purchaseOrderId={purchaseOrder.id}
+              purchaseOrderStatus={purchaseOrder.status}
+            />
+
+            {/* File Upload Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Attached Files
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <AttachedFilesSection key={`files-${cachekey}`} entityId={purchaseOrder.id} />
+            </Paper>
+
+            {/* Notes Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <NotesSection entityId={purchaseOrder.id} />
+            </Paper>
           </Grid>
-        )}
-        {!loading && !error && !po && (
-          <Typography variant="body1" color="text.secondary">
-            No purchase order found for ID: {purchaseOrderId}
-          </Typography>
-        )}
-      </Container>
-    </>
+
+          {/* Sidebar */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            {/* Metadata Card */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Metadata
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <Stack spacing={2}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
+                    {purchaseOrder.id}
+                  </Typography>
+                  <Tooltip title="Copy Purchase Order ID" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Purchase Order ID"
+                      data-testid="purchase-order-details-copy-id"
+                      onClick={() => navigator.clipboard.writeText(purchaseOrder.id)}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created At
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {formatDate(purchaseOrder.created_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated At
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {formatDate(purchaseOrder.updated_at)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Created By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ wordBreak: "break-all" }}>
+                    {purchaseOrder.created_by_user
+                      ? `${purchaseOrder.created_by_user.firstName} ${purchaseOrder.created_by_user.lastName} (${purchaseOrder.created_by_user.email})`
+                      : purchaseOrder.created_by}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated By
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ wordBreak: "break-all" }}>
+                    {purchaseOrder.updated_by_user
+                      ? `${purchaseOrder.updated_by_user.firstName} ${purchaseOrder.updated_by_user.lastName} (${purchaseOrder.updated_by_user.email})`
+                      : purchaseOrder.updated_by}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
+
+            {/* Buyer Information Card */}
+            <Paper
+              elevation={1}
+              sx={{
+                p: 2,
+                mb: 2,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Buyer Information
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
+                {purchaseOrder.buyer ? (
+                  <Box>
+                    <Typography>
+                      Name: <b>{purchaseOrder.buyer.name}</b>
+                    </Typography>
+                    {"email" in purchaseOrder.buyer && purchaseOrder.buyer.email && (
+                      <Typography>Email: {purchaseOrder.buyer.email}</Typography>
+                    )}
+                    {"phone" in purchaseOrder.buyer && purchaseOrder.buyer.phone && (
+                      <Typography>Phone: {purchaseOrder.buyer.phone}</Typography>
+                    )}
+                    {"address" in purchaseOrder.buyer && purchaseOrder.buyer.address && (
+                      <Typography>
+                        Address:{" "}
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            purchaseOrder.buyer.address,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "inherit",
+                            textDecoration: "underline",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          {purchaseOrder.buyer.address}
+                          <OpenInNewIcon sx={{ fontSize: 16 }} />
+                        </a>
+                      </Typography>
+                    )}
+                    {"website" in purchaseOrder.buyer && purchaseOrder.buyer.website && (
+                      <Typography>
+                        Website:{" "}
+                        {(() => {
+                          const website = purchaseOrder.buyer.website;
+                          // Validate URL format
+                          let url = website;
+                          if (!website.match(/^https?:\/\//i)) {
+                            url = `https://${website}`;
+                          }
+                          try {
+                            // Validate URL
+                            new URL(url);
+                            return (
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "inherit",
+                                  textDecoration: "underline",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                {website}
+                                <OpenInNewIcon sx={{ fontSize: 16 }} />
+                              </a>
+                            );
+                          } catch {
+                            // Invalid URL, just display as text
+                            return website;
+                          }
+                        })()}
+                      </Typography>
+                    )}
+                    {"taxId" in purchaseOrder.buyer && purchaseOrder.buyer.taxId && (
+                      <Typography>Tax ID: {purchaseOrder.buyer.taxId}</Typography>
+                    )}
+                    {purchaseOrder.buyer.notes && (
+                      <Typography>Notes: {purchaseOrder.buyer.notes}</Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography color="text.secondary">No buyer information</Typography>
+                )}
+              </Box>
+              <Box sx={{ mt: 2, textAlign: "right" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={!purchaseOrder.buyer_id}
+                  onClick={() => {
+                    if (purchaseOrder.buyer_id) {
+                      router.push(`/app/${workspace_id}/contacts/${purchaseOrder.buyer_id}`);
+                    }
+                  }}
+                >
+                  View Buyer
+                </Button>
+              </Box>
+            </Paper>
+
+            {/* Project Information Card */}
+            <Paper
+              elevation={1}
+              sx={{
+                p: 2,
+                mb: 3,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Project Information
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
+                {purchaseOrder.project ? (
+                  <Box>
+                    <Typography>
+                      Name: <b>{purchaseOrder.project.name}</b>
+                    </Typography>
+                    <Typography>Code: {purchaseOrder.project.project_code}</Typography>
+                    <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                      Description: {purchaseOrder.project.description}
+                    </Typography>
+                    <Typography>Company: {purchaseOrder.project.company?.name}</Typography>
+                    <Typography>Status: {purchaseOrder.project.status}</Typography>
+                    <Typography>
+                      Scope of Work: {purchaseOrder.project.scope_of_work?.join(", ")}
+                    </Typography>
+                    <Typography>Contacts:</Typography>
+                    <Box sx={{ pl: 2 }}>
+                      {(purchaseOrder.project.project_contacts ?? []).length ? (
+                        (purchaseOrder.project.project_contacts ?? []).map((pc: any) => (
+                          <Box key={pc.contact_id} sx={{ mb: 1 }}>
+                            <Typography>
+                              {pc.relation_to_project}: {pc.contact?.name}
+                            </Typography>
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography color="text.secondary">No contacts</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ) : (
+                  <Typography color="text.secondary">No project information</Typography>
+                )}
+              </Box>
+              <Box sx={{ mt: 2, textAlign: "right" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={!purchaseOrder.project_id}
+                  onClick={() => {
+                    if (purchaseOrder.project_id) {
+                      router.push(`/app/${workspace_id}/projects/${purchaseOrder.project_id}`);
+                    }
+                  }}
+                >
+                  View Project
+                </Button>
+              </Box>
+            </Paper>
+
+            {/* Stubbed Help/Support Card */}
+            <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
+              <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-block",
+                    width: 24,
+                    height: 24,
+                    bgcolor: "#ffe082",
+                    borderRadius: "50%",
+                    mr: 1,
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ?
+                </Box>
+                Need help with this order?
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Our team would be happy to help you with any kind of problem you might have!
+              </Typography>
+              <Button variant="contained" color="warning" size="small" disabled>
+                Get Help (stub)
+              </Button>
+            </Paper>
+
+            {/* Stubbed Quick Links */}
+            <Paper elevation={1} sx={{ p: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Quick Links
+              </Typography>
+              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                Invite Team (stub)
+              </Button>
+              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                View All Orders (stub)
+              </Button>
+              <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
+                Upgrade Plan (stub)
+              </Button>
+            </Paper>
+          </Grid>
+        </Grid>
+      )}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Delete Purchase Order</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this purchase order? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={deleteLoading}>
+            {deleteLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Purchase Order Dialog */}
+      {purchaseOrder && (
+        <EditPurchaseOrderDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          purchaseOrder={{
+            id: purchaseOrder.id,
+            buyer_id: purchaseOrder.buyer_id,
+            purchase_order_number: purchaseOrder.purchase_order_number,
+            project_id: purchaseOrder.project_id,
+          }}
+          onSuccess={() => {
+            // Optionally refresh the data or show a success message
+            setSnackbarOpen(true);
+          }}
+        />
+      )}
+    </Container>
   );
 }
