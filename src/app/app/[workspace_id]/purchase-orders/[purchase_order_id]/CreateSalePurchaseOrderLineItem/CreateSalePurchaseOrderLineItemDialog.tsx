@@ -1,0 +1,205 @@
+"use client";
+
+import { useGetPurchaseOrderSaleLineItemByIdCreateDialogQuery } from "@/graphql/hooks";
+import UnsavedChangesWarningDialog from "@/ui/dialog/UnsavedChangesWarningDialog";
+import { Alert, Box, Button, Dialog, DialogActions, Snackbar } from "@mui/material";
+import React, { useState } from "react";
+import CreateSalePurchaseOrderLineItemConfirmationStep from "./CreateSalePurchaseOrderLineItemConfirmationStep";
+import CreateSalePurchaseOrderLineItemDeliveryStep from "./CreateSalePurchaseOrderLineItemDeliveryStep";
+import CreateSalePurchaseOrderLineItemFulfillmentDetailsStep from "./CreateSalePurchaseOrderLineItemFulfillmentDetailsStep";
+import CreateSalePurchaseOrderLineItemPricingStep from "./CreateSalePurchaseOrderLineItemPricingStep";
+import CreateSalePurchaseOrderLineItemProductSelectionStep from "./CreateSalePurchaseOrderLineItemProductSelectionStep";
+
+interface CreateSalePurchaseOrderLineItemDialogProps {
+  open: boolean;
+  onClose: () => void;
+  lineItemId: string;
+  onSuccess: () => void;
+}
+
+export type CreateSalePurchaseOrderLineItemFooter = React.FC<{
+  nextEnabled: boolean;
+  loading: boolean;
+  onNextClick?: () => Promise<void>;
+}>;
+
+export const CreateSalePurchaseOrderLineItemDialog: React.FC<
+  CreateSalePurchaseOrderLineItemDialogProps
+> = ({ open, onClose, lineItemId, onSuccess }) => {
+  const [step, setStep] = useState<number>(1);
+  const [showWarningDialog, setShowWarningDialog] = useState<boolean>(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
+  const { data, refetch } = useGetPurchaseOrderSaleLineItemByIdCreateDialogQuery({
+    variables: { id: lineItemId },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const lineItem =
+    data?.getPurchaseOrderLineItemById?.__typename === "SalePurchaseOrderLineItem"
+      ? data.getPurchaseOrderLineItemById
+      : null;
+
+  if (!lineItem) {
+    return null;
+  }
+
+  const handleClose = async () => {
+    // Refetch the latest status from the backend
+    const { data: latestData } = await refetch();
+    const latestLineItem =
+      latestData?.getPurchaseOrderLineItemById?.__typename === "SalePurchaseOrderLineItem"
+        ? latestData.getPurchaseOrderLineItemById
+        : null;
+
+    // Check if line item is in draft status and show warning
+    if (latestLineItem?.lineitem_status === "DRAFT") {
+      setShowWarningDialog(true);
+    } else {
+      // If the item was confirmed, show success message
+      if (latestLineItem?.lineitem_status === "CONFIRMED") {
+        setShowSuccessMessage(true);
+      }
+      setStep(1);
+      onClose();
+    }
+  };
+
+  const handleForceClose = () => {
+    setStep(1);
+    onClose();
+  };
+
+  const handleConfirmClose = () => {
+    setShowWarningDialog(false);
+    handleForceClose();
+  };
+
+  const handleCancelClose = () => {
+    setShowWarningDialog(false);
+  };
+
+  const Footer: CreateSalePurchaseOrderLineItemFooter = ({ nextEnabled, loading, onNextClick }) => {
+    return (
+      <DialogActions
+        sx={{
+          bgcolor: "grey.100",
+          borderTop: 1,
+          borderColor: "divider",
+          px: 3,
+          py: 1.5,
+          mt: 3,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button onClick={handleClose} color="inherit" disabled={loading}>
+          Cancel
+        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {step > 1 && (
+            <Button onClick={() => setStep((s) => s - 1)} disabled={loading} color="inherit">
+              Back
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={!nextEnabled || loading}
+            onClick={async () => {
+              if (onNextClick) {
+                await onNextClick();
+              }
+
+              if (step === 5) {
+                handleClose();
+              } else {
+                setStep((s) => s + 1);
+              }
+            }}
+          >
+            Continue
+          </Button>
+        </Box>
+      </DialogActions>
+    );
+  };
+
+  return (
+    <>
+      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+        {typeof lineItemId === "string" && (
+          <>
+            {/* Step 1: Select product */}
+            {step === 1 && (
+              <CreateSalePurchaseOrderLineItemProductSelectionStep
+                lineItemId={lineItemId}
+                Footer={Footer}
+              />
+            )}
+
+            {/* Step 2: Pricing */}
+            {step === 2 && lineItem.po_pim_id && (
+              <CreateSalePurchaseOrderLineItemPricingStep
+                lineItemId={lineItemId}
+                Footer={Footer}
+                pimCategoryId={lineItem.po_pim_id}
+              />
+            )}
+
+            {/* Step 3: Fulfillment Details */}
+            {step === 3 && (
+              <CreateSalePurchaseOrderLineItemFulfillmentDetailsStep
+                lineItemId={lineItemId}
+                Footer={Footer}
+              />
+            )}
+
+            {/* Step 4: Delivery Information */}
+            {step === 4 && (
+              <CreateSalePurchaseOrderLineItemDeliveryStep
+                lineItemId={lineItemId}
+                Footer={Footer}
+              />
+            )}
+
+            {/* Step 5: Confirmation */}
+            {step === 5 && (
+              <CreateSalePurchaseOrderLineItemConfirmationStep
+                lineItemId={lineItemId}
+                Footer={Footer}
+              />
+            )}
+          </>
+        )}
+      </Dialog>
+
+      {/* Warning dialog for unsaved changes */}
+      <UnsavedChangesWarningDialog
+        open={showWarningDialog}
+        onClose={handleCancelClose}
+        onConfirm={handleConfirmClose}
+        title="Unsaved Changes"
+        message="This line item is in draft status and has unsaved changes. If you close this dialog, all changes will be lost. Are you sure you want to continue?"
+      />
+
+      {/* Success message */}
+      <Snackbar
+        open={showSuccessMessage}
+        autoHideDuration={3000}
+        onClose={() => setShowSuccessMessage(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setShowSuccessMessage(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          Sale line item created successfully!
+        </Alert>
+      </Snackbar>
+    </>
+  );
+};
+
+export default CreateSalePurchaseOrderLineItemDialog;

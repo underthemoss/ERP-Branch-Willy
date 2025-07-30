@@ -3,6 +3,8 @@
 import { PurchaseOrderStatus } from "@/graphql/graphql";
 import { Box, Button, Paper, Typography } from "@mui/material";
 import * as React from "react";
+import CreateRentalPurchaseOrderLineItemDialog from "./CreateRentalPurchaseOrderLineItem/CreateRentalPurchaseOrderLineItemDialog";
+import CreateSalePurchaseOrderLineItemDialog from "./CreateSalePurchaseOrderLineItem/CreateSalePurchaseOrderLineItemDialog";
 import PurchaseOrderLineItemsDataGrid from "./PurchaseOrderLineItemsDataGrid";
 import PurchaseOrderTransactionTypeSelectDialog, {
   TransactionType,
@@ -57,6 +59,25 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({
         onClose={() => setOpenDialog("none")}
         onSelect={handleTypeSelect}
         purchaseOrderId={purchaseOrderId}
+      />
+      <CreateRentalPurchaseOrderLineItemDialog
+        key={`${purchaseOrderId}-${openDialog}-rental`}
+        open={openDialog === "rental"}
+        onClose={() => {
+          setOpenDialog("none");
+          setLineItemId(null);
+        }}
+        lineItemId={lineItemId || ""}
+        onSuccess={() => {
+          setOpenDialog("none");
+          setLineItemId(null);
+        }}
+      />
+      <CreateSalePurchaseOrderLineItemDialog
+        open={openDialog === "sale"}
+        onClose={handleCloseDialog}
+        lineItemId={lineItemId || ""}
+        onSuccess={() => {}}
       />
 
       <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>

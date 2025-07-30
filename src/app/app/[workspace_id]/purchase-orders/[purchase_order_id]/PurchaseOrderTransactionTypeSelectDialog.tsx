@@ -94,7 +94,7 @@ const PurchaseOrderTransactionTypeSelectDialog: React.FC<
         const result = await createRentalLineItem({
           variables: {
             input: {
-              sales_order_id: purchaseOrderId,
+              purchase_order_id: purchaseOrderId,
               po_quantity: 1,
               lineitem_status: PoLineItemStatus.Draft,
             },
@@ -114,7 +114,7 @@ const PurchaseOrderTransactionTypeSelectDialog: React.FC<
         const result = await createSaleLineItem({
           variables: {
             input: {
-              sales_order_id: purchaseOrderId,
+              purchase_order_id: purchaseOrderId,
               po_quantity: 1,
               lineitem_status: PoLineItemStatus.Draft,
             },

@@ -9,8 +9,14 @@ import ErrorStateListViewIcon from "@/ui/icons/ErrorStateListViewIcon";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
+import { LineChart } from "@mui/x-charts/LineChart";
 import { DataGridPremium, GridColDef, Toolbar } from "@mui/x-data-grid-premium";
+import { addDays, format } from "date-fns";
 import * as React from "react";
+import DeleteLineItemButton from "./DeleteLineItemButton";
+import DuplicateRentalLineItemButton from "./DuplicateRentalLineItemButton";
+import EditLineItemButton from "./EditLineItemButton";
+import PurchaseOrderCloneRentalLineItem from "./PurchaseOrderCloneRentalLineItem";
 
 // --- GQL Query (for codegen) ---
 graphql(`
@@ -158,6 +164,10 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
     variables: { purchaseOrderId },
     fetchPolicy: "cache-and-network",
   });
+
+  // State for duplicate dialog
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = React.useState(false);
+  const [selectedLineItemId, setSelectedLineItemId] = React.useState<string | null>(null);
 
   const handleAddNewItem = async () => {
     if (onAddNewItem) {
@@ -342,6 +352,48 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
       valueGetter: (_, row) =>
         row.updated_at ? (parseDate(row.updated_at)?.toLocaleString() ?? "-") : "-",
     },
+    {
+      field: "actions",
+      headerName: "Actions",
+      minWidth: 140,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      align: "right",
+      headerAlign: "right",
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.5,
+            alignItems: "center",
+            justifyContent: "flex-end",
+            height: "100%",
+          }}
+        >
+          <DuplicateRentalLineItemButton
+            lineItemId={params.row.id}
+            lineItemType={params.row.__typename}
+            onDuplicate={() => {
+              setSelectedLineItemId(params.row.id);
+              setDuplicateDialogOpen(true);
+            }}
+            disabled={purchaseOrderStatus === PurchaseOrderStatus.Submitted}
+          />
+          <EditLineItemButton
+            lineItemId={params.row.id}
+            lineItemType={params.row.__typename}
+            onEdit={() => onEditItem?.(params.row.id, params.row.__typename)}
+            disabled={purchaseOrderStatus === PurchaseOrderStatus.Submitted}
+          />
+          <DeleteLineItemButton
+            lineItemId={params.row.id}
+            onDeleted={refetch}
+            disabled={purchaseOrderStatus === PurchaseOrderStatus.Submitted}
+          />
+        </Box>
+      ),
+    },
   ];
 
   return (
@@ -419,6 +471,7 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
               rows={lineItems}
               columns={columns}
               loading={loading}
+              pinnedColumns={{ right: ["actions"] }}
               disableRowSelectionOnClick
               autoHeight
               getRowId={(row) => row.id}
@@ -494,6 +547,140 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
                   );
                 },
               }}
+              getDetailPanelContent={({
+                row,
+              }: {
+                row: NonNullable<
+                  NonNullable<NonNullable<typeof data>["getPurchaseOrderById"]>["line_items"]
+                >[number];
+              }) => {
+                // Helper function to build product description
+                const getProductDescription = (row: RowType): string => {
+                  const productName = row.so_pim_product?.name;
+                  const productModel = row.so_pim_product?.model;
+                  const categoryName = row.so_pim_category?.name;
+                  const sku = row.so_pim_product?.sku;
+                  const manufacturerPartNumber = row.so_pim_product?.manufacturer_part_number;
+
+                  // Build product info based on what's available
+                  if (productName && productModel) {
+                    return `${productName} (${productModel})`;
+                  } else if (productName) {
+                    return productName;
+                  } else if (productModel) {
+                    return `Model: ${productModel}`;
+                  } else if (categoryName) {
+                    // If no product info, fall back to category
+                    return `Category: ${categoryName}`;
+                  } else if (sku) {
+                    // If no name/model/category, try SKU
+                    return `SKU: ${sku}`;
+                  } else if (manufacturerPartNumber) {
+                    // Last resort: manufacturer part number
+                    return `Part #: ${manufacturerPartNumber}`;
+                  }
+
+                  return "Product information not available";
+                };
+
+                return row?.__typename === "RentalPurchaseOrderLineItem" ? (
+                  <Box sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Rental Line Item Details
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Product:</strong> {getProductDescription(row)}
+                    </Typography>
+
+                    <Box sx={{ mt: 2 }}>
+                      {row.calulate_price?.details && (
+                        <>
+                          <Typography variant="body2">
+                            <strong>Rates:</strong>{" "}
+                            {row.calulate_price?.details.rates
+                              ? `28d: $${(row.calulate_price?.details.rates.pricePer28DaysInCents / 100).toFixed(2)}, 7d: $${(row.calulate_price?.details.rates.pricePer7DaysInCents / 100).toFixed(2)}, 1d: $${(row.calulate_price?.details.rates.pricePer1DayInCents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Optimal Split:</strong>{" "}
+                            {row.calulate_price?.details.optimalSplit
+                              ? `28d: ${row.calulate_price?.details.optimalSplit.days28}, 7d: ${row.calulate_price?.details.optimalSplit.days7}, 1d: ${row.calulate_price?.details.optimalSplit.days1}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Cost Summary:</strong>{" "}
+                            {row.calulate_price?.details.plainText ?? "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Sub total:</strong>{" "}
+                            {row.delivery_charge_in_cents &&
+                            row.calulate_price.total_including_delivery_in_cents
+                              ? `$${((row.calulate_price.total_including_delivery_in_cents - row.delivery_charge_in_cents) / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Delivery:</strong>{" "}
+                            {row.delivery_charge_in_cents
+                              ? `$${(row.delivery_charge_in_cents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Total (Incl. Delivery):</strong>{" "}
+                            {row.calulate_price?.total_including_delivery_in_cents
+                              ? `$${(row.calulate_price.total_including_delivery_in_cents / 100).toFixed(2)}`
+                              : "-"}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+
+                    <Typography variant="body2">
+                      <strong>Delivery Method:</strong> {row.delivery_method ?? "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Delivery Location:</strong> {row.delivery_location ?? "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Delivery Date:</strong>{" "}
+                      {row.delivery_date
+                        ? (parseDate(row.delivery_date)?.toLocaleDateString() ?? "-")
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Off-Rent Date:</strong>{" "}
+                      {row.off_rent_date
+                        ? (parseDate(row.off_rent_date)?.toLocaleDateString() ?? "-")
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Days on Rent:</strong>{" "}
+                      {row.totalDaysOnRent !== null && row.totalDaysOnRent !== undefined
+                        ? `${row.totalDaysOnRent} days`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Created By:</strong>{" "}
+                      {row.created_by_user
+                        ? `${row.created_by_user.firstName} ${row.created_by_user.lastName}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Updated By:</strong>{" "}
+                      {row.updated_by_user
+                        ? `${row.updated_by_user.firstName} ${row.updated_by_user.lastName}`
+                        : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Created At:</strong>{" "}
+                      {row.created_at ? (parseDate(row.created_at)?.toLocaleString() ?? "-") : "-"}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Updated At:</strong>{" "}
+                      {row.updated_at ? (parseDate(row.updated_at)?.toLocaleString() ?? "-") : "-"}
+                    </Typography>
+                  </Box>
+                ) : null;
+              }}
             />
             <Button
               variant="outlined"
@@ -507,6 +694,21 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
           </>
         )}
       </Box>
+
+      {/* Duplicate rental dialog */}
+      {selectedLineItemId && (
+        <PurchaseOrderCloneRentalLineItem
+          open={duplicateDialogOpen}
+          onClose={() => {
+            setDuplicateDialogOpen(false);
+            setSelectedLineItemId(null);
+          }}
+          lineItemId={selectedLineItemId}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
     </Box>
   );
 };

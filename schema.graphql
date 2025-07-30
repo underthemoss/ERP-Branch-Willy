@@ -345,7 +345,7 @@ input CreateRentalPurchaseOrderLineItemInput {
   po_pim_id: String
   po_quantity: Int
   price_id: String
-  sales_order_id: String!
+  purchase_order_id: String!
 }
 
 input CreateRentalSalesOrderLineItemInput {
@@ -394,7 +394,7 @@ input CreateSalePurchaseOrderLineItemInput {
   po_pim_id: String
   po_quantity: Int
   price_id: String
-  sales_order_id: String!
+  purchase_order_id: String!
 }
 
 input CreateSaleSalesOrderLineItemInput {
