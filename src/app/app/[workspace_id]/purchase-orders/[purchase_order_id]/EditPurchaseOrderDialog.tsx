@@ -22,7 +22,7 @@ graphql(`
   mutation UpdatePurchaseOrder($input: UpdatePurchaseOrderInput!) {
     updatePurchaseOrder(input: $input) {
       id
-      buyer_id
+      seller_id
       purchase_order_number
       project_id
     }
@@ -35,7 +35,7 @@ interface EditPurchaseOrderDialogProps {
   onSuccess: () => void;
   purchaseOrder: {
     id: string;
-    buyer_id: string;
+    seller_id: string;
     purchase_order_number: string;
     project_id?: string | null;
   };
@@ -50,7 +50,7 @@ export const EditPurchaseOrderDialog: React.FC<EditPurchaseOrderDialogProps> = (
   const params = useParams<{ workspace_id: string }>();
   const workspaceId = params?.workspace_id || "";
 
-  const [buyerId, setBuyerId] = useState<string>(purchaseOrder.buyer_id);
+  const [sellerId, setSellerId] = useState<string>(purchaseOrder.seller_id);
   const [projectId, setProjectId] = useState<string | undefined>(
     purchaseOrder.project_id || undefined,
   );
@@ -62,7 +62,7 @@ export const EditPurchaseOrderDialog: React.FC<EditPurchaseOrderDialogProps> = (
   const [updatePurchaseOrder, { loading }] = useUpdatePurchaseOrderMutation();
 
   const handleClose = () => {
-    setBuyerId(purchaseOrder.buyer_id);
+    setSellerId(purchaseOrder.seller_id);
     setProjectId(purchaseOrder.project_id || undefined);
     setPurchaseOrderNumber(purchaseOrder.purchase_order_number);
     setError(null);
@@ -72,19 +72,17 @@ export const EditPurchaseOrderDialog: React.FC<EditPurchaseOrderDialogProps> = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!buyerId || !purchaseOrderNumber.trim()) {
-      setError("Buyer and purchase order number are required.");
+    if (!sellerId || !purchaseOrderNumber.trim()) {
+      setError("Seller and purchase order number are required.");
       return;
     }
     try {
-      const input: Record<string, any> = {
+      const input = {
         id: purchaseOrder.id,
-        buyer_id: buyerId,
+        seller_id: sellerId,
         purchase_order_number: purchaseOrderNumber.trim(),
+        ...(projectId && { project_id: projectId }),
       };
-      if (projectId) {
-        input.project_id = projectId;
-      }
 
       await updatePurchaseOrder({
         variables: { input },
@@ -118,9 +116,13 @@ export const EditPurchaseOrderDialog: React.FC<EditPurchaseOrderDialogProps> = (
           </Box>
           <Box>
             <Typography fontWeight={600} mb={1}>
-              Buyer <span style={{ color: "#d32f2f" }}>*</span>
+              Seller <span style={{ color: "#d32f2f" }}>*</span>
             </Typography>
-            <ContactSelector contactId={buyerId} onChange={setBuyerId} workspaceId={workspaceId} />
+            <ContactSelector
+              contactId={sellerId}
+              onChange={setSellerId}
+              workspaceId={workspaceId}
+            />
           </Box>
           <Box>
             <Typography fontWeight={600} mb={1}>

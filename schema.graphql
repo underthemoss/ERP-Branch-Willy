@@ -1165,8 +1165,6 @@ enum ProjectStatusEnum {
 }
 
 type PurchaseOrder {
-  buyer: Contact
-  buyer_id: String!
   comments: [Note!]!
   company_id: String!
   created_at: String!
@@ -1182,6 +1180,8 @@ type PurchaseOrder {
   project: Project
   project_id: String
   purchase_order_number: String!
+  seller: Contact
+  seller_id: String!
 
   """Status of the purchase order"""
   status: PurchaseOrderStatus!
@@ -1191,9 +1191,9 @@ type PurchaseOrder {
 }
 
 input PurchaseOrderInput {
-  buyer_id: String!
   project_id: String
   purchase_order_number: String!
+  seller_id: String!
 }
 
 union PurchaseOrderLineItem = RentalPurchaseOrderLineItem | SalePurchaseOrderLineItem
@@ -1861,10 +1861,10 @@ input UpdatePersonContactInput {
 }
 
 input UpdatePurchaseOrderInput {
-  buyer_id: String
   id: String!
   project_id: String
   purchase_order_number: String
+  seller_id: String
 }
 
 input UpdatePurchaseOrderLineItemInput {

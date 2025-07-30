@@ -32,7 +32,7 @@ const CREATE_PURCHASE_ORDER = graphql(`
     createPurchaseOrder(input: $input) {
       id
       order_id
-      buyer_id
+      seller_id
       project_id
       purchase_order_number
       company_id
@@ -46,13 +46,13 @@ const CREATE_PURCHASE_ORDER = graphql(`
 export default function NewPurchaseOrderPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
-  const [buyerId, setBuyerId] = React.useState<string | undefined>(undefined);
+  const [sellerId, setSellerId] = React.useState<string | undefined>(undefined);
   const [projectId, setProjectId] = React.useState<string | undefined>(undefined);
   const [purchaseOrderNumber, setPurchaseOrderNumber] = React.useState<string>("");
 
   // Validation state
   const [errors, setErrors] = React.useState<{
-    buyerId?: string;
+    sellerId?: string;
     projectId?: string;
     purchaseOrderNumber?: string;
   }>({});
@@ -69,8 +69,8 @@ export default function NewPurchaseOrderPage() {
 
   // Submit handler
   const handleSubmit = async () => {
-    const newErrors: { buyerId?: string; projectId?: string; purchaseOrderNumber?: string } = {};
-    if (!buyerId) newErrors.buyerId = "Buyer is required";
+    const newErrors: { sellerId?: string; projectId?: string; purchaseOrderNumber?: string } = {};
+    if (!sellerId) newErrors.sellerId = "Seller is required";
     if (!projectId) newErrors.projectId = "Project is required";
     if (!purchaseOrderNumber.trim())
       newErrors.purchaseOrderNumber = "Purchase order number is required";
@@ -80,7 +80,7 @@ export default function NewPurchaseOrderPage() {
       const result = await createPurchaseOrder({
         variables: {
           input: {
-            buyer_id: buyerId!,
+            seller_id: sellerId!,
             project_id: projectId!,
             purchase_order_number: purchaseOrderNumber.trim(),
           },
@@ -140,24 +140,24 @@ export default function NewPurchaseOrderPage() {
             <Card>
               <CardContent>
                 <Typography variant="subtitle1" gutterBottom>
-                  Buyer
+                  Seller
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <ContactSelector
                     workspaceId={workspace_id}
-                    contactId={buyerId}
-                    onChange={setBuyerId}
+                    contactId={sellerId}
+                    onChange={setSellerId}
                     type="any"
                   />
-                  {errors.buyerId && (
+                  {errors.sellerId && (
                     <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.buyerId}
+                      {errors.sellerId}
                     </Typography>
                   )}
                 </Box>
                 <Typography variant="body2" color="text.secondary">
                   Assign who at this business is responsible for this order. Contacts must be linked
-                  to the selected buyer entity.
+                  to the selected seller entity.
                 </Typography>
               </CardContent>
             </Card>

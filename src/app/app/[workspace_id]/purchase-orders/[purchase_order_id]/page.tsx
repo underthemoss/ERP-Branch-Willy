@@ -70,7 +70,7 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
       created_by
       updated_at
       updated_by
-      buyer_id
+      seller_id
       project_id
       status
       line_items {
@@ -81,7 +81,7 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
           id
         }
       }
-      buyer {
+      seller {
         ... on BusinessContact {
           id
           name
@@ -514,7 +514,7 @@ export default function PurchaseOrderDetailPage() {
               </Stack>
             </Paper>
 
-            {/* Buyer Information Card */}
+            {/* Seller Information Card */}
             <Paper
               elevation={1}
               sx={{
@@ -527,26 +527,26 @@ export default function PurchaseOrderDetailPage() {
             >
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="subtitle1" gutterBottom>
-                  Buyer Information
+                  Seller Information
                 </Typography>
                 <Divider sx={{ mb: 1 }} />
-                {purchaseOrder.buyer ? (
+                {purchaseOrder.seller ? (
                   <Box>
                     <Typography>
-                      Name: <b>{purchaseOrder.buyer.name}</b>
+                      Name: <b>{purchaseOrder.seller.name}</b>
                     </Typography>
-                    {"email" in purchaseOrder.buyer && purchaseOrder.buyer.email && (
-                      <Typography>Email: {purchaseOrder.buyer.email}</Typography>
+                    {"email" in purchaseOrder.seller && purchaseOrder.seller.email && (
+                      <Typography>Email: {purchaseOrder.seller.email}</Typography>
                     )}
-                    {"phone" in purchaseOrder.buyer && purchaseOrder.buyer.phone && (
-                      <Typography>Phone: {purchaseOrder.buyer.phone}</Typography>
+                    {"phone" in purchaseOrder.seller && purchaseOrder.seller.phone && (
+                      <Typography>Phone: {purchaseOrder.seller.phone}</Typography>
                     )}
-                    {"address" in purchaseOrder.buyer && purchaseOrder.buyer.address && (
+                    {"address" in purchaseOrder.seller && purchaseOrder.seller.address && (
                       <Typography>
                         Address:{" "}
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                            purchaseOrder.buyer.address,
+                            purchaseOrder.seller.address,
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -558,16 +558,16 @@ export default function PurchaseOrderDetailPage() {
                             gap: "4px",
                           }}
                         >
-                          {purchaseOrder.buyer.address}
+                          {purchaseOrder.seller.address}
                           <OpenInNewIcon sx={{ fontSize: 16 }} />
                         </a>
                       </Typography>
                     )}
-                    {"website" in purchaseOrder.buyer && purchaseOrder.buyer.website && (
+                    {"website" in purchaseOrder.seller && purchaseOrder.seller.website && (
                       <Typography>
                         Website:{" "}
                         {(() => {
-                          const website = purchaseOrder.buyer.website;
+                          const website = purchaseOrder.seller.website;
                           // Validate URL format
                           let url = website;
                           if (!website.match(/^https?:\/\//i)) {
@@ -600,29 +600,29 @@ export default function PurchaseOrderDetailPage() {
                         })()}
                       </Typography>
                     )}
-                    {"taxId" in purchaseOrder.buyer && purchaseOrder.buyer.taxId && (
-                      <Typography>Tax ID: {purchaseOrder.buyer.taxId}</Typography>
+                    {"taxId" in purchaseOrder.seller && purchaseOrder.seller.taxId && (
+                      <Typography>Tax ID: {purchaseOrder.seller.taxId}</Typography>
                     )}
-                    {purchaseOrder.buyer.notes && (
-                      <Typography>Notes: {purchaseOrder.buyer.notes}</Typography>
+                    {purchaseOrder.seller.notes && (
+                      <Typography>Notes: {purchaseOrder.seller.notes}</Typography>
                     )}
                   </Box>
                 ) : (
-                  <Typography color="text.secondary">No buyer information</Typography>
+                  <Typography color="text.secondary">No seller information</Typography>
                 )}
               </Box>
               <Box sx={{ mt: 2, textAlign: "right" }}>
                 <Button
                   variant="outlined"
                   size="small"
-                  disabled={!purchaseOrder.buyer_id}
+                  disabled={!purchaseOrder.seller_id}
                   onClick={() => {
-                    if (purchaseOrder.buyer_id) {
-                      router.push(`/app/${workspace_id}/contacts/${purchaseOrder.buyer_id}`);
+                    if (purchaseOrder.seller_id) {
+                      router.push(`/app/${workspace_id}/contacts/${purchaseOrder.seller_id}`);
                     }
                   }}
                 >
-                  View Buyer
+                  View Seller
                 </Button>
               </Box>
             </Paper>
@@ -784,7 +784,7 @@ export default function PurchaseOrderDetailPage() {
           onClose={() => setEditDialogOpen(false)}
           purchaseOrder={{
             id: purchaseOrder.id,
-            buyer_id: purchaseOrder.buyer_id,
+            seller_id: purchaseOrder.seller_id,
             purchase_order_number: purchaseOrder.purchase_order_number,
             project_id: purchaseOrder.project_id,
           }}

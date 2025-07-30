@@ -33,7 +33,7 @@ graphql(`
           id
           name
         }
-        buyer {
+        seller {
           ... on BusinessContact {
             id
             name
@@ -48,7 +48,7 @@ graphql(`
           }
         }
         order_id
-        buyer_id
+        seller_id
         status
         project_id
         company_id
@@ -117,15 +117,15 @@ export default function PurchaseOrdersPage() {
       let businessName = "";
       let contactName = "";
 
-      if (order.buyer) {
-        // Check if buyer is a PersonContact (has business property)
-        if ("business" in order.buyer) {
+      if (order.seller) {
+        // Check if seller is a PersonContact (has business property)
+        if ("business" in order.seller) {
           // PersonContact
-          businessName = order.buyer.business?.name ?? "";
-          contactName = order.buyer.name;
+          businessName = order.seller.business?.name ?? "";
+          contactName = order.seller.name;
         } else {
           // BusinessContact
-          businessName = order.buyer.name;
+          businessName = order.seller.name;
           contactName = "-";
         }
       }

@@ -135,6 +135,11 @@ graphql(`
 export interface PurchaseOrderLineItemsDataGridProps {
   purchaseOrderId: string;
   purchaseOrderStatus: PurchaseOrderStatus;
+  onAddNewItem?: () => void;
+  onEditItem?: (
+    lineItemId: string,
+    lineItemType: "RentalPurchaseOrderLineItem" | "SalePurchaseOrderLineItem",
+  ) => void;
 }
 
 type RowType = NonNullable<
@@ -146,11 +151,20 @@ type RowType = NonNullable<
 export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsDataGridProps> = ({
   purchaseOrderId,
   purchaseOrderStatus,
+  onAddNewItem,
+  onEditItem,
 }) => {
   const { data, loading, error, refetch } = usePurchaseOrderLineItemsQuery({
     variables: { purchaseOrderId },
     fetchPolicy: "cache-and-network",
   });
+
+  const handleAddNewItem = async () => {
+    if (onAddNewItem) {
+      await onAddNewItem();
+      await refetch();
+    }
+  };
 
   const lineItems = data?.getPurchaseOrderById?.line_items || [];
 
@@ -386,8 +400,18 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
               Items in the order will show here
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-              Purchase order line items will be displayed here once they are added.
+              Manage each line item&apos;s transaction type, details, and fulfillment requirements
+              here.
             </Typography>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={onAddNewItem}
+              sx={{ minWidth: 160 }}
+              disabled={purchaseOrderStatus === PurchaseOrderStatus.Submitted}
+            >
+              Add New Item
+            </Button>
           </Box>
         ) : (
           <>
@@ -471,6 +495,15 @@ export const PurchaseOrderLineItemsDataGrid: React.FC<PurchaseOrderLineItemsData
                 },
               }}
             />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleAddNewItem}
+              sx={{ mt: 1, alignSelf: "flex-start" }}
+              disabled={purchaseOrderStatus === PurchaseOrderStatus.Submitted}
+            >
+              Add Item
+            </Button>
           </>
         )}
       </Box>
