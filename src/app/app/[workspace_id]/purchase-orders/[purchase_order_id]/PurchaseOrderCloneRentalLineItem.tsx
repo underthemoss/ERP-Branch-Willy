@@ -51,15 +51,6 @@ graphql(`
   }
 `);
 
-// GraphQL mutation to create a new rental line item
-graphql(`
-  mutation CreateRentalPurchaseOrderLineItem($input: CreateRentalPurchaseOrderLineItemInput!) {
-    createRentalPurchaseOrderLineItem(input: $input) {
-      id
-    }
-  }
-`);
-
 interface PurchaseOrderCloneRentalLineItemProps {
   open: boolean;
   onClose: () => void;
