@@ -41,6 +41,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import EditPurchaseOrderDialog from "./EditPurchaseOrderDialog";
 import OrderItemsSection from "./OrderItemsSection";
+import PurchaseOrderCostForcastReport from "./PurchaseOrderCostForcastReport";
 
 const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
   mutation CreatePdfFromPageAndAttachToEntityId(
@@ -432,6 +433,15 @@ export default function PurchaseOrderDetailPage() {
               purchaseOrderId={purchaseOrder.id}
               purchaseOrderStatus={purchaseOrder.status}
             />
+
+            {/* Cost Forecast Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Cost Forecast
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              <PurchaseOrderCostForcastReport purchaseOrderId={purchaseOrder.id} />
+            </Paper>
 
             {/* File Upload Card */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
