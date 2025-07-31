@@ -288,21 +288,20 @@ export default function PurchaseOrderDetailPage() {
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="h4">Purchase Order</Typography>
-                    <Chip
-                      label={purchaseOrder.status}
-                      color={
-                        purchaseOrder.status === "SUBMITTED"
-                          ? "primary"
-                          : purchaseOrder.status === "DRAFT"
-                            ? "default"
-                            : "default"
-                      }
-                    />
+                    <Typography variant="h4">
+                      Purchase Order: {purchaseOrder.purchase_order_number}
+                    </Typography>
                   </Box>
-                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Purchase Order Number: {purchaseOrder.purchase_order_number}
-                  </Typography>
+                  <Chip
+                    label={purchaseOrder.status}
+                    color={
+                      purchaseOrder.status === "SUBMITTED"
+                        ? "primary"
+                        : purchaseOrder.status === "DRAFT"
+                          ? "default"
+                          : "default"
+                    }
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box
@@ -480,6 +479,26 @@ export default function PurchaseOrderDetailPage() {
                       aria-label="Copy Purchase Order ID"
                       data-testid="purchase-order-details-copy-id"
                       onClick={() => navigator.clipboard.writeText(purchaseOrder.id)}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    #
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
+                    {purchaseOrder.purchase_order_number}
+                  </Typography>
+                  <Tooltip title="Copy Purchase Order #" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Purchase Order #"
+                      data-testid="purchase-order-details-copy-id"
+                      onClick={() =>
+                        navigator.clipboard.writeText(purchaseOrder.purchase_order_number)
+                      }
                     >
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>
