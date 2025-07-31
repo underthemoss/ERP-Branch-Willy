@@ -1,66 +1,75 @@
 "use client";
 
-// --- GQL Query Declaration ---
 import { graphql } from "@/graphql";
-// --- Generated Hook Import ---
-import { useListPurchaseOrdersQuery } from "@/graphql/hooks";
+import { PurchaseOrderStatus } from "@/graphql/graphql";
+import { usePurchaseOrdersWithLookupsQuery } from "@/graphql/hooks";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Button,
+  Chip,
   Container,
   IconButton,
   InputAdornment,
   MenuItem,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
-import { format, parseISO } from "date-fns";
-import dynamic from "next/dynamic";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
-import React from "react";
+import * as React from "react";
 
-const ListPurchaseOrdersDocument = graphql(`
-  query ListPurchaseOrders($limit: Int = 50, $offset: Int = 0) {
+graphql(`
+  query PurchaseOrdersWithLookups($limit: Int = 20, $offset: Int = 0) {
     listPurchaseOrders(limit: $limit, offset: $offset) {
       items {
         id
-        po_number
-        po_issue_date
+        project {
+          id
+          name
+        }
+        seller {
+          ... on BusinessContact {
+            id
+            name
+          }
+          ... on PersonContact {
+            id
+            name
+            business {
+              id
+              name
+            }
+          }
+        }
+        order_id
+        seller_id
+        status
+        project_id
+        company_id
+        purchase_order_number
         created_at
         updated_at
-        buyer_contact {
-          ... on BusinessContact {
-            id
-            name
-          }
-          ... on PersonContact {
-            id
-            name
-          }
+        updated_by
+        pricing {
+          total_in_cents
         }
-        seller_contact {
-          ... on BusinessContact {
-            id
-            name
-          }
-          ... on PersonContact {
-            id
-            name
-          }
+        created_by_user {
+          id
+          firstName
+          lastName
+          email
         }
-        requester_contact {
-          ... on BusinessContact {
-            id
-            name
-          }
-          ... on PersonContact {
-            id
-            name
-          }
+        updated_by_user {
+          id
+          firstName
+          lastName
+          email
         }
       }
       total
@@ -70,331 +79,246 @@ const ListPurchaseOrdersDocument = graphql(`
   }
 `);
 
-// --- Main Page Component ---
-export default function PurchaseOrdersListPage() {
-  // --- State for search and filters ---
-  const [search, setSearch] = React.useState("");
-  const [buyerFilter, setBuyerFilter] = React.useState<string[]>([]);
-  const [sellerFilter, setSellerFilter] = React.useState<string[]>([]);
-  const [requesterFilter, setRequesterFilter] = React.useState<string[]>([]);
+export default function PurchaseOrdersPage() {
+  const [statusFilter, setStatusFilter] = React.useState<PurchaseOrderStatus | "All Statuses">(
+    "All Statuses",
+  );
+  const [searchTerm, setSearchTerm] = React.useState("");
 
-  // --- Query ---
-  const { data, loading } = useListPurchaseOrdersQuery({
-    variables: { limit: 50, offset: 0 },
+  // Fetch purchase orders
+  const { workspace_id } = useParams<{ workspace_id: string }>();
+  const { data, loading, error } = usePurchaseOrdersWithLookupsQuery({
+    variables: {
+      limit: 100,
+      offset: 0,
+    },
     fetchPolicy: "cache-and-network",
   });
 
-  // --- Extract PO data ---
-  const purchaseOrders = React.useMemo(() => data?.listPurchaseOrders?.items ?? [], [data]);
+  // Map GQL data to table rows
+  type PurchaseOrderRow = {
+    id: string;
+    order_id: string;
+    business: string;
+    contact: string;
+    project: string;
+    status: PurchaseOrderStatus;
+    total: string;
+    created_by: string;
+    updated_by: string;
+    created_at: string;
+    updated_at: string;
+  };
 
-  // --- Build filter options from data ---
-  const buyers = React.useMemo(() => {
-    const set = new Set<string>();
-    purchaseOrders.forEach((po) => {
-      if (po.buyer_contact?.name) set.add(po.buyer_contact.name);
-    });
-    return Array.from(set).sort();
-  }, [purchaseOrders]);
-  const sellers = React.useMemo(() => {
-    const set = new Set<string>();
-    purchaseOrders.forEach((po) => {
-      if (po.seller_contact?.name) set.add(po.seller_contact.name);
-    });
-    return Array.from(set).sort();
-  }, [purchaseOrders]);
-  const requesters = React.useMemo(() => {
-    const set = new Set<string>();
-    purchaseOrders.forEach((po) => {
-      if (po.requester_contact?.name) set.add(po.requester_contact.name);
-    });
-    return Array.from(set).sort();
-  }, [purchaseOrders]);
+  const rows: PurchaseOrderRow[] = React.useMemo(() => {
+    if (!data?.listPurchaseOrders?.items) return [];
 
-  // --- Filtering logic ---
+    return data.listPurchaseOrders.items.map((order): PurchaseOrderRow => {
+      let businessName = "";
+      let contactName = "";
+
+      if (order.seller) {
+        // Check if seller is a PersonContact (has business property)
+        if ("business" in order.seller) {
+          // PersonContact
+          businessName = order.seller.business?.name ?? "";
+          contactName = order.seller.name;
+        } else {
+          // BusinessContact
+          businessName = order.seller.name;
+          contactName = "-";
+        }
+      }
+
+      return {
+        id: order.id,
+        order_id: order.order_id,
+        business: businessName,
+        contact: contactName,
+        project: order.project?.name ?? "not implemented",
+        status: order.status,
+        total: `$${((order.pricing?.total_in_cents || 0) / 100).toFixed(2)}`,
+        created_by: order.created_by_user
+          ? [order.created_by_user.firstName, order.created_by_user.lastName]
+              .filter(Boolean)
+              .join(" ") ||
+            order.created_by_user.email ||
+            "not implemented"
+          : "not implemented",
+        updated_by: order.updated_by_user
+          ? [order.updated_by_user.firstName, order.updated_by_user.lastName]
+              .filter(Boolean)
+              .join(" ") ||
+            order.updated_by_user.email ||
+            "not implemented"
+          : "not implemented",
+        created_at: order.created_at ?? "not implemented",
+        updated_at: order.updated_at ?? "not implemented",
+      };
+    });
+  }, [data]);
+
   const filteredRows = React.useMemo(() => {
-    let filtered = purchaseOrders;
-    if (buyerFilter.length > 0) {
-      filtered = filtered.filter(
-        (row) => row.buyer_contact?.name && buyerFilter.includes(row.buyer_contact.name),
-      );
+    let filtered = rows;
+    if (statusFilter !== "All Statuses") {
+      filtered = filtered.filter((row: PurchaseOrderRow) => row.status === statusFilter);
     }
-    if (sellerFilter.length > 0) {
-      filtered = filtered.filter(
-        (row) => row.seller_contact?.name && sellerFilter.includes(row.seller_contact.name),
-      );
-    }
-    if (requesterFilter.length > 0) {
-      filtered = filtered.filter(
-        (row) =>
-          row.requester_contact?.name && requesterFilter.includes(row.requester_contact.name),
-      );
-    }
-    if (!search) return filtered;
-    const lower = search.toLowerCase();
-    return filtered.filter((row) =>
-      [
-        row.po_number,
-        row.buyer_contact?.name,
-        row.seller_contact?.name,
-        row.requester_contact?.name,
-      ]
-        .map((v) => (v ?? "").toString().toLowerCase())
-        .some((v) => v.includes(lower)),
+    if (!searchTerm) return filtered;
+    const lower = searchTerm.toLowerCase();
+    return filtered.filter((row: PurchaseOrderRow) =>
+      Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
     );
-  }, [purchaseOrders, search, buyerFilter, sellerFilter, requesterFilter]);
+  }, [rows, searchTerm, statusFilter]);
 
-  // --- DataGrid columns ---
-  // Explicitly type rows as any[] to avoid DataGrid typing issues
   const columns: GridColDef[] = [
-    { field: "po_number", headerName: "PO #", width: 120 },
+    { field: "id", headerName: "Order #", width: 120 },
+    { field: "business", headerName: "Business", flex: 2, minWidth: 180 },
+    { field: "contact", headerName: "Contact", flex: 1, minWidth: 150 },
+    { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
+    { field: "total", headerName: "Total", width: 120 },
     {
-      field: "po_issue_date",
-      headerName: "Issue Date",
-      width: 140,
-      valueFormatter: (value: (typeof purchaseOrders)[number]["po_issue_date"]) => {
-        if (!value) return "";
-        const date = parseISO(value);
-        return format(date, "yyyy-MM-dd");
-      },
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) =>
+        params.value === "not implemented" ? (
+          "not implemented"
+        ) : (
+          <Chip
+            label={params.value}
+            color={params.value === PurchaseOrderStatus.Submitted ? "primary" : "default"}
+            size="small"
+          />
+        ),
+      sortable: false,
+      filterable: false,
     },
-    {
-      field: "buyer_contact",
-      headerName: "Buyer",
-      width: 180,
-      valueGetter: (params: (typeof purchaseOrders)[number]["buyer_contact"]) => {
-        return params?.name ?? "";
-      },
-    },
-    {
-      field: "seller_contact",
-      headerName: "Seller (Vendor)",
-      width: 180,
-      valueGetter: (params: (typeof purchaseOrders)[number]["seller_contact"]) => {
-        return params?.name ?? "";
-      },
-    },
-    {
-      field: "requester_contact",
-      headerName: "Requester",
-      width: 180,
-      valueGetter: (params: (typeof purchaseOrders)[number]["requester_contact"]) => {
-        return params?.name ?? "";
-      },
-    },
+    { field: "created_by", headerName: "Created By", width: 160 },
+    { field: "updated_by", headerName: "Updated By", width: 160 },
     {
       field: "created_at",
       headerName: "Created At",
-      width: 160,
-      valueFormatter: (value: (typeof purchaseOrders)[number]["created_at"]) => {
-        if (!value) return "";
-        const date = parseISO(value as string);
-        return format(date, "yyyy-MM-dd HH:mm");
+      width: 180,
+      renderCell: (params) => {
+        if (!params?.value) return "";
+        const date = new Date(Number(params.value));
+        return (
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MM/dd/yy, h:mm:ss a")}</span>
+          </Tooltip>
+        );
       },
     },
     {
       field: "updated_at",
       headerName: "Updated At",
-      width: 160,
-      valueFormatter: (value: (typeof purchaseOrders)[number]["updated_at"]) => {
-        if (!value) return "";
-        const date = parseISO(value as string);
-        return format(date, "yyyy-MM-dd HH:mm");
+      width: 180,
+      renderCell: (params) => {
+        if (!params?.value) return "";
+        const date = new Date(Number(params.value));
+        return (
+          <Tooltip title={formatDistanceToNow(date, { addSuffix: true })} arrow>
+            <span>{format(date, "MM/dd/yy, h:mm:ss a")}</span>
+          </Tooltip>
+        );
       },
     },
   ];
 
-  // --- Create PO Dialog ---
-  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-
   const router = useRouter();
-  const params = useParams<{ workspace_id: string }>();
-
-  // Dynamically import the dialog to ensure client-side only
-  const CreatePurchaseOrderDialog = dynamic(() => import("./CreatePurchaseOrderDialog"), {
-    ssr: false,
-  });
-
-  const handleCreateSuccess = (purchaseOrderId: string) => {
-    setCreateDialogOpen(false);
-    if (params?.workspace_id && purchaseOrderId) {
-      router.push(`/app/${params.workspace_id}/purchase-orders/${purchaseOrderId}`);
-    }
-  };
 
   return (
-    <Container maxWidth="xl">
-      <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={1}>
-        <Typography variant="h1">Purchase Orders</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ textTransform: "none", fontWeight: 600 }}
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          + Create Purchase Order
-        </Button>
-      </Box>
-      <Typography variant="body1" color="text.secondary" mb={2}>
-        View, manage, and organize your purchase orders.
-      </Typography>
-      <Box mb={2} display="flex" gap={2} alignItems="center">
-        <TextField
-          placeholder="Search purchase orders"
-          variant="outlined"
-          size="small"
-          fullWidth
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: search ? (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearch("")}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : undefined,
-          }}
-        />
-        <Select
-          size="small"
-          multiple
-          displayEmpty
-          value={buyerFilter}
-          onChange={(e) => {
-            const value = e.target.value;
-            setBuyerFilter(
-              typeof value === "string" ? (value === "" ? [] : [value]) : (value as string[]),
-            );
-          }}
-          renderValue={(selected) => {
-            if (!selected || (Array.isArray(selected) && selected.length === 0)) {
-              return "All Buyers";
-            }
-            return (selected as string[]).join(", ");
-          }}
-          sx={{ minWidth: 180 }}
-          data-testid="purchase-order-buyer-filter"
-          MenuProps={{
-            MenuListProps: {
-              dense: true,
-            },
-          }}
-        >
-          <MenuItem value="">
-            <em>All Buyers</em>
-          </MenuItem>
-          {buyers.map((name) => (
-            <MenuItem key={name} value={name}>
-              {name}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          size="small"
-          multiple
-          displayEmpty
-          value={sellerFilter}
-          onChange={(e) => {
-            const value = e.target.value;
-            setSellerFilter(
-              typeof value === "string" ? (value === "" ? [] : [value]) : (value as string[]),
-            );
-          }}
-          renderValue={(selected) => {
-            if (!selected || (Array.isArray(selected) && selected.length === 0)) {
-              return "All Sellers";
-            }
-            return (selected as string[]).join(", ");
-          }}
-          sx={{ minWidth: 180 }}
-          data-testid="purchase-order-seller-filter"
-          MenuProps={{
-            MenuListProps: {
-              dense: true,
-            },
-          }}
-        >
-          <MenuItem value="">
-            <em>All Sellers</em>
-          </MenuItem>
-          {sellers.map((name) => (
-            <MenuItem key={name} value={name}>
-              {name}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          size="small"
-          multiple
-          displayEmpty
-          value={requesterFilter}
-          onChange={(e) => {
-            const value = e.target.value;
-            setRequesterFilter(
-              typeof value === "string" ? (value === "" ? [] : [value]) : (value as string[]),
-            );
-          }}
-          renderValue={(selected) => {
-            if (!selected || (Array.isArray(selected) && selected.length === 0)) {
-              return "All Requesters";
-            }
-            return (selected as string[]).join(", ");
-          }}
-          sx={{ minWidth: 180 }}
-          data-testid="purchase-order-requester-filter"
-          MenuProps={{
-            MenuListProps: {
-              dense: true,
-            },
-          }}
-        >
-          <MenuItem value="">
-            <em>All Requesters</em>
-          </MenuItem>
-          {requesters.map((name) => (
-            <MenuItem key={name} value={name}>
-              {name}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
-      <Box sx={{ height: 600 }}>
-        <div style={{ height: "100%" }}>
-          <DataGridPremium
-            columns={columns}
-            rows={filteredRows as any[]}
-            loading={loading}
-            disableRowSelectionOnClick
-            hideFooter
-            getRowId={(row) => row.id}
-            onRowClick={(rowParams) => {
-              router.push(`/app/${params.workspace_id}/purchase-orders/${rowParams.row.id}`);
-            }}
-            initialState={{
-              pinnedColumns: { left: ["po_number"] },
-              sorting: {
-                sortModel: [{ field: "updated_at", sort: "desc" }],
-              },
-            }}
-            sx={{
-              cursor: "pointer",
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "#f5f5f5",
-              },
+    <PageContainer>
+      <Container maxWidth="lg">
+        <Box display="flex" alignItems="center" justifyContent="space-between" mt={4} mb={1}>
+          <Typography variant="h1">Purchase Orders</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ textTransform: "none", fontWeight: 600 }}
+            onClick={() => router.push("purchase-orders/new-purchase-order")}
+          >
+            + Create Purchase Order
+          </Button>
+        </Box>
+        <Typography variant="body1" color="text.secondary" mb={2}>
+          View, manage, and organize your purchase orders.
+        </Typography>
+        <Box mb={2} display="flex" gap={2} alignItems="center">
+          <TextField
+            placeholder="Search purchase orders"
+            variant="outlined"
+            size="small"
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchTerm("")}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
             }}
           />
-        </div>
-      </Box>
-      <CreatePurchaseOrderDialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        onSuccess={handleCreateSuccess}
-      />
-    </Container>
+          <Select
+            size="small"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as PurchaseOrderStatus | "All Statuses")
+            }
+            sx={{ minWidth: 140 }}
+            data-testid="purchase-order-status-filter"
+            MenuProps={{
+              MenuListProps: {
+                dense: true,
+              },
+            }}
+          >
+            <MenuItem value="All Statuses">All Statuses</MenuItem>
+            <MenuItem value={PurchaseOrderStatus.Draft}>Draft</MenuItem>
+            <MenuItem value={PurchaseOrderStatus.Submitted}>Submitted</MenuItem>
+          </Select>
+        </Box>
+        <Box sx={{ height: 600 }}>
+          <div data-testid="purchase-order-list" style={{ height: "100%" }}>
+            <DataGridPremium
+              columns={columns}
+              rows={filteredRows}
+              loading={loading}
+              disableRowSelectionOnClick
+              hideFooter
+              getRowId={(row: PurchaseOrderRow) => row.id}
+              initialState={{
+                sorting: {
+                  sortModel: [{ field: "updated_at", sort: "desc" }],
+                },
+              }}
+              sx={{
+                cursor: "pointer",
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
+              getRowClassName={() => "purchase-order-list-item"}
+              onRowClick={(params) => {
+                router.push(`/app/${workspace_id}/purchase-orders/${params.id}`);
+              }}
+            />
+            {error && (
+              <Typography color="error" mt={2}>
+                Failed to load purchase orders.
+              </Typography>
+            )}
+          </div>
+        </Box>
+      </Container>
+    </PageContainer>
   );
 }

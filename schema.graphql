@@ -307,12 +307,6 @@ input CreatePriceBookInput {
   projectId: ID
 }
 
-input CreatePurchaseOrderLineItemInput {
-  po_pim_id: String
-  po_quantity: Int
-  purchase_order_id: String!
-}
-
 input CreateRentalFulfilmentInput {
   assignedToId: String
   expectedRentalEndDate: DateTime
@@ -338,6 +332,20 @@ input CreateRentalPriceInput {
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
   pricePerWeekInCents: Int!
+}
+
+input CreateRentalPurchaseOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  lineitem_status: POLineItemStatus
+  off_rent_date: String
+  po_pim_id: String
+  po_quantity: Int
+  price_id: String
+  purchase_order_id: String!
 }
 
 input CreateRentalSalesOrderLineItemInput {
@@ -374,6 +382,19 @@ input CreateSalePriceInput {
   pimProductId: ID
   priceBookId: ID
   unitCostInCents: Int!
+}
+
+input CreateSalePurchaseOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  lineitem_status: POLineItemStatus
+  po_pim_id: String
+  po_quantity: Int
+  price_id: String
+  purchase_order_id: String!
 }
 
 input CreateSaleSalesOrderLineItemInput {
@@ -795,12 +816,13 @@ type Mutation {
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
-  createPurchaseOrderLineItem(input: CreatePurchaseOrderLineItemInput): PurchaseOrderLineItem
   createRentalFulfilment(input: CreateRentalFulfilmentInput!): RentalFulfilment
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
+  createRentalPurchaseOrderLineItem(input: CreateRentalPurchaseOrderLineItemInput): RentalPurchaseOrderLineItem
   createRentalSalesOrderLineItem(input: CreateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   createSaleFulfilment(input: CreateSaleFulfilmentInput!): SaleFulfilment
   createSalePrice(input: CreateSalePriceInput!): SalePrice
+  createSalePurchaseOrderLineItem(input: CreateSalePurchaseOrderLineItemInput): SalePurchaseOrderLineItem
   createSaleSalesOrderLineItem(input: CreateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   createSalesOrder(input: SalesOrderInput): SalesOrder
   createServiceFulfilment(input: CreateServiceFulfilmentInput!): ServiceFulfilment
@@ -819,6 +841,8 @@ type Mutation {
   removeFileFromEntity(file_id: String!): File!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
   renameFile(file_id: String!, new_file_name: String!): File!
+  runNightlyRentalChargesJob: [RentalFulfilment!]!
+  runNightlyRentalChargesJobAsync: Boolean
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
 
   """
@@ -827,8 +851,11 @@ type Mutation {
   setInvoiceTax(input: SetInvoiceTaxInput!): Invoice! @deprecated(reason: "Use addTaxLineItem instead for more flexible tax management")
   setRentalEndDate(fulfilmentId: ID!, rentalEndDate: DateTime!): RentalFulfilment
   setRentalStartDate(fulfilmentId: ID!, rentalStartDate: DateTime!): RentalFulfilment
+  softDeletePurchaseOrder(id: String): PurchaseOrder
+  softDeletePurchaseOrderLineItem(id: String): PurchaseOrderLineItem
   softDeleteSalesOrder(id: String): SalesOrder
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
+  submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
@@ -854,10 +881,13 @@ type Mutation {
   updateProjectParentProject(id: String!, parent_project: String): Project
   updateProjectScopeOfWork(id: String!, scope_of_work: [ScopeOfWorkEnum!]!): Project
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
-  updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem
+  updatePurchaseOrder(input: UpdatePurchaseOrderInput): PurchaseOrder
+  updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem @deprecated(reason: "use updateSalePurchaseOrderLineItem")
   updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
+  updateRentalPurchaseOrderLineItem(input: UpdateRentalPurchaseOrderLineItemInput): RentalPurchaseOrderLineItem
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
   updateSalePrice(input: UpdateSalePriceInput!): SalePrice
+  updateSalePurchaseOrderLineItem(input: UpdateSalePurchaseOrderLineItemInput): SalePurchaseOrderLineItem
   updateSaleSalesOrderLineItem(input: UpdateSaleSalesOrderLineItemInput): SaleSalesOrderLineItem
   updateSalesOrder(input: UpdateSalesOrderInput): SalesOrder
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem @deprecated(reason: "use updateSaleSalesOrderLineItem")
@@ -888,6 +918,17 @@ input NoteInput {
 input NoteUpdateInput {
   id: String!
   value: JSON!
+}
+
+enum POLineItemStatus {
+  CONFIRMED
+  DRAFT
+  SUBMITTED
+}
+
+enum POLineItemType {
+  RENTAL
+  SALE
 }
 
 input PageInfoInput {
@@ -1124,50 +1165,56 @@ enum ProjectStatusEnum {
 }
 
 type PurchaseOrder {
-  buyer_contact: Contact
-  buyer_contact_id: String
-  buyer_project_id: String
   comments: [Note!]!
-  company_id: String
-  created_at: String
-  created_by: String
+  company_id: String!
+  created_at: String!
+  created_by: String!
   created_by_user: User
-  files: [File]
+  deleted_at: String
   id: String!
   line_items: [PurchaseOrderLineItem]
-  po_issue_date: String
-  po_number: String
+  order_id: String!
+
+  """Pricing summary for the sales order"""
+  pricing: PurchaseOrderPricing
   project: Project
   project_id: String
-  requester_contact: Contact
-  requester_contact_id: String
-  seller_contact: Contact
-  seller_contact_id: String
-  updated_at: String
-  updated_by: String
+  purchase_order_number: String!
+  seller: Contact
+  seller_id: String!
+
+  """Status of the purchase order"""
+  status: PurchaseOrderStatus!
+  updated_at: String!
+  updated_by: String!
   updated_by_user: User
 }
 
 input PurchaseOrderInput {
-  buyer_contact_id: String
-  buyer_project_id: String
-  po_issue_date: String
   project_id: String
-  requester_contact_id: String
-  seller_contact_id: String
+  purchase_order_number: String!
+  seller_id: String!
 }
 
-type PurchaseOrderLineItem {
-  id: String!
-  pim_product: PimProduct
-  po_pim_id: String
-  po_quantity: Int
-}
+union PurchaseOrderLineItem = RentalPurchaseOrderLineItem | SalePurchaseOrderLineItem
 
-input PurchaseOrderLineItemInput {
-  po_line_item_number: String
-  po_pim_id: String
-  po_quantity: Int
+type PurchaseOrderLineItemPriceEstimate {
+  costInCents: Int
+
+  """Delivery cost in cents for this line item"""
+  delivery_cost_in_cents: Int
+  details: LineItemCostOptionDetails
+
+  """Forecast of accumulative cost over a range of days"""
+  forecast(number_of_days: Int = 200): LineItemPriceForecast
+  rentalPeriod: LineItemRentalPeriod
+  savingsComparedToDayRateInCents: Int
+  savingsComparedToDayRateInFraction: Float
+  savingsComparedToExactSplitInCents: Int
+  strategy: String
+
+  """Total cost including delivery in cents for this line item"""
+  total_including_delivery_in_cents: Int
 }
 
 type PurchaseOrderListResult {
@@ -1175,6 +1222,19 @@ type PurchaseOrderListResult {
   limit: Int!
   offset: Int!
   total: Int!
+}
+
+type PurchaseOrderPricing {
+  """Sum of all line item totals (pre-tax)"""
+  sub_total_in_cents: Int
+
+  """Total amount (same as sub_total_in_cents, no tax included)"""
+  total_in_cents: Int
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
 }
 
 type Query {
@@ -1186,6 +1246,7 @@ type Query {
   getPriceBookById(id: ID!): PriceBook
   getProjectById(id: String!): Project
   getPurchaseOrderById(id: String): PurchaseOrder
+  getPurchaseOrderLineItemById(id: String): PurchaseOrderLineItem
 
   """Get a single resource map entry by id, with tenant check"""
   getResourceMapEntry(id: String!): ResourceMapResource
@@ -1310,6 +1371,40 @@ type RentalPrice {
   updatedAt: DateTime!
 }
 
+type RentalPurchaseOrderLineItem {
+  """
+  Full calculated price estimate for the line item (fixed or unfixed term)
+  """
+  calulate_price: PurchaseOrderLineItemPriceEstimate
+  company_id: String
+  created_at: String
+  created_by: String
+  created_by_user: User
+  deleted_at: String
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: POLineItemStatus
+  lineitem_type: POLineItemType!
+  off_rent_date: String
+  po_pim_id: String
+  po_quantity: Int
+  price: Price
+  price_id: String
+  purchase_order_id: String!
+  so_pim_category: PimCategory
+  so_pim_product: PimProduct
+
+  """Total days on rent (inclusive of start date, exclusive of end date)"""
+  totalDaysOnRent: Int
+  updated_at: String
+  updated_by: String
+  updated_by_user: User
+}
+
 type RentalSalesOrderLineItem {
   """
   Full calculated price estimate for the line item (fixed or unfixed term)
@@ -1430,6 +1525,32 @@ type SalePrice {
   priceType: PriceType!
   unitCostInCents: Int!
   updatedAt: DateTime!
+}
+
+type SalePurchaseOrderLineItem {
+  company_id: String
+  created_at: String
+  created_by: String
+  created_by_user: User
+  deleted_at: String
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: POLineItemStatus
+  lineitem_type: POLineItemType!
+  po_pim_id: String
+  po_quantity: Int
+  price: Price
+  price_id: String
+  purchase_order_id: String!
+  so_pim_category: PimCategory
+  so_pim_product: PimProduct
+  updated_at: String
+  updated_by: String
+  updated_by_user: User
 }
 
 type SaleSalesOrderLineItem {
@@ -1739,10 +1860,26 @@ input UpdatePersonContactInput {
   role: String
 }
 
-input UpdatePurchaseOrderLineItemInput {
+input UpdatePurchaseOrderInput {
   id: String!
+  project_id: String
+  purchase_order_number: String
+  seller_id: String
+}
+
+input UpdatePurchaseOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: POLineItemStatus
+  lineitem_type: POLineItemType
+  off_rent_date: String
   po_pim_id: String
   po_quantity: Int
+  price_id: String
 }
 
 input UpdateRentalPriceInput {
@@ -1753,6 +1890,20 @@ input UpdateRentalPriceInput {
   pricePerDayInCents: Int
   pricePerMonthInCents: Int
   pricePerWeekInCents: Int
+}
+
+input UpdateRentalPurchaseOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: POLineItemStatus
+  off_rent_date: String
+  po_pim_id: String
+  po_quantity: Int
+  price_id: String
 }
 
 input UpdateRentalSalesOrderLineItemInput {
@@ -1776,6 +1927,19 @@ input UpdateSalePriceInput {
   pimCategoryId: String
   pimProductId: ID
   unitCostInCents: Int
+}
+
+input UpdateSalePurchaseOrderLineItemInput {
+  deliveryNotes: String
+  delivery_charge_in_cents: Int
+  delivery_date: String
+  delivery_location: String
+  delivery_method: DeliveryMethod
+  id: String!
+  lineitem_status: POLineItemStatus
+  po_pim_id: String
+  po_quantity: Int
+  price_id: String
 }
 
 input UpdateSaleSalesOrderLineItemInput {
