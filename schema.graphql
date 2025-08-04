@@ -307,6 +307,17 @@ input CreatePriceBookInput {
   projectId: ID
 }
 
+input CreateReferenceNumberTemplateInput {
+  businessContactId: String
+  projectId: String
+  resetFrequency: ResetFrequency!
+  seqPadding: Int
+  startAt: Int
+  template: String!
+  type: ReferenceNumberType!
+  useGlobalSequence: Boolean!
+}
+
 input CreateRentalFulfilmentInput {
   assignedToId: String
   expectedRentalEndDate: DateTime
@@ -502,6 +513,19 @@ enum FulfilmentType {
   RENTAL
   SALE
   SERVICE
+}
+
+input GenerateReferenceNumberInput {
+  parentProjectCode: String
+  projectCode: String
+  templateId: String!
+  type: ReferenceNumberType!
+}
+
+type GenerateReferenceNumberResult {
+  referenceNumber: String!
+  sequenceNumber: Int!
+  templateUsed: ReferenceNumberTemplate!
 }
 
 type HasuraClaims {
@@ -816,6 +840,7 @@ type Mutation {
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
+  createReferenceNumberTemplate(input: CreateReferenceNumberTemplateInput!): ReferenceNumberTemplate
   createRentalFulfilment(input: CreateRentalFulfilmentInput!): RentalFulfilment
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
   createRentalPurchaseOrderLineItem(input: CreateRentalPurchaseOrderLineItemInput): RentalPurchaseOrderLineItem
@@ -835,12 +860,15 @@ type Mutation {
   deletePriceBookById(id: ID!): Boolean
   deletePriceById(id: ID!): Boolean
   deleteProject(id: String!): Project
+  deleteReferenceNumberTemplate(id: String!): Boolean
   deleteWorkflowConfigurationById(id: ID!): Boolean
+  generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
   renameFile(file_id: String!, new_file_name: String!): File!
+  resetSequenceNumber(newValue: Int = 1, templateId: String!): Boolean
   runNightlyRentalChargesJob: [RentalFulfilment!]!
   runNightlyRentalChargesJobAsync: Boolean
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
@@ -883,6 +911,7 @@ type Mutation {
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrder(input: UpdatePurchaseOrderInput): PurchaseOrder
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem @deprecated(reason: "use updateSalePurchaseOrderLineItem")
+  updateReferenceNumberTemplate(input: UpdateReferenceNumberTemplateInput!): ReferenceNumberTemplate
   updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
   updateRentalPurchaseOrderLineItem(input: UpdateRentalPurchaseOrderLineItemInput): RentalPurchaseOrderLineItem
   updateRentalSalesOrderLineItem(input: UpdateRentalSalesOrderLineItemInput): RentalSalesOrderLineItem
@@ -1192,7 +1221,7 @@ type PurchaseOrder {
 
 input PurchaseOrderInput {
   project_id: String
-  purchase_order_number: String!
+  purchase_order_number: String
   seller_id: String!
 }
 
@@ -1240,6 +1269,7 @@ enum PurchaseOrderStatus {
 type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
+  getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
   getFulfilmentById(id: ID!): Fulfilment
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
@@ -1247,6 +1277,7 @@ type Query {
   getProjectById(id: String!): Project
   getPurchaseOrderById(id: String): PurchaseOrder
   getPurchaseOrderLineItemById(id: String): PurchaseOrderLineItem
+  getReferenceNumberTemplate(id: String!): ReferenceNumberTemplate
 
   """Get a single resource map entry by id, with tenant check"""
   getResourceMapEntry(id: String!): ResourceMapResource
@@ -1284,6 +1315,7 @@ type Query {
   listProjects: [Project]
   listProjectsByParentProjectId(parent_project: String!): [Project]
   listPurchaseOrders(limit: Int = 20, offset: Int = 0): PurchaseOrderListResult
+  listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
 
   """
   Get all resource map entries filtered by tenant_id (from the calling user company id)
@@ -1311,6 +1343,40 @@ type Query {
 type Quote {
   id: ID
   url: String
+}
+
+type ReferenceNumberTemplate {
+  businessContact: Contact
+  businessContactId: String
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  deleted: Boolean!
+  id: String!
+  project: Project
+  projectId: String
+  resetFrequency: ResetFrequency!
+  seqPadding: Int
+  startAt: Int
+  template: String!
+  type: ReferenceNumberType!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+  useGlobalSequence: Boolean!
+}
+
+input ReferenceNumberTemplateFilterInput {
+  businessContactId: String
+  projectId: String
+  type: ReferenceNumberType
+}
+
+enum ReferenceNumberType {
+  INVOICE
+  PO
+  SO
 }
 
 input RemoveTaxLineItemInput {
@@ -1463,6 +1529,13 @@ type RentalTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+enum ResetFrequency {
+  daily
+  monthly
+  never
+  yearly
 }
 
 type ResourceMapResource {
@@ -1703,6 +1776,20 @@ enum ScopeOfWorkEnum {
   WARRANTY_SERVICES
 }
 
+type SequenceNumber {
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  deleted: Boolean!
+  id: String!
+  template: ReferenceNumberTemplate
+  templateId: String
+  type: ReferenceNumberType!
+  updatedAt: DateTime!
+  updatedBy: String!
+  value: Int!
+}
+
 type ServiceFulfilment implements FulfilmentBase {
   assignedTo: User
   assignedToId: ID
@@ -1880,6 +1967,18 @@ input UpdatePurchaseOrderLineItemInput {
   po_pim_id: String
   po_quantity: Int
   price_id: String
+}
+
+input UpdateReferenceNumberTemplateInput {
+  businessContactId: String
+  id: String!
+  projectId: String
+  resetFrequency: ResetFrequency
+  seqPadding: Int
+  startAt: Int
+  template: String
+  type: ReferenceNumberType
+  useGlobalSequence: Boolean
 }
 
 input UpdateRentalPriceInput {
