@@ -64,7 +64,6 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
     getSalesOrderById(id: $id) {
       id
-      order_id
       purchase_order_number
       company_id
       created_at

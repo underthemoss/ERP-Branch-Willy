@@ -11,7 +11,6 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
   query GetPurchaseOrderByIdPrint($id: String) {
     getPurchaseOrderById(id: $id) {
       id
-      order_id
       purchase_order_number
       company_id
       created_at

@@ -31,7 +31,6 @@ const CREATE_SALES_ORDER = graphql(`
   mutation CreateSalesOrder($input: SalesOrderInput!) {
     createSalesOrder(input: $input) {
       id
-      order_id
       buyer_id
       project_id
       purchase_order_number

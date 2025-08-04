@@ -31,7 +31,6 @@ const CREATE_PURCHASE_ORDER = graphql(`
   mutation CreatePurchaseOrder($input: PurchaseOrderInput!) {
     createPurchaseOrder(input: $input) {
       id
-      order_id
       seller_id
       project_id
       purchase_order_number
@@ -54,7 +53,6 @@ export default function NewPurchaseOrderPage() {
   const [errors, setErrors] = React.useState<{
     sellerId?: string;
     projectId?: string;
-    purchaseOrderNumber?: string;
   }>({});
 
   // GQL mutation for creating a new purchase order
@@ -69,11 +67,9 @@ export default function NewPurchaseOrderPage() {
 
   // Submit handler
   const handleSubmit = async () => {
-    const newErrors: { sellerId?: string; projectId?: string; purchaseOrderNumber?: string } = {};
+    const newErrors: { sellerId?: string; projectId?: string } = {};
     if (!sellerId) newErrors.sellerId = "Seller is required";
     if (!projectId) newErrors.projectId = "Project is required";
-    if (!purchaseOrderNumber.trim())
-      newErrors.purchaseOrderNumber = "Purchase order number is required";
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
@@ -82,7 +78,7 @@ export default function NewPurchaseOrderPage() {
           input: {
             seller_id: sellerId!,
             project_id: projectId!,
-            purchase_order_number: purchaseOrderNumber.trim(),
+            purchase_order_number: purchaseOrderNumber.trim() || undefined,
           },
         },
       });
@@ -128,8 +124,6 @@ export default function NewPurchaseOrderPage() {
               }
               placeholder="Enter purchase order number"
               inputProps={{ "data-testid": "purchase-order-number" }}
-              error={!!errors.purchaseOrderNumber}
-              helperText={errors.purchaseOrderNumber}
             />
           </Box>
         </Box>

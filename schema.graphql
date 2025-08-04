@@ -1202,7 +1202,6 @@ type PurchaseOrder {
   deleted_at: String
   id: String!
   line_items: [PurchaseOrderLineItem]
-  order_id: String!
 
   """Pricing summary for the sales order"""
   pricing: PurchaseOrderPricing
@@ -1683,13 +1682,13 @@ type SalesOrder {
   deleted_at: String
   id: String!
   line_items: [SalesOrderLineItem]
-  order_id: String!
 
   """Pricing summary for the sales order"""
   pricing: SalesOrderPricing
   project: Project
   project_id: String
   purchase_order_number: String!
+  sales_order_number: String!
 
   """Status of the sales order"""
   status: SalesOrderStatus!
@@ -1702,6 +1701,7 @@ input SalesOrderInput {
   buyer_id: String!
   project_id: String
   purchase_order_number: String!
+  sales_order_number: String
 }
 
 union SalesOrderLineItem = RentalSalesOrderLineItem | SaleSalesOrderLineItem

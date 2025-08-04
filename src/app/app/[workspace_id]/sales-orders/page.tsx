@@ -47,7 +47,6 @@ graphql(`
             }
           }
         }
-        order_id
         buyer_id
         status
         project_id
@@ -98,7 +97,6 @@ export default function SalesOrdersPage() {
   // Map GQL data to table rows
   type SalesOrderRow = {
     id: string;
-    order_id: string;
     business: string;
     contact: string;
     project: string;
@@ -133,7 +131,6 @@ export default function SalesOrdersPage() {
 
       return {
         id: order.id,
-        order_id: order.order_id,
         business: businessName,
         contact: contactName,
         project: order.project?.name ?? "not implemented",

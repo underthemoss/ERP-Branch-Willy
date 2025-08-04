@@ -14,8 +14,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogActions,
@@ -34,8 +32,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { DataGridPremium, GridActionsCellItem, GridColDef } from "@mui/x-data-grid-premium";
 import { format } from "date-fns";
 import * as React from "react";
+import { generateReferenceNumberPreview } from "./generateReferenceNumberPreview";
 import ReferenceNumberPreview from "./ReferenceNumberPreview";
 
 interface ReferenceNumbersSectionProps {
@@ -186,15 +186,114 @@ export default function ReferenceNumbersSection({ projectId }: ReferenceNumbersS
     }
   };
 
-  const getTemplatesByType = (type: string) => {
-    return projectTemplates.filter((template) => template.type === type);
-  };
-
   // Check if all template types are configured
   const allTypesConfigured = React.useMemo(() => {
     const types = ["PO", "SO", "INVOICE"] as const;
-    return types.every((type) => getTemplatesByType(type).length > 0);
+    return types.every((type) => projectTemplates.some((template) => template.type === type));
   }, [projectTemplates]);
+
+  // Prepare data for DataGrid
+  const rows = React.useMemo(() => {
+    return projectTemplates.map((template) => ({
+      id: template.id,
+      type: template.type,
+      typeLabel: typeLabels[template.type as keyof typeof typeLabels],
+      template: template.template,
+      seqPadding: template.seqPadding || 4,
+      startAt: template.startAt || 1,
+      resetFrequency: template.resetFrequency || "yearly",
+      resetFrequencyLabel: resetFrequencyLabels[template.resetFrequency || "yearly"],
+      useGlobalSequence: template.useGlobalSequence || false,
+    }));
+  }, [projectTemplates]);
+
+  // Define columns for DataGrid
+  const columns: GridColDef[] = React.useMemo(
+    () => [
+      {
+        field: "typeLabel",
+        headerName: "Type",
+        width: 150,
+        sortable: true,
+      },
+      {
+        field: "template",
+        headerName: "Template",
+        width: 300,
+        sortable: true,
+        renderCell: (params) => (
+          <Typography variant="body2" fontFamily="monospace">
+            {params.value}
+          </Typography>
+        ),
+      },
+      {
+        field: "preview",
+        headerName: "Preview",
+        width: 250,
+        sortable: false,
+        renderCell: (params) => {
+          const preview = generateReferenceNumberPreview({
+            template: params.row.template,
+            seqPadding: params.row.seqPadding,
+            startAt: params.row.startAt,
+            projectCode: projectData?.getProjectById?.project_code,
+            parentProjectCode: parentProjectData?.getProjectById?.project_code,
+          });
+          return (
+            <Chip
+              label={preview}
+              variant="outlined"
+              size="small"
+              sx={{
+                fontFamily: "monospace",
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                bgcolor: "background.paper",
+              }}
+            />
+          );
+        },
+      },
+      {
+        field: "resetFrequencyLabel",
+        headerName: "Reset Frequency",
+        width: 150,
+        sortable: true,
+        renderCell: (params) => <Chip label={params.value} size="small" color="info" />,
+      },
+      {
+        field: "useGlobalSequence",
+        headerName: "Global Sequence",
+        width: 150,
+        sortable: true,
+        // renderCell: (params) =>
+        //   params.value ? <Chip label="Global" size="small" color="secondary" /> : null,
+      },
+      {
+        field: "actions",
+        type: "actions",
+        headerName: "Actions",
+        width: 120,
+        getActions: (params) => [
+          <GridActionsCellItem
+            key="edit"
+            icon={<EditIcon />}
+            label="Edit"
+            onClick={() => handleOpenDialog(projectTemplates.find((t) => t.id === params.id))}
+          />,
+          <GridActionsCellItem
+            key="delete"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={() => handleDelete(params.id as string)}
+            disabled={deleting}
+          />,
+        ],
+      },
+    ],
+    [projectData, parentProjectData, deleting, projectTemplates, handleDelete],
+  );
 
   if (loading) {
     return (
@@ -216,16 +315,14 @@ export default function ReferenceNumbersSection({ projectId }: ReferenceNumbersS
     <Box>
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h6">Reference Number Templates</Typography>
-        {!allTypesConfigured && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            size="small"
-          >
-            Add Template
-          </Button>
-        )}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+          size="small"
+        >
+          Add Template
+        </Button>
       </Box>
 
       <Divider sx={{ mb: 2 }} />
@@ -236,98 +333,52 @@ export default function ReferenceNumbersSection({ projectId }: ReferenceNumbersS
         </Alert>
       )}
 
-      <Grid container spacing={2}>
-        {(["PO", "SO", "INVOICE"] as const).map((type) => {
-          const templates = getTemplatesByType(type);
-          return (
-            <Grid size={{ xs: 12, md: 4 }} key={type}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      {typeLabels[type]}
-                    </Typography>
-                    {templates.length === 0 && (
-                      <Button
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={() =>
-                          handleOpenDialog({
-                            type,
-                            template: `${type}-{YYYY}-{MM}-{seq}`,
-                            seqPadding: 4,
-                            startAt: 1,
-                            resetFrequency: "yearly",
-                            useGlobalSequence: false,
-                          })
-                        }
-                      >
-                        Add {type}
-                      </Button>
-                    )}
-                  </Box>
-
-                  {templates.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
-                      No {typeLabels[type].toLowerCase()} templates configured
-                    </Typography>
-                  ) : (
-                    <Box display="flex" flexDirection="column" gap={1}>
-                      {templates.map((template) => (
-                        <Box
-                          key={template.id}
-                          sx={{
-                            p: 1.5,
-                            border: "1px solid",
-                            borderColor: "divider",
-                            borderRadius: 1,
-                            bgcolor: "background.paper",
-                          }}
-                        >
-                          <Box display="flex" alignItems="center" justifyContent="space-between">
-                            <Box flex={1}>
-                              <Typography variant="body2" fontWeight={500}>
-                                {template.template}
-                              </Typography>
-                              <Box display="flex" gap={1} mt={0.5}>
-                                <Chip
-                                  label={resetFrequencyLabels[template.resetFrequency]}
-                                  size="small"
-                                  color="info"
-                                />
-                                {template.useGlobalSequence && (
-                                  <Chip label="Global" size="small" color="secondary" />
-                                )}
-                              </Box>
-                            </Box>
-                            <Box display="flex" gap={0.5}>
-                              <Tooltip title="Edit Template">
-                                <IconButton size="small" onClick={() => handleOpenDialog(template)}>
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete Template">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDelete(template.id)}
-                                  disabled={deleting}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </Box>
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
+      {projectTemplates.length === 0 ? (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          py={8}
+          sx={{
+            bgcolor: "background.paper",
+            borderRadius: 1,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No Reference Number Templates
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Create templates to automatically generate reference numbers for your documents.
+          </Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+            Create First Template
+          </Button>
+        </Box>
+      ) : (
+        <Box sx={{ width: "100%" }}>
+          <DataGridPremium
+            rows={rows}
+            columns={columns}
+            loading={loading}
+            disableRowSelectionOnClick
+            autoHeight
+            initialState={{
+              sorting: {
+                sortModel: [{ field: "type", sort: "asc" }],
+              },
+            }}
+            sx={{
+              "& .MuiDataGrid-cell": {
+                display: "flex",
+                alignItems: "center",
+              },
+            }}
+          />
+        </Box>
+      )}
 
       {/* Template Form Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
