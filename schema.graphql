@@ -2059,6 +2059,7 @@ input UpdateSalesOrderInput {
   id: String!
   project_id: String
   purchase_order_number: String
+  sales_order_number: String
 }
 
 input UpdateSalesOrderLineItemInput {

@@ -301,7 +301,9 @@ export default function PurchaseOrderDetailPage() {
                       />
                     </Box>
                   </Box>
-                  # {purchaseOrder.purchase_order_number}
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    # {purchaseOrder.purchase_order_number}
+                  </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box

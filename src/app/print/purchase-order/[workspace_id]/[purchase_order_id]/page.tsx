@@ -11,6 +11,7 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
   query GetPurchaseOrderByIdPrint($id: String) {
     getPurchaseOrderById(id: $id) {
       id
+      status
       purchase_order_number
       company_id
       created_at
@@ -486,9 +487,7 @@ export default function PurchaseOrderPrintPage() {
                 color: "#333",
               }}
             >
-              {purchaseOrder?.purchase_order_number
-                ? `PO #${purchaseOrder.purchase_order_number}`
-                : "DRAFT"}
+              {purchaseOrder?.status}
             </div>
           </div>
 
@@ -563,7 +562,7 @@ export default function PurchaseOrderPrintPage() {
                 Order Details
               </h2>
               <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
-                {purchaseOrder?.id || "—"}
+                #{purchaseOrder?.purchase_order_number || "—"}
               </div>
               <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
                 Date: {formatDate(new Date().toISOString())}
