@@ -543,6 +543,7 @@ type Invoice {
   createdByUser: User
   finalSumInCents: Int!
   id: String!
+  invoiceNumber: String!
   invoicePaidDate: DateTime
   invoiceSentDate: DateTime
   lineItems: [InvoiceLineItem!]!
@@ -1269,6 +1270,7 @@ type Query {
   currentUser: JWTPayload
   getContactById(id: ID!): Contact
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
+  getDefaultTemplates: [ReferenceNumberTemplate!]!
   getFulfilmentById(id: ID!): Fulfilment
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct

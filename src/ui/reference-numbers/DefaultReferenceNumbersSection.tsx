@@ -2,13 +2,10 @@
 
 import {
   useCreateReferenceNumberTemplateMutation,
-  useDeleteReferenceNumberTemplateMutation,
-  useGetProjectByIdForDisplayQuery,
-  useListReferenceNumberTemplatesQuery,
+  useGetDefaultTemplatesQuery,
   useUpdateReferenceNumberTemplateMutation,
 } from "@/graphql/hooks";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import {
   Alert,
@@ -23,25 +20,17 @@ import {
   FormControl,
   FormControlLabel,
   Grid,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
   Switch,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { DataGridPremium, GridActionsCellItem, GridColDef } from "@mui/x-data-grid-premium";
-import { format } from "date-fns";
 import * as React from "react";
 import { generateReferenceNumberPreview } from "./generateReferenceNumberPreview";
 import ReferenceNumberPreview from "./ReferenceNumberPreview";
-
-interface ReferenceNumbersSectionProps {
-  projectId?: string;
-  businessContactId?: string;
-}
 
 interface TemplateFormData {
   type: "PO" | "SO" | "INVOICE";
@@ -74,46 +63,23 @@ const resetFrequencyLabels = {
   yearly: "Yearly",
 };
 
-export default function ReferenceNumbersSection({
-  projectId,
-  businessContactId,
-}: ReferenceNumbersSectionProps) {
+export default function DefaultReferenceNumbersSection() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingTemplate, setEditingTemplate] = React.useState<string | null>(null);
   const [formData, setFormData] = React.useState<TemplateFormData>(defaultFormData);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  const { data, loading, error, refetch } = useListReferenceNumberTemplatesQuery({
-    variables: {
-      filter: { projectId, businessContactId },
-      page: { size: 100 },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch project data to get project code and parent project code (only if projectId is provided)
-  const { data: projectData } = useGetProjectByIdForDisplayQuery({
-    variables: { id: projectId || "" },
-    skip: !projectId,
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Fetch parent project data if there is a parent project
-  const parentProjectId = projectData?.getProjectById?.parent_project;
-  const { data: parentProjectData } = useGetProjectByIdForDisplayQuery({
-    variables: { id: parentProjectId || "" },
-    skip: !parentProjectId,
+  const { data, loading, error, refetch } = useGetDefaultTemplatesQuery({
     fetchPolicy: "cache-and-network",
   });
 
   const [createTemplate, { loading: creating }] = useCreateReferenceNumberTemplateMutation();
   const [updateTemplate, { loading: updating }] = useUpdateReferenceNumberTemplateMutation();
-  const [deleteTemplate, { loading: deleting }] = useDeleteReferenceNumberTemplateMutation();
 
-  // Templates are already filtered by projectId on the server side
-  const projectTemplates = React.useMemo(() => {
-    if (!data?.listReferenceNumberTemplates) return [];
-    return data.listReferenceNumberTemplates.filter((template) => !template.deleted);
+  // Filter out deleted templates
+  const defaultTemplates = React.useMemo(() => {
+    if (!data?.getDefaultTemplates) return [];
+    return data.getDefaultTemplates.filter((template) => !template.deleted);
   }, [data]);
 
   const handleOpenDialog = (template?: any) => {
@@ -153,8 +119,9 @@ export default function ReferenceNumbersSection({
         startAt: formData.startAt,
         resetFrequency: formData.resetFrequency as any,
         useGlobalSequence: formData.useGlobalSequence,
-        projectId,
-        businessContactId,
+        // For default templates, both projectId and businessContactId should be null
+        projectId: undefined,
+        businessContactId: undefined,
       };
 
       if (editingTemplate) {
@@ -179,28 +146,15 @@ export default function ReferenceNumbersSection({
     }
   };
 
-  const handleDelete = async (templateId: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
-
-    try {
-      await deleteTemplate({
-        variables: { id: templateId },
-      });
-      await refetch();
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to delete template");
-    }
-  };
-
   // Check if all template types are configured
   const allTypesConfigured = React.useMemo(() => {
     const types = ["PO", "SO", "INVOICE"] as const;
-    return types.every((type) => projectTemplates.some((template) => template.type === type));
-  }, [projectTemplates]);
+    return types.every((type) => defaultTemplates.some((template) => template.type === type));
+  }, [defaultTemplates]);
 
   // Prepare data for DataGrid
   const rows = React.useMemo(() => {
-    return projectTemplates.map((template) => ({
+    return defaultTemplates.map((template) => ({
       id: template.id,
       type: template.type,
       typeLabel: typeLabels[template.type as keyof typeof typeLabels],
@@ -211,7 +165,7 @@ export default function ReferenceNumbersSection({
       resetFrequencyLabel: resetFrequencyLabels[template.resetFrequency || "yearly"],
       useGlobalSequence: template.useGlobalSequence || false,
     }));
-  }, [projectTemplates]);
+  }, [defaultTemplates]);
 
   // Define columns for DataGrid
   const columns: GridColDef[] = React.useMemo(
@@ -243,8 +197,9 @@ export default function ReferenceNumbersSection({
             template: params.row.template,
             seqPadding: params.row.seqPadding,
             startAt: params.row.startAt,
-            projectCode: projectData?.getProjectById?.project_code,
-            parentProjectCode: parentProjectData?.getProjectById?.project_code,
+            // No project codes for default templates
+            projectCode: undefined,
+            parentProjectCode: undefined,
           });
           return (
             <Chip
@@ -273,8 +228,8 @@ export default function ReferenceNumbersSection({
         headerName: "Global Sequence",
         width: 150,
         sortable: true,
-        // renderCell: (params) =>
-        //   params.value ? <Chip label="Global" size="small" color="secondary" /> : null,
+        renderCell: (params) =>
+          params.value ? <Chip label="Global" size="small" color="secondary" /> : null,
       },
       {
         field: "actions",
@@ -286,25 +241,18 @@ export default function ReferenceNumbersSection({
             key="edit"
             icon={<EditIcon />}
             label="Edit"
-            onClick={() => handleOpenDialog(projectTemplates.find((t) => t.id === params.id))}
-          />,
-          <GridActionsCellItem
-            key="delete"
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={() => handleDelete(params.id as string)}
-            disabled={deleting}
+            onClick={() => handleOpenDialog(defaultTemplates.find((t) => t.id === params.id))}
           />,
         ],
       },
     ],
-    [projectData, parentProjectData, deleting, projectTemplates, handleDelete],
+    [defaultTemplates],
   );
 
   if (loading) {
     return (
       <Typography variant="body2" color="text.secondary">
-        Loading reference number templates...
+        Loading default reference number templates...
       </Typography>
     );
   }
@@ -312,34 +260,31 @@ export default function ReferenceNumbersSection({
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
-        Failed to load reference number templates: {error.message}
+        Failed to load default reference number templates: {error.message}
       </Alert>
     );
   }
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h6">Reference Number Templates</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          size="small"
-        >
-          Add Template
-        </Button>
-      </Box>
-
-      <Divider sx={{ mb: 2 }} />
-
       {errorMsg && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg(null)}>
           {errorMsg}
         </Alert>
       )}
 
-      {projectTemplates.length === 0 ? (
+      {!allTypesConfigured && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Not all reference number types have default templates configured. Consider adding
+          templates for:{" "}
+          {["PO", "SO", "INVOICE"]
+            .filter((type) => !defaultTemplates.some((template) => template.type === type))
+            .map((type) => typeLabels[type as keyof typeof typeLabels])
+            .join(", ")}
+        </Alert>
+      )}
+
+      {defaultTemplates.length === 0 ? (
         <Box
           display="flex"
           flexDirection="column"
@@ -354,10 +299,10 @@ export default function ReferenceNumbersSection({
           }}
         >
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Reference Number Templates
+            No Default Reference Number Templates
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Create templates to automatically generate reference numbers for your documents.
+            Create default templates that will be used for all new projects and contacts.
           </Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
             Create First Template
@@ -389,7 +334,9 @@ export default function ReferenceNumbersSection({
       {/* Template Form Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingTemplate ? "Edit Reference Number Template" : "Create Reference Number Template"}
+          {editingTemplate
+            ? "Edit Default Reference Number Template"
+            : "Create Default Reference Number Template"}
         </DialogTitle>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 1 }}>
@@ -412,7 +359,7 @@ export default function ReferenceNumbersSection({
               label="Template"
               value={formData.template}
               onChange={(e) => setFormData({ ...formData, template: e.target.value })}
-              helperText="Use {YYYY}, {YY}, {MM}, {DD}, {seq}, {projectCode}, {parentProjectCode} as placeholders. Example: PO-{projectCode}-{YYYY}-{MM}-{seq}"
+              helperText="Use {YYYY}, {YY}, {MM}, {DD}, {seq}, {projectCode}, {parentProjectCode} as placeholders. Example: PO-{YYYY}-{MM}-{seq}"
               required
             />
 
@@ -421,8 +368,9 @@ export default function ReferenceNumbersSection({
                 template={formData.template}
                 seqPadding={formData.seqPadding}
                 startAt={formData.startAt}
-                projectCode={projectData?.getProjectById?.project_code}
-                parentProjectCode={parentProjectData?.getProjectById?.project_code}
+                // No project codes for default templates
+                projectCode={undefined}
+                parentProjectCode={undefined}
               />
             )}
 

@@ -47,7 +47,6 @@ export default function NewPurchaseOrderPage() {
   const router = useRouter();
   const [sellerId, setSellerId] = React.useState<string | undefined>(undefined);
   const [projectId, setProjectId] = React.useState<string | undefined>(undefined);
-  const [purchaseOrderNumber, setPurchaseOrderNumber] = React.useState<string>("");
 
   // Validation state
   const [errors, setErrors] = React.useState<{
@@ -78,7 +77,6 @@ export default function NewPurchaseOrderPage() {
           input: {
             seller_id: sellerId!,
             project_id: projectId!,
-            purchase_order_number: purchaseOrderNumber.trim() || undefined,
           },
         },
       });
@@ -93,39 +91,22 @@ export default function NewPurchaseOrderPage() {
     <PageContainer>
       <Container maxWidth="lg">
         {/* Header */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mb: 4 }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h4" sx={{ flexGrow: 1 }}>
-              New purchase order
-            </Typography>
-            <Button variant="outlined" onClick={() => router.back()}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              sx={{ ml: 2 }}
-              onClick={handleSubmit}
-              loading={createPurchaseOrderLoading}
-              disabled={createPurchaseOrderLoading}
-            >
-              Create Order
-            </Button>
-          </Box>
-          <Box sx={{ maxWidth: 400 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-              Purchase Order Number
-            </Typography>
-            <TextField
-              size="small"
-              fullWidth
-              value={purchaseOrderNumber}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPurchaseOrderNumber(e.target.value)
-              }
-              placeholder="Enter purchase order number"
-              inputProps={{ "data-testid": "purchase-order-number" }}
-            />
-          </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 4, mb: 4 }}>
+          <Typography variant="h4" sx={{ flexGrow: 1 }}>
+            New purchase order
+          </Typography>
+          <Button variant="outlined" onClick={() => router.back()}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            sx={{ ml: 2 }}
+            onClick={handleSubmit}
+            loading={createPurchaseOrderLoading}
+            disabled={createPurchaseOrderLoading}
+          >
+            Create Order
+          </Button>
         </Box>
 
         {/* Buyer & Project */}

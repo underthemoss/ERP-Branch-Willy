@@ -85,3 +85,37 @@ graphql(`
     resetSequenceNumber(templateId: $templateId, newValue: $newValue)
   }
 `);
+
+graphql(`
+  query GetDefaultTemplates {
+    getDefaultTemplates {
+      id
+      type
+      template
+      seqPadding
+      startAt
+      resetFrequency
+      useGlobalSequence
+      businessContactId
+      projectId
+      companyId
+      createdAt
+      updatedAt
+      deleted
+      createdBy
+      updatedBy
+      createdByUser {
+        id
+        firstName
+        lastName
+        email
+      }
+      updatedByUser {
+        id
+        firstName
+        lastName
+        email
+      }
+    }
+  }
+`);
