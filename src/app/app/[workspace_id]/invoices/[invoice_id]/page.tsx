@@ -88,6 +88,7 @@ const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
     invoiceById(id: $id) {
       id
+      invoiceNumber
       subTotalInCents
       taxPercent
       totalTaxesInCents
@@ -298,9 +299,15 @@ export default function InvoiceDisplayPage() {
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 6 }}>
-                  <Typography variant="h4" gutterBottom>
-                    Invoice
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <Typography variant="h4">Invoice</Typography>
+                    <Chip
+                      label={`#${invoice.invoiceNumber}`}
+                      variant="filled"
+                      color="default"
+                      size="medium"
+                    />
+                  </Box>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Amount:{" "}
                     {invoice.subTotalInCents != null
@@ -567,6 +574,14 @@ export default function InvoiceDisplayPage() {
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
+                    Invoice Number
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {invoice.invoiceNumber}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
                     Created At
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
@@ -583,7 +598,7 @@ export default function InvoiceDisplayPage() {
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Invoice ID
+                    Internal ID
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
                     {invoice.id}

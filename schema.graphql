@@ -519,7 +519,6 @@ input GenerateReferenceNumberInput {
   parentProjectCode: String
   projectCode: String
   templateId: String!
-  type: ReferenceNumberType!
 }
 
 type GenerateReferenceNumberResult {
