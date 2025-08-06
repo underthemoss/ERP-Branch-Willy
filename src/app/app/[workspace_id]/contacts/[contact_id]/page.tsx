@@ -6,6 +6,7 @@ import {
   useContactDisplayPage_GetContactByIdQuery,
 } from "@/graphql/hooks";
 import NotesSection from "@/ui/notes/NotesSection";
+import ReferenceNumbersSection from "@/ui/reference-numbers/ReferenceNumbersSection";
 import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Box,
@@ -358,6 +359,13 @@ export default function ContactDisplayPage() {
                     ))
                   )}
                 </Box>
+              </Paper>
+            )}
+
+            {/* Reference Numbers Section - only for Business contacts */}
+            {isBusiness && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <ReferenceNumbersSection businessContactId={contact.id} />
               </Paper>
             )}
 

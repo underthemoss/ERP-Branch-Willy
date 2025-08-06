@@ -47,7 +47,6 @@ graphql(`
             }
           }
         }
-        order_id
         seller_id
         status
         project_id
@@ -98,7 +97,6 @@ export default function PurchaseOrdersPage() {
   // Map GQL data to table rows
   type PurchaseOrderRow = {
     id: string;
-    order_id: string;
     purchase_order_number: string;
     business: string;
     contact: string;
@@ -133,7 +131,6 @@ export default function PurchaseOrdersPage() {
 
       return {
         id: order.id,
-        order_id: order.order_id,
         purchase_order_number: order.purchase_order_number ?? "not implemented",
         business: businessName,
         contact: contactName,
@@ -174,7 +171,6 @@ export default function PurchaseOrdersPage() {
 
   const columns: GridColDef[] = [
     { field: "purchase_order_number", headerName: "PO #", width: 120 },
-    { field: "id", headerName: "ID", width: 120 },
     { field: "business", headerName: "Business", flex: 2, minWidth: 180 },
     { field: "contact", headerName: "Contact", flex: 1, minWidth: 150 },
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
@@ -196,6 +192,7 @@ export default function PurchaseOrdersPage() {
       sortable: false,
       filterable: false,
     },
+    { field: "id", headerName: "Order ID", width: 120 },
     { field: "created_by", headerName: "Created By", width: 160 },
     { field: "updated_by", headerName: "Updated By", width: 160 },
     {
@@ -301,11 +298,6 @@ export default function PurchaseOrdersPage() {
               initialState={{
                 sorting: {
                   sortModel: [{ field: "updated_at", sort: "desc" }],
-                },
-                columns: {
-                  columnVisibilityModel: {
-                    id: false,
-                  },
                 },
               }}
               sx={{

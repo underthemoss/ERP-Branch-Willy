@@ -11,8 +11,9 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderByIdPrint($id: String) {
     getSalesOrderById(id: $id) {
       id
-      order_id
+      status
       purchase_order_number
+      sales_order_number
       company_id
       created_at
       created_by
@@ -485,9 +486,7 @@ export default function SalesOrderPrintPage() {
                 color: "#333",
               }}
             >
-              {salesOrder?.purchase_order_number
-                ? `PO #${salesOrder.purchase_order_number}`
-                : "DRAFT"}
+              {salesOrder?.status}
             </div>
           </div>
 
@@ -562,7 +561,10 @@ export default function SalesOrderPrintPage() {
                 Order Details
               </h2>
               <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
-                {salesOrder?.id || "—"}
+                #{salesOrder?.sales_order_number || "—"}
+              </div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
+                PO#: {salesOrder?.purchase_order_number || "—"}
               </div>
               <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 2 }}>
                 Date: {formatDate(new Date().toISOString())}

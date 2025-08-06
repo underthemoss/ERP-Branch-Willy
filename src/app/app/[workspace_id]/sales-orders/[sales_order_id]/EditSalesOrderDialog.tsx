@@ -24,6 +24,7 @@ graphql(`
       buyer_id
       purchase_order_number
       project_id
+      sales_order_number
     }
   }
 `);
@@ -35,6 +36,7 @@ interface EditSalesOrderDialogProps {
     id: string;
     buyer_id: string;
     purchase_order_number: string;
+    sales_order_number: string;
     project_id?: string | null;
   };
   onSuccess?: () => void;
@@ -52,6 +54,7 @@ export default function EditSalesOrderDialog({
   // Form state
   const [buyerId, setBuyerId] = React.useState(salesOrder.buyer_id);
   const [poNumber, setPoNumber] = React.useState(salesOrder.purchase_order_number);
+  const [salesOrderNumber, setSalesOrderNumber] = React.useState(salesOrder.sales_order_number);
   const [projectId, setProjectId] = React.useState(salesOrder.project_id || "");
   const [loading, setLoading] = React.useState(false);
 
@@ -60,6 +63,7 @@ export default function EditSalesOrderDialog({
     if (open) {
       setBuyerId(salesOrder.buyer_id);
       setPoNumber(salesOrder.purchase_order_number);
+      setSalesOrderNumber(salesOrder.sales_order_number);
       setProjectId(salesOrder.project_id || "");
     }
   }, [open, salesOrder]);
@@ -73,6 +77,7 @@ export default function EditSalesOrderDialog({
             id: salesOrder.id,
             buyer_id: buyerId,
             purchase_order_number: poNumber,
+            sales_order_number: salesOrderNumber,
             project_id: projectId || null,
           },
         },
@@ -105,6 +110,15 @@ export default function EditSalesOrderDialog({
             />
           </Box>
 
+          {/* Sales Order Number */}
+          <TextField
+            label="Sales Order Number"
+            value={salesOrderNumber}
+            onChange={(e) => setSalesOrderNumber(e.target.value)}
+            required
+            fullWidth
+          />
+
           {/* PO Number */}
           <TextField
             label="Purchase Order Number"
@@ -133,7 +147,7 @@ export default function EditSalesOrderDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || !buyerId || !poNumber}
+          disabled={loading || !buyerId || !poNumber || !salesOrderNumber}
         >
           {loading ? "Updating..." : "Update"}
         </Button>

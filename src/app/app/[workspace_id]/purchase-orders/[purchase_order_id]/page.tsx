@@ -64,7 +64,6 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
   query GetPurchaseOrderById($id: String) {
     getPurchaseOrderById(id: $id) {
       id
-      order_id
       purchase_order_number
       company_id
       created_at
@@ -288,20 +287,23 @@ export default function PurchaseOrderDetailPage() {
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="h4">
-                      Purchase Order: {purchaseOrder.purchase_order_number}
-                    </Typography>
+                    <Typography variant="h4">Purchase Order</Typography>
+                    <Box>
+                      <Chip
+                        label={purchaseOrder.status}
+                        color={
+                          purchaseOrder.status === "SUBMITTED"
+                            ? "primary"
+                            : purchaseOrder.status === "DRAFT"
+                              ? "default"
+                              : "default"
+                        }
+                      />
+                    </Box>
                   </Box>
-                  <Chip
-                    label={purchaseOrder.status}
-                    color={
-                      purchaseOrder.status === "SUBMITTED"
-                        ? "primary"
-                        : purchaseOrder.status === "DRAFT"
-                          ? "default"
-                          : "default"
-                    }
-                  />
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    # {purchaseOrder.purchase_order_number}
+                  </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
                   <Box

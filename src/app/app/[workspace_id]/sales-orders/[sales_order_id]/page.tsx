@@ -64,7 +64,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
   query GetSalesOrderById($id: String) {
     getSalesOrderById(id: $id) {
       id
-      order_id
+      sales_order_number
       purchase_order_number
       company_id
       created_at
@@ -302,7 +302,7 @@ export default function SalesOrderDetailPage() {
                     />
                   </Box>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                    Purchase Order Number: {salesOrder.purchase_order_number}
+                    # {salesOrder.sales_order_number}
                   </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
@@ -463,10 +463,10 @@ export default function SalesOrderDetailPage() {
                 Metadata
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <Stack spacing={2}>
+              <Stack spacing={1}>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" color="text.secondary">
-                    ID
+                    ID:
                   </Typography>
                   <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
                     {salesOrder.id}
@@ -477,6 +477,44 @@ export default function SalesOrderDetailPage() {
                       aria-label="Copy Sales Order ID"
                       data-testid="sales-order-details-copy-id"
                       onClick={() => navigator.clipboard.writeText(salesOrder.id)}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Sales Order #:
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
+                    {salesOrder.sales_order_number}
+                  </Typography>
+                  <Tooltip title="Copy Sales Order ID" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Sales Order Number"
+                      data-testid="sales-order-details-copy-number"
+                      onClick={() => navigator.clipboard.writeText(salesOrder.sales_order_number)}
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Purchase Order #:
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
+                    {salesOrder.purchase_order_number}
+                  </Typography>
+                  <Tooltip title="Copy Purchase Order Number" arrow>
+                    <IconButton
+                      size="small"
+                      aria-label="Copy Purchase Order Number"
+                      data-testid="sales-order-details-copy-number"
+                      onClick={() =>
+                        navigator.clipboard.writeText(salesOrder.purchase_order_number)
+                      }
                     >
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>
@@ -755,7 +793,7 @@ export default function SalesOrderDetailPage() {
           sx={{ width: "100%" }}
           variant="filled"
         >
-          {snackbarMessage}
+          {snackbarMessage || "Sales order updated"}
         </Alert>
       </Snackbar>
 
@@ -791,6 +829,7 @@ export default function SalesOrderDetailPage() {
             id: salesOrder.id,
             buyer_id: salesOrder.buyer_id,
             purchase_order_number: salesOrder.purchase_order_number,
+            sales_order_number: salesOrder.sales_order_number,
             project_id: salesOrder.project_id,
           }}
           onSuccess={() => {

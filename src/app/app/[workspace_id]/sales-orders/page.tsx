@@ -29,6 +29,7 @@ graphql(`
     listSalesOrders(limit: $limit, offset: $offset) {
       items {
         id
+        sales_order_number
         project {
           id
           name
@@ -47,7 +48,6 @@ graphql(`
             }
           }
         }
-        order_id
         buyer_id
         status
         project_id
@@ -98,11 +98,11 @@ export default function SalesOrdersPage() {
   // Map GQL data to table rows
   type SalesOrderRow = {
     id: string;
-    order_id: string;
     business: string;
     contact: string;
     project: string;
     purchase_order_number: string;
+    sales_order_number: string;
     status: SalesOrderStatus;
     total: string;
     created_by: string;
@@ -133,11 +133,11 @@ export default function SalesOrdersPage() {
 
       return {
         id: order.id,
-        order_id: order.order_id,
         business: businessName,
         contact: contactName,
         project: order.project?.name ?? "not implemented",
         purchase_order_number: order.purchase_order_number ?? "",
+        sales_order_number: order.sales_order_number ?? "",
         status: order.status,
         total: `$${((order.pricing?.total_in_cents || 0) / 100).toFixed(2)}`,
         created_by: order.created_by_user
@@ -173,12 +173,13 @@ export default function SalesOrdersPage() {
   }, [rows, searchTerm, statusFilter]);
 
   const columns: GridColDef[] = [
-    { field: "id", headerName: "Order #", width: 120 },
+    { field: "sales_order_number", headerName: "SO #", width: 140 },
     { field: "business", headerName: "Business", flex: 2, minWidth: 180 },
     { field: "contact", headerName: "Contact", flex: 1, minWidth: 150 },
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
     { field: "purchase_order_number", headerName: "PO #", width: 140 },
     { field: "total", headerName: "Total", width: 120 },
+    { field: "id", headerName: "Order ID", width: 120 },
     {
       field: "status",
       headerName: "Status",

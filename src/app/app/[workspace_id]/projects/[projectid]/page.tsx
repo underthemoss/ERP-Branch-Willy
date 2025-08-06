@@ -10,6 +10,7 @@ import {
 import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
+import { ReferenceNumbersSection } from "@/ui/reference-numbers";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -473,6 +474,11 @@ export default function ProjectDetailAltPage() {
                   </Typography>
                 )}
               </Box>
+            </Paper>
+
+            {/* Reference Numbers Section */}
+            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+              <ReferenceNumbersSection projectId={project.id} />
             </Paper>
 
             {/* Sub Projects Section (moved to bottom) */}

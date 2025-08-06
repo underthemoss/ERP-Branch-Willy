@@ -48,6 +48,19 @@ export default function SettingsPage() {
           </ListItemButton>
         </ListItem>
       </List>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="h6" gutterBottom>
+        Reference Numbers
+      </Typography>
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} href={`/app/${workspaceId}/settings/reference-numbers`}>
+            <ListItemText primary="Default Reference Number Templates" />
+          </ListItemButton>
+        </ListItem>
+      </List>
     </Box>
   );
 }
