@@ -171,7 +171,6 @@ export default function PurchaseOrdersPage() {
 
   const columns: GridColDef[] = [
     { field: "purchase_order_number", headerName: "PO #", width: 120 },
-    { field: "id", headerName: "ID", width: 120 },
     { field: "business", headerName: "Business", flex: 2, minWidth: 180 },
     { field: "contact", headerName: "Contact", flex: 1, minWidth: 150 },
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
@@ -193,6 +192,7 @@ export default function PurchaseOrdersPage() {
       sortable: false,
       filterable: false,
     },
+    { field: "id", headerName: "Order ID", width: 120 },
     { field: "created_by", headerName: "Created By", width: 160 },
     { field: "updated_by", headerName: "Updated By", width: 160 },
     {
@@ -298,11 +298,6 @@ export default function PurchaseOrdersPage() {
               initialState={{
                 sorting: {
                   sortModel: [{ field: "updated_at", sort: "desc" }],
-                },
-                columns: {
-                  columnVisibilityModel: {
-                    id: false,
-                  },
                 },
               }}
               sx={{
