@@ -506,7 +506,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
               </div>
               <div
                 className="invoice-dates"
-                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
+                style={{ fontSize: "0.8rem", color: "#666", marginBottom: 4 }}
               >
                 Due Date:{" "}
                 {formatDate(

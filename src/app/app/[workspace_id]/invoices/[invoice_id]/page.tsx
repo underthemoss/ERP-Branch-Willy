@@ -479,7 +479,7 @@ export default function InvoiceDisplayPage() {
                     if (invoice.status === "PAID") {
                       defaultName = "receipt";
                     }
-                    setPrintFileName(`${defaultName}-${yyyy}-${mm}-${dd}`);
+                    setPrintFileName(invoice.invoiceNumber);
                     setPrintDialogOpen(true);
                   }}
                 >
