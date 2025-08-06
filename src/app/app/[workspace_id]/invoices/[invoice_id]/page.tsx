@@ -88,6 +88,7 @@ const InvoiceByIdQuery = graphql(`
   query InvoiceById($id: String!) {
     invoiceById(id: $id) {
       id
+      invoiceNumber
       subTotalInCents
       taxPercent
       totalTaxesInCents
@@ -298,9 +299,15 @@ export default function InvoiceDisplayPage() {
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
               <Grid container alignItems="center" justifyContent="space-between">
                 <Grid size={{ xs: 6 }}>
-                  <Typography variant="h4" gutterBottom>
-                    Invoice
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <Typography variant="h4">Invoice</Typography>
+                    <Chip
+                      label={`#${invoice.invoiceNumber}`}
+                      variant="filled"
+                      color="default"
+                      size="medium"
+                    />
+                  </Box>
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Amount:{" "}
                     {invoice.subTotalInCents != null
@@ -472,7 +479,7 @@ export default function InvoiceDisplayPage() {
                     if (invoice.status === "PAID") {
                       defaultName = "receipt";
                     }
-                    setPrintFileName(`${defaultName}-${yyyy}-${mm}-${dd}`);
+                    setPrintFileName(invoice.invoiceNumber);
                     setPrintDialogOpen(true);
                   }}
                 >
@@ -565,6 +572,14 @@ export default function InvoiceDisplayPage() {
               </Typography>
               <Divider sx={{ mb: 1 }} />
               <Stack spacing={2}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Invoice Number
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {invoice.invoiceNumber}
+                  </Typography>
+                </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
                     Created At

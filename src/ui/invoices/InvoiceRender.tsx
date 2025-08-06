@@ -31,6 +31,7 @@ const invoiceQuery = graphql(`
   query InvoiceByIdInvoiceRenderer($id: String!) {
     invoiceById(id: $id) {
       id
+      invoiceNumber
       subTotalInCents
       taxesInCents
       totalTaxesInCents
@@ -495,7 +496,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
                 className="invoice-number"
                 style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}
               >
-                {invoice.id}
+                {invoice.invoiceNumber}
               </div>
               <div
                 className="invoice-dates"
@@ -505,7 +506,7 @@ export default function InvoiceRender({ invoiceId, scale = 1 }: InvoiceRenderPro
               </div>
               <div
                 className="invoice-dates"
-                style={{ fontSize: "1.05rem", color: "#666", marginBottom: 4 }}
+                style={{ fontSize: "0.8rem", color: "#666", marginBottom: 4 }}
               >
                 Due Date:{" "}
                 {formatDate(

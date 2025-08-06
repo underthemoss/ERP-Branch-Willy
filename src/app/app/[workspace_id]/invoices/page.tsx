@@ -19,6 +19,7 @@ const ListInvoicesQuery = graphql(`
     listInvoices(query: $query) {
       items {
         id
+        invoiceNumber
         sellerId
         buyerId
         createdAt
@@ -78,9 +79,9 @@ const ListInvoicesQuery = graphql(`
 
 const columns: GridColDef[] = [
   {
-    field: "number",
-    headerName: "Invoice ID",
-    width: 180,
+    field: "invoiceNumber",
+    headerName: "Invoice #",
+    width: 140,
     renderCell: (params) => {
       const { row } = params;
       // workspace_id is not available here, so use window.location or a prop
@@ -95,7 +96,7 @@ const columns: GridColDef[] = [
           href={workspaceId ? `/app/${workspaceId}/invoices/${row.id}` : `/app/invoices/${row.id}`}
           style={{ textDecoration: "underline", color: "#1976d2" }}
         >
-          {row.number}
+          {row.invoiceNumber}
         </NextLink>
       );
     },
@@ -197,6 +198,11 @@ const columns: GridColDef[] = [
     },
   },
   {
+    field: "id",
+    headerName: "Invoice ID",
+    width: 180,
+  },
+  {
     field: "createdAt",
     headerName: "Created At",
     type: "dateTime",
@@ -233,7 +239,7 @@ export default function InvoicesPage() {
   const rows =
     (data?.listInvoices.items || [])?.map((inv) => ({
       id: inv.id,
-      number: inv.id,
+      invoiceNumber: inv.invoiceNumber,
       createdAt: inv.createdAt ? new Date(inv.createdAt) : null,
       buyer:
         inv.buyer?.__typename === "PersonContact"
