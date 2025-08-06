@@ -264,8 +264,6 @@ export default function InvoicesPage() {
       updatedAt: inv.updatedAt ? new Date(inv.updatedAt) : null,
     })) ?? [];
 
-  console.log("InvoicesPage rows:", rows);
-
   return (
     <>
       <Container maxWidth="xl">

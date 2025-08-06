@@ -598,7 +598,7 @@ export default function InvoiceDisplayPage() {
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Internal ID
+                    Invoice ID
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
                     {invoice.id}
