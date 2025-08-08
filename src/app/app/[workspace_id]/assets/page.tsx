@@ -71,7 +71,7 @@ graphql(`
   }
 `);
 
-export default function Inventory() {
+export default function Assets() {
   const pageSize = 2_000;
   const [searchTerm, setSearchTerm] = React.useState("");
   const { data, loading } = useListAssetsQuery({
@@ -188,10 +188,10 @@ export default function Inventory() {
     <PageContainer>
       <Container maxWidth="lg">
         <Typography variant="h1" mt={4} mb={1}>
-          Inventory Management
+          Asset Management
         </Typography>
         <Typography variant="body1" color="text.secondary" mb={2}>
-          Track, assign, and manage inventory resources across your operations.
+          Track, assign, and manage assets across your operations.
         </Typography>
 
         {/* Search & Filter Row */}
@@ -228,8 +228,8 @@ export default function Inventory() {
             <MenuItem value="All Resource Tags">All Resource Tags</MenuItem>
           </Select>
 
-          <Select size="small" value="All Inventory" displayEmpty>
-            <MenuItem value="All Inventory">All Inventory</MenuItem>
+          <Select size="small" value="All Assets" displayEmpty>
+            <MenuItem value="All Assets">All Assets</MenuItem>
           </Select>
 
           <IconButton>
@@ -289,7 +289,7 @@ export default function Inventory() {
                 <Card
                   variant="outlined"
                   sx={{ maxWidth: 600, mx: "auto", boxShadow: 2 }}
-                  data-test="inventory-detail-panel"
+                  data-test="asset-detail-panel"
                 >
                   {row.photo_large && (
                     <CardMedia
@@ -306,12 +306,7 @@ export default function Inventory() {
                     />
                   )}
                   <CardContent>
-                    <Typography
-                      gutterBottom
-                      variant="h5"
-                      component="div"
-                      data-test="inventory-asset-name"
-                    >
+                    <Typography gutterBottom variant="h5" component="div" data-test="asset-name">
                       {row.name || row.custom_name}
                     </Typography>
                     <Grid container spacing={2}>
@@ -332,7 +327,7 @@ export default function Inventory() {
                             variant="body2"
                             color="text.secondary"
                             sx={{ fontWeight: 500 }}
-                            {...(label === "ID" ? { "data-test": "inventory-asset-id" } : {})}
+                            {...(label === "ID" ? { "data-test": "asset-id" } : {})}
                           >
                             {label}
                           </Typography>
@@ -350,7 +345,7 @@ export default function Inventory() {
                       color="primary"
                       startIcon={<CalendarTodayIcon />}
                       sx={{ minWidth: 180 }}
-                      data-test="inventory-schedule-btn"
+                      data-test="asset-schedule-btn"
                     >
                       See Asset Schedule
                     </Button>
