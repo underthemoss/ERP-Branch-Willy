@@ -108,11 +108,11 @@ export const NavBar = () => {
       testId: "nav-assignments",
     },
     {
-      text: "Inventory",
-      href: `/app/${currentWorkspace?.id}/inventory`,
+      text: "Assets",
+      href: `/app/${currentWorkspace?.id}/assets`,
       icon: <DescriptionOutlinedIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
-      testId: "nav-inventory",
+      selected: pathname === `/app/${currentWorkspace?.id}/assets`,
+      testId: "nav-assets",
     },
     {
       text: "Prices",
