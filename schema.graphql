@@ -284,6 +284,19 @@ input CreateChargeInput {
   salesOrderLineItemId: ID
 }
 
+input CreateInventoryInput {
+  assetId: String
+  fulfilmentId: String
+  isThirdPartyRental: Boolean!
+  pimCategoryId: String
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProductId: String
+  purchaseOrderId: String
+  purchaseOrderLineItemId: String
+  status: InventoryStatus!
+}
+
 input CreateInvoiceInput {
   buyerId: String!
   sellerId: String!
@@ -449,6 +462,10 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+input DeleteInventoryInput {
+  reason: String!
+}
+
 enum DeliveryMethod {
   DELIVERY
   PICKUP
@@ -531,6 +548,56 @@ type HasuraClaims {
   x_hasura_allowed_roles: [String]
   x_hasura_default_role: String
   x_hasura_user_id: String
+}
+
+type Inventory {
+  asset: Asset
+  assetId: String
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  fulfilmentId: String
+  id: String!
+  isThirdPartyRental: Boolean!
+  pimCategoryId: String
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProductId: String
+  purchaseOrderId: String
+  purchaseOrderLineItemId: String
+  status: InventoryStatus!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+}
+
+type InventoryGroupedByCategory {
+  pimCategoryId: String
+  pimCategoryName: String
+  pimCategoryPath: String
+  quantityOnOrder: Int!
+  quantityReceived: Int!
+  sampleInventories: [Inventory]!
+  sampleInventoryIds: [String!]!
+  totalQuantity: Int!
+}
+
+type InventoryGroupedByCategoryResponse {
+  items: [InventoryGroupedByCategory!]!
+  pageNumber: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+type InventoryResponse {
+  items: [Inventory!]!
+}
+
+enum InventoryStatus {
+  ON_ORDER
+  RECEIVED
 }
 
 type Invoice {
@@ -707,6 +774,25 @@ type ListFulfilmentsResult {
   page: PaginationInfo!
 }
 
+input ListInventoryFilter {
+  assetId: String
+  companyId: String
+  fulfilmentId: String
+  isThirdPartyRental: Boolean
+  purchaseOrderId: String
+  status: InventoryStatus
+}
+
+input ListInventoryPage {
+  number: Int
+  size: Int
+}
+
+input ListInventoryQuery {
+  filter: ListInventoryFilter
+  page: ListInventoryPage
+}
+
 input ListInvoicesFilter {
   companyId: String
   status: InvoiceStatus
@@ -831,6 +917,7 @@ type Mutation {
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createCharge(input: CreateChargeInput!): Charge
+  createInventory(input: CreateInventoryInput!): Inventory!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
 
@@ -855,6 +942,7 @@ type Mutation {
   createWorkflowConfiguration(input: CreateWorkflowConfigurationInput!): WorkflowConfiguration
   deleteContactById(id: ID!): Boolean
   deleteFulfilment(id: ID!): Boolean
+  deleteInventory(id: String!, input: DeleteInventoryInput!): Boolean!
   deleteInvoice(id: String!): Boolean!
   deleteNote(id: String!): Note
   deletePriceBookById(id: ID!): Boolean
@@ -863,6 +951,7 @@ type Mutation {
   deleteReferenceNumberTemplate(id: String!): Boolean
   deleteWorkflowConfigurationById(id: ID!): Boolean
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
+  markInventoryReceived(id: String!): Inventory
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
@@ -893,6 +982,7 @@ type Mutation {
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
   updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
   updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
+  updateInventorySerialisedId(id: String!, input: UpdateInventorySerialisedIdInput!): Inventory
   updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
   updatePersonContact(id: ID!, input: UpdatePersonContactInput!): PersonContact
@@ -1287,6 +1377,7 @@ type Query {
   getUsersById(userIds: [String!]!): [User]
   getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
   helloWorld: String
+  inventoryById(id: String!): Inventory
   invoiceById(id: String!): Invoice
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
@@ -1294,6 +1385,8 @@ type Query {
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
+  listInventory(query: ListInventoryQuery): InventoryResponse!
+  listInventoryGroupedByPimCategoryId(query: ListInventoryQuery): InventoryGroupedByCategoryResponse!
   listInvoices(query: ListInvoicesQuery): InvoicesResponse!
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
@@ -1935,6 +2028,10 @@ input UpdateBusinessContactInput {
   resourceMapIds: [ID!]
   taxId: String
   website: String
+}
+
+input UpdateInventorySerialisedIdInput {
+  assetId: String!
 }
 
 input UpdatePersonContactInput {
