@@ -75,6 +75,28 @@ graphql(`
   }
 `);
 
+// Mutation to bulk mark inventory as received
+graphql(`
+  mutation BulkMarkInventoryReceived($input: BulkMarkInventoryReceivedInput!) {
+    bulkMarkInventoryReceived(input: $input) {
+      items {
+        id
+        status
+        conditionOnReceipt
+        conditionNotes
+        receiptNotes
+        receivedAt
+        pimCategoryId
+        pimCategoryName
+        pimCategoryPath
+        pimProductId
+        assetId
+      }
+      totalProcessed
+    }
+  }
+`);
+
 interface ReceiveInventoryDialogProps {
   open: boolean;
   onClose: () => void;
@@ -112,7 +134,7 @@ export default function ReceiveInventoryDialog({
     onCompleted: () => {
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error receiving items:", error);
     },
   });
