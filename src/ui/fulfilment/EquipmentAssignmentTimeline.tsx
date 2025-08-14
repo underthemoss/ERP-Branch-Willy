@@ -1,10 +1,13 @@
 "use client";
 
+import { FulfilmentType, useListRentalFulfilmentsQuery } from "@/graphql/hooks";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ContactPageIcon from "@mui/icons-material/ContactPage";
+import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Box, Button, Chip, IconButton, Paper, Typography } from "@mui/material";
-import { addDays, differenceInDays, format, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, differenceInDays, format, startOfDay } from "date-fns";
 import React, { useState } from "react";
 import { Assignment, Equipment, mockAssignments, mockEquipmentData } from "./mockTimelineData";
 
@@ -25,6 +28,42 @@ export default function EquipmentAssignmentTimeline() {
 
   // Generate date array for timeline header
   const dates = Array.from({ length: daysToShow }, (_, i) => addDays(startDate, i));
+
+  const { data, loading, error } = useListRentalFulfilmentsQuery({
+    variables: {
+      filter: {
+        salesOrderType: FulfilmentType.Rental,
+      },
+      page: {
+        size: 100,
+      },
+    },
+  });
+
+  const fulfilments =
+    data?.listRentalFulfilments?.items
+      .map((fulfilment) => {
+        const endDate =
+          fulfilment.rentalEndDate ||
+          fulfilment.expectedRentalEndDate ||
+          addDays(fulfilment.rentalStartDate, 7);
+
+        return {
+          id: fulfilment.id,
+          customer: fulfilment?.contact?.name || "Unknown Customer",
+          equipment: fulfilment.pimCategoryName + " - " + fulfilment.priceName,
+          startDate: format(startOfDay(new Date(fulfilment.rentalStartDate)), "yyyy-MM-dd"),
+          endDate: format(startOfDay(endDate), "yyyy-MM-dd"),
+          duration: `${differenceInCalendarDays(endDate, new Date(fulfilment.rentalStartDate))} days`,
+          hasConflict: false, // Placeholder, implement conflict logic if needed
+          assignedEquipment: fulfilment.inventoryId
+            ? `Assigned: ${fulfilment.inventoryId}`
+            : undefined,
+        };
+      })
+      .filter(Boolean) || ([] as Assignment[]);
+
+  console.log("Fulfilments:", fulfilments);
 
   return (
     <Box sx={{ p: 3, backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
@@ -83,7 +122,7 @@ export default function EquipmentAssignmentTimeline() {
 
         {/* Right Panel - Timeline */}
         <Box sx={{ flex: 1, overflowX: "auto" }}>
-          <TimelineView dates={dates} startDate={startDate} assignments={mockAssignments} />
+          <TimelineView dates={dates} startDate={startDate} assignments={fulfilments} />
         </Box>
       </Box>
     </Box>
@@ -189,18 +228,24 @@ function TimelineView({
   const rowHeight = 80;
 
   return (
-    <Paper sx={{ p: 2, position: "relative" }}>
-      {/* Timeline Header */}
-      <Box sx={{ display: "flex", borderBottom: "2px solid #e0e0e0", pb: 1, mb: 2 }}>
-        {/* Pinned Customer Header */}
+    <Paper sx={{ display: "flex", overflow: "hidden" }}>
+      {/* Fixed Left Panel - Customer Info */}
+      <Box
+        sx={{
+          width: 250,
+          flexShrink: 0,
+          borderRight: "2px solid #e0e0e0",
+          backgroundColor: "white",
+        }}
+      >
+        {/* Customer Header */}
         <Box
           sx={{
-            width: 200,
-            flexShrink: 0,
-            position: "sticky",
-            left: 16, // Account for padding
-            backgroundColor: "white",
-            zIndex: 2,
+            p: 2,
+            borderBottom: "2px solid #e0e0e0",
+            height: 60,
+            display: "flex",
+            alignItems: "center",
           }}
         >
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -208,8 +253,26 @@ function TimelineView({
           </Typography>
         </Box>
 
-        {/* Scrollable Timeline Header */}
-        <Box sx={{ display: "flex", minWidth: dates.length * cellWidth }}>
+        {/* Customer Rows */}
+        <Box>
+          {assignments.map((assignment) => (
+            <CustomerInfoRow key={assignment.id} assignment={assignment} rowHeight={rowHeight} />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Scrollable Right Panel - Timeline */}
+      <Box sx={{ flex: 1, overflowX: "auto" }}>
+        {/* Timeline Header */}
+        <Box
+          sx={{
+            display: "flex",
+            borderBottom: "2px solid #e0e0e0",
+            p: 2,
+            minWidth: dates.length * cellWidth,
+            height: 60,
+          }}
+        >
           {dates.map((date, index) => (
             <Box
               key={index}
@@ -239,22 +302,71 @@ function TimelineView({
             </Box>
           ))}
         </Box>
-      </Box>
 
-      {/* Timeline Rows */}
-      <Box>
-        {assignments.map((assignment) => (
-          <TimelineRow
-            key={assignment.id}
-            assignment={assignment}
-            startDate={startDate}
-            dates={dates}
-            cellWidth={cellWidth}
-            rowHeight={rowHeight}
-          />
-        ))}
+        {/* Timeline Rows */}
+        <Box>
+          {assignments.map((assignment) => (
+            <TimelineRow
+              key={assignment.id}
+              assignment={assignment}
+              startDate={startDate}
+              dates={dates}
+              cellWidth={cellWidth}
+              rowHeight={rowHeight}
+            />
+          ))}
+        </Box>
       </Box>
     </Paper>
+  );
+}
+
+function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; rowHeight: number }) {
+  const assignmentStart = new Date(assignment.startDate);
+
+  return (
+    <Box
+      sx={{
+        height: rowHeight,
+        borderBottom: "1px solid #f0f0f0",
+        p: 2,
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+        {/* <Box
+          component="img"
+          src={`https://via.placeholder.com/40x40?text=${assignment.equipment.charAt(0)}`}
+          sx={{ width: 40, height: 40, borderRadius: 1, flexShrink: 0 }}
+        /> */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            {/* <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} /> */}
+            <ContactPageOutlinedIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+              {assignment.customer}
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {assignment.equipment}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              {format(assignmentStart, "dd/MM/yyyy")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              • {assignment.duration}
+            </Typography>
+          </Box>
+          {assignment.assignedEquipment && (
+            <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+              <strong>Assigned:</strong> {assignment.assignedEquipment}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -286,106 +398,59 @@ function TimelineRow({
   return (
     <Box
       sx={{
-        display: "flex",
-        alignItems: "center",
+        position: "relative",
+        minWidth: dates.length * cellWidth,
         height: rowHeight,
         borderBottom: "1px solid #f0f0f0",
-        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        px: 2,
       }}
     >
-      {/* Pinned Customer Info */}
-      <Box
-        sx={{
-          width: 200,
-          flexShrink: 0,
-          pr: 2,
-          position: "sticky",
-          left: 16, // Account for padding
-          backgroundColor: "white",
-          zIndex: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Box
-            component="img"
-            src={`https://via.placeholder.com/40x40?text=${assignment.equipment.charAt(0)}`}
-            sx={{ width: 40, height: 40, borderRadius: 1 }}
-          />
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {assignment.customer}
-              </Typography>
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              {assignment.equipment}
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                {format(assignmentStart, "dd/MM/yyyy")}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                • {assignment.duration}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+      {/* Grid lines */}
+      {dates.map((_, index) => (
+        <Box
+          key={index}
+          sx={{
+            position: "absolute",
+            left: index * cellWidth + 16, // Add padding offset
+            top: 0,
+            bottom: 0,
+            width: 1,
+            backgroundColor: "#f0f0f0",
+          }}
+        />
+      ))}
 
-        {assignment.assignedEquipment && (
-          <Typography variant="caption" sx={{ display: "block", mt: 1, ml: 6 }}>
-            <strong>Assigned:</strong> {assignment.assignedEquipment}
+      {/* Assignment Bar */}
+      {isVisible && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: Math.max(0, barLeft) + 16, // Add padding offset
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: Math.min(barWidth, dates.length * cellWidth - barLeft),
+            height: 40,
+            backgroundColor: assignment.hasConflict ? "#ffebee" : "#e8f5e9",
+            border: `2px solid ${assignment.hasConflict ? "#ef5350" : "#66bb6a"}`,
+            borderRadius: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+          }}
+        >
+          {assignment.hasConflict ? (
+            <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
+          ) : (
+            <CheckCircleIcon sx={{ color: "#66bb6a", fontSize: 20 }} />
+          )}
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {assignment.duration}
           </Typography>
-        )}
-      </Box>
-
-      {/* Scrollable Timeline Grid */}
-      <Box sx={{ position: "relative", minWidth: dates.length * cellWidth, height: "100%" }}>
-        {/* Grid lines */}
-        {dates.map((_, index) => (
-          <Box
-            key={index}
-            sx={{
-              position: "absolute",
-              left: index * cellWidth,
-              top: 0,
-              bottom: 0,
-              width: 1,
-              backgroundColor: "#f0f0f0",
-            }}
-          />
-        ))}
-
-        {/* Assignment Bar */}
-        {isVisible && (
-          <Box
-            sx={{
-              position: "absolute",
-              left: Math.max(0, barLeft),
-              top: "50%",
-              transform: "translateY(-50%)",
-              width: Math.min(barWidth, dates.length * cellWidth - barLeft),
-              height: 40,
-              backgroundColor: assignment.hasConflict ? "#ffebee" : "#e8f5e9",
-              border: `2px solid ${assignment.hasConflict ? "#ef5350" : "#66bb6a"}`,
-              borderRadius: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 1,
-            }}
-          >
-            {assignment.hasConflict ? (
-              <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
-            ) : (
-              <CheckCircleIcon sx={{ color: "#66bb6a", fontSize: 20 }} />
-            )}
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {assignment.duration}
-            </Typography>
-          </Box>
-        )}
-      </Box>
+        </Box>
+      )}
     </Box>
   );
 }

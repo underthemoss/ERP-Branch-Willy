@@ -270,3 +270,43 @@ export const UnassignInventoryFromRentalFulfilment = graphql(`
     }
   }
 `);
+
+export const ListRentalFulfilments = graphql(`
+  query ListRentalFulfilments($filter: ListRentalFulfilmentsFilter, $page: ListFulfilmentsPage) {
+    listRentalFulfilments(filter: $filter, page: $page) {
+      items {
+        id
+        contactId
+        contact {
+          __typename
+          ... on BusinessContact {
+            id
+            name
+          }
+          ... on PersonContact {
+            id
+            name
+          }
+        }
+        project {
+          id
+          name
+          project_code
+        }
+        purchaseOrderNumber
+        salesOrderId
+        salesOrderPONumber
+        inventory {
+          id
+        }
+        rentalStartDate
+        expectedRentalEndDate
+        rentalEndDate
+        pimCategoryName
+        pimCategoryPath
+        priceName
+        inventoryId
+      }
+    }
+  }
+`);
