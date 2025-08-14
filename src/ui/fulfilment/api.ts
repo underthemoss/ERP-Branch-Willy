@@ -243,3 +243,30 @@ export const ListChargesForFulfilment = graphql(`
     }
   }
 `);
+
+export const AssignInventoryToRentalFulfilment = graphql(`
+  mutation AssignInventoryToRentalFulfilment(
+    $fulfilmentId: ID!
+    $inventoryId: ID!
+    $allowOverlappingReservations: Boolean
+  ) {
+    assignInventoryToRentalFulfilment(
+      fulfilmentId: $fulfilmentId
+      inventoryId: $inventoryId
+      allowOverlappingReservations: $allowOverlappingReservations
+    ) {
+      id
+      inventoryId
+    }
+  }
+`);
+
+export const UnassignInventoryFromRentalFulfilment = graphql(`
+  mutation UnassignInventoryFromRentalFulfilment($fulfilmentId: ID!) {
+    unassignInventoryFromRentalFulfilment(fulfilmentId: $fulfilmentId) {
+      __typename
+      id
+      inventoryId
+    }
+  }
+`);
