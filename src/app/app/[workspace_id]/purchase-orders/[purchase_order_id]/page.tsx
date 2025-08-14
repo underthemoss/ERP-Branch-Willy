@@ -328,7 +328,7 @@ export default function PurchaseOrderDetailPage() {
                         color="primary"
                         onClick={() => {
                           router.push(
-                            `/app/${workspace_id}/inventory/receive/${purchase_order_id}`,
+                            `/app/${workspace_id}/purchase-orders/${purchase_order_id}/receive`,
                           );
                         }}
                         sx={{ mb: 1 }}

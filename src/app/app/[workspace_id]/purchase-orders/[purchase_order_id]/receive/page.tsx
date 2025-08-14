@@ -5,7 +5,8 @@ import {
   usePurchaseOrderDetailsForReceivingQuery,
   useReceiveInventoryEnhancedQuery,
 } from "@/graphql/hooks";
-import { Alert, Box, Container, Paper, Typography } from "@mui/material";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
+import { Alert, Box, Container, Divider, Paper, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import InventoryReceiptTimeline from "./InventoryReceiptTimeline";
@@ -225,8 +226,8 @@ export default function ReceiveInventoryPage() {
             Inventory Items by Line Item
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Items are grouped by purchase order line item. Click "Receive" to process incoming
-            inventory.
+            Items are grouped by purchase order line item. Click &quot;Receive&quot; to process
+            incoming inventory.
           </Typography>
         </Box>
         <InventoryReceiveTable
@@ -240,7 +241,7 @@ export default function ReceiveInventoryPage() {
 
       {/* Receipt Timeline */}
       {receivedItems.length > 0 && (
-        <Paper elevation={2}>
+        <Paper elevation={2} sx={{ mb: 3 }}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Receipt History
@@ -255,12 +256,25 @@ export default function ReceiveInventoryPage() {
 
       {/* No received items message */}
       {receivedItems.length === 0 && onOrderItems.length > 0 && (
-        <Paper elevation={2} sx={{ p: 3, textAlign: "center" }}>
+        <Paper elevation={2} sx={{ p: 3, textAlign: "center", mb: 3 }}>
           <Typography variant="body1" color="text.secondary">
             No items have been received yet. Use the table above to receive inventory.
           </Typography>
         </Paper>
       )}
+
+      {/* Supporting Documents Section */}
+      <Paper elevation={2} sx={{ p: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Supporting Documents
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Attach delivery receipts, packing slips, or other supporting documents for this purchase
+          order.
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        <AttachedFilesSection entityId={purchase_order_id} key={`files-${refreshKey}`} />
+      </Paper>
     </Container>
   );
 }
