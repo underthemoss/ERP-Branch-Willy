@@ -183,6 +183,21 @@ The `BigInt` scalar type represents non-fractional signed whole numeric values.
 """
 scalar BigInt
 
+input BulkMarkInventoryReceivedInput {
+  conditionNotes: String
+  conditionOnReceipt: InventoryCondition
+  ids: [String!]!
+  pimProductId: String
+  receiptNotes: String
+  receivedAt: DateTime
+  resourceMapId: String
+}
+
+type BulkMarkInventoryReceivedResult {
+  items: [Inventory!]!
+  totalProcessed: Int!
+}
+
 type BusinessContact {
   accountsPayableContactId: String
   address: String
@@ -554,6 +569,8 @@ type Inventory {
   asset: Asset
   assetId: String
   companyId: String!
+  conditionNotes: String
+  conditionOnReceipt: InventoryCondition
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
@@ -564,12 +581,24 @@ type Inventory {
   pimCategoryName: String
   pimCategoryPath: String
   pimProductId: String
+  purchaseOrder: PurchaseOrder
   purchaseOrderId: String
+  purchaseOrderLineItem: PurchaseOrderLineItem
   purchaseOrderLineItemId: String
+  receiptNotes: String
+  receivedAt: DateTime
+  resourceMapId: String
   status: InventoryStatus!
   updatedAt: DateTime!
   updatedBy: String!
   updatedByUser: User
+}
+
+enum InventoryCondition {
+  DAMAGED
+  NEW
+  REFURBISHED
+  USED
 }
 
 type InventoryGroupedByCategory {
@@ -779,6 +808,7 @@ input ListInventoryFilter {
   companyId: String
   fulfilmentId: String
   isThirdPartyRental: Boolean
+  pimCategoryId: String
   purchaseOrderId: String
   status: InventoryStatus
 }
@@ -912,6 +942,7 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
+  bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
   clearInvoiceTaxes(invoiceId: ID!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
@@ -951,7 +982,6 @@ type Mutation {
   deleteReferenceNumberTemplate(id: String!): Boolean
   deleteWorkflowConfigurationById(id: ID!): Boolean
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
-  markInventoryReceived(id: String!): Inventory
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   removeFileFromEntity(file_id: String!): File!
@@ -1290,7 +1320,13 @@ type PurchaseOrder {
   created_by: String!
   created_by_user: User
   deleted_at: String
+
+  """Progress of inventory fulfillment for this purchase order"""
+  fulfillmentProgress: PurchaseOrderFulfillmentProgress
   id: String!
+
+  """All inventory items associated with this purchase order"""
+  inventory: [Inventory!]!
   line_items: [PurchaseOrderLineItem]
 
   """Pricing summary for the sales order"""
@@ -1306,6 +1342,29 @@ type PurchaseOrder {
   updated_at: String!
   updated_by: String!
   updated_by_user: User
+}
+
+type PurchaseOrderFulfillmentProgress {
+  """Percentage of items received (0-100)"""
+  fulfillmentPercentage: Float!
+
+  """True when all items have been received"""
+  isFullyFulfilled: Boolean!
+
+  """True when some but not all items have been received"""
+  isPartiallyFulfilled: Boolean!
+
+  """Number of inventory items still on order"""
+  onOrderItems: Int!
+
+  """Number of inventory items that have been received"""
+  receivedItems: Int!
+
+  """Human-readable fulfillment status"""
+  status: String!
+
+  """Total number of inventory items for this purchase order"""
+  totalItems: Int!
 }
 
 input PurchaseOrderInput {
@@ -1546,6 +1605,9 @@ type RentalPurchaseOrderLineItem {
   delivery_location: String
   delivery_method: DeliveryMethod
   id: String!
+
+  """Inventory items associated with this line item"""
+  inventory: [Inventory!]!
   lineitem_status: POLineItemStatus
   lineitem_type: POLineItemType!
   off_rent_date: String
@@ -1705,6 +1767,9 @@ type SalePurchaseOrderLineItem {
   delivery_location: String
   delivery_method: DeliveryMethod
   id: String!
+
+  """Inventory items associated with this line item"""
+  inventory: [Inventory!]!
   lineitem_status: POLineItemStatus
   lineitem_type: POLineItemType!
   po_pim_id: String

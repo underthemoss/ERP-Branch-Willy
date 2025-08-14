@@ -121,6 +121,13 @@ export function RMTreeView({
             display: "flex",
             flexDirection: "column",
             height: "100vh",
+            zIndex: 1500, // Ensure drawer appears above dialogs (MUI dialogs default to 1300)
+          },
+        }}
+        sx={{
+          zIndex: 1500, // Also set on the Drawer component itself
+          "& .MuiBackdrop-root": {
+            zIndex: 1499, // Backdrop just below the drawer
           },
         }}
       >
