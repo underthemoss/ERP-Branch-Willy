@@ -12,6 +12,7 @@ import {
   Container,
   IconButton,
   InputAdornment,
+  LinearProgress,
   MenuItem,
   Select,
   TextField,
@@ -58,6 +59,15 @@ graphql(`
         pricing {
           total_in_cents
         }
+        fulfillmentProgress {
+          fulfillmentPercentage
+          isFullyFulfilled
+          isPartiallyFulfilled
+          onOrderItems
+          receivedItems
+          status
+          totalItems
+        }
         created_by_user {
           id
           firstName
@@ -102,7 +112,13 @@ export default function PurchaseOrdersPage() {
     contact: string;
     project: string;
     status: PurchaseOrderStatus;
+    fulfillmentStatus: "DRAFT" | "ORDERED" | "PARTIALLY_FULFILLED" | "FULFILLED";
     total: string;
+    fulfillmentPercentage: number;
+    receivedItems: number;
+    totalItems: number;
+    isFullyFulfilled: boolean;
+    isPartiallyFulfilled: boolean;
     created_by: string;
     updated_by: string;
     created_at: string;
@@ -129,6 +145,19 @@ export default function PurchaseOrdersPage() {
         }
       }
 
+      // Compute fulfillment status based on order status and fulfillment progress
+      let fulfillmentStatus: "DRAFT" | "ORDERED" | "PARTIALLY_FULFILLED" | "FULFILLED";
+
+      if (order.status === PurchaseOrderStatus.Draft) {
+        fulfillmentStatus = "DRAFT";
+      } else if (order.fulfillmentProgress?.isFullyFulfilled) {
+        fulfillmentStatus = "FULFILLED";
+      } else if (order.fulfillmentProgress?.isPartiallyFulfilled) {
+        fulfillmentStatus = "PARTIALLY_FULFILLED";
+      } else {
+        fulfillmentStatus = "ORDERED";
+      }
+
       return {
         id: order.id,
         purchase_order_number: order.purchase_order_number ?? "not implemented",
@@ -136,7 +165,13 @@ export default function PurchaseOrdersPage() {
         contact: contactName,
         project: order.project?.name ?? "not implemented",
         status: order.status,
+        fulfillmentStatus,
         total: `$${((order.pricing?.total_in_cents || 0) / 100).toFixed(2)}`,
+        fulfillmentPercentage: order.fulfillmentProgress?.fulfillmentPercentage ?? 0,
+        receivedItems: order.fulfillmentProgress?.receivedItems ?? 0,
+        totalItems: order.fulfillmentProgress?.totalItems ?? 0,
+        isFullyFulfilled: order.fulfillmentProgress?.isFullyFulfilled ?? false,
+        isPartiallyFulfilled: order.fulfillmentProgress?.isPartiallyFulfilled ?? false,
         created_by: order.created_by_user
           ? [order.created_by_user.firstName, order.created_by_user.lastName]
               .filter(Boolean)
@@ -176,21 +211,109 @@ export default function PurchaseOrdersPage() {
     { field: "project", headerName: "Project", flex: 2, minWidth: 180 },
     { field: "total", headerName: "Total", width: 120 },
     {
-      field: "status",
+      field: "fulfillmentStatus",
       headerName: "Status",
-      width: 120,
-      renderCell: (params) =>
-        params.value === "not implemented" ? (
-          "not implemented"
-        ) : (
+      width: 160,
+      renderCell: (params) => {
+        const status = params.value as string;
+        let color: "default" | "primary" | "warning" | "success" = "default";
+        let label = status;
+
+        switch (status) {
+          case "DRAFT":
+            color = "default";
+            label = "Draft";
+            break;
+          case "ORDERED":
+            color = "primary";
+            label = "Ordered";
+            break;
+          case "PARTIALLY_FULFILLED":
+            color = "warning";
+            label = "Partially Fulfilled";
+            break;
+          case "FULFILLED":
+            color = "success";
+            label = "Fulfilled";
+            break;
+        }
+
+        return (
           <Chip
-            label={params.value}
-            color={params.value === PurchaseOrderStatus.Submitted ? "primary" : "default"}
+            label={label}
+            color={color}
             size="small"
+            variant={status === "FULFILLED" ? "filled" : "outlined"}
           />
-        ),
-      sortable: false,
-      filterable: false,
+        );
+      },
+    },
+    {
+      field: "fulfillmentPercentage",
+      headerName: "Inventory Received",
+      width: 200,
+      renderCell: (params) => {
+        const percentage = params.row.fulfillmentPercentage || 0;
+        const receivedItems = params.row.receivedItems || 0;
+        const totalItems = params.row.totalItems || 0;
+        const isFullyFulfilled = params.row.isFullyFulfilled || false;
+
+        // Don't show progress bar if there are no items
+        if (totalItems === 0) {
+          return (
+            <Typography variant="caption" color="text.secondary">
+              No items
+            </Typography>
+          );
+        }
+
+        return (
+          <Tooltip
+            title={`${receivedItems} of ${totalItems} items received (${percentage.toFixed(1)}%)`}
+            arrow
+          >
+            <Box sx={{ width: "100%", position: "relative" }}>
+              <LinearProgress
+                variant="determinate"
+                value={percentage}
+                color={isFullyFulfilled ? "success" : percentage > 0 ? "primary" : "inherit"}
+                sx={{
+                  height: 24,
+                  borderRadius: 1,
+                  mt: 2,
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? theme.palette.grey[200]
+                      : theme.palette.grey[800],
+                }}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: percentage > 50 ? "white" : "text.primary",
+                    fontWeight: 500,
+                  }}
+                >
+                  {receivedItems}/{totalItems} items
+                </Typography>
+              </Box>
+            </Box>
+          </Tooltip>
+        );
+      },
+      sortComparator: (v1, v2) => (v1 as number) - (v2 as number),
     },
     { field: "id", headerName: "Order ID", width: 120 },
     { field: "created_by", headerName: "Created By", width: 160 },
