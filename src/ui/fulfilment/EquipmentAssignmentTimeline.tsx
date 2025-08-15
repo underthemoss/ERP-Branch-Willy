@@ -1,131 +1,314 @@
 "use client";
 
 import { FulfilmentType, useListRentalFulfilmentsQuery } from "@/graphql/hooks";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ContactPageIcon from "@mui/icons-material/ContactPage";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { Box, Button, Chip, IconButton, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  SelectChangeEvent,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { addDays, differenceInCalendarDays, differenceInDays, format, startOfDay } from "date-fns";
-import React, { useState } from "react";
-import { Assignment, Equipment, mockAssignments, mockEquipmentData } from "./mockTimelineData";
+import { useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useListContactsQuery } from "../contacts/api";
+import { Assignment, Equipment, mockEquipmentData } from "./mockTimelineData";
 
-type ViewMode = "2weeks" | "30days" | "60days";
+type ViewMode = "2weeks" | "30days" | "60days" | "custom";
 
-const VIEW_DAYS: Record<ViewMode, number> = {
+const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
   "2weeks": 14,
   "30days": 30,
   "60days": 60,
 };
 
 export default function EquipmentAssignmentTimeline() {
-  const [viewMode, setViewMode] = useState<ViewMode>("2weeks");
-  const [startDate] = useState(new Date(2025, 7, 14)); // Aug 14, 2025
+  const params = useParams();
+  const workspaceId = params?.workspace_id as string;
 
-  const daysToShow = VIEW_DAYS[viewMode];
-  const endDate = addDays(startDate, daysToShow - 1);
+  const [viewMode, setViewMode] = useState<ViewMode>("2weeks");
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(addDays(new Date(), 13));
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [customDateDialogOpen, setCustomDateDialogOpen] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState<Date | null>(new Date());
+  const [tempEndDate, setTempEndDate] = useState<Date | null>(addDays(new Date(), 13));
+
+  // Calculate days to show based on view mode
+  const daysToShow =
+    viewMode === "custom" ? differenceInDays(endDate, startDate) + 1 : VIEW_DAYS[viewMode];
 
   // Generate date array for timeline header
   const dates = Array.from({ length: daysToShow }, (_, i) => addDays(startDate, i));
 
+  // Update dates when view mode changes
+  useEffect(() => {
+    if (viewMode !== "custom") {
+      const today = new Date();
+      setStartDate(today);
+      setEndDate(addDays(today, VIEW_DAYS[viewMode] - 1));
+    }
+  }, [viewMode]);
+
+  // Fetch customers for filter dropdown
+  const { data: customersData } = useListContactsQuery({
+    variables: {
+      page: {
+        size: 100,
+      },
+      workspaceId: workspaceId || "",
+    },
+    skip: !workspaceId,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const customers = customersData?.listContacts?.items || [];
+
+  // Fetch rental fulfilments with optional customer filter and date range
   const { data, loading, error } = useListRentalFulfilmentsQuery({
     variables: {
       filter: {
         salesOrderType: FulfilmentType.Rental,
+        timelineStartDate: startDate,
+        timelineEndDate: endDate,
+        ...(selectedCustomerId && { contactId: selectedCustomerId }),
       },
       page: {
         size: 100,
       },
     },
+    fetchPolicy: "cache-and-network",
   });
 
-  const fulfilments =
+  const handleCustomerChange = (event: SelectChangeEvent) => {
+    setSelectedCustomerId(event.target.value);
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    if (mode === "custom") {
+      setCustomDateDialogOpen(true);
+      setTempStartDate(startDate);
+      setTempEndDate(endDate);
+    } else {
+      setViewMode(mode);
+    }
+  };
+
+  const handleCustomDateConfirm = () => {
+    if (tempStartDate && tempEndDate) {
+      setStartDate(tempStartDate);
+      setEndDate(tempEndDate);
+      setViewMode("custom");
+      setCustomDateDialogOpen(false);
+    }
+  };
+
+  const handleCustomDateCancel = () => {
+    setCustomDateDialogOpen(false);
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+  };
+
+  const fulfilments: Assignment[] =
     data?.listRentalFulfilments?.items
-      .map((fulfilment) => {
-        const endDate =
+      ?.map((fulfilment) => {
+        if (!fulfilment.rentalStartDate) return null;
+
+        const fulfilmentEndDate =
           fulfilment.rentalEndDate ||
           fulfilment.expectedRentalEndDate ||
-          addDays(fulfilment.rentalStartDate, 7);
+          addDays(new Date(fulfilment.rentalStartDate), 7);
 
-        return {
+        const assignment: Assignment = {
           id: fulfilment.id,
           customer: fulfilment?.contact?.name || "Unknown Customer",
-          equipment: fulfilment.pimCategoryName + " - " + fulfilment.priceName,
+          equipment: (fulfilment.pimCategoryName || "") + " - " + (fulfilment.priceName || ""),
           startDate: format(startOfDay(new Date(fulfilment.rentalStartDate)), "yyyy-MM-dd"),
-          endDate: format(startOfDay(endDate), "yyyy-MM-dd"),
-          duration: `${differenceInCalendarDays(endDate, new Date(fulfilment.rentalStartDate))} days`,
-          hasConflict: false, // Placeholder, implement conflict logic if needed
-          assignedEquipment: fulfilment.inventoryId
-            ? `Assigned: ${fulfilment.inventoryId}`
-            : undefined,
+          endDate: format(startOfDay(fulfilmentEndDate), "yyyy-MM-dd"),
+          duration: `${differenceInCalendarDays(fulfilmentEndDate, new Date(fulfilment.rentalStartDate))} days`,
+          hasConflict: false,
+          ...(fulfilment.inventoryId && {
+            assignedEquipment: `Assigned: ${fulfilment.inventoryId}`,
+          }),
         };
+        return assignment;
       })
-      .filter(Boolean) || ([] as Assignment[]);
+      .filter((item): item is Assignment => item !== null) || [];
 
   console.log("Fulfilments:", fulfilments);
 
   return (
-    <Box sx={{ p: 3, backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
-      {/* Header */}
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Equipment Assignment Timeline
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Drag equipment from the pool to assign to rental transactions
-          </Typography>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ p: 3, backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}
+          >
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Equipment Assignment Timeline
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Drag equipment from the pool to assign to rental transactions
+              </Typography>
+            </Box>
+
+            {/* View Toggle */}
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                View:
+              </Typography>
+              <Button
+                variant={viewMode === "2weeks" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => handleViewModeChange("2weeks")}
+                sx={{ minWidth: "80px" }}
+              >
+                2 weeks
+              </Button>
+              <Button
+                variant={viewMode === "30days" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => handleViewModeChange("30days")}
+                sx={{ minWidth: "80px" }}
+              >
+                30 days
+              </Button>
+              <Button
+                variant={viewMode === "60days" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => handleViewModeChange("60days")}
+                sx={{ minWidth: "80px" }}
+              >
+                60 days
+              </Button>
+              <Button
+                variant={viewMode === "custom" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => handleViewModeChange("custom")}
+                startIcon={<CalendarMonthIcon />}
+                sx={{ minWidth: "100px" }}
+              >
+                Custom
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Filters Row */}
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+            <FormControl size="small" sx={{ minWidth: 250 }}>
+              <InputLabel id="customer-filter-label">Customer</InputLabel>
+              <Select
+                labelId="customer-filter-label"
+                id="customer-filter"
+                value={selectedCustomerId}
+                label="Customer"
+                onChange={handleCustomerChange}
+              >
+                <MenuItem value="">
+                  <em>All Customers</em>
+                </MenuItem>
+                {customers.map((customer: any) => (
+                  <MenuItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Date Range Display */}
+            <Typography variant="body2" color="text.secondary">
+              Showing: {format(startDate, "MMM dd, yyyy")} - {format(endDate, "MMM dd, yyyy")}
+              {viewMode === "custom" && ` (${daysToShow} days)`}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* View Toggle */}
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-            View:
-          </Typography>
-          <Button
-            variant={viewMode === "2weeks" ? "contained" : "outlined"}
-            size="small"
-            onClick={() => setViewMode("2weeks")}
-            sx={{ minWidth: "80px" }}
-          >
-            2 weeks
-          </Button>
-          <Button
-            variant={viewMode === "30days" ? "outlined" : "outlined"}
-            size="small"
-            onClick={() => setViewMode("30days")}
-            sx={{ minWidth: "80px" }}
-          >
-            30 days
-          </Button>
-          <Button
-            variant={viewMode === "60days" ? "outlined" : "outlined"}
-            size="small"
-            onClick={() => setViewMode("60days")}
-            sx={{ minWidth: "80px" }}
-          >
-            60 days
-          </Button>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {/* Left Panel - Equipment List */}
+          <Box sx={{ width: "300px", flexShrink: 0 }}>
+            {/* Available Equipment Section */}
+            <AvailableEquipmentSection />
+
+            {/* Assigned Equipment Section */}
+            <AssignedEquipmentSection />
+          </Box>
+
+          {/* Right Panel - Timeline */}
+          <Box sx={{ flex: 1, overflowX: "auto" }}>
+            <TimelineView dates={dates} startDate={startDate} assignments={fulfilments} />
+          </Box>
         </Box>
+
+        {/* Custom Date Range Dialog */}
+        <Dialog
+          open={customDateDialogOpen}
+          onClose={handleCustomDateCancel}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Select Custom Date Range</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+              <DatePicker
+                label="Start Date"
+                value={tempStartDate}
+                onChange={(newValue) => setTempStartDate(newValue as Date | null)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                  },
+                }}
+              />
+              <DatePicker
+                label="End Date"
+                value={tempEndDate}
+                onChange={(newValue) => setTempEndDate(newValue as Date | null)}
+                minDate={tempStartDate || undefined}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                  },
+                }}
+              />
+            </Box>
+            {tempStartDate && tempEndDate && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Duration: {differenceInDays(tempEndDate, tempStartDate) + 1} days
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCustomDateCancel}>Cancel</Button>
+            <Button
+              onClick={handleCustomDateConfirm}
+              variant="contained"
+              disabled={!tempStartDate || !tempEndDate || tempEndDate < tempStartDate}
+            >
+              Apply
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
-
-      <Box sx={{ display: "flex", gap: 2 }}>
-        {/* Left Panel - Equipment List */}
-        <Box sx={{ width: "300px", flexShrink: 0 }}>
-          {/* Available Equipment Section */}
-          <AvailableEquipmentSection />
-
-          {/* Assigned Equipment Section */}
-          <AssignedEquipmentSection />
-        </Box>
-
-        {/* Right Panel - Timeline */}
-        <Box sx={{ flex: 1, overflowX: "auto" }}>
-          <TimelineView dates={dates} startDate={startDate} assignments={fulfilments} />
-        </Box>
-      </Box>
-    </Box>
+    </LocalizationProvider>
   );
 }
 
@@ -335,14 +518,8 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
-        {/* <Box
-          component="img"
-          src={`https://via.placeholder.com/40x40?text=${assignment.equipment.charAt(0)}`}
-          sx={{ width: 40, height: 40, borderRadius: 1, flexShrink: 0 }}
-        /> */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            {/* <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} /> */}
             <ContactPageOutlinedIcon fontSize="small" />
             <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
               {assignment.customer}
