@@ -31,6 +31,7 @@ import {
   Divider,
   Grid,
   IconButton,
+  LinearProgress,
   Paper,
   Snackbar,
   Stack,
@@ -73,6 +74,15 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
       seller_id
       project_id
       status
+      fulfillmentProgress {
+        fulfillmentPercentage
+        isFullyFulfilled
+        isPartiallyFulfilled
+        onOrderItems
+        receivedItems
+        status
+        totalItems
+      }
       line_items {
         ... on RentalPurchaseOrderLineItem {
           id
@@ -312,7 +322,20 @@ export default function PurchaseOrderDetailPage() {
                     gap={1}
                     alignItems={{ md: "flex-end", xs: "flex-start" }}
                   >
-                    {purchaseOrder.status !== "SUBMITTED" && (
+                    {purchaseOrder.status === "SUBMITTED" ? (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                          router.push(
+                            `/app/${workspace_id}/purchase-orders/${purchase_order_id}/receive`,
+                          );
+                        }}
+                        sx={{ mb: 1 }}
+                      >
+                        Receive Inventory
+                      </Button>
+                    ) : (
                       <Tooltip
                         title={
                           !hasLineItems
@@ -408,25 +431,124 @@ export default function PurchaseOrderDetailPage() {
                 </Grid>
               </Grid>
               <Divider sx={{ my: 2 }} />
-              {/* Stubbed Progress Bar */}
-              <Box sx={{ width: "100%", mb: 2 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Order Progress
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Box sx={{ width: "80%", mr: 1 }}>
-                    {/* Replace with real progress if available */}
-                    <Box sx={{ bgcolor: "#e0e0e0", borderRadius: 1, height: 10 }}>
-                      <Box
-                        sx={{ width: "40%", bgcolor: "primary.main", height: 10, borderRadius: 1 }}
-                      />
-                    </Box>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    2 of 5 steps
+              {/* Fulfillment Progress Bar - Only show when order is submitted */}
+              {purchaseOrder.status === PurchaseOrderStatus.Submitted && (
+                <Box sx={{ width: "100%", mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Inventory Fulfillment Status
                   </Typography>
+                  {purchaseOrder.fulfillmentProgress ? (
+                    <Box>
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                        <Box sx={{ width: "100%", mr: 2 }}>
+                          <Box sx={{ position: "relative" }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={purchaseOrder.fulfillmentProgress.fulfillmentPercentage || 0}
+                              color={
+                                purchaseOrder.fulfillmentProgress.isFullyFulfilled
+                                  ? "success"
+                                  : purchaseOrder.fulfillmentProgress.fulfillmentPercentage > 0
+                                    ? "primary"
+                                    : "inherit"
+                              }
+                              sx={{
+                                height: 28,
+                                borderRadius: 1,
+                                backgroundColor: (theme) =>
+                                  theme.palette.mode === "light"
+                                    ? theme.palette.grey[200]
+                                    : theme.palette.grey[800],
+                              }}
+                            />
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color:
+                                    purchaseOrder.fulfillmentProgress.fulfillmentPercentage > 50
+                                      ? "white"
+                                      : "text.primary",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {purchaseOrder.fulfillmentProgress.fulfillmentPercentage.toFixed(1)}
+                                %
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                        {purchaseOrder.fulfillmentProgress.isFullyFulfilled && (
+                          <CheckCircleOutlinedIcon color="success" />
+                        )}
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Items Received
+                          </Typography>
+                          <Typography variant="h6">
+                            {purchaseOrder.fulfillmentProgress.receivedItems || 0}
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Total Items
+                          </Typography>
+                          <Typography variant="h6">
+                            {purchaseOrder.fulfillmentProgress.totalItems || 0}
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Status
+                          </Typography>
+                          <Typography variant="h6">
+                            {purchaseOrder.fulfillmentProgress.isFullyFulfilled
+                              ? "Fulfilled"
+                              : purchaseOrder.fulfillmentProgress.isPartiallyFulfilled
+                                ? "Partially Fulfilled"
+                                : "On Order"}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                      {purchaseOrder.fulfillmentProgress.totalItems === 0 && (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                          No items have been added to this purchase order yet.
+                        </Alert>
+                      )}
+                      {purchaseOrder.fulfillmentProgress.isPartiallyFulfilled &&
+                        !purchaseOrder.fulfillmentProgress.isFullyFulfilled && (
+                          <Alert severity="warning" sx={{ mt: 2 }}>
+                            This purchase order has been partially fulfilled.{" "}
+                            {purchaseOrder.fulfillmentProgress.receivedItems} out of{" "}
+                            {purchaseOrder.fulfillmentProgress.totalItems} items have been received.
+                          </Alert>
+                        )}
+                      {purchaseOrder.fulfillmentProgress.isFullyFulfilled && (
+                        <Alert severity="success" sx={{ mt: 2 }}>
+                          All items in this purchase order have been received successfully!
+                        </Alert>
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No fulfillment information available
+                    </Typography>
+                  )}
                 </Box>
-              </Box>
+              )}
             </Paper>
 
             {/* Order Items Section */}
