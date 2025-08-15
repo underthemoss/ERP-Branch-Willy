@@ -530,6 +530,15 @@ interface FulfilmentBase {
   contactId: ID
   createdAt: DateTime!
   id: ID!
+  pimCategory: PimCategory
+  pimCategoryId: ID
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProduct: PimProduct
+  pimProductId: ID
+  price: Price
+  priceId: ID
+  priceName: String
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
@@ -606,12 +615,15 @@ type Inventory {
   createdBy: String!
   createdByUser: User
   expectedReturnDate: DateTime
+  fulfilment: Fulfilment
   fulfilmentId: String
   id: String!
   isThirdPartyRental: Boolean!
+  pimCategory: PimCategory
   pimCategoryId: String
   pimCategoryName: String
   pimCategoryPath: String
+  pimProduct: PimProduct
   pimProductId: String
   purchaseOrder: PurchaseOrder
   purchaseOrderId: String
@@ -619,6 +631,7 @@ type Inventory {
   purchaseOrderLineItemId: String
   receiptNotes: String
   receivedAt: DateTime
+  resourceMap: ResourceMapResource
   resourceMapId: String
   status: InventoryStatus!
   updatedAt: DateTime!
@@ -957,6 +970,26 @@ input ListPricesPage {
 
 type ListPricesResult {
   items: [Price!]!
+  page: PaginationInfo!
+}
+
+input ListRentalFulfilmentsFilter {
+  assignedToId: ID
+  contactId: ID
+  hasInventoryAssigned: Boolean
+  pimCategoryId: ID
+  projectId: ID
+  salesOrderId: ID
+  salesOrderLineItemId: ID
+  salesOrderType: FulfilmentType
+  timelineEndDate: DateTime
+  timelineStartDate: DateTime
+  workflowColumnId: ID
+  workflowId: ID
+}
+
+type ListRentalFulfilmentsResult {
+  items: [RentalFulfilment!]!
   page: PaginationInfo!
 }
 
@@ -1532,6 +1565,7 @@ type Query {
   listProjectsByParentProjectId(parent_project: String!): [Project]
   listPurchaseOrders(limit: Int = 20, offset: Int = 0): PurchaseOrderListResult
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
+  listRentalFulfilments(filter: ListRentalFulfilmentsFilter, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
 
   """
   Get all resource map entries filtered by tenant_id (from the calling user company id)
@@ -1612,6 +1646,15 @@ type RentalFulfilment implements FulfilmentBase {
   inventory: Inventory
   inventoryId: ID
   lastChargedAt: DateTime
+  pimCategory: PimCategory
+  pimCategoryId: ID
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProduct: PimProduct
+  pimProductId: ID
+  price: Price
+  priceId: ID
+  priceName: String
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
   pricePerWeekInCents: Int!
@@ -1785,6 +1828,15 @@ type SaleFulfilment implements FulfilmentBase {
   contactId: ID
   createdAt: DateTime!
   id: ID!
+  pimCategory: PimCategory
+  pimCategoryId: ID
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProduct: PimProduct
+  pimProductId: ID
+  price: Price
+  priceId: ID
+  priceName: String
   project: Project
   projectId: ID
   purchaseOrderNumber: String!
@@ -2027,6 +2079,15 @@ type ServiceFulfilment implements FulfilmentBase {
   contactId: ID
   createdAt: DateTime!
   id: ID!
+  pimCategory: PimCategory
+  pimCategoryId: ID
+  pimCategoryName: String
+  pimCategoryPath: String
+  pimProduct: PimProduct
+  pimProductId: ID
+  price: Price
+  priceId: ID
+  priceName: String
   project: Project
   projectId: ID
   purchaseOrderNumber: String!

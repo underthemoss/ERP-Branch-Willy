@@ -39,7 +39,6 @@ export function RentalFulfillmentDetails({
   const [setExpectedRentalEndDate] = useSetExpectedRentalEndDateMutation();
 
   const fulfilment = useFragment(RentalFulfilmentFields, fulfilmentProp);
-  const b = useFragment(FulfilmentBaseFields, fulfilment);
 
   const rentalStartDateValue = fulfilment.rentalStartDate
     ? new Date(fulfilment.rentalStartDate)

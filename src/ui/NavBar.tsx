@@ -5,6 +5,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import EventNoteIcon from "@mui/icons-material/EventNote";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -79,6 +80,13 @@ export const NavBar = () => {
       icon: <LocalShippingIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/fulfillment`,
       testId: "nav-fulfillment",
+    },
+    {
+      text: "Rental Fulfillments",
+      href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
+      icon: <EventNoteIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
+      testId: "nav-rental-fulfillment",
     },
     {
       text: "Tickets",
