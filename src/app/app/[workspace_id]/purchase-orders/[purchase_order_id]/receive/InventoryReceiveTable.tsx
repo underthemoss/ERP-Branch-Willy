@@ -67,14 +67,6 @@ export default function InventoryReceiveTable({
       },
     },
     {
-      field: "pimId",
-      headerName: "PIM ID",
-      width: 120,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params: GridRenderCellParams) => params.value || "-",
-    },
-    {
       field: "quantity",
       headerName: "Quantity",
       width: 150,
@@ -161,7 +153,6 @@ export default function InventoryReceiveTable({
     categoryName: group.categoryName,
     productName: group.productName,
     productModel: group.productModel,
-    pimId: group.pimId,
     totalCount: group.totalCount,
     receivedCount: group.receivedCount,
     onOrderCount: group.onOrderCount,

@@ -5,7 +5,6 @@ export interface GroupedInventoryItem {
   categoryName: string | null;
   productName: string | null;
   productModel: string | null;
-  pimId: string | null;
   totalCount: number;
   receivedCount: number;
   onOrderCount: number;
@@ -25,14 +24,12 @@ export function groupInventoryByLineItem(items: any[]): GroupedInventoryItem[] {
       const categoryName = lineItem?.so_pim_category?.name || item.pimCategoryName;
       const productName = lineItem?.so_pim_product?.name || item.asset?.pim_product_name;
       const productModel = lineItem?.so_pim_product?.model;
-      const pimId = lineItem?.po_pim_id || item.pimProductId;
 
       grouped.set(lineItemId, {
         lineItemId: item.purchaseOrderLineItemId,
         categoryName,
         productName,
         productModel,
-        pimId,
         totalCount: 0,
         receivedCount: 0,
         onOrderCount: 0,
