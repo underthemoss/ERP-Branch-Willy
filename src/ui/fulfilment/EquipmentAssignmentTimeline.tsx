@@ -153,6 +153,7 @@ export default function EquipmentAssignmentTimeline() {
   });
 
   const [assignInventory] = useAssignInventoryToRentalFulfilmentMutation();
+  const [unassignInventory] = useUnassignInventoryFromRentalFulfilmentMutation();
 
   const handleCustomerChange = (event: SelectChangeEvent) => {
     setSelectedCustomerId(event.target.value);
@@ -229,6 +230,17 @@ export default function EquipmentAssignmentTimeline() {
         inventoryId: inventoryItem.id,
         allowOverlappingReservations: true, // Adjust based on your requirements
       },
+      refetchQueries: ["ListRentalFulfilments", "ListInventoryItems"],
+    });
+  };
+
+  // Callback for unassigning equipment from a fulfilment
+  const handleEquipmentUnassignment = async (fulfilmentId: string) => {
+    await unassignInventory({
+      variables: {
+        fulfilmentId: fulfilmentId,
+      },
+      refetchQueries: ["ListRentalFulfilments", "ListInventoryItems"],
     });
   };
 
@@ -324,7 +336,22 @@ export default function EquipmentAssignmentTimeline() {
           {/* Left Panel - InventoryItem List */}
           <Box sx={{ width: "300px", flexShrink: 0 }}>
             {/* Available InventoryItem Section */}
-            <AvailableEquipmentSection inventory={inventory} onDragStart={setDraggedEquipment} />
+            <AvailableEquipmentSection
+              inventory={inventory}
+              onDragStart={setDraggedEquipment}
+              selectedFulfilmentId={selectedFulfilmentId}
+              selectedFulfilment={selectedFulfilment}
+              onAssign={async (inventoryItem) => {
+                if (selectedFulfilment) {
+                  await handleEquipmentAssignment(inventoryItem, selectedFulfilment);
+                }
+              }}
+              onUnassign={async () => {
+                if (selectedFulfilmentId) {
+                  await handleEquipmentUnassignment(selectedFulfilmentId);
+                }
+              }}
+            />
 
             {/* Assigned InventoryItem Section */}
             {/* <AssignedEquipmentSection onDragStart={setDraggedEquipment} /> */}
@@ -401,8 +428,19 @@ export default function EquipmentAssignmentTimeline() {
 function AvailableEquipmentSection(props: {
   inventory: InventoryItem[];
   onDragStart: (inventoryItem: InventoryItem | null) => void;
+  selectedFulfilmentId?: string;
+  selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
+  onAssign?: (inventoryItem: InventoryItem) => void;
+  onUnassign?: () => void;
 }) {
-  const { inventory = [], onDragStart } = props;
+  const {
+    inventory = [],
+    onDragStart,
+    selectedFulfilmentId,
+    selectedFulfilment,
+    onAssign,
+    onUnassign,
+  } = props;
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
@@ -410,7 +448,9 @@ function AvailableEquipmentSection(props: {
         Inventory
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-        Drag to assign to rentals
+        {selectedFulfilmentId
+          ? "Click to assign/unassign or drag to assign"
+          : "Drag to assign to rentals"}
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -419,6 +459,10 @@ function AvailableEquipmentSection(props: {
             key={inventoryItem.id}
             inventoryItem={inventoryItem}
             onDragStart={onDragStart}
+            selectedFulfilmentId={selectedFulfilmentId}
+            selectedFulfilment={selectedFulfilment}
+            onAssign={onAssign}
+            onUnassign={onUnassign}
           />
         ))}
       </Box>
@@ -426,33 +470,20 @@ function AvailableEquipmentSection(props: {
   );
 }
 
-// function AssignedEquipmentSection(props: {
-//   onDragStart: (inventoryItem: InventoryItem | null) => void;
-// }) {
-//   const { onDragStart } = props;
-//   const assignedEquipment = mockEquipmentData.filter((eq) => eq.status === "assigned");
-
-//   return (
-//     <Paper sx={{ p: 2 }}>
-//       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-//         Assigned Inventory
-//       </Typography>
-
-//       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-//         {assignedEquipment.map((equipment) => (
-//           <EquipmentCard key={equipment.id} inventoryItem={equipment} onDragStart={onDragStart} />
-//         ))}
-//       </Box>
-//     </Paper>
-//   );
-// }
-
 function EquipmentCard({
   inventoryItem,
   onDragStart,
+  selectedFulfilmentId,
+  selectedFulfilment,
+  onAssign,
+  onUnassign,
 }: {
   inventoryItem: InventoryItem;
   onDragStart: (inventoryItem: InventoryItem | null) => void;
+  selectedFulfilmentId?: string;
+  selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
+  onAssign?: (inventoryItem: InventoryItem) => void;
+  onUnassign?: () => void;
 }) {
   const handleDragStart = (e: React.DragEvent) => {
     onDragStart(inventoryItem);
@@ -464,6 +495,25 @@ function EquipmentCard({
   const handleDragEnd = () => {
     onDragStart(null);
   };
+
+  const handleAssignClick = () => {
+    if (onAssign) {
+      onAssign(inventoryItem);
+    }
+  };
+
+  const handleUnassignClick = () => {
+    if (onUnassign) {
+      onUnassign();
+    }
+  };
+
+  // Check if this inventory item is assigned to the selected fulfilment
+  const isAssignedToSelectedFulfilment =
+    selectedFulfilmentId && selectedFulfilment?.inventoryId === inventoryItem.id;
+
+  // Show button only when a fulfilment is selected
+  const showButton = selectedFulfilmentId;
 
   return (
     <Paper
@@ -479,8 +529,7 @@ function EquipmentCard({
           cursor: inventoryItem.fulfilmentId ? "default" : "grabbing",
         },
       }}
-      //draggable={equipment.status === "available"}
-      draggable={true}
+      draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -493,25 +542,50 @@ function EquipmentCard({
             {inventoryItem.asset?.pim_product_model || "Unknown Model"}
           </Typography>
         </Box>
-        <Chip
-          label={inventoryItem.fulfilmentId ? "Assigned" : "Available"}
-          size="small"
-          color={inventoryItem.fulfilmentId ? "primary" : "success"}
-          sx={{ height: 20, fontSize: "0.7rem" }}
-        />
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
-        <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-        <Typography variant="caption" color="text.secondary">
-          {inventoryItem.resourceMapId}
-        </Typography>
-      </Box>
+      {inventoryItem.resourceMapId && (
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
+          <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+          <Typography variant="caption" color="text.secondary">
+            {inventoryItem.resourceMapId}
+          </Typography>
+        </Box>
+      )}
 
       {inventoryItem.fulfilmentId && (
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
           {inventoryItem.fulfilmentId}
         </Typography>
+      )}
+
+      {showButton && (
+        <Box sx={{ mt: 1.5 }}>
+          {isAssignedToSelectedFulfilment ? (
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              fullWidth
+              onClick={handleUnassignClick}
+            >
+              Unassign
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              fullWidth
+              onClick={handleAssignClick}
+              disabled={
+                inventoryItem.fulfilmentId !== null && inventoryItem.fulfilmentId !== undefined
+              }
+            >
+              Assign
+            </Button>
+          )}
+        </Box>
       )}
     </Paper>
   );
@@ -683,8 +757,6 @@ function CustomerInfoRow({
     e.preventDefault();
     setIsDragOver(false);
 
-    debugger;
-
     if (draggedEquipment) {
       onEquipmentDrop(draggedEquipment, fulfilment);
     } else {
@@ -846,7 +918,6 @@ function TimelineRow({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    debugger;
 
     if (draggedEquipment) {
       onEquipmentDrop(draggedEquipment, fulfilment);
