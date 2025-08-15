@@ -299,8 +299,18 @@ input CreateChargeInput {
   salesOrderLineItemId: ID
 }
 
+input CreateFulfilmentReservationInput {
+  endDate: DateTime!
+  fulfilmentId: ID!
+  inventoryId: ID!
+  salesOrderType: FulfilmentType!
+  startDate: DateTime!
+}
+
 input CreateInventoryInput {
+  actualReturnDate: DateTime
   assetId: String
+  expectedReturnDate: DateTime
   fulfilmentId: String
   isThirdPartyRental: Boolean!
   pimCategoryId: String
@@ -541,6 +551,26 @@ input FulfilmentPimInput {
   pimProductId: ID
 }
 
+type FulfilmentReservation {
+  companyId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  deleted: Boolean!
+  endDate: DateTime!
+  fulfilment: Fulfilment
+  fulfilmentId: String!
+  id: String!
+  inventory: Inventory
+  inventoryId: String!
+  salesOrderType: FulfilmentType!
+  startDate: DateTime!
+  type: ReservationType!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+}
+
 enum FulfilmentType {
   RENTAL
   SALE
@@ -566,6 +596,7 @@ type HasuraClaims {
 }
 
 type Inventory {
+  actualReturnDate: DateTime
   asset: Asset
   assetId: String
   companyId: String!
@@ -574,6 +605,7 @@ type Inventory {
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
+  expectedReturnDate: DateTime
   fulfilmentId: String
   id: String!
   isThirdPartyRental: Boolean!
@@ -618,6 +650,20 @@ type InventoryGroupedByCategoryResponse {
   pageSize: Int!
   totalCount: Int!
   totalPages: Int!
+}
+
+union InventoryReservation = FulfilmentReservation
+
+type InventoryReservationsPage {
+  number: Int!
+  size: Int!
+  totalItems: Int!
+  totalPages: Int!
+}
+
+type InventoryReservationsResponse {
+  items: [InventoryReservation!]!
+  page: InventoryReservationsPage!
 }
 
 type InventoryResponse {
@@ -806,10 +852,12 @@ type ListFulfilmentsResult {
 input ListInventoryFilter {
   assetId: String
   companyId: String
+  endDate: DateTime
   fulfilmentId: String
   isThirdPartyRental: Boolean
   pimCategoryId: String
   purchaseOrderId: String
+  startDate: DateTime
   status: InventoryStatus
 }
 
@@ -821,6 +869,15 @@ input ListInventoryPage {
 input ListInventoryQuery {
   filter: ListInventoryFilter
   page: ListInventoryPage
+}
+
+input ListInventoryReservationsFilter {
+  endDate: DateTime
+  fulfilmentId: String
+  inventoryId: String
+  pimCategoryId: String
+  startDate: DateTime
+  type: ReservationType
 }
 
 input ListInvoicesFilter {
@@ -942,12 +999,14 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
+  assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
   clearInvoiceTaxes(invoiceId: ID!): Invoice!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createCharge(input: CreateChargeInput!): Charge
+  createFulfilmentReservation(input: CreateFulfilmentReservationInput!): FulfilmentReservation!
   createInventory(input: CreateInventoryInput!): Inventory!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
@@ -1004,6 +1063,7 @@ type Mutation {
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
+  unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updateBusinessName(id: ID!, name: String!): BusinessContact
@@ -1012,6 +1072,8 @@ type Mutation {
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
   updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
   updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
+  updateInventoryActualReturnDate(actualReturnDate: DateTime!, id: String!): Inventory
+  updateInventoryExpectedReturnDate(expectedReturnDate: DateTime!, id: String!): Inventory
   updateInventorySerialisedId(id: String!, input: UpdateInventorySerialisedIdInput!): Inventory
   updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
@@ -1420,6 +1482,7 @@ type Query {
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
   getDefaultTemplates: [ReferenceNumberTemplate!]!
   getFulfilmentById(id: ID!): Fulfilment
+  getInventoryReservationById(id: ID!): InventoryReservation
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
   getPriceBookById(id: ID!): PriceBook
@@ -1446,6 +1509,7 @@ type Query {
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
   listInventory(query: ListInventoryQuery): InventoryResponse!
   listInventoryGroupedByPimCategoryId(query: ListInventoryQuery): InventoryGroupedByCategoryResponse!
+  listInventoryReservations(filter: ListInventoryReservationsFilter, page: ListInventoryPage): InventoryReservationsResponse!
   listInvoices(query: ListInvoicesQuery): InvoicesResponse!
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
@@ -1545,6 +1609,8 @@ type RentalFulfilment implements FulfilmentBase {
   createdAt: DateTime!
   expectedRentalEndDate: DateTime
   id: ID!
+  inventory: Inventory
+  inventoryId: ID
   lastChargedAt: DateTime
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
@@ -1684,6 +1750,10 @@ type RentalTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+enum ReservationType {
+  FULFILMENT
 }
 
 enum ResetFrequency {

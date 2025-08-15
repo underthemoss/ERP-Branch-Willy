@@ -3,7 +3,7 @@
 import { Box, Button, Chip, LinearProgress, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowParams } from "@mui/x-data-grid";
 import { useMemo, useState } from "react";
-import ReceiveInventoryDialog from "./ReceiveInventoryDialog";
+import BaseReceiveInventoryDialog from "./BaseReceiveInventoryDialog";
 import { groupInventoryByLineItem } from "./utils";
 
 interface InventoryReceiveTableProps {
@@ -201,7 +201,7 @@ export default function InventoryReceiveTable({
 
       {/* Receive Dialog */}
       {selectedLineItemId && (
-        <ReceiveInventoryDialog
+        <BaseReceiveInventoryDialog
           open={dialogOpen}
           onClose={handleDialogClose}
           lineItemId={selectedLineItemId}

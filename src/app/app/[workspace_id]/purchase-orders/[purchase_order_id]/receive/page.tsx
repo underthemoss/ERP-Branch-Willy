@@ -15,7 +15,7 @@ import InventoryReceiveTable from "./InventoryReceiveTable";
 // Enhanced query to get inventory with line item details
 graphql(`
   query ReceiveInventoryEnhanced($purchaseOrderId: String!) {
-    listInventory(query: { filter: { purchaseOrderId: $purchaseOrderId } }) {
+    listInventory(query: { filter: { purchaseOrderId: $purchaseOrderId }, page: { size: 1000 } }) {
       items {
         id
         status
