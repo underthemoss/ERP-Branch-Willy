@@ -205,23 +205,6 @@ export default function EquipmentAssignmentTimeline() {
         allowOverlappingReservations: true, // Adjust based on your requirements
       },
     });
-
-    // This is where you can add your business logic
-    console.log("InventoryItem assigned:", {
-      inventoryItem,
-      fulfilment,
-    });
-
-    // TODO: Add your business logic here
-    // For example:
-    // - Update the fulfilment with the assigned equipment
-    // - Call an API to persist the assignment
-    // - Update local state
-    // - Show a success message
-
-    alert(
-      `InventoryItem "${inventoryItem.pimCategoryName}" assigned to fulfilment for "${fulfilment.customer}"`,
-    );
   };
 
   return (
@@ -397,7 +380,7 @@ function AvailableEquipmentSection(props: {
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Available Inventory
+        Inventory
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
         Drag to assign to rentals
