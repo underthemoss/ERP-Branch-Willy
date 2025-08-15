@@ -26,7 +26,7 @@ import {
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useListContactsQuery } from "../contacts/api";
 import {
@@ -70,6 +70,7 @@ const RentalFulfilmentFieldsFragment = graphql(`
     rentalStartDate
     expectedRentalEndDate
     rentalEndDate
+    pimCategoryId
     pimCategoryName
     pimCategoryPath
     priceName
@@ -89,6 +90,8 @@ const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
 
 export default function EquipmentAssignmentTimeline() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = params?.workspace_id as string;
 
   const [viewMode, setViewMode] = useState<ViewMode>("2weeks");
@@ -99,6 +102,9 @@ export default function EquipmentAssignmentTimeline() {
   const [tempStartDate, setTempStartDate] = useState<Date | null>(new Date());
   const [tempEndDate, setTempEndDate] = useState<Date | null>(addDays(new Date(), 13));
   const [draggedEquipment, setDraggedEquipment] = useState<InventoryItem | null>(null);
+
+  // Get selected fulfilment ID from URL
+  const selectedFulfilmentId = searchParams.get("fulfilmentId") || "";
 
   // Calculate days to show based on view mode
   const daysToShow =
@@ -146,20 +152,7 @@ export default function EquipmentAssignmentTimeline() {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: inventoryData } = useListInventoryItemsQuery({
-    variables: {
-      query: {
-        filter: {},
-        page: {
-          size: 100,
-        },
-      },
-    },
-  });
-
   const [assignInventory] = useAssignInventoryToRentalFulfilmentMutation();
-
-  const inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
 
   const handleCustomerChange = (event: SelectChangeEvent) => {
     setSelectedCustomerId(event.target.value);
@@ -192,6 +185,38 @@ export default function EquipmentAssignmentTimeline() {
 
   const fulfilments: InventoryAssignment_RentalFulFulfilment[] =
     data?.listRentalFulfilments?.items || [];
+
+  // Find the selected fulfilment to get its pimCategoryId
+  const selectedFulfilment = fulfilments.find((f) => f.id === selectedFulfilmentId);
+  const selectedPimCategoryId = selectedFulfilment?.pimCategoryId;
+
+  // Modify inventory query to filter by pimCategoryId when a fulfilment is selected
+  const { data: inventoryData } = useListInventoryItemsQuery({
+    variables: {
+      query: {
+        filter: selectedPimCategoryId ? { pimCategoryId: selectedPimCategoryId } : {},
+        page: {
+          size: 100,
+        },
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
+
+  // Handle fulfilment selection
+  const handleFulfilmentSelect = (fulfilmentId: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    if (fulfilmentId === selectedFulfilmentId) {
+      // Deselect if clicking the same fulfilment
+      newParams.delete("fulfilmentId");
+    } else {
+      // Select new fulfilment
+      newParams.set("fulfilmentId", fulfilmentId);
+    }
+    router.push(`?${newParams.toString()}`);
+  };
 
   // Callback for when equipment is dropped on a fulfilment
   const handleEquipmentAssignment = async (
@@ -313,6 +338,8 @@ export default function EquipmentAssignmentTimeline() {
               fulfilments={fulfilments}
               draggedEquipment={draggedEquipment}
               onEquipmentDrop={handleEquipmentAssignment}
+              selectedFulfilmentId={selectedFulfilmentId}
+              onFulfilmentSelect={handleFulfilmentSelect}
             />
           </Box>
         </Box>
@@ -496,6 +523,8 @@ function TimelineView({
   fulfilments,
   draggedEquipment,
   onEquipmentDrop,
+  selectedFulfilmentId,
+  onFulfilmentSelect,
 }: {
   dates: Date[];
   startDate: Date;
@@ -505,6 +534,8 @@ function TimelineView({
     inventoryItem: InventoryItem,
     fulfilment: InventoryAssignment_RentalFulFulfilment,
   ) => void;
+  selectedFulfilmentId: string;
+  onFulfilmentSelect: (fulfilmentId: string) => void;
 }) {
   const cellWidth = 60;
   const rowHeight = 80;
@@ -544,6 +575,8 @@ function TimelineView({
               rowHeight={rowHeight}
               draggedEquipment={draggedEquipment}
               onEquipmentDrop={onEquipmentDrop}
+              isSelected={fulfilment.id === selectedFulfilmentId}
+              onSelect={() => onFulfilmentSelect(fulfilment.id)}
             />
           ))}
         </Box>
@@ -616,6 +649,8 @@ function CustomerInfoRow({
   rowHeight,
   draggedEquipment,
   onEquipmentDrop,
+  isSelected,
+  onSelect,
 }: {
   fulfilment: InventoryAssignment_RentalFulFulfilment;
   rowHeight: number;
@@ -624,6 +659,8 @@ function CustomerInfoRow({
     inventoryItem: InventoryItem,
     fulfilment: InventoryAssignment_RentalFulFulfilment,
   ) => void;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const assignmentStart = new Date(fulfilment.rentalStartDate);
@@ -671,9 +708,22 @@ function CustomerInfoRow({
         p: 2,
         display: "flex",
         alignItems: "center",
-        backgroundColor: isDragOver ? "rgba(66, 165, 245, 0.1)" : "transparent",
+        backgroundColor: isDragOver
+          ? "rgba(66, 165, 245, 0.1)"
+          : isSelected
+            ? "rgba(25, 118, 210, 0.08)"
+            : "transparent",
         transition: "background-color 0.2s",
         position: "relative",
+        cursor: "pointer",
+        borderLeft: isSelected ? "3px solid #1976d2" : "3px solid transparent",
+        "&:hover": {
+          backgroundColor: isDragOver
+            ? "rgba(66, 165, 245, 0.1)"
+            : isSelected
+              ? "rgba(25, 118, 210, 0.12)"
+              : "rgba(0, 0, 0, 0.04)",
+        },
         "&::after": isDragOver
           ? {
               content: '""',
@@ -685,6 +735,7 @@ function CustomerInfoRow({
             }
           : {},
       }}
+      onClick={onSelect}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -714,7 +765,7 @@ function CustomerInfoRow({
             lineHeight: 1.3,
             mb: 0.5,
           }}
-          title={fulfilment.pimCategoryName}
+          title={fulfilment.pimCategoryName || ""}
         >
           {fulfilment.pimCategoryName}
         </Typography>
@@ -723,7 +774,7 @@ function CustomerInfoRow({
             {format(assignmentStart, "dd/MM/yyyy")}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            •{format(assignmentEnd, "dd/MM/yyyy")}
+            - {format(assignmentEnd, "dd/MM/yyyy")}
           </Typography>
         </Box>
         {fulfilment.inventoryId && (

@@ -82,9 +82,9 @@ export const NavBar = () => {
     },
     {
       text: "Rental Fulfillments",
-      href: `/app/${currentWorkspace?.id}/rental-fulfillment`,
+      href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
       icon: <LocalShippingIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillment`,
+      selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
       testId: "nav-rental-fulfillment",
     },
     {
