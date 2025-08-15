@@ -2,6 +2,10 @@
   "name": "es-erp",
   "version": "0.1.0",
   "private": true,
+  "graphql": {
+    "schema": "./schema.graphql",
+    "documents": "./src/**/*.{graphql,js,ts,jsx,tsx}"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:local-gql": "NEXT_PUBLIC_GQL_URL=http://localhost:5000/graphql next dev --turbopack",

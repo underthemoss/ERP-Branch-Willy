@@ -1,6 +1,6 @@
 "use client";
 
-import { FulfilmentType, useListRentalFulfilmentsQuery } from "@/graphql/hooks";
+import { FragmentType, graphql } from "@/graphql";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
@@ -25,12 +25,59 @@ import {
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { addDays, differenceInCalendarDays, differenceInDays, format, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useListContactsQuery } from "../contacts/api";
-import { InventoryFieldsFragment, useListInventoryQuery } from "../inventory/api";
-import { Assignment, Equipment, mockEquipmentData } from "./mockTimelineData";
+import {
+  InventoryFieldsFragment as InventoryItem,
+  useListInventoryItemsQuery,
+} from "../inventory/api";
+import {
+  FulfilmentType,
+  InventoryAssignment_RentalFulFulfilment,
+  useAssignInventoryToRentalFulfilmentMutation,
+  useListRentalFulfilmentsQuery,
+  useUnassignInventoryFromRentalFulfilmentMutation,
+} from "./api";
+
+const RentalFulfilmentFieldsFragment = graphql(`
+  fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
+    id
+    contactId
+    contact {
+      __typename
+      ... on BusinessContact {
+        id
+        name
+      }
+      ... on PersonContact {
+        id
+        name
+      }
+    }
+    project {
+      id
+      name
+      project_code
+    }
+    purchaseOrderNumber
+    salesOrderId
+    salesOrderPONumber
+    inventory {
+      id
+    }
+    rentalStartDate
+    expectedRentalEndDate
+    rentalEndDate
+    pimCategoryName
+    pimCategoryPath
+    priceName
+    inventoryId
+  }
+`);
+
+type t = typeof RentalFulfilmentFieldsFragment;
 
 type ViewMode = "2weeks" | "30days" | "60days" | "custom";
 
@@ -51,10 +98,11 @@ export default function EquipmentAssignmentTimeline() {
   const [customDateDialogOpen, setCustomDateDialogOpen] = useState(false);
   const [tempStartDate, setTempStartDate] = useState<Date | null>(new Date());
   const [tempEndDate, setTempEndDate] = useState<Date | null>(addDays(new Date(), 13));
+  const [draggedEquipment, setDraggedEquipment] = useState<InventoryItem | null>(null);
 
   // Calculate days to show based on view mode
   const daysToShow =
-    viewMode === "custom" ? differenceInDays(endDate, startDate) + 1 : VIEW_DAYS[viewMode];
+    viewMode === "custom" ? differenceInCalendarDays(endDate, startDate) + 1 : VIEW_DAYS[viewMode];
 
   // Generate date array for timeline header
   const dates = Array.from({ length: daysToShow }, (_, i) => addDays(startDate, i));
@@ -98,7 +146,7 @@ export default function EquipmentAssignmentTimeline() {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: inventoryData } = useListInventoryQuery({
+  const { data: inventoryData } = useListInventoryItemsQuery({
     variables: {
       query: {
         filter: {},
@@ -109,20 +157,9 @@ export default function EquipmentAssignmentTimeline() {
     },
   });
 
-  const inventory: Equipment[] = (inventoryData?.listInventory?.items || []).map(
-    (inventoryItem: InventoryFieldsFragment) => {
-      return {
-        id: inventoryItem.id,
-        name: inventoryItem.asset?.name || inventoryItem.pimCategoryName,
-        model: inventoryItem.asset?.pim_product_model || "",
-        status: inventoryItem.status,
-        location: inventoryItem?.asset?.inventory_branch?.name || "Unknown Location",
-        assignedTo: inventoryItem.assignedTo?.name || "",
-      };
-    },
-  );
+  const [assignInventory] = useAssignInventoryToRentalFulfilmentMutation();
 
-  console.log("Inventory Data:", inventory);
+  const inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
 
   const handleCustomerChange = (event: SelectChangeEvent) => {
     setSelectedCustomerId(event.target.value);
@@ -153,33 +190,39 @@ export default function EquipmentAssignmentTimeline() {
     setTempEndDate(endDate);
   };
 
-  const fulfilments: Assignment[] =
-    data?.listRentalFulfilments?.items
-      ?.map((fulfilment) => {
-        if (!fulfilment.rentalStartDate) return null;
+  const fulfilments: InventoryAssignment_RentalFulFulfilment[] =
+    data?.listRentalFulfilments?.items || [];
 
-        const fulfilmentEndDate =
-          fulfilment.rentalEndDate ||
-          fulfilment.expectedRentalEndDate ||
-          addDays(new Date(fulfilment.rentalStartDate), 7);
+  // Callback for when equipment is dropped on a fulfilment
+  const handleEquipmentAssignment = async (
+    inventoryItem: InventoryItem,
+    fulfilment: InventoryAssignment_RentalFulFulfilment,
+  ) => {
+    await assignInventory({
+      variables: {
+        fulfilmentId: fulfilment.id,
+        inventoryId: inventoryItem.id,
+        allowOverlappingReservations: true, // Adjust based on your requirements
+      },
+    });
 
-        const assignment: Assignment = {
-          id: fulfilment.id,
-          customer: fulfilment?.contact?.name || "Unknown Customer",
-          equipment: (fulfilment.pimCategoryName || "") + " - " + (fulfilment.priceName || ""),
-          startDate: format(startOfDay(new Date(fulfilment.rentalStartDate)), "yyyy-MM-dd"),
-          endDate: format(startOfDay(fulfilmentEndDate), "yyyy-MM-dd"),
-          duration: `${differenceInCalendarDays(fulfilmentEndDate, new Date(fulfilment.rentalStartDate))} days`,
-          hasConflict: false,
-          ...(fulfilment.inventoryId && {
-            assignedEquipment: `Assigned: ${fulfilment.inventoryId}`,
-          }),
-        };
-        return assignment;
-      })
-      .filter((item): item is Assignment => item !== null) || [];
+    // This is where you can add your business logic
+    console.log("InventoryItem assigned:", {
+      inventoryItem,
+      fulfilment,
+    });
 
-  console.log("Fulfilments:", fulfilments);
+    // TODO: Add your business logic here
+    // For example:
+    // - Update the fulfilment with the assigned equipment
+    // - Call an API to persist the assignment
+    // - Update local state
+    // - Show a success message
+
+    alert(
+      `InventoryItem "${inventoryItem.pimCategoryName}" assigned to fulfilment for "${fulfilment.customer}"`,
+    );
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -191,10 +234,10 @@ export default function EquipmentAssignmentTimeline() {
           >
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Equipment Assignment Timeline
+                Inventory Assignment Timeline
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Drag equipment from the pool to assign to rental transactions
+                Drag inventory from the pool to assign to rental fulfilments
               </Typography>
             </Box>
 
@@ -270,18 +313,24 @@ export default function EquipmentAssignmentTimeline() {
         </Box>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          {/* Left Panel - Equipment List */}
+          {/* Left Panel - InventoryItem List */}
           <Box sx={{ width: "300px", flexShrink: 0 }}>
-            {/* Available Equipment Section */}
-            <AvailableEquipmentSection inventory={inventory} />
+            {/* Available InventoryItem Section */}
+            <AvailableEquipmentSection inventory={inventory} onDragStart={setDraggedEquipment} />
 
-            {/* Assigned Equipment Section */}
-            <AssignedEquipmentSection />
+            {/* Assigned InventoryItem Section */}
+            {/* <AssignedEquipmentSection onDragStart={setDraggedEquipment} /> */}
           </Box>
 
           {/* Right Panel - Timeline */}
           <Box sx={{ flex: 1, overflowX: "auto" }}>
-            <TimelineView dates={dates} startDate={startDate} assignments={fulfilments} />
+            <TimelineView
+              dates={dates}
+              startDate={startDate}
+              fulfilments={fulfilments}
+              draggedEquipment={draggedEquipment}
+              onEquipmentDrop={handleEquipmentAssignment}
+            />
           </Box>
         </Box>
 
@@ -319,7 +368,7 @@ export default function EquipmentAssignmentTimeline() {
             </Box>
             {tempStartDate && tempEndDate && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Duration: {differenceInDays(tempEndDate, tempStartDate) + 1} days
+                Duration: {differenceInCalendarDays(tempEndDate, tempStartDate)} days
               </Typography>
             )}
           </DialogContent>
@@ -339,72 +388,105 @@ export default function EquipmentAssignmentTimeline() {
   );
 }
 
-function AvailableEquipmentSection(props: { inventory: Equipment[] }) {
-  const { inventory = [] } = props;
+function AvailableEquipmentSection(props: {
+  inventory: InventoryItem[];
+  onDragStart: (inventoryItem: InventoryItem | null) => void;
+}) {
+  const { inventory = [], onDragStart } = props;
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Available Equipment
+        Available Inventory
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
         Drag to assign to rentals
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {inventory.map((equipment) => (
-          <EquipmentCard key={equipment.id} equipment={equipment} />
+        {inventory.map((inventoryItem) => (
+          <EquipmentCard
+            key={inventoryItem.id}
+            inventoryItem={inventoryItem}
+            onDragStart={onDragStart}
+          />
         ))}
       </Box>
     </Paper>
   );
 }
 
-function AssignedEquipmentSection() {
-  const assignedEquipment = mockEquipmentData.filter((eq) => eq.status === "assigned");
+// function AssignedEquipmentSection(props: {
+//   onDragStart: (inventoryItem: InventoryItem | null) => void;
+// }) {
+//   const { onDragStart } = props;
+//   const assignedEquipment = mockEquipmentData.filter((eq) => eq.status === "assigned");
 
-  return (
-    <Paper sx={{ p: 2 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-        Assigned Equipment
-      </Typography>
+//   return (
+//     <Paper sx={{ p: 2 }}>
+//       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+//         Assigned Inventory
+//       </Typography>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {assignedEquipment.map((equipment) => (
-          <EquipmentCard key={equipment.id} equipment={equipment} />
-        ))}
-      </Box>
-    </Paper>
-  );
-}
+//       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+//         {assignedEquipment.map((equipment) => (
+//           <EquipmentCard key={equipment.id} inventoryItem={equipment} onDragStart={onDragStart} />
+//         ))}
+//       </Box>
+//     </Paper>
+//   );
+// }
 
-function EquipmentCard({ equipment }: { equipment: Equipment }) {
+function EquipmentCard({
+  inventoryItem,
+  onDragStart,
+}: {
+  inventoryItem: InventoryItem;
+  onDragStart: (inventoryItem: InventoryItem | null) => void;
+}) {
+  const handleDragStart = (e: React.DragEvent) => {
+    onDragStart(inventoryItem);
+    // Store inventoryItem data in dataTransfer for fallback
+    e.dataTransfer.setData("inventoryItem", JSON.stringify(inventoryItem));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = () => {
+    onDragStart(null);
+  };
+
   return (
     <Paper
       sx={{
         p: 1.5,
         border: "1px solid #e0e0e0",
         borderRadius: 1,
-        cursor: equipment.status === "available" ? "grab" : "default",
+        cursor: inventoryItem.fulfilmentId ? "default" : "grab",
         "&:hover": {
-          backgroundColor: equipment.status === "available" ? "#f5f5f5" : "transparent",
+          backgroundColor: inventoryItem.fulfilmentId ? "#f5f5f5" : "transparent",
+        },
+        "&:active": {
+          cursor: inventoryItem.fulfilmentId ? "default" : "grabbing",
         },
       }}
-      draggable={equipment.status === "available"}
+      //draggable={equipment.status === "available"}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {equipment.name}
+            {inventoryItem.pimCategoryName}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {equipment.model}
+            {inventoryItem.asset?.pim_product_model || "Unknown Model"}
           </Typography>
         </Box>
         <Chip
-          label={equipment.status}
+          label={inventoryItem.fulfilmentId ? "Assigned" : "Available"}
           size="small"
-          color={equipment.status === "available" ? "success" : "primary"}
+          color={inventoryItem.fulfilmentId ? "primary" : "success"}
           sx={{ height: 20, fontSize: "0.7rem" }}
         />
       </Box>
@@ -412,13 +494,13 @@ function EquipmentCard({ equipment }: { equipment: Equipment }) {
       <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
         <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
         <Typography variant="caption" color="text.secondary">
-          {equipment.location}
+          {inventoryItem.resourceMapId}
         </Typography>
       </Box>
 
-      {equipment.assignedTo && (
+      {inventoryItem.fulfilmentId && (
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-          {equipment.assignedTo}
+          {inventoryItem.fulfilmentId}
         </Typography>
       )}
     </Paper>
@@ -428,11 +510,18 @@ function EquipmentCard({ equipment }: { equipment: Equipment }) {
 function TimelineView({
   dates,
   startDate,
-  assignments,
+  fulfilments,
+  draggedEquipment,
+  onEquipmentDrop,
 }: {
   dates: Date[];
   startDate: Date;
-  assignments: Assignment[];
+  fulfilments: InventoryAssignment_RentalFulFulfilment[];
+  draggedEquipment: InventoryItem | null;
+  onEquipmentDrop: (
+    inventoryItem: InventoryItem,
+    fulfilment: InventoryAssignment_RentalFulFulfilment,
+  ) => void;
 }) {
   const cellWidth = 60;
   const rowHeight = 80;
@@ -465,8 +554,14 @@ function TimelineView({
 
         {/* Customer Rows */}
         <Box>
-          {assignments.map((assignment) => (
-            <CustomerInfoRow key={assignment.id} assignment={assignment} rowHeight={rowHeight} />
+          {fulfilments.map((fulfilment) => (
+            <CustomerInfoRow
+              key={fulfilment.id}
+              fulfilment={fulfilment}
+              rowHeight={rowHeight}
+              draggedEquipment={draggedEquipment}
+              onEquipmentDrop={onEquipmentDrop}
+            />
           ))}
         </Box>
       </Box>
@@ -515,14 +610,16 @@ function TimelineView({
 
         {/* Timeline Rows */}
         <Box>
-          {assignments.map((assignment) => (
+          {fulfilments.map((fulfilment) => (
             <TimelineRow
-              key={assignment.id}
-              assignment={assignment}
+              key={fulfilment.id}
+              fulfilment={fulfilment}
               startDate={startDate}
               dates={dates}
               cellWidth={cellWidth}
               rowHeight={rowHeight}
+              draggedEquipment={draggedEquipment}
+              onEquipmentDrop={onEquipmentDrop}
             />
           ))}
         </Box>
@@ -531,8 +628,57 @@ function TimelineView({
   );
 }
 
-function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; rowHeight: number }) {
-  const assignmentStart = new Date(assignment.startDate);
+function CustomerInfoRow({
+  fulfilment,
+  rowHeight,
+  draggedEquipment,
+  onEquipmentDrop,
+}: {
+  fulfilment: InventoryAssignment_RentalFulFulfilment;
+  rowHeight: number;
+  draggedEquipment: InventoryItem | null;
+  onEquipmentDrop: (
+    inventoryItem: InventoryItem,
+    fulfilment: InventoryAssignment_RentalFulFulfilment,
+  ) => void;
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const assignmentStart = new Date(fulfilment.rentalStartDate);
+  const assignmentEnd = new Date(
+    fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
+  );
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    debugger;
+
+    if (draggedEquipment) {
+      onEquipmentDrop(draggedEquipment, fulfilment);
+    } else {
+      // Fallback: try to get inventory data from dataTransfer
+      const inventoryData = e.dataTransfer.getData("inventory");
+      if (inventoryData) {
+        try {
+          const inventoryItem = JSON.parse(inventoryData);
+          onEquipmentDrop(inventoryItem, fulfilment);
+        } catch (error) {
+          console.error("Failed to parse inventory data:", error);
+        }
+      }
+    }
+  };
 
   return (
     <Box
@@ -542,7 +688,23 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
         p: 2,
         display: "flex",
         alignItems: "center",
+        backgroundColor: isDragOver ? "rgba(66, 165, 245, 0.1)" : "transparent",
+        transition: "background-color 0.2s",
+        position: "relative",
+        "&::after": isDragOver
+          ? {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              border: "2px dashed #42a5f5",
+              borderRadius: 1,
+              pointerEvents: "none",
+            }
+          : {},
       }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <Box sx={{ width: "100%" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
@@ -555,9 +717,9 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
-            title={assignment.customer}
+            title={fulfilment.contact?.name}
           >
-            {assignment.customer}
+            {fulfilment.contact?.name}
           </Typography>
         </Box>
         <Typography
@@ -569,21 +731,21 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
             lineHeight: 1.3,
             mb: 0.5,
           }}
-          title={assignment.equipment}
+          title={fulfilment.pimCategoryName}
         >
-          {assignment.equipment}
+          {fulfilment.pimCategoryName}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
           <Typography variant="caption" color="text.secondary">
             {format(assignmentStart, "dd/MM/yyyy")}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            • {assignment.duration}
+            •{format(assignmentEnd, "dd/MM/yyyy")}
           </Typography>
         </Box>
-        {assignment.assignedEquipment && (
+        {fulfilment.inventoryId && (
           <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
-            <strong>Assigned:</strong> {assignment.assignedEquipment}
+            <strong>Assigned:</strong> {fulfilment.inventoryId}
           </Typography>
         )}
       </Box>
@@ -592,29 +754,70 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
 }
 
 function TimelineRow({
-  assignment,
+  fulfilment,
   startDate,
   dates,
   cellWidth,
   rowHeight,
+  draggedEquipment,
+  onEquipmentDrop,
 }: {
-  assignment: Assignment;
+  fulfilment: InventoryAssignment_RentalFulFulfilment;
   startDate: Date;
   dates: Date[];
   cellWidth: number;
   rowHeight: number;
+  draggedEquipment: InventoryItem | null;
+  onEquipmentDrop: (
+    inventoryItem: InventoryItem,
+    fulfilment: InventoryAssignment_RentalFulFulfilment,
+  ) => void;
 }) {
-  const assignmentStart = new Date(assignment.startDate);
-  const assignmentEnd = new Date(assignment.endDate);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fulfilmentStart = new Date(fulfilment.rentalStartDate);
+  const fulfilmentEnd = new Date(
+    fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(fulfilmentStart, 14),
+  );
 
-  // Calculate position and width of the assignment bar
-  const dayOffset = differenceInDays(assignmentStart, startDate);
-  const duration = differenceInDays(assignmentEnd, assignmentStart) + 1;
+  // Calculate position and width of the fulfilment bar
+  const dayOffset = differenceInCalendarDays(fulfilmentStart, startDate);
+  const duration = differenceInCalendarDays(fulfilmentEnd, fulfilmentStart);
   const barLeft = dayOffset * cellWidth;
   const barWidth = duration * cellWidth - 8; // Subtract padding
 
-  // Determine if assignment is within visible range
+  // Determine if fulfilment is within visible range
   const isVisible = dayOffset < dates.length && dayOffset + duration > 0;
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    debugger;
+
+    if (draggedEquipment) {
+      onEquipmentDrop(draggedEquipment, fulfilment);
+    } else {
+      // Fallback: try to get inventory data from dataTransfer
+      const inventoryData = e.dataTransfer.getData("inventory");
+      if (inventoryData) {
+        try {
+          const inventoryItem = JSON.parse(inventoryData);
+          onEquipmentDrop(inventoryItem, fulfilment);
+        } catch (error) {
+          console.error("Failed to parse inventory data:", error);
+        }
+      }
+    }
+  };
 
   return (
     <Box
@@ -625,7 +828,12 @@ function TimelineRow({
         borderBottom: "1px solid #f0f0f0",
         display: "flex",
         alignItems: "center",
+        backgroundColor: isDragOver ? "rgba(66, 165, 245, 0.08)" : "transparent",
+        transition: "background-color 0.2s",
       }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       {/* Grid lines */}
       {dates.map((_, index) => (
@@ -642,7 +850,7 @@ function TimelineRow({
         />
       ))}
 
-      {/* Assignment Bar */}
+      {/* Fulfilment Bar */}
       {isVisible && (
         <Box
           sx={{
@@ -652,23 +860,26 @@ function TimelineRow({
             transform: "translateY(-50%)",
             width: Math.min(barWidth, dates.length * cellWidth - barLeft),
             height: 40,
-            backgroundColor: assignment.hasConflict ? "#ffebee" : "#e8f5e9",
-            border: `2px solid ${assignment.hasConflict ? "#ef5350" : "#66bb6a"}`,
+            backgroundColor: fulfilment.inventory ? "#e8f5e9" : "#ffebee",
+            border: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
             borderRadius: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 1,
             mx: "4px",
+            outline: isDragOver ? "2px solid #42a5f5" : "none",
+            outlineOffset: 2,
+            transition: "outline 0.2s",
           }}
         >
-          {assignment.hasConflict ? (
-            <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
-          ) : (
+          {fulfilment.inventoryId ? (
             <CheckCircleIcon sx={{ color: "#66bb6a", fontSize: 20 }} />
+          ) : (
+            <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
           )}
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            {assignment.duration}
+            {duration}
           </Typography>
         </Box>
       )}

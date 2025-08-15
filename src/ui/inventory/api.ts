@@ -4,7 +4,7 @@ import { graphql } from "@/graphql";
 export type { InventoryFieldsFragment } from "@/graphql/graphql";
 
 // Re-exporting hooks
-export { useListInventoryQuery } from "@/graphql/hooks";
+export { useListInventoryItemsQuery } from "@/graphql/hooks";
 
 graphql(`
   fragment InventoryFields on Inventory {
@@ -36,7 +36,7 @@ graphql(`
 `);
 
 graphql(`
-  query ListInventory($query: ListInventoryQuery!) {
+  query ListInventoryItems($query: ListInventoryQuery!) {
     listInventory(query: $query) {
       items {
         ...InventoryFields

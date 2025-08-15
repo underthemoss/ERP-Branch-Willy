@@ -1,14 +1,16 @@
 import { graphql } from "@/graphql";
 
 // Re-exporting types
-export type {
-  FulfilmentBaseFieldsFragment as FulfilmentBase,
-  BusinessContactFieldsFragment as BusinessContact,
-  RentalFulfilmentFieldsFragment as RentalFulfilment,
-  SaleFulfilmentFieldsFragment as SaleFulfilment,
-  ServiceFulfilmentFieldsFragment as ServiceFulfilment,
-  RentalFulfilmentPriceFieldsFragment as RentalFulfilmentPrice,
-  SaleFulfilmentPriceFieldsFragment as SaleFulfilmentPrice,
+export {
+  type FulfilmentBaseFieldsFragment as FulfilmentBase,
+  type BusinessContactFieldsFragment as BusinessContact,
+  type RentalFulfilmentFieldsFragment as RentalFulfilment,
+  type SaleFulfilmentFieldsFragment as SaleFulfilment,
+  type ServiceFulfilmentFieldsFragment as ServiceFulfilment,
+  type RentalFulfilmentPriceFieldsFragment as RentalFulfilmentPrice,
+  type SaleFulfilmentPriceFieldsFragment as SaleFulfilmentPrice,
+  type InventoryAssignment_RentalFulFulfilmentFieldsFragment as InventoryAssignment_RentalFulFulfilment,
+  FulfilmentType,
 } from "@/graphql/graphql";
 
 // Re-exporting other hooks, that do not need any modifications
@@ -18,6 +20,9 @@ export {
   useSetRentalStartDateMutation,
   useSetExpectedRentalEndDateMutation,
   useListChargesForFulfilmentQuery,
+  useListRentalFulfilmentsQuery,
+  useAssignInventoryToRentalFulfilmentMutation,
+  useUnassignInventoryFromRentalFulfilmentMutation,
 } from "@/graphql/hooks";
 
 export const RentalFulfilmentPriceFields = graphql(`
@@ -92,6 +97,7 @@ export const FulfilmentBaseFields = graphql(`
     }
     purchaseOrderNumber
     salesOrderId
+    salesOrderPONumber
     salesOrderType
     workflowId
     workflowColumnId
@@ -162,6 +168,9 @@ export const RentalFulfilmentFields = graphql(`
     rentalStartDate
     rentalEndDate
     expectedRentalEndDate
+    inventory {
+      id
+    }
   }
 `);
 
@@ -255,8 +264,7 @@ export const AssignInventoryToRentalFulfilment = graphql(`
       inventoryId: $inventoryId
       allowOverlappingReservations: $allowOverlappingReservations
     ) {
-      id
-      inventoryId
+      ...InventoryAssignment_RentalFulFulfilmentFields
     }
   }
 `);
@@ -264,9 +272,7 @@ export const AssignInventoryToRentalFulfilment = graphql(`
 export const UnassignInventoryFromRentalFulfilment = graphql(`
   mutation UnassignInventoryFromRentalFulfilment($fulfilmentId: ID!) {
     unassignInventoryFromRentalFulfilment(fulfilmentId: $fulfilmentId) {
-      __typename
-      id
-      inventoryId
+      ...InventoryAssignment_RentalFulFulfilmentFields
     }
   }
 `);
@@ -275,37 +281,7 @@ export const ListRentalFulfilments = graphql(`
   query ListRentalFulfilments($filter: ListRentalFulfilmentsFilter, $page: ListFulfilmentsPage) {
     listRentalFulfilments(filter: $filter, page: $page) {
       items {
-        id
-        contactId
-        contact {
-          __typename
-          ... on BusinessContact {
-            id
-            name
-          }
-          ... on PersonContact {
-            id
-            name
-          }
-        }
-        project {
-          id
-          name
-          project_code
-        }
-        purchaseOrderNumber
-        salesOrderId
-        salesOrderPONumber
-        inventory {
-          id
-        }
-        rentalStartDate
-        expectedRentalEndDate
-        rentalEndDate
-        pimCategoryName
-        pimCategoryPath
-        priceName
-        inventoryId
+        ...InventoryAssignment_RentalFulFulfilmentFields
       }
     }
   }
