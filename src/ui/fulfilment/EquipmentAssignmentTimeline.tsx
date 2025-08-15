@@ -539,6 +539,7 @@ function TimelineView({
 }) {
   const cellWidth = 60;
   const rowHeight = 80;
+  const headerHeight = 88;
 
   return (
     <Paper sx={{ display: "flex", overflow: "hidden" }}>
@@ -556,7 +557,7 @@ function TimelineView({
           sx={{
             p: 2,
             borderBottom: "2px solid #e0e0e0",
-            height: 60,
+            height: headerHeight,
             display: "flex",
             alignItems: "center",
           }}
@@ -591,7 +592,7 @@ function TimelineView({
             borderBottom: "2px solid #e0e0e0",
             py: 2,
             minWidth: dates.length * cellWidth,
-            height: 60,
+            height: headerHeight,
           }}
         >
           {dates.map((date, index) => (
@@ -625,7 +626,7 @@ function TimelineView({
         </Box>
 
         {/* Timeline Rows */}
-        <Box>
+        <Box sx={{ minHeight: rowHeight * 10 }}>
           {fulfilments.map((fulfilment) => (
             <TimelineRow
               key={fulfilment.id}
@@ -740,7 +741,22 @@ function CustomerInfoRow({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%", position: "relative" }}>
+        {/* Checked icon in top right if inventory is assigned */}
+        {fulfilment.inventoryId && (
+          <CheckCircleIcon
+            sx={{
+              position: "absolute",
+              top: -8,
+              right: -8,
+              fontSize: 20,
+              color: "#66bb6a",
+              backgroundColor: "white",
+              borderRadius: "50%",
+            }}
+          />
+        )}
+
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
           <ContactPageOutlinedIcon sx={{ fontSize: 16, flexShrink: 0 }} />
           <Typography
@@ -777,11 +793,6 @@ function CustomerInfoRow({
             - {format(assignmentEnd, "dd/MM/yyyy")}
           </Typography>
         </Box>
-        {fulfilment.inventoryId && (
-          <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
-            <strong>Assigned:</strong> {fulfilment.inventoryId}
-          </Typography>
-        )}
       </Box>
     </Box>
   );
@@ -859,11 +870,9 @@ function TimelineRow({
         position: "relative",
         minWidth: dates.length * cellWidth,
         height: rowHeight,
-        borderBottom: "1px solid #f0f0f0",
+        borderBottom: "1px dashed #d7d7d7",
         display: "flex",
         alignItems: "center",
-        backgroundColor: isDragOver ? "rgba(66, 165, 245, 0.08)" : "transparent",
-        transition: "background-color 0.2s",
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -879,7 +888,7 @@ function TimelineRow({
             top: 0,
             bottom: 0,
             width: 1,
-            backgroundColor: "#f0f0f0",
+            //backgroundColor: "#f0f0f0",
           }}
         />
       ))}
