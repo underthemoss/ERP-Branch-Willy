@@ -601,8 +601,11 @@ function EquipmentCard({
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {inventoryItem.pimCategoryName}
           </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+            {inventoryItem.asset?.name || inventoryItem.asset?.pim_product_model || "Unknown Model"}
+          </Typography>
           <Typography variant="caption" color="text.secondary">
-            {inventoryItem.asset?.pim_product_model || "Unknown Model"}
+            {inventoryItem.pimCategoryPath}
           </Typography>
         </Box>
       </Box>
