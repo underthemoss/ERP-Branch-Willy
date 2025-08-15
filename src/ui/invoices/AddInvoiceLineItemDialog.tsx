@@ -352,7 +352,7 @@ export default function AddInvoiceLineItemDialog({
     },
     {
       field: "fulfilmentId",
-      headerName: "Fulfilment ID",
+      headerName: "Fulfillment ID",
       width: 130,
       renderCell: (params) => {
         if (!params.value) return params.value;

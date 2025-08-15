@@ -62,10 +62,10 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
   const [updateAssignee, { loading: updatingAssignee }] = useUpdateFulfilmentAssigneeMutation();
 
   if (loading) {
-    return <div>Loading fulfilment details...</div>;
+    return <div>Loading fulfillment details...</div>;
   }
   if (error || !fulfilment) {
-    return <div>Error loading fulfilment details.</div>;
+    return <div>Error loading fulfillment details.</div>;
   }
 
   // Type guards for union types
