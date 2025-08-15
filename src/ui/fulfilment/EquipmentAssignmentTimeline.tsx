@@ -451,7 +451,7 @@ function TimelineView({
           sx={{
             display: "flex",
             borderBottom: "2px solid #e0e0e0",
-            p: 2,
+            py: 2,
             minWidth: dates.length * cellWidth,
             height: 60,
           }}
@@ -517,31 +517,48 @@ function CustomerInfoRow({ assignment, rowHeight }: { assignment: Assignment; ro
         alignItems: "center",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <ContactPageOutlinedIcon fontSize="small" />
-            <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
-              {assignment.customer}
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="text.secondary" noWrap>
-            {assignment.equipment}
+      <Box sx={{ width: "100%" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+          <ContactPageOutlinedIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={assignment.customer}
+          >
+            {assignment.customer}
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              {format(assignmentStart, "dd/MM/yyyy")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              • {assignment.duration}
-            </Typography>
-          </Box>
-          {assignment.assignedEquipment && (
-            <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
-              <strong>Assigned:</strong> {assignment.assignedEquipment}
-            </Typography>
-          )}
         </Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            display: "block",
+            wordBreak: "break-word",
+            lineHeight: 1.3,
+            mb: 0.5,
+          }}
+          title={assignment.equipment}
+        >
+          {assignment.equipment}
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+          <Typography variant="caption" color="text.secondary">
+            {format(assignmentStart, "dd/MM/yyyy")}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            • {assignment.duration}
+          </Typography>
+        </Box>
+        {assignment.assignedEquipment && (
+          <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+            <strong>Assigned:</strong> {assignment.assignedEquipment}
+          </Typography>
+        )}
       </Box>
     </Box>
   );
@@ -581,7 +598,6 @@ function TimelineRow({
         borderBottom: "1px solid #f0f0f0",
         display: "flex",
         alignItems: "center",
-        px: 2,
       }}
     >
       {/* Grid lines */}
@@ -590,7 +606,7 @@ function TimelineRow({
           key={index}
           sx={{
             position: "absolute",
-            left: index * cellWidth + 16, // Add padding offset
+            left: index * cellWidth,
             top: 0,
             bottom: 0,
             width: 1,
@@ -604,7 +620,7 @@ function TimelineRow({
         <Box
           sx={{
             position: "absolute",
-            left: Math.max(0, barLeft) + 16, // Add padding offset
+            left: Math.max(0, barLeft),
             top: "50%",
             transform: "translateY(-50%)",
             width: Math.min(barWidth, dates.length * cellWidth - barLeft),
@@ -616,6 +632,7 @@ function TimelineRow({
             alignItems: "center",
             justifyContent: "center",
             gap: 1,
+            mx: "4px",
           }}
         >
           {assignment.hasConflict ? (
