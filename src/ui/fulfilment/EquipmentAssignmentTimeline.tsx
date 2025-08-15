@@ -22,6 +22,7 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
+  Skeleton,
   TextField,
   Typography,
 } from "@mui/material";
@@ -194,7 +195,7 @@ export default function EquipmentAssignmentTimeline() {
   const selectedPimCategoryId = selectedFulfilment?.pimCategoryId;
 
   // Modify inventory query to filter by pimCategoryId when a fulfilment is selected
-  const { data: inventoryData } = useListInventoryItemsQuery({
+  const { data: inventoryData, loading: inventoryLoading } = useListInventoryItemsQuery({
     variables: {
       query: {
         filter: selectedPimCategoryId ? { pimCategoryId: selectedPimCategoryId } : {},
@@ -334,12 +335,13 @@ export default function EquipmentAssignmentTimeline() {
           </Box>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, maxHeight: "70vh" }}>
           {/* Left Panel - InventoryItem List */}
-          <Box sx={{ width: "300px", flexShrink: 0 }}>
+          <Box sx={{ width: "300px", flexShrink: 0, overflowY: "auto" }}>
             {/* Available InventoryItem Section */}
             <AvailableEquipmentSection
               inventory={inventory}
+              isLoading={inventoryLoading}
               onDragStart={setDraggedEquipment}
               selectedFulfilmentId={selectedFulfilmentId}
               selectedFulfilment={selectedFulfilment}
@@ -429,6 +431,7 @@ export default function EquipmentAssignmentTimeline() {
 
 function AvailableEquipmentSection(props: {
   inventory: InventoryItem[];
+  isLoading?: boolean;
   onDragStart: (inventoryItem: InventoryItem | null) => void;
   selectedFulfilmentId?: string;
   selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
@@ -437,6 +440,7 @@ function AvailableEquipmentSection(props: {
 }) {
   const {
     inventory = [],
+    isLoading = false,
     onDragStart,
     selectedFulfilmentId,
     selectedFulfilment,
@@ -497,7 +501,41 @@ function AvailableEquipmentSection(props: {
           : "Drag to assign to rentals"}
       </Typography>
 
-      {inventory.length === 0 && selectedFulfilmentId ? (
+      {isLoading ? (
+        // Skeleton loading view
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {[1, 2, 3, 4].map((index) => (
+            <Paper
+              key={index}
+              sx={{
+                p: 1.5,
+                border: "1px solid #e0e0e0",
+                borderRadius: 1,
+              }}
+            >
+              <Box>
+                <Skeleton variant="text" width="60%" height={20} sx={{ mb: 0.5 }} />
+                <Skeleton variant="text" width="80%" height={16} sx={{ mb: 0.5 }} />
+                <Skeleton variant="text" width="70%" height={16} />
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
+                <Skeleton variant="circular" width={14} height={14} />
+                <Skeleton variant="text" width="40%" height={14} />
+              </Box>
+              {selectedFulfilmentId && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Skeleton
+                    variant="rectangular"
+                    width="100%"
+                    height={32}
+                    sx={{ borderRadius: 0.5 }}
+                  />
+                </Box>
+              )}
+            </Paper>
+          ))}
+        </Box>
+      ) : inventory.length === 0 && selectedFulfilmentId ? (
         <Box
           sx={{
             textAlign: "center",
