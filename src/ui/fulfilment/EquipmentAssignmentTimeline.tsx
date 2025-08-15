@@ -29,6 +29,7 @@ import { addDays, differenceInCalendarDays, differenceInDays, format, startOfDay
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useListContactsQuery } from "../contacts/api";
+import { InventoryFieldsFragment, useListInventoryQuery } from "../inventory/api";
 import { Assignment, Equipment, mockEquipmentData } from "./mockTimelineData";
 
 type ViewMode = "2weeks" | "30days" | "60days" | "custom";
@@ -96,6 +97,32 @@ export default function EquipmentAssignmentTimeline() {
     },
     fetchPolicy: "cache-and-network",
   });
+
+  const { data: inventoryData } = useListInventoryQuery({
+    variables: {
+      query: {
+        filter: {},
+        page: {
+          size: 100,
+        },
+      },
+    },
+  });
+
+  const inventory: Equipment[] = (inventoryData?.listInventory?.items || []).map(
+    (inventoryItem: InventoryFieldsFragment) => {
+      return {
+        id: inventoryItem.id,
+        name: inventoryItem.asset?.name || inventoryItem.pimCategoryName,
+        model: inventoryItem.asset?.pim_product_model || "",
+        status: inventoryItem.status,
+        location: inventoryItem?.asset?.inventory_branch?.name || "Unknown Location",
+        assignedTo: inventoryItem.assignedTo?.name || "",
+      };
+    },
+  );
+
+  console.log("Inventory Data:", inventory);
 
   const handleCustomerChange = (event: SelectChangeEvent) => {
     setSelectedCustomerId(event.target.value);
@@ -246,7 +273,7 @@ export default function EquipmentAssignmentTimeline() {
           {/* Left Panel - Equipment List */}
           <Box sx={{ width: "300px", flexShrink: 0 }}>
             {/* Available Equipment Section */}
-            <AvailableEquipmentSection />
+            <AvailableEquipmentSection inventory={inventory} />
 
             {/* Assigned Equipment Section */}
             <AssignedEquipmentSection />
@@ -312,8 +339,8 @@ export default function EquipmentAssignmentTimeline() {
   );
 }
 
-function AvailableEquipmentSection() {
-  const availableEquipment = mockEquipmentData.filter((eq) => eq.status === "available");
+function AvailableEquipmentSection(props: { inventory: Equipment[] }) {
+  const { inventory = [] } = props;
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
@@ -325,7 +352,7 @@ function AvailableEquipmentSection() {
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {availableEquipment.map((equipment) => (
+        {inventory.map((equipment) => (
           <EquipmentCard key={equipment.id} equipment={equipment} />
         ))}
       </Box>
