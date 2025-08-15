@@ -2,8 +2,11 @@
 
 import { graphql } from "@/graphql";
 import { InventoryCondition, InventoryStatus } from "@/graphql/graphql";
-import { useBulkMarkInventoryReceivedMutation, useLineItemInventoryQuery } from "@/graphql/hooks";
-import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
+import {
+  useBulkMarkRentalInventoryReceivedMutation,
+  useRentalLineItemInventoryQuery,
+  useUpdateInventoryExpectedReturnDateMutation,
+} from "@/graphql/hooks";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import {
@@ -28,10 +31,15 @@ import {
 import { useEffect, useState } from "react";
 import { getItemDescription } from "./utils";
 
-// Query to fetch inventory for a specific line item
+// Query to fetch rental inventory for a specific line item
 graphql(`
-  query LineItemInventory($purchaseOrderId: String!) {
-    listInventory(query: { filter: { purchaseOrderId: $purchaseOrderId, status: ON_ORDER } }) {
+  query RentalLineItemInventory($purchaseOrderId: String!) {
+    listInventory(
+      query: {
+        filter: { purchaseOrderId: $purchaseOrderId, status: ON_ORDER }
+        page: { size: 1000 }
+      }
+    ) {
       items {
         id
         status
@@ -50,17 +58,8 @@ graphql(`
           ... on RentalPurchaseOrderLineItem {
             id
             po_quantity
-            so_pim_category {
-              name
-            }
-            so_pim_product {
-              name
-              model
-            }
-          }
-          ... on SalePurchaseOrderLineItem {
-            id
-            po_quantity
+            lineitem_type
+            off_rent_date
             so_pim_category {
               name
             }
@@ -75,9 +74,9 @@ graphql(`
   }
 `);
 
-// Mutation to bulk mark inventory as received
+// Mutation to bulk mark rental inventory as received
 graphql(`
-  mutation BulkMarkInventoryReceived($input: BulkMarkInventoryReceivedInput!) {
+  mutation BulkMarkRentalInventoryReceived($input: BulkMarkInventoryReceivedInput!) {
     bulkMarkInventoryReceived(input: $input) {
       items {
         id
@@ -91,13 +90,24 @@ graphql(`
         pimCategoryPath
         pimProductId
         assetId
+        expectedReturnDate
       }
       totalProcessed
     }
   }
 `);
 
-interface ReceiveInventoryDialogProps {
+// Mutation to update expected return date for inventory
+graphql(`
+  mutation UpdateInventoryExpectedReturnDate($id: String!, $expectedReturnDate: DateTime!) {
+    updateInventoryExpectedReturnDate(id: $id, expectedReturnDate: $expectedReturnDate) {
+      id
+      expectedReturnDate
+    }
+  }
+`);
+
+interface RentalReceiveDialogProps {
   open: boolean;
   onClose: () => void;
   lineItemId: string;
@@ -105,13 +115,13 @@ interface ReceiveInventoryDialogProps {
   onSuccess: () => void;
 }
 
-export default function ReceiveInventoryDialog({
+export default function RentalReceiveDialog({
   open,
   onClose,
   lineItemId,
   purchaseOrderId,
   onSuccess,
-}: ReceiveInventoryDialogProps) {
+}: RentalReceiveDialogProps) {
   const [quantityToReceive, setQuantityToReceive] = useState<number>(1);
   const [receivedAt, setReceivedAt] = useState<string>(new Date().toISOString().split("T")[0]);
   const [conditionOnReceipt, setConditionOnReceipt] = useState<InventoryCondition>(
@@ -119,30 +129,52 @@ export default function ReceiveInventoryDialog({
   );
   const [conditionNotes, setConditionNotes] = useState("");
   const [receiptNotes, setReceiptNotes] = useState("");
-  const [resourceMapIds, setResourceMapIds] = useState<string[]>([]);
+  const [expectedReturnDate, setExpectedReturnDate] = useState<string>("");
 
   // Fetch inventory items for this purchase order
-  const { data, loading, error } = useLineItemInventoryQuery({
+  const { data, loading, error } = useRentalLineItemInventoryQuery({
     variables: {
       purchaseOrderId,
     },
-    fetchPolicy: "network-only", // Always fetch fresh data
-    skip: !open, // Don't fetch if dialog is closed
+    fetchPolicy: "network-only",
+    skip: !open,
   });
 
-  const [bulkMarkReceived, { loading: mutationLoading }] = useBulkMarkInventoryReceivedMutation({
-    onCompleted: () => {
-      onSuccess();
-    },
-    onError: (error: any) => {
-      console.error("Error receiving items:", error);
-    },
-  });
+  const [bulkMarkReceived, { loading: mutationLoading }] =
+    useBulkMarkRentalInventoryReceivedMutation({
+      onError: (error: any) => {
+        console.error("Error receiving rental items:", error);
+      },
+    });
+
+  const [updateExpectedReturnDate] = useUpdateInventoryExpectedReturnDateMutation();
 
   // Filter items for this specific line item that are still on order
   const allItems = data?.listInventory?.items ?? [];
   const items = allItems.filter((item: any) => item.purchaseOrderLineItemId === lineItemId);
   const maxQuantity = items.length;
+
+  // Get item description from the first item (they should all be the same for this line item)
+  const itemDescription = items.length > 0 ? getItemDescription(items[0]) : "";
+  const rentalLineItem = items[0]?.purchaseOrderLineItem;
+  const categoryName =
+    items[0]?.pimCategoryName ||
+    (rentalLineItem && "so_pim_category" in rentalLineItem
+      ? rentalLineItem.so_pim_category?.name
+      : "") ||
+    "";
+  const productName =
+    (rentalLineItem && "so_pim_product" in rentalLineItem
+      ? rentalLineItem.so_pim_product?.name
+      : "") || "";
+  const productModel =
+    (rentalLineItem && "so_pim_product" in rentalLineItem
+      ? rentalLineItem.so_pim_product?.model
+      : "") || "";
+
+  // Get rental-specific information
+  const offRentDate =
+    rentalLineItem && "off_rent_date" in rentalLineItem ? rentalLineItem.off_rent_date : null;
 
   // Set quantity to max when items are loaded
   useEffect(() => {
@@ -151,12 +183,16 @@ export default function ReceiveInventoryDialog({
     }
   }, [maxQuantity, open]);
 
-  // Get item description from the first item (they should all be the same for this line item)
-  const itemDescription = items.length > 0 ? getItemDescription(items[0]) : "";
-  const categoryName =
-    items[0]?.pimCategoryName || items[0]?.purchaseOrderLineItem?.so_pim_category?.name || "";
-  const productName = items[0]?.purchaseOrderLineItem?.so_pim_product?.name || "";
-  const productModel = items[0]?.purchaseOrderLineItem?.so_pim_product?.model || "";
+  // Set default expected return date to off_rent_date from line item
+  useEffect(() => {
+    if (offRentDate && open && !expectedReturnDate) {
+      // Convert off_rent_date to YYYY-MM-DD format for date input
+      const date = new Date(String(offRentDate));
+      if (!isNaN(date.getTime())) {
+        setExpectedReturnDate(date.toISOString().split("T")[0]);
+      }
+    }
+  }, [offRentDate, open, expectedReturnDate]);
 
   const handleSubmit = async () => {
     if (quantityToReceive === 0 || quantityToReceive > maxQuantity) {
@@ -166,30 +202,52 @@ export default function ReceiveInventoryDialog({
     // Select the first N items to mark as received
     const itemsToReceive = items.slice(0, quantityToReceive).map((item: any) => item.id);
 
-    await bulkMarkReceived({
-      variables: {
-        input: {
-          ids: itemsToReceive,
-          conditionOnReceipt,
-          conditionNotes,
-          receiptNotes,
-          receivedAt: new Date(receivedAt).toISOString(),
-          resourceMapId: resourceMapIds.length > 0 ? resourceMapIds[0] : undefined,
+    try {
+      // First, mark items as received
+      const result = await bulkMarkReceived({
+        variables: {
+          input: {
+            ids: itemsToReceive,
+            conditionOnReceipt,
+            conditionNotes,
+            receiptNotes,
+            receivedAt: new Date(receivedAt).toISOString(),
+          },
         },
-      },
-      refetchQueries: [
-        "ReceiveInventoryEnhanced",
-        "PurchaseOrderDetailsForReceiving",
-        "LineItemInventory",
-      ],
-    });
+        refetchQueries: [
+          "ReceiveInventoryEnhanced",
+          "PurchaseOrderDetailsForReceiving",
+          "LineItemInventory",
+        ],
+      });
+
+      // If an expected return date was provided, update it for all received items
+      if (expectedReturnDate && result.data?.bulkMarkInventoryReceived?.items) {
+        const receivedItems = result.data.bulkMarkInventoryReceived.items;
+        const updatePromises = receivedItems.map((item) =>
+          updateExpectedReturnDate({
+            variables: {
+              id: item.id,
+              expectedReturnDate: new Date(expectedReturnDate).toISOString(),
+            },
+          }),
+        );
+
+        await Promise.all(updatePromises);
+      }
+
+      // Call success callback after all operations complete
+      onSuccess();
+    } catch (error) {
+      console.error("Error in receive process:", error);
+    }
   };
 
   const handleClose = () => {
     // Reset state when closing
     setConditionNotes("");
     setReceiptNotes("");
-    setResourceMapIds([]);
+    setExpectedReturnDate("");
     onClose();
   };
 
@@ -223,14 +281,14 @@ export default function ReceiveInventoryDialog({
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h6">Receive Inventory</Typography>
+        <Typography variant="h6">Receive Rental Items</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Line Item ID: {lineItemId.slice(-8)}
         </Typography>
       </DialogTitle>
 
       <DialogContent sx={{ overflow: "visible" }}>
-        {loading && <Typography>Loading inventory items...</Typography>}
+        {loading && <Typography>Loading rental items...</Typography>}
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -239,7 +297,7 @@ export default function ReceiveInventoryDialog({
         )}
 
         {!loading && !error && items.length === 0 && (
-          <Alert severity="info">No items pending receipt for this line item.</Alert>
+          <Alert severity="info">No rental items pending receipt for this line item.</Alert>
         )}
 
         {!loading && !error && items.length > 0 && (
@@ -250,7 +308,7 @@ export default function ReceiveInventoryDialog({
               sx={{ p: 2, bgcolor: "primary.50", border: "1px solid", borderColor: "primary.200" }}
             >
               <Typography variant="subtitle2" fontWeight={600} gutterBottom color="primary.main">
-                Item Information
+                Rental Equipment Information
               </Typography>
               <Stack spacing={1}>
                 <Box>
@@ -373,29 +431,17 @@ export default function ReceiveInventoryDialog({
                   </FormControl>
                 </Box>
 
-                {/* Location Selection */}
-                <Box>
-                  <Typography variant="body2" fontWeight={500} gutterBottom sx={{ mb: 1 }}>
-                    Storage Location
-                  </Typography>
-                  <Box
-                    sx={{
-                      position: "relative",
-                      "& .MuiAutocomplete-popper": {
-                        zIndex: 1400,
-                      },
-                      "& .MuiPopper-root": {
-                        zIndex: 1400,
-                      },
-                    }}
-                  >
-                    <ResourceMapSearchSelector
-                      selectedIds={resourceMapIds}
-                      onSelectionChange={(ids) => setResourceMapIds(ids.slice(0, 1))} // Only allow one selection
-                      readonly={false}
-                    />
-                  </Box>
-                </Box>
+                {/* Expected Return Date for Rentals */}
+                <TextField
+                  label="Expected Return Date"
+                  type="date"
+                  size="small"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={expectedReturnDate}
+                  onChange={(e) => setExpectedReturnDate(e.target.value)}
+                  helperText="When do you expect this rental equipment to be returned?"
+                />
               </Stack>
             </Box>
 
@@ -425,7 +471,7 @@ export default function ReceiveInventoryDialog({
                   rows={2}
                   value={receiptNotes}
                   onChange={(e) => setReceiptNotes(e.target.value)}
-                  placeholder="Add any general notes about this delivery..."
+                  placeholder="Add any general notes about this rental delivery..."
                   variant="outlined"
                 />
               </Stack>
@@ -443,12 +489,13 @@ export default function ReceiveInventoryDialog({
           variant="contained"
           disabled={items.length === 0 || mutationLoading}
           size="medium"
+          color="primary"
         >
           {mutationLoading
             ? "Processing..."
             : maxQuantity === 1
-              ? "Receive Item"
-              : `Receive ${quantityToReceive} Item${quantityToReceive !== 1 ? "s" : ""}`}
+              ? "Receive Rental Item"
+              : `Receive ${quantityToReceive} Rental Item${quantityToReceive !== 1 ? "s" : ""}`}
         </Button>
       </DialogActions>
     </Dialog>
