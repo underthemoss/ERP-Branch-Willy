@@ -80,12 +80,12 @@ const RentalFulfilmentFieldsFragment = graphql(`
 
 type t = typeof RentalFulfilmentFieldsFragment;
 
-type ViewMode = "2weeks" | "30days" | "60days" | "custom";
+type ViewMode = "30days" | "60days" | "90days" | "custom";
 
 const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
-  "2weeks": 14,
   "30days": 30,
   "60days": 60,
+  "90days": 90,
 };
 
 export default function EquipmentAssignmentTimeline() {
@@ -94,9 +94,9 @@ export default function EquipmentAssignmentTimeline() {
   const searchParams = useSearchParams();
   const workspaceId = params?.workspace_id as string;
 
-  const [viewMode, setViewMode] = useState<ViewMode>("2weeks");
+  const [viewMode, setViewMode] = useState<ViewMode>("30days");
   const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(addDays(new Date(), 13));
+  const [endDate, setEndDate] = useState(addDays(new Date(), 29));
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customDateDialogOpen, setCustomDateDialogOpen] = useState(false);
   const [tempStartDate, setTempStartDate] = useState<Date | null>(new Date());
@@ -267,14 +267,6 @@ export default function EquipmentAssignmentTimeline() {
                 View:
               </Typography>
               <Button
-                variant={viewMode === "2weeks" ? "contained" : "outlined"}
-                size="small"
-                onClick={() => handleViewModeChange("2weeks")}
-                sx={{ minWidth: "80px" }}
-              >
-                2 weeks
-              </Button>
-              <Button
                 variant={viewMode === "30days" ? "contained" : "outlined"}
                 size="small"
                 onClick={() => handleViewModeChange("30days")}
@@ -289,6 +281,14 @@ export default function EquipmentAssignmentTimeline() {
                 sx={{ minWidth: "80px" }}
               >
                 60 days
+              </Button>
+              <Button
+                variant={viewMode === "90days" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => handleViewModeChange("90days")}
+                sx={{ minWidth: "80px" }}
+              >
+                90 days
               </Button>
               <Button
                 variant={viewMode === "custom" ? "contained" : "outlined"}
