@@ -3,7 +3,9 @@
 import { FragmentType, graphql } from "@/graphql";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ClearIcon from "@mui/icons-material/Clear";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
@@ -442,30 +444,91 @@ function AvailableEquipmentSection(props: {
     onUnassign,
   } = props;
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleClearFilter = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete("fulfilmentId");
+    router.push(`?${newParams.toString()}`);
+  };
+
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Inventory
-      </Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Inventory
+        </Typography>
+        {selectedFulfilmentId && (
+          <Button
+            size="small"
+            startIcon={<ClearIcon />}
+            onClick={handleClearFilter}
+            sx={{ textTransform: "none" }}
+          >
+            Clear Filter
+          </Button>
+        )}
+      </Box>
+
+      {selectedFulfilmentId && selectedFulfilment && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            mb: 2,
+            p: 1,
+            backgroundColor: "rgba(25, 118, 210, 0.08)",
+            borderRadius: 1,
+            border: "1px solid rgba(25, 118, 210, 0.2)",
+          }}
+        >
+          <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
+          <Typography variant="caption" color="primary.main">
+            Filtered by: {selectedFulfilment.pimCategoryName || "Selected fulfilment category"}
+          </Typography>
+        </Box>
+      )}
+
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
         {selectedFulfilmentId
           ? "Click to assign/unassign or drag to assign"
           : "Drag to assign to rentals"}
       </Typography>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {inventory.map((inventoryItem) => (
-          <EquipmentCard
-            key={inventoryItem.id}
-            inventoryItem={inventoryItem}
-            onDragStart={onDragStart}
-            selectedFulfilmentId={selectedFulfilmentId}
-            selectedFulfilment={selectedFulfilment}
-            onAssign={onAssign}
-            onUnassign={onUnassign}
-          />
-        ))}
-      </Box>
+      {inventory.length === 0 && selectedFulfilmentId ? (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 4,
+            px: 2,
+            backgroundColor: "#f5f5f5",
+            borderRadius: 1,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            No inventory items found for this category
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {selectedFulfilment?.pimCategoryName || ""}
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {inventory.map((inventoryItem) => (
+            <EquipmentCard
+              key={inventoryItem.id}
+              inventoryItem={inventoryItem}
+              onDragStart={onDragStart}
+              selectedFulfilmentId={selectedFulfilmentId}
+              selectedFulfilment={selectedFulfilment}
+              onAssign={onAssign}
+              onUnassign={onUnassign}
+            />
+          ))}
+        </Box>
+      )}
     </Paper>
   );
 }
