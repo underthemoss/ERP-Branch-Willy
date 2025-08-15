@@ -308,7 +308,9 @@ input CreateFulfilmentReservationInput {
 }
 
 input CreateInventoryInput {
+  actualReturnDate: DateTime
   assetId: String
+  expectedReturnDate: DateTime
   fulfilmentId: String
   isThirdPartyRental: Boolean!
   pimCategoryId: String
@@ -603,6 +605,7 @@ type HasuraClaims {
 }
 
 type Inventory {
+  actualReturnDate: DateTime
   asset: Asset
   assetId: String
   companyId: String!
@@ -611,12 +614,16 @@ type Inventory {
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
+  expectedReturnDate: DateTime
+  fulfilment: Fulfilment
   fulfilmentId: String
   id: String!
   isThirdPartyRental: Boolean!
+  pimCategory: PimCategory
   pimCategoryId: String
   pimCategoryName: String
   pimCategoryPath: String
+  pimProduct: PimProduct
   pimProductId: String
   purchaseOrder: PurchaseOrder
   purchaseOrderId: String
@@ -624,6 +631,7 @@ type Inventory {
   purchaseOrderLineItemId: String
   receiptNotes: String
   receivedAt: DateTime
+  resourceMap: ResourceMapResource
   resourceMapId: String
   status: InventoryStatus!
   updatedAt: DateTime!
@@ -966,7 +974,7 @@ type ListPricesResult {
 }
 
 input ListRentalFulfilmentsFilter {
-  assignedTo: ID
+  assignedToId: ID
   contactId: ID
   hasInventoryAssigned: Boolean
   pimCategoryId: ID
@@ -1097,6 +1105,8 @@ type Mutation {
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
   updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
   updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
+  updateInventoryActualReturnDate(actualReturnDate: DateTime!, id: String!): Inventory
+  updateInventoryExpectedReturnDate(expectedReturnDate: DateTime!, id: String!): Inventory
   updateInventorySerialisedId(id: String!, input: UpdateInventorySerialisedIdInput!): Inventory
   updateNote(id: String!, value: JSON!): Note
   updatePersonBusiness(businessId: ID!, id: ID!): PersonContact
