@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -21,7 +22,13 @@ import {
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { addDays, differenceInCalendarDays, format } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  differenceInMonths,
+  differenceInWeeks,
+  format,
+} from "date-fns";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ContactSelector from "../ContactSelector";
@@ -83,6 +90,50 @@ const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
   "60days": 60,
   "90days": 90,
 };
+
+// Helper function to format duration in shorthand
+function formatDurationShorthand(startDate: Date, endDate: Date): string {
+  const totalDays = differenceInCalendarDays(endDate, startDate);
+
+  if (totalDays === 0) {
+    return "0d";
+  }
+
+  if (totalDays === 1) {
+    return "1d";
+  }
+
+  // Calculate months, weeks, and days
+  const months = Math.floor(totalDays / 30);
+  const remainingAfterMonths = totalDays % 30;
+  const weeks = Math.floor(remainingAfterMonths / 7);
+  const days = remainingAfterMonths % 7;
+
+  const parts: string[] = [];
+
+  if (months > 0) {
+    parts.push(`${months}m`);
+  }
+
+  if (weeks > 0) {
+    parts.push(`${weeks}w`);
+  }
+
+  if (days > 0) {
+    parts.push(`${days}d`);
+  }
+
+  // If it's exactly divisible by weeks or months, show just that unit
+  if (totalDays % 7 === 0 && totalDays < 30) {
+    return `${totalDays / 7}w`;
+  }
+
+  if (totalDays % 30 === 0) {
+    return `${totalDays / 30}m`;
+  }
+
+  return parts.join(" ");
+}
 
 export default function EquipmentAssignmentTimeline() {
   const params = useParams();
@@ -818,6 +869,7 @@ function CustomerInfoRow({
   const assignmentEnd = new Date(
     fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
   );
+  const duration = differenceInCalendarDays(assignmentEnd, assignmentStart);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -934,12 +986,21 @@ function CustomerInfoRow({
           {fulfilment.pimCategoryName}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
-          <Typography variant="caption" color="text.secondary">
-            {format(assignmentStart, "dd/MM/yyyy")}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            - {format(assignmentEnd, "dd/MM/yyyy")}
-          </Typography>
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              {format(assignmentStart, "dd/MM/yyyy")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {" - "}
+              {format(assignmentEnd, "dd/MM/yyyy")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+            <AccessTimeIcon sx={{ fontSize: "0.75rem", color: "text.secondary" }} />
+            <Typography variant="caption" color="text.secondary">
+              {duration}d
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -1091,7 +1152,7 @@ function TimelineRow({
             <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
           )}
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            {duration}
+            {formatDurationShorthand(fulfilmentStart, fulfilmentEnd)}
           </Typography>
         </Box>
       )}
