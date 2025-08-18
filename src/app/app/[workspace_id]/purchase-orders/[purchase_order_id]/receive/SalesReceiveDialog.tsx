@@ -172,20 +172,16 @@ export default function SalesReceiveDialog({
     }
   }, [maxQuantity, open]);
 
-  // Set default received date to off_rent_date from line item
+  // Set default received date to delivery date from line item
   useEffect(() => {
     if (salesLineItem && open && !receivedAt) {
-      // Try off_rent_date first (for rental items), then delivery_date, then fallback to today
-      const offRentDate =
-        salesLineItem && "off_rent_date" in salesLineItem ? salesLineItem.off_rent_date : null;
+      // Use delivery_date if available, otherwise fallback to today
       const deliveryDate =
         salesLineItem && "delivery_date" in salesLineItem ? salesLineItem.delivery_date : null;
 
-      const dateToUse = offRentDate || deliveryDate;
-
-      if (dateToUse && typeof dateToUse === "string") {
+      if (deliveryDate && typeof deliveryDate === "string") {
         // Convert date to YYYY-MM-DD format for date input
-        const date = new Date(dateToUse);
+        const date = new Date(deliveryDate);
         if (!isNaN(date.getTime())) {
           setReceivedAt(date.toISOString().split("T")[0]);
         } else {

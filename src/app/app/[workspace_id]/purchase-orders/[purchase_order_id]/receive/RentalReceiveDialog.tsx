@@ -59,6 +59,7 @@ graphql(`
             id
             po_quantity
             lineitem_type
+            delivery_date
             off_rent_date
             so_pim_category {
               name
@@ -123,7 +124,7 @@ export default function RentalReceiveDialog({
   onSuccess,
 }: RentalReceiveDialogProps) {
   const [quantityToReceive, setQuantityToReceive] = useState<number>(1);
-  const [receivedAt, setReceivedAt] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [receivedAt, setReceivedAt] = useState<string>("");
   const [conditionOnReceipt, setConditionOnReceipt] = useState<InventoryCondition>(
     InventoryCondition.New,
   );
@@ -175,6 +176,8 @@ export default function RentalReceiveDialog({
   // Get rental-specific information
   const offRentDate =
     rentalLineItem && "off_rent_date" in rentalLineItem ? rentalLineItem.off_rent_date : null;
+  const deliveryDate =
+    rentalLineItem && "delivery_date" in rentalLineItem ? rentalLineItem.delivery_date : null;
 
   // Set quantity to max when items are loaded
   useEffect(() => {
@@ -182,6 +185,28 @@ export default function RentalReceiveDialog({
       setQuantityToReceive(maxQuantity);
     }
   }, [maxQuantity, open]);
+
+  // Set default received date to delivery date from line item
+  useEffect(() => {
+    if (rentalLineItem && open && !receivedAt) {
+      // Use delivery_date if available, otherwise fallback to today
+      const dateToUse = deliveryDate;
+
+      if (dateToUse && typeof dateToUse === "string") {
+        // Convert date to YYYY-MM-DD format for date input
+        const date = new Date(dateToUse);
+        if (!isNaN(date.getTime())) {
+          setReceivedAt(date.toISOString().split("T")[0]);
+        } else {
+          // Fallback to today if date is invalid
+          setReceivedAt(new Date().toISOString().split("T")[0]);
+        }
+      } else {
+        // Fallback to today if no date available
+        setReceivedAt(new Date().toISOString().split("T")[0]);
+      }
+    }
+  }, [rentalLineItem, deliveryDate, open, receivedAt]);
 
   // Set default expected return date to off_rent_date from line item
   useEffect(() => {

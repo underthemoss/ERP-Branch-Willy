@@ -220,24 +220,13 @@ export default function ReceiveInventoryPage() {
       )}
 
       {/* Inventory Table */}
-      <Paper elevation={2} sx={{ mb: 3 }}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Inventory Items by Line Item
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Items are grouped by purchase order line item. Click &quot;Receive&quot; to process
-            incoming inventory.
-          </Typography>
-        </Box>
-        <InventoryReceiveTable
-          items={items}
-          loading={inventoryLoading}
-          purchaseOrderId={purchase_order_id}
-          workspaceId={workspace_id}
-          onReceiveSuccess={handleReceiveSuccess}
-        />
-      </Paper>
+      <InventoryReceiveTable
+        items={items}
+        loading={inventoryLoading}
+        purchaseOrderId={purchase_order_id}
+        workspaceId={workspace_id}
+        onReceiveSuccess={handleReceiveSuccess}
+      />
 
       {/* Receipt Timeline */}
       {receivedItems.length > 0 && (

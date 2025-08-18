@@ -239,7 +239,7 @@ export default function EquipmentAssignmentTimeline() {
                 Inventory Assignment Timeline
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Drag inventory from the pool to assign to rental fulfilments
+                Drag inventory from the pool to assign to rental fulfillments
               </Typography>
             </Box>
 
@@ -458,7 +458,7 @@ function AvailableEquipmentSection(props: {
         >
           <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
           <Typography variant="caption" color="primary.main">
-            Filtered by: {selectedFulfilment.pimCategoryName || "Selected fulfilment category"}
+            Filtered by: {selectedFulfilment.pimCategoryName || "Selected fulfillment category"}
           </Typography>
         </Box>
       )}
