@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -21,7 +22,13 @@ import {
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { addDays, differenceInCalendarDays, format } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  differenceInMonths,
+  differenceInWeeks,
+  format,
+} from "date-fns";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ContactSelector from "../ContactSelector";
@@ -83,6 +90,50 @@ const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
   "60days": 60,
   "90days": 90,
 };
+
+// Helper function to format duration in shorthand
+function formatDurationShorthand(startDate: Date, endDate: Date): string {
+  const totalDays = differenceInCalendarDays(endDate, startDate);
+
+  if (totalDays === 0) {
+    return "0d";
+  }
+
+  if (totalDays === 1) {
+    return "1d";
+  }
+
+  // Calculate months, weeks, and days
+  const months = Math.floor(totalDays / 30);
+  const remainingAfterMonths = totalDays % 30;
+  const weeks = Math.floor(remainingAfterMonths / 7);
+  const days = remainingAfterMonths % 7;
+
+  const parts: string[] = [];
+
+  if (months > 0) {
+    parts.push(`${months}m`);
+  }
+
+  if (weeks > 0) {
+    parts.push(`${weeks}w`);
+  }
+
+  if (days > 0) {
+    parts.push(`${days}d`);
+  }
+
+  // If it's exactly divisible by weeks or months, show just that unit
+  if (totalDays % 7 === 0 && totalDays < 30) {
+    return `${totalDays / 7}w`;
+  }
+
+  if (totalDays % 30 === 0) {
+    return `${totalDays / 30}m`;
+  }
+
+  return parts.join(" ");
+}
 
 export default function EquipmentAssignmentTimeline() {
   const params = useParams();
@@ -186,7 +237,17 @@ export default function EquipmentAssignmentTimeline() {
     fetchPolicy: "cache-and-network",
   });
 
-  const inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
+  // Sort inventory to put assigned item first if a fulfilment is selected
+  let inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
+
+  if (selectedFulfilmentId && selectedFulfilment?.inventoryId) {
+    inventory = [...inventory].sort((a, b) => {
+      // Put the assigned inventory item first
+      if (a.id === selectedFulfilment.inventoryId) return -1;
+      if (b.id === selectedFulfilment.inventoryId) return 1;
+      return 0;
+    });
+  }
 
   // Handle fulfilment selection
   const handleFulfilmentSelect = (fulfilmentId: string) => {
@@ -330,16 +391,18 @@ export default function EquipmentAssignmentTimeline() {
           </Box>
 
           {/* Right Panel - Timeline */}
-          <Box sx={{ flex: 1, overflowX: "auto" }}>
-            <TimelineView
-              dates={dates}
-              startDate={startDate}
-              fulfilments={fulfilments}
-              draggedEquipment={draggedEquipment}
-              onEquipmentDrop={handleEquipmentAssignment}
-              selectedFulfilmentId={selectedFulfilmentId}
-              onFulfilmentSelect={handleFulfilmentSelect}
-            />
+          <Box sx={{ overflowX: "auto", minWidth: 0 }}>
+            <Box className="brrr" sx={{ flex: 1, overflowX: "auto" }}>
+              <TimelineView
+                dates={dates}
+                startDate={startDate}
+                fulfilments={fulfilments}
+                draggedEquipment={draggedEquipment}
+                onEquipmentDrop={handleEquipmentAssignment}
+                selectedFulfilmentId={selectedFulfilmentId}
+                onFulfilmentSelect={handleFulfilmentSelect}
+              />
+            </Box>
           </Box>
         </Box>
 
@@ -730,61 +793,63 @@ function TimelineView({
       </Box>
 
       {/* Scrollable Right Panel - Timeline */}
-      <Box sx={{ flex: 1, overflowX: "auto" }}>
-        {/* Timeline Header */}
-        <Box
-          sx={{
-            display: "flex",
-            borderBottom: "2px solid #e0e0e0",
-            py: 2,
-            minWidth: dates.length * cellWidth,
-            height: headerHeight,
-          }}
-        >
-          {dates.map((date, index) => (
-            <Box
-              key={index}
-              sx={{
-                width: cellWidth,
-                textAlign: "center",
-                borderLeft: index === 0 ? "none" : "1px solid #f0f0f0",
-              }}
-            >
-              <Typography variant="caption" sx={{ display: "block", fontWeight: 600 }}>
-                {format(date, "dd")}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", fontSize: "0.65rem" }}
+      <Box sx={{ overflowX: "auto", minWidth: 0 }}>
+        <Box sx={{ flex: 1, overflowX: "auto" }}>
+          {/* Timeline Header */}
+          <Box
+            sx={{
+              display: "flex",
+              borderBottom: "2px solid #e0e0e0",
+              py: 2,
+              width: dates.length * cellWidth,
+              height: headerHeight,
+            }}
+          >
+            {dates.map((date, index) => (
+              <Box
+                key={index}
+                sx={{
+                  width: cellWidth,
+                  textAlign: "center",
+                  borderLeft: index === 0 ? "none" : "1px solid #f0f0f0",
+                }}
               >
-                {format(date, "EEE")}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", fontSize: "0.65rem" }}
-              >
-                {format(date, "MMM")}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+                <Typography variant="caption" sx={{ display: "block", fontWeight: 600 }}>
+                  {format(date, "dd")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", fontSize: "0.65rem" }}
+                >
+                  {format(date, "EEE")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", fontSize: "0.65rem" }}
+                >
+                  {format(date, "MMM")}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
 
-        {/* Timeline Rows */}
-        <Box sx={{ minHeight: rowHeight * 10 }}>
-          {fulfilments.map((fulfilment) => (
-            <TimelineRow
-              key={fulfilment.id}
-              fulfilment={fulfilment}
-              startDate={startDate}
-              dates={dates}
-              cellWidth={cellWidth}
-              rowHeight={rowHeight}
-              draggedEquipment={draggedEquipment}
-              onEquipmentDrop={onEquipmentDrop}
-            />
-          ))}
+          {/* Timeline Rows */}
+          <Box sx={{ minHeight: rowHeight * 10 }}>
+            {fulfilments.map((fulfilment) => (
+              <TimelineRow
+                key={fulfilment.id}
+                fulfilment={fulfilment}
+                startDate={startDate}
+                dates={dates}
+                cellWidth={cellWidth}
+                rowHeight={rowHeight}
+                draggedEquipment={draggedEquipment}
+                onEquipmentDrop={onEquipmentDrop}
+              />
+            ))}
+          </Box>
         </Box>
       </Box>
     </Paper>
@@ -814,6 +879,7 @@ function CustomerInfoRow({
   const assignmentEnd = new Date(
     fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
   );
+  const duration = differenceInCalendarDays(assignmentEnd, assignmentStart);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -891,7 +957,7 @@ function CustomerInfoRow({
           <CheckCircleIcon
             sx={{
               position: "absolute",
-              top: -8,
+              top: 0,
               right: -8,
               fontSize: 20,
               color: "#66bb6a",
@@ -929,13 +995,22 @@ function CustomerInfoRow({
         >
           {fulfilment.pimCategoryName}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
-          <Typography variant="caption" color="text.secondary">
-            {format(assignmentStart, "dd/MM/yyyy")}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            - {format(assignmentEnd, "dd/MM/yyyy")}
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              {format(assignmentStart, "dd/MM/yyyy")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {" - "}
+              {format(assignmentEnd, "dd/MM/yyyy")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+            <AccessTimeIcon sx={{ fontSize: "0.75rem", color: "text.secondary" }} />
+            <Typography variant="caption" color="text.secondary">
+              {duration}d
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -971,11 +1046,21 @@ function TimelineRow({
   // Calculate position and width of the fulfilment bar
   const dayOffset = differenceInCalendarDays(fulfilmentStart, startDate);
   const duration = differenceInCalendarDays(fulfilmentEnd, fulfilmentStart);
-  const barLeft = dayOffset * cellWidth;
-  const barWidth = duration * cellWidth - 8; // Subtract padding
+
+  // Calculate the actual visible portion of the bar
+  const visibleStartOffset = Math.max(0, dayOffset);
+  const visibleEndOffset = Math.min(dates.length, dayOffset + duration);
+  const visibleDuration = visibleEndOffset - visibleStartOffset;
+
+  const barLeft = visibleStartOffset * cellWidth;
+  const barWidth = visibleDuration * cellWidth - 8; // Subtract padding
+
+  // Determine if borders should be shown
+  const showLeftBorder = fulfilmentStart >= dates[0];
+  const showRightBorder = dates.length > 0 && fulfilmentEnd <= dates[dates.length - 1];
 
   // Determine if fulfilment is within visible range
-  const isVisible = dayOffset < dates.length && dayOffset + duration > 0;
+  const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -1011,7 +1096,7 @@ function TimelineRow({
     <Box
       sx={{
         position: "relative",
-        minWidth: dates.length * cellWidth,
+        width: dates.length * cellWidth,
         height: rowHeight,
         borderBottom: "1px dashed #d7d7d7",
         display: "flex",
@@ -1021,39 +1106,35 @@ function TimelineRow({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Grid lines */}
-      {dates.map((_, index) => (
-        <Box
-          key={index}
-          sx={{
-            position: "absolute",
-            left: index * cellWidth,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            //backgroundColor: "#f0f0f0",
-          }}
-        />
-      ))}
-
       {/* Fulfilment Bar */}
-      {isVisible && (
+      {isVisible && barWidth > 0 && (
         <Box
+          className="fulfilment-bar"
           sx={{
             position: "absolute",
-            left: Math.max(0, barLeft),
+            left: barLeft + 4,
             top: "50%",
             transform: "translateY(-50%)",
-            width: Math.min(barWidth, dates.length * cellWidth - barLeft),
+            width: barWidth,
             height: 40,
             backgroundColor: fulfilment.inventory ? "#e8f5e9" : "#ffebee",
-            border: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
-            borderRadius: 1,
+            borderTop: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
+            borderBottom: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
+            borderLeft: showLeftBorder
+              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
+              : "none",
+            borderRight: showRightBorder
+              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
+              : "none",
+            borderRadius: showLeftBorder && showRightBorder ? 1 : 0,
+            borderTopLeftRadius: showLeftBorder ? 4 : 0,
+            borderBottomLeftRadius: showLeftBorder ? 4 : 0,
+            borderTopRightRadius: showRightBorder ? 4 : 0,
+            borderBottomRightRadius: showRightBorder ? 4 : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 1,
-            mx: "4px",
             outline: isDragOver ? "2px solid #42a5f5" : "none",
             outlineOffset: 2,
             transition: "outline 0.2s",
@@ -1065,7 +1146,7 @@ function TimelineRow({
             <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
           )}
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            {duration}
+            {formatDurationShorthand(fulfilmentStart, fulfilmentEnd)}
           </Typography>
         </Box>
       )}
