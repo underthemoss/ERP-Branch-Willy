@@ -6,7 +6,9 @@ import {
   useReceiveInventoryEnhancedQuery,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
-import { Alert, Box, Container, Divider, Paper, Typography } from "@mui/material";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import { Alert, Box, Button, Container, Divider, Paper, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import FulfillmentProgressCard from "./FulfillmentProgressCard";
@@ -120,6 +122,7 @@ export default function ReceiveInventoryPage() {
   }>();
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [expandAll, setExpandAll] = useState(false);
 
   const {
     data: inventoryData,
@@ -190,14 +193,38 @@ export default function ReceiveInventoryPage() {
       {receivedItems.length > 0 && (
         <Paper elevation={2} sx={{ mb: 3 }}>
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Receipt History
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Timeline of items that have been received for this purchase order.
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Receipt History
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Timeline of items that have been received for this purchase order.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={expandAll ? <UnfoldLessIcon /> : <UnfoldMoreIcon />}
+                onClick={() => setExpandAll(!expandAll)}
+                sx={{ minWidth: 120 }}
+              >
+                {expandAll ? "Collapse All" : "Expand All"}
+              </Button>
+            </Box>
+            <InventoryReceiptTimeline
+              receivedItems={receivedItems}
+              expandAll={expandAll}
+              key={`${refreshKey}-${expandAll}`}
+            />
           </Box>
-          <InventoryReceiptTimeline receivedItems={receivedItems} key={refreshKey} />
         </Paper>
       )}
 

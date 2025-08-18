@@ -1,11 +1,32 @@
 "use client";
 
-import { Box, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
-import { useMemo } from "react";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import NoteAltOutlinedIcon from "@mui/icons-material/NoteAltOutlined";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Avatar,
+  Box,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
 import { formatDate, getItemDescription } from "./utils";
 
 interface InventoryReceiptTimelineProps {
   receivedItems: any[];
+  expandAll?: boolean;
 }
 
 interface ReceiptItem {
@@ -23,7 +44,13 @@ interface DayGroup {
   receipts: ReceiptItem[];
 }
 
-export default function InventoryReceiptTimeline({ receivedItems }: InventoryReceiptTimelineProps) {
+export default function InventoryReceiptTimeline({
+  receivedItems,
+  expandAll = false,
+}: InventoryReceiptTimelineProps) {
+  const theme = useTheme();
+  const [expandedPanels, setExpandedPanels] = useState<string[]>([]);
+
   // Group received items by day, then by receipt event
   const timelineEntries = useMemo(() => {
     const receiptEvents = new Map<string, ReceiptItem>();
@@ -87,146 +114,364 @@ export default function InventoryReceiptTimeline({ receivedItems }: InventoryRec
       }));
   }, [receivedItems]);
 
+  // Effect to handle expand all
+  useEffect(() => {
+    if (expandAll) {
+      // Generate all panel IDs
+      const allPanelIds: string[] = [];
+      timelineEntries.forEach((dayGroup, dayIndex) => {
+        dayGroup.receipts.forEach((_, receiptIndex) => {
+          allPanelIds.push(`receipt-${dayIndex}-${receiptIndex}`);
+        });
+      });
+      setExpandedPanels(allPanelIds);
+    } else {
+      setExpandedPanels([]);
+    }
+  }, [expandAll, timelineEntries]);
+
+  const handleAccordionChange =
+    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      setExpandedPanels((prev) =>
+        isExpanded ? [...prev, panel] : prev.filter((p) => p !== panel),
+      );
+    };
+
+  const getConditionIcon = (condition?: string) => {
+    switch (condition) {
+      case "NEW":
+        return <CheckCircleOutlineIcon sx={{ fontSize: 20, color: theme.palette.success.main }} />;
+      case "DAMAGED":
+        return <ErrorOutlineIcon sx={{ fontSize: 20, color: theme.palette.error.main }} />;
+      case "USED":
+        return <WarningAmberIcon sx={{ fontSize: 20, color: theme.palette.warning.main }} />;
+      default:
+        return <InfoOutlinedIcon sx={{ fontSize: 20, color: theme.palette.grey[500] }} />;
+    }
+  };
+
+  const getConditionColor = (condition?: string): "success" | "error" | "warning" | "default" => {
+    switch (condition) {
+      case "NEW":
+        return "success";
+      case "DAMAGED":
+        return "error";
+      case "USED":
+        return "warning";
+      default:
+        return "default";
+    }
+  };
+
   if (timelineEntries.length === 0) {
     return (
-      <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="body2" color="text.secondary">
-          No receipt history available
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          textAlign: "center",
+          bgcolor: theme.palette.grey[50],
+          borderRadius: 2,
+        }}
+      >
+        <LocalShippingOutlinedIcon sx={{ fontSize: 48, color: theme.palette.grey[400], mb: 2 }} />
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          No Receipt History
         </Typography>
-      </Box>
+        <Typography variant="body2" color="text.secondary">
+          Items will appear here once they are received
+        </Typography>
+      </Paper>
     );
   }
 
+  let receiptCounter = 0;
+
   return (
-    <Box sx={{ position: "relative" }}>
-      {timelineEntries.map((dayGroup, dayIndex) => (
-        <Box
-          key={dayIndex}
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "120px 1px 1fr",
-            gap: 3,
-            mb: 3,
-            position: "relative",
-          }}
-        >
-          {/* Date on the left */}
-          <Box sx={{ textAlign: "right", pt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {formatDate(dayGroup.date)}
-            </Typography>
-          </Box>
+    <Box>
+      <Stack spacing={2}>
+        {timelineEntries.map((dayGroup, dayIndex) => (
+          <Box key={dayIndex}>
+            {/* Date Header */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 1.5,
+                gap: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  px: 2,
+                  py: 0.5,
+                  bgcolor: theme.palette.primary.main,
+                  color: "white",
+                  borderRadius: 1,
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                {formatDate(dayGroup.date)}
+              </Box>
+              <Divider sx={{ flex: 1 }} />
+            </Box>
 
-          {/* Divider in the middle */}
-          <Box
-            sx={{
-              position: "relative",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                bottom: dayIndex === timelineEntries.length - 1 ? "50%" : "-24px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "2px",
-                bgcolor: "divider",
-                backgroundColor: "divider",
-              },
-              "&::after": {
-                content: '""',
-                position: "absolute",
-                top: "12px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                bgcolor: "success.main",
-                backgroundColor: "success.main",
-              },
-            }}
-          />
+            {/* Receipt Cards */}
+            <Stack spacing={1.5} sx={{ ml: { xs: 0, sm: 2 } }}>
+              {dayGroup.receipts.map((receipt, receiptIndex) => {
+                receiptCounter++;
+                const panelId = `receipt-${dayIndex}-${receiptIndex}`;
+                const isExpanded = expandedPanels.includes(panelId);
+                const hasIssues = receipt.conditionOnReceipt === "DAMAGED";
 
-          {/* Cards on the right */}
-          <Stack spacing={2}>
-            {dayGroup.receipts.map((receipt, receiptIndex) => (
-              <Paper key={receiptIndex} elevation={2} sx={{ p: 2 }}>
-                <Stack spacing={1.5}>
-                  {/* Header with user */}
-                  <Box>
-                    <Typography variant="subtitle2" component="span">
-                      {receipt.items.length} item{receipt.items.length !== 1 ? "s" : ""} received
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      by {receipt.user}
-                    </Typography>
-                  </Box>
-
-                  {receipt.lineItemId && (
-                    <Typography
-                      variant="caption"
-                      sx={{ fontFamily: "monospace", color: "text.secondary" }}
+                return (
+                  <Paper
+                    key={receiptIndex}
+                    elevation={0}
+                    sx={{
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      position: "relative",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 4,
+                        bgcolor: hasIssues
+                          ? theme.palette.error.main
+                          : receipt.conditionOnReceipt === "NEW"
+                            ? theme.palette.success.main
+                            : theme.palette.grey[400],
+                      },
+                    }}
+                  >
+                    <Accordion
+                      expanded={isExpanded}
+                      onChange={handleAccordionChange(panelId)}
+                      elevation={0}
+                      sx={{
+                        "&:before": { display: "none" },
+                        bgcolor: "transparent",
+                      }}
                     >
-                      Line Item: {receipt.lineItemId.slice(-8)}
-                    </Typography>
-                  )}
-
-                  {/* Items list */}
-                  <Box sx={{ pl: 1 }}>
-                    {receipt.items.slice(0, 3).map((item, itemIndex) => (
-                      <Typography
-                        key={itemIndex}
-                        variant="caption"
-                        display="block"
-                        color="text.secondary"
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        sx={{
+                          px: 2.5,
+                          py: 1.5,
+                          minHeight: 64,
+                          "&:hover": {
+                            bgcolor: theme.palette.action.hover,
+                          },
+                          "& .MuiAccordionSummary-content": {
+                            my: 0,
+                          },
+                        }}
                       >
-                        • {getItemDescription(item)}
-                        {item.assetId && ` (Asset: ${item.assetId})`}
-                      </Typography>
-                    ))}
-                    {receipt.items.length > 3 && (
-                      <Typography variant="caption" color="text.secondary">
-                        ... and {receipt.items.length - 3} more
-                      </Typography>
-                    )}
-                  </Box>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
+                          {/* Icon Circle */}
+                          <Avatar
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              bgcolor: theme.palette.grey[100],
+                              border: `2px solid ${theme.palette.grey[300]}`,
+                            }}
+                          >
+                            {getConditionIcon(receipt.conditionOnReceipt)}
+                          </Avatar>
 
-                  {/* Condition and notes */}
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-                    {receipt.conditionOnReceipt && (
-                      <Chip
-                        label={`Condition: ${receipt.conditionOnReceipt.replace("_", " ")}`}
-                        size="small"
-                        color={receipt.conditionOnReceipt === "NEW" ? "success" : "default"}
-                      />
-                    )}
+                          {/* Main Content */}
+                          <Box sx={{ flex: 1 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {receipt.items.length} item{receipt.items.length !== 1 ? "s" : ""}{" "}
+                                received
+                              </Typography>
+                              {receipt.conditionOnReceipt && (
+                                <Chip
+                                  label={receipt.conditionOnReceipt}
+                                  size="small"
+                                  color={getConditionColor(receipt.conditionOnReceipt)}
+                                  sx={{ height: 22 }}
+                                />
+                              )}
+                            </Box>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                <PersonOutlineIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                                <Typography variant="caption" color="text.secondary">
+                                  by {receipt.user}
+                                </Typography>
+                              </Box>
+                              {receipt.lineItemId && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontFamily: "monospace",
+                                    color: "text.secondary",
+                                    bgcolor: theme.palette.grey[100],
+                                    px: 1,
+                                    py: 0.25,
+                                    borderRadius: 0.5,
+                                  }}
+                                >
+                                  Line Item: {receipt.lineItemId.slice(-8).toUpperCase()}
+                                </Typography>
+                              )}
+                              {(receipt.receiptNotes || receipt.conditionNotes) && (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                  <NoteAltOutlinedIcon
+                                    sx={{
+                                      fontSize: 16,
+                                      color:
+                                        receipt.conditionNotes &&
+                                        receipt.conditionOnReceipt === "DAMAGED"
+                                          ? theme.palette.error.main
+                                          : theme.palette.info.main,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color:
+                                        receipt.conditionNotes &&
+                                        receipt.conditionOnReceipt === "DAMAGED"
+                                          ? theme.palette.error.main
+                                          : theme.palette.info.main,
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Notes available
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                        </Box>
+                      </AccordionSummary>
 
-                    {receipt.receiptNotes && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontStyle: "italic" }}
-                      >
-                        Receipt Notes: {receipt.receiptNotes}
-                      </Typography>
-                    )}
+                      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
+                        <Stack spacing={2} sx={{ ml: 6 }}>
+                          {/* Items List */}
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                color: "text.secondary",
+                                letterSpacing: 0.5,
+                              }}
+                            >
+                              Items Received
+                            </Typography>
+                            <Box sx={{ mt: 1 }}>
+                              {receipt.items.map((item, itemIndex) => (
+                                <Box
+                                  key={itemIndex}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    py: 0.5,
+                                    "&:not(:last-child)": {
+                                      borderBottom: `1px solid ${theme.palette.divider}`,
+                                    },
+                                  }}
+                                >
+                                  <Typography variant="body2" sx={{ flex: 1 }}>
+                                    • {getItemDescription(item)}
+                                  </Typography>
+                                  {item.assetId && (
+                                    <Chip
+                                      label={`Asset: ${item.assetId}`}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ height: 20, fontSize: "0.75rem" }}
+                                    />
+                                  )}
+                                </Box>
+                              ))}
+                            </Box>
+                          </Box>
 
-                    {receipt.conditionNotes && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontStyle: "italic" }}
-                      >
-                        Condition Notes: {receipt.conditionNotes}
-                      </Typography>
-                    )}
-                  </Box>
-                </Stack>
-              </Paper>
-            ))}
-          </Stack>
-        </Box>
-      ))}
+                          {/* Receipt Notes */}
+                          {receipt.receiptNotes && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  color: "text.secondary",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                Receipt Notes
+                              </Typography>
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  mt: 1,
+                                  p: 1.5,
+                                  bgcolor: theme.palette.grey[50],
+                                  borderLeft: `3px solid ${theme.palette.info.main}`,
+                                }}
+                              >
+                                <Typography variant="body2">{receipt.receiptNotes}</Typography>
+                              </Paper>
+                            </Box>
+                          )}
+
+                          {/* Condition Notes */}
+                          {receipt.conditionNotes && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  color: "text.secondary",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                Condition Notes
+                              </Typography>
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  mt: 1,
+                                  p: 1.5,
+                                  bgcolor:
+                                    receipt.conditionOnReceipt === "DAMAGED"
+                                      ? theme.palette.error.light + "20"
+                                      : theme.palette.warning.light + "20",
+                                  borderLeft: `3px solid ${
+                                    receipt.conditionOnReceipt === "DAMAGED"
+                                      ? theme.palette.error.main
+                                      : theme.palette.warning.main
+                                  }`,
+                                }}
+                              >
+                                <Typography variant="body2">{receipt.conditionNotes}</Typography>
+                              </Paper>
+                            </Box>
+                          )}
+                        </Stack>
+                      </AccordionDetails>
+                    </Accordion>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          </Box>
+        ))}
+      </Stack>
     </Box>
   );
 }
