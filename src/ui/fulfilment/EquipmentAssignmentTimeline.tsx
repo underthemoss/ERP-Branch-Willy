@@ -1059,22 +1059,6 @@ function TimelineRow({
   const showLeftBorder = fulfilmentStart >= dates[0];
   const showRightBorder = dates.length > 0 && fulfilmentEnd <= dates[dates.length - 1];
 
-  console.log("Fulfilment Dates:", {
-    barLeft,
-    barWidth,
-    visibleStartOffset,
-    visibleEndOffset,
-    visibleDuration,
-    datesLength: dates.length,
-    fulfilmentStart,
-    fulfilmentEnd,
-    startDate,
-    fulfilment,
-    dates,
-    showLeftBorder,
-    showRightBorder,
-  });
-
   // Determine if fulfilment is within visible range
   const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
 
