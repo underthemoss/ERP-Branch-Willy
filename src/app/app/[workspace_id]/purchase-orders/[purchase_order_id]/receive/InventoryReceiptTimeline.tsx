@@ -14,7 +14,8 @@ interface ReceiptItem {
   items: any[];
   lineItemId: string | null;
   conditionOnReceipt?: string;
-  notes?: string;
+  receiptNotes?: string;
+  conditionNotes?: string;
 }
 
 interface DayGroup {
@@ -44,7 +45,8 @@ export default function InventoryReceiptTimeline({ receivedItems }: InventoryRec
           items: [],
           lineItemId,
           conditionOnReceipt: item.conditionOnReceipt,
-          notes: item.receiptNotes || item.conditionNotes,
+          receiptNotes: item.receiptNotes,
+          conditionNotes: item.conditionNotes,
         });
       }
 
@@ -199,13 +201,23 @@ export default function InventoryReceiptTimeline({ receivedItems }: InventoryRec
                       />
                     )}
 
-                    {receipt.notes && (
+                    {receipt.receiptNotes && (
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         sx={{ fontStyle: "italic" }}
                       >
-                        Notes: {receipt.notes}
+                        Receipt Notes: {receipt.receiptNotes}
+                      </Typography>
+                    )}
+
+                    {receipt.conditionNotes && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontStyle: "italic" }}
+                      >
+                        Condition Notes: {receipt.conditionNotes}
                       </Typography>
                     )}
                   </Box>
