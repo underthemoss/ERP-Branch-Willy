@@ -1,6 +1,6 @@
 "use client";
 
-import { FragmentType, graphql } from "@/graphql";
+import { graphql } from "@/graphql";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -11,19 +11,12 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   Skeleton,
-  TextField,
   Typography,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -31,7 +24,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { useListContactsQuery } from "../contacts/api";
+import ContactSelector from "../ContactSelector";
 import {
   InventoryFieldsFragment as InventoryItem,
   useListInventoryItemsQuery,
@@ -125,20 +118,6 @@ export default function EquipmentAssignmentTimeline() {
     }
   }, [viewMode]);
 
-  // Fetch customers for filter dropdown
-  const { data: customersData } = useListContactsQuery({
-    variables: {
-      page: {
-        size: 100,
-      },
-      workspaceId: workspaceId || "",
-    },
-    skip: !workspaceId,
-    fetchPolicy: "cache-and-network",
-  });
-
-  const customers = customersData?.listContacts?.items || [];
-
   // Fetch rental fulfilments with optional customer filter and date range
   const { data, loading, error } = useListRentalFulfilmentsQuery({
     variables: {
@@ -158,8 +137,8 @@ export default function EquipmentAssignmentTimeline() {
   const [assignInventory] = useAssignInventoryToRentalFulfilmentMutation();
   const [unassignInventory] = useUnassignInventoryFromRentalFulfilmentMutation();
 
-  const handleCustomerChange = (event: SelectChangeEvent) => {
-    setSelectedCustomerId(event.target.value);
+  const handleCustomerChange = (contactId: string) => {
+    setSelectedCustomerId(contactId);
   };
 
   const handleViewModeChange = (mode: ViewMode) => {
@@ -307,25 +286,14 @@ export default function EquipmentAssignmentTimeline() {
 
           {/* Filters Row */}
           <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-            <FormControl size="small" sx={{ minWidth: 250 }}>
-              <InputLabel id="customer-filter-label">Customer</InputLabel>
-              <Select
-                labelId="customer-filter-label"
-                id="customer-filter"
-                value={selectedCustomerId}
-                label="Customer"
+            <Box sx={{ minWidth: 250 }}>
+              <ContactSelector
+                contactId={selectedCustomerId}
                 onChange={handleCustomerChange}
-              >
-                <MenuItem value="">
-                  <em>All Customers</em>
-                </MenuItem>
-                {customers.map((customer: any) => (
-                  <MenuItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                type="any"
+                workspaceId={workspaceId}
+              />
+            </Box>
 
             {/* Date Range Display */}
             <Typography variant="body2" color="text.secondary">
