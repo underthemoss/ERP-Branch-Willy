@@ -237,7 +237,17 @@ export default function EquipmentAssignmentTimeline() {
     fetchPolicy: "cache-and-network",
   });
 
-  const inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
+  // Sort inventory to put assigned item first if a fulfilment is selected
+  let inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
+
+  if (selectedFulfilmentId && selectedFulfilment?.inventoryId) {
+    inventory = [...inventory].sort((a, b) => {
+      // Put the assigned inventory item first
+      if (a.id === selectedFulfilment.inventoryId) return -1;
+      if (b.id === selectedFulfilment.inventoryId) return 1;
+      return 0;
+    });
+  }
 
   // Handle fulfilment selection
   const handleFulfilmentSelect = (fulfilmentId: string) => {
