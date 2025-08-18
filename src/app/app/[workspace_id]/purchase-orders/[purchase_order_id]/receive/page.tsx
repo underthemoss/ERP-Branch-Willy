@@ -9,6 +9,7 @@ import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { Alert, Box, Container, Divider, Paper, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import FulfillmentProgressCard from "./FulfillmentProgressCard";
 import InventoryReceiptTimeline from "./InventoryReceiptTimeline";
 import InventoryReceiveTable from "./InventoryReceiveTable";
 
@@ -166,51 +167,8 @@ export default function ReceiveInventoryPage() {
         </Typography>
       </Box>
 
-      {/* Fulfillment Progress Summary */}
-      {purchaseOrder?.fulfillmentProgress && (
-        <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Fulfillment Progress
-          </Typography>
-          <Box sx={{ display: "flex", gap: 4 }}>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Total Items
-              </Typography>
-              <Typography variant="h6">{purchaseOrder.fulfillmentProgress.totalItems}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Received
-              </Typography>
-              <Typography variant="h6" color="success.main">
-                {purchaseOrder.fulfillmentProgress.receivedItems}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                On Order
-              </Typography>
-              <Typography variant="h6" color="warning.main">
-                {purchaseOrder.fulfillmentProgress.onOrderItems}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Progress
-              </Typography>
-              <Typography variant="h6">
-                {purchaseOrder.fulfillmentProgress.fulfillmentPercentage.toFixed(1)}%
-              </Typography>
-            </Box>
-          </Box>
-          {purchaseOrder.fulfillmentProgress.isFullyFulfilled && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              All items have been received for this purchase order.
-            </Alert>
-          )}
-        </Paper>
-      )}
+      {/* Enhanced Fulfillment Progress Card - Self-contained component */}
+      <FulfillmentProgressCard purchaseOrderId={purchase_order_id} />
 
       {/* Error State */}
       {inventoryError && (

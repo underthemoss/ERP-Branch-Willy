@@ -1,5 +1,6 @@
 "use client";
 
+import FulfillmentStatsBar from "@/ui/FulfillmentStatsBar";
 import { Box, Button, Chip, LinearProgress, Paper, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowParams } from "@mui/x-data-grid";
 import { useMemo, useState } from "react";
@@ -213,54 +214,65 @@ export default function InventoryReceiveTable({
   const salesRows = createRows(salesGroups);
   const rentalRows = createRows(rentalGroups);
 
-  const renderDataGrid = (rows: any[], columnsToUse: GridColDef[], title: string) => (
-    <Paper elevation={0} sx={{ mb: 3, border: "1px solid", borderColor: "divider" }}>
-      <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "grey.50" }}>
-        <Typography variant="subtitle1" fontWeight="medium">
-          {title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {rows.length} line item{rows.length !== 1 ? "s" : ""}
-        </Typography>
-      </Box>
-      {rows.length > 0 ? (
-        <DataGrid
-          rows={rows}
-          columns={columnsToUse}
-          loading={loading}
-          autoHeight
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: {
-              paginationModel: { pageSize: 10 },
-            },
-          }}
-          sx={{
-            border: 0,
-            "& .MuiDataGrid-cell": {
-              borderBottom: "1px solid rgba(224, 224, 224, 1)",
-            },
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "action.hover",
-            },
-          }}
-          getRowClassName={(params: GridRowParams) => {
-            if (params.row.receivedCount === params.row.totalCount) {
-              return "row-fully-received";
-            }
-            return "";
-          }}
-        />
-      ) : (
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            No {title.toLowerCase()} found
-          </Typography>
+  const renderDataGrid = (rows: any[], columnsToUse: GridColDef[], title: string) => {
+    // Calculate totals for this section
+    const totalItems = rows.reduce((sum, row) => sum + row.totalCount, 0);
+    const receivedItems = rows.reduce((sum, row) => sum + row.receivedCount, 0);
+
+    return (
+      <Paper elevation={0} sx={{ mb: 3, border: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "grey.50" }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
+          >
+            <Typography variant="subtitle1" fontWeight="medium">
+              {title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {rows.length} line item{rows.length !== 1 ? "s" : ""}
+            </Typography>
+          </Box>
+          <FulfillmentStatsBar totalItems={totalItems} receivedItems={receivedItems} />
         </Box>
-      )}
-    </Paper>
-  );
+        {rows.length > 0 ? (
+          <DataGrid
+            rows={rows}
+            columns={columnsToUse}
+            loading={loading}
+            autoHeight
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{
+              pagination: {
+                paginationModel: { pageSize: 10 },
+              },
+            }}
+            sx={{
+              border: 0,
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid rgba(224, 224, 224, 1)",
+              },
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+            getRowClassName={(params: GridRowParams) => {
+              if (params.row.receivedCount === params.row.totalCount) {
+                return "row-fully-received";
+              }
+              return "";
+            }}
+          />
+        ) : (
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              No {title.toLowerCase()} found
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    );
+  };
 
   return (
     <>
