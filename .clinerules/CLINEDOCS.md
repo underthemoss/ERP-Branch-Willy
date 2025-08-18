@@ -19,6 +19,8 @@ This project uses prettier. After finishing a task, always run `npm run prettier
 
 Unless told otherwise default to "use client" on UI files.
 
+Use american spelling in all copy.
+
 ### Coding Standards for MUI components
 
 When using MUI GRID, this is the correct syntax

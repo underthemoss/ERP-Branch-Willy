@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Button, Chip, LinearProgress, Typography } from "@mui/material";
+import FulfillmentStatsBar from "@/ui/FulfillmentStatsBar";
+import { Box, Button, Chip, LinearProgress, Paper, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowParams } from "@mui/x-data-grid";
 import { useMemo, useState } from "react";
 import BaseReceiveInventoryDialog from "./BaseReceiveInventoryDialog";
@@ -24,9 +25,25 @@ export default function InventoryReceiveTable({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLineItemId, setSelectedLineItemId] = useState<string | null>(null);
 
-  // Group items by line item ID
-  const groupedData = useMemo(() => {
-    return groupInventoryByLineItem(items);
+  // Group items by line item ID and separate by type
+  const { salesGroups, rentalGroups } = useMemo(() => {
+    const allGroups = groupInventoryByLineItem(items);
+
+    // Separate groups based on line item type
+    const sales = allGroups.filter((group) => {
+      const firstItem = group.items[0];
+      return firstItem?.purchaseOrderLineItem?.lineitem_type === "SALE";
+    });
+
+    const rentals = allGroups.filter((group) => {
+      const firstItem = group.items[0];
+      return firstItem?.purchaseOrderLineItem?.lineitem_type === "RENTAL";
+    });
+
+    return {
+      salesGroups: sales,
+      rentalGroups: rentals,
+    };
   }, [items]);
 
   const handleReceiveClick = (lineItemId: string) => {
@@ -147,48 +164,137 @@ export default function InventoryReceiveTable({
     },
   ];
 
-  const rows = groupedData.map((group, index) => ({
-    id: group.lineItemId || `no-line-item-${index}`,
-    lineItemId: group.lineItemId,
-    categoryName: group.categoryName,
-    productName: group.productName,
-    productModel: group.productModel,
-    totalCount: group.totalCount,
-    receivedCount: group.receivedCount,
-    onOrderCount: group.onOrderCount,
-    fulfillmentPercentage: group.fulfillmentPercentage,
-    items: group.items,
-  }));
+  // Additional columns specific to rental items
+  const rentalColumns: GridColDef[] = [
+    ...columns.slice(0, 2), // Keep Line Item ID and Category/Product columns
+    {
+      field: "deliveryDate",
+      headerName: "Delivery Date",
+      width: 130,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params: GridRenderCellParams) => {
+        const deliveryDate = params.row.deliveryDate;
+        if (!deliveryDate) return "-";
+        return new Date(deliveryDate).toLocaleDateString();
+      },
+    },
+    {
+      field: "offRentDate",
+      headerName: "Off Rent Date",
+      width: 130,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params: GridRenderCellParams) => {
+        const offRentDate = params.row.offRentDate;
+        if (!offRentDate) return "-";
+        return new Date(offRentDate).toLocaleDateString();
+      },
+    },
+    ...columns.slice(2), // Keep remaining columns
+  ];
+
+  const createRows = (groups: any[]) => {
+    return groups.map((group, index) => ({
+      id: group.lineItemId || `no-line-item-${index}`,
+      lineItemId: group.lineItemId,
+      categoryName: group.categoryName,
+      productName: group.productName,
+      productModel: group.productModel,
+      totalCount: group.totalCount,
+      receivedCount: group.receivedCount,
+      onOrderCount: group.onOrderCount,
+      fulfillmentPercentage: group.fulfillmentPercentage,
+      deliveryDate: group.items[0]?.purchaseOrderLineItem?.delivery_date,
+      offRentDate: group.items[0]?.purchaseOrderLineItem?.off_rent_date,
+      items: group.items,
+    }));
+  };
+
+  const salesRows = createRows(salesGroups);
+  const rentalRows = createRows(rentalGroups);
+
+  const renderDataGrid = (rows: any[], columnsToUse: GridColDef[], title: string) => {
+    // Calculate totals for this section
+    const totalItems = rows.reduce((sum, row) => sum + row.totalCount, 0);
+    const receivedItems = rows.reduce((sum, row) => sum + row.receivedCount, 0);
+
+    return (
+      <Paper elevation={0} sx={{ mb: 3, border: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "grey.50" }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
+          >
+            <Typography variant="subtitle1" fontWeight="medium">
+              {title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {rows.length} line item{rows.length !== 1 ? "s" : ""}
+            </Typography>
+          </Box>
+          <FulfillmentStatsBar totalItems={totalItems} receivedItems={receivedItems} />
+        </Box>
+        {rows.length > 0 ? (
+          <DataGrid
+            rows={rows}
+            columns={columnsToUse}
+            loading={loading}
+            autoHeight
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{
+              pagination: {
+                paginationModel: { pageSize: 10 },
+              },
+            }}
+            sx={{
+              border: 0,
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid rgba(224, 224, 224, 1)",
+              },
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+            getRowClassName={(params: GridRowParams) => {
+              if (params.row.receivedCount === params.row.totalCount) {
+                return "row-fully-received";
+              }
+              return "";
+            }}
+          />
+        ) : (
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              No {title.toLowerCase()} found
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    );
+  };
 
   return (
     <>
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        loading={loading}
-        autoHeight
-        disableRowSelectionOnClick
-        pageSizeOptions={[10, 25, 50]}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 10 },
-          },
-        }}
-        sx={{
-          "& .MuiDataGrid-cell": {
-            borderBottom: "1px solid rgba(224, 224, 224, 1)",
-          },
-          "& .MuiDataGrid-row:hover": {
-            backgroundColor: "action.hover",
-          },
-        }}
-        getRowClassName={(params: GridRowParams) => {
-          if (params.row.receivedCount === params.row.totalCount) {
-            return "row-fully-received";
-          }
-          return "";
-        }}
-      />
+      {/* Sales Line Items Section */}
+      {(salesRows.length > 0 || rentalRows.length === 0) &&
+        renderDataGrid(salesRows, columns, "Sales Line Items")}
+
+      {/* Rental Line Items Section */}
+      {(rentalRows.length > 0 || salesRows.length === 0) &&
+        renderDataGrid(rentalRows, rentalColumns, "Rental Line Items")}
+
+      {/* Show message if no items at all */}
+      {salesRows.length === 0 && rentalRows.length === 0 && !loading && (
+        <Paper
+          elevation={0}
+          sx={{ p: 3, textAlign: "center", border: "1px solid", borderColor: "divider" }}
+        >
+          <Typography variant="body1" color="text.secondary">
+            No inventory items found for this purchase order
+          </Typography>
+        </Paper>
+      )}
 
       {/* Receive Dialog */}
       {selectedLineItemId && (

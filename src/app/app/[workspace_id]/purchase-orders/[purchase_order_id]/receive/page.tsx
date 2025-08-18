@@ -6,9 +6,12 @@ import {
   useReceiveInventoryEnhancedQuery,
 } from "@/graphql/hooks";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
-import { Alert, Box, Container, Divider, Paper, Typography } from "@mui/material";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import { Alert, Box, Button, Container, Divider, Paper, Typography } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import FulfillmentProgressCard from "./FulfillmentProgressCard";
 import InventoryReceiptTimeline from "./InventoryReceiptTimeline";
 import InventoryReceiveTable from "./InventoryReceiveTable";
 
@@ -119,6 +122,7 @@ export default function ReceiveInventoryPage() {
   }>();
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [expandAll, setExpandAll] = useState(false);
 
   const {
     data: inventoryData,
@@ -166,51 +170,8 @@ export default function ReceiveInventoryPage() {
         </Typography>
       </Box>
 
-      {/* Fulfillment Progress Summary */}
-      {purchaseOrder?.fulfillmentProgress && (
-        <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Fulfillment Progress
-          </Typography>
-          <Box sx={{ display: "flex", gap: 4 }}>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Total Items
-              </Typography>
-              <Typography variant="h6">{purchaseOrder.fulfillmentProgress.totalItems}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Received
-              </Typography>
-              <Typography variant="h6" color="success.main">
-                {purchaseOrder.fulfillmentProgress.receivedItems}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                On Order
-              </Typography>
-              <Typography variant="h6" color="warning.main">
-                {purchaseOrder.fulfillmentProgress.onOrderItems}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Progress
-              </Typography>
-              <Typography variant="h6">
-                {purchaseOrder.fulfillmentProgress.fulfillmentPercentage.toFixed(1)}%
-              </Typography>
-            </Box>
-          </Box>
-          {purchaseOrder.fulfillmentProgress.isFullyFulfilled && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              All items have been received for this purchase order.
-            </Alert>
-          )}
-        </Paper>
-      )}
+      {/* Enhanced Fulfillment Progress Card - Self-contained component */}
+      <FulfillmentProgressCard purchaseOrderId={purchase_order_id} />
 
       {/* Error State */}
       {inventoryError && (
@@ -220,37 +181,50 @@ export default function ReceiveInventoryPage() {
       )}
 
       {/* Inventory Table */}
-      <Paper elevation={2} sx={{ mb: 3 }}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Inventory Items by Line Item
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Items are grouped by purchase order line item. Click &quot;Receive&quot; to process
-            incoming inventory.
-          </Typography>
-        </Box>
-        <InventoryReceiveTable
-          items={items}
-          loading={inventoryLoading}
-          purchaseOrderId={purchase_order_id}
-          workspaceId={workspace_id}
-          onReceiveSuccess={handleReceiveSuccess}
-        />
-      </Paper>
+      <InventoryReceiveTable
+        items={items}
+        loading={inventoryLoading}
+        purchaseOrderId={purchase_order_id}
+        workspaceId={workspace_id}
+        onReceiveSuccess={handleReceiveSuccess}
+      />
 
       {/* Receipt Timeline */}
       {receivedItems.length > 0 && (
         <Paper elevation={2} sx={{ mb: 3 }}>
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Receipt History
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Timeline of items that have been received for this purchase order.
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Receipt History
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Timeline of items that have been received for this purchase order.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={expandAll ? <UnfoldLessIcon /> : <UnfoldMoreIcon />}
+                onClick={() => setExpandAll(!expandAll)}
+                sx={{ minWidth: 120 }}
+              >
+                {expandAll ? "Collapse All" : "Expand All"}
+              </Button>
+            </Box>
+            <InventoryReceiptTimeline
+              receivedItems={receivedItems}
+              expandAll={expandAll}
+              key={`${refreshKey}-${expandAll}`}
+            />
           </Box>
-          <InventoryReceiptTimeline receivedItems={receivedItems} key={refreshKey} />
         </Paper>
       )}
 
