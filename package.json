@@ -29,6 +29,8 @@
   "dependencies": {
     "@apollo/client": "^3.13.8",
     "@auth0/auth0-react": "^2.3.0",
+    "@datadog/browser-rum": "^6.18.0",
+    "@datadog/browser-rum-react": "^6.18.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

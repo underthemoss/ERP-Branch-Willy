@@ -7,6 +7,7 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
+import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +42,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
           audience={process.env.NEXT_PUBLIC_API_URL || ""}
         >
-          <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
+          <DatadogRumProvider>
+            <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
+          </DatadogRumProvider>
         </Auth0ClientProvider>
       </body>
     </html>
