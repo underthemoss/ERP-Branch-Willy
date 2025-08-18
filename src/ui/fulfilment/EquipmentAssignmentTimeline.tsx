@@ -330,16 +330,18 @@ export default function EquipmentAssignmentTimeline() {
           </Box>
 
           {/* Right Panel - Timeline */}
-          <Box sx={{ flex: 1, overflowX: "auto" }}>
-            <TimelineView
-              dates={dates}
-              startDate={startDate}
-              fulfilments={fulfilments}
-              draggedEquipment={draggedEquipment}
-              onEquipmentDrop={handleEquipmentAssignment}
-              selectedFulfilmentId={selectedFulfilmentId}
-              onFulfilmentSelect={handleFulfilmentSelect}
-            />
+          <Box sx={{ overflowX: "auto", minWidth: 0 }}>
+            <Box className="brrr" sx={{ flex: 1, overflowX: "auto" }}>
+              <TimelineView
+                dates={dates}
+                startDate={startDate}
+                fulfilments={fulfilments}
+                draggedEquipment={draggedEquipment}
+                onEquipmentDrop={handleEquipmentAssignment}
+                selectedFulfilmentId={selectedFulfilmentId}
+                onFulfilmentSelect={handleFulfilmentSelect}
+              />
+            </Box>
           </Box>
         </Box>
 
@@ -730,61 +732,63 @@ function TimelineView({
       </Box>
 
       {/* Scrollable Right Panel - Timeline */}
-      <Box sx={{ flex: 1, overflowX: "auto" }}>
-        {/* Timeline Header */}
-        <Box
-          sx={{
-            display: "flex",
-            borderBottom: "2px solid #e0e0e0",
-            py: 2,
-            minWidth: dates.length * cellWidth,
-            height: headerHeight,
-          }}
-        >
-          {dates.map((date, index) => (
-            <Box
-              key={index}
-              sx={{
-                width: cellWidth,
-                textAlign: "center",
-                borderLeft: index === 0 ? "none" : "1px solid #f0f0f0",
-              }}
-            >
-              <Typography variant="caption" sx={{ display: "block", fontWeight: 600 }}>
-                {format(date, "dd")}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", fontSize: "0.65rem" }}
+      <Box sx={{ overflowX: "auto", minWidth: 0 }}>
+        <Box sx={{ flex: 1, overflowX: "auto" }}>
+          {/* Timeline Header */}
+          <Box
+            sx={{
+              display: "flex",
+              borderBottom: "2px solid #e0e0e0",
+              py: 2,
+              width: dates.length * cellWidth,
+              height: headerHeight,
+            }}
+          >
+            {dates.map((date, index) => (
+              <Box
+                key={index}
+                sx={{
+                  width: cellWidth,
+                  textAlign: "center",
+                  borderLeft: index === 0 ? "none" : "1px solid #f0f0f0",
+                }}
               >
-                {format(date, "EEE")}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", fontSize: "0.65rem" }}
-              >
-                {format(date, "MMM")}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+                <Typography variant="caption" sx={{ display: "block", fontWeight: 600 }}>
+                  {format(date, "dd")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", fontSize: "0.65rem" }}
+                >
+                  {format(date, "EEE")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", fontSize: "0.65rem" }}
+                >
+                  {format(date, "MMM")}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
 
-        {/* Timeline Rows */}
-        <Box sx={{ minHeight: rowHeight * 10 }}>
-          {fulfilments.map((fulfilment) => (
-            <TimelineRow
-              key={fulfilment.id}
-              fulfilment={fulfilment}
-              startDate={startDate}
-              dates={dates}
-              cellWidth={cellWidth}
-              rowHeight={rowHeight}
-              draggedEquipment={draggedEquipment}
-              onEquipmentDrop={onEquipmentDrop}
-            />
-          ))}
+          {/* Timeline Rows */}
+          <Box sx={{ minHeight: rowHeight * 10 }}>
+            {fulfilments.map((fulfilment) => (
+              <TimelineRow
+                key={fulfilment.id}
+                fulfilment={fulfilment}
+                startDate={startDate}
+                dates={dates}
+                cellWidth={cellWidth}
+                rowHeight={rowHeight}
+                draggedEquipment={draggedEquipment}
+                onEquipmentDrop={onEquipmentDrop}
+              />
+            ))}
+          </Box>
         </Box>
       </Box>
     </Paper>
@@ -971,11 +975,31 @@ function TimelineRow({
   // Calculate position and width of the fulfilment bar
   const dayOffset = differenceInCalendarDays(fulfilmentStart, startDate);
   const duration = differenceInCalendarDays(fulfilmentEnd, fulfilmentStart);
-  const barLeft = dayOffset * cellWidth;
-  const barWidth = duration * cellWidth - 8; // Subtract padding
+
+  // Calculate the actual visible portion of the bar
+  const visibleStartOffset = Math.max(0, dayOffset);
+  const visibleEndOffset = Math.min(dates.length, dayOffset + duration);
+  const visibleDuration = visibleEndOffset - visibleStartOffset;
+
+  const barLeft = visibleStartOffset * cellWidth;
+  const barWidth = visibleDuration * cellWidth - 8; // Subtract padding
+
+  console.log("Fulfilment Dates:", {
+    barLeft,
+    barWidth,
+    visibleStartOffset,
+    visibleEndOffset,
+    visibleDuration,
+    datesLength: dates.length,
+    fulfilmentStart,
+    fulfilmentEnd,
+    startDate,
+    fulfilment,
+    dates,
+  });
 
   // Determine if fulfilment is within visible range
-  const isVisible = dayOffset < dates.length && dayOffset + duration > 0;
+  const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -1011,7 +1035,7 @@ function TimelineRow({
     <Box
       sx={{
         position: "relative",
-        minWidth: dates.length * cellWidth,
+        width: dates.length * cellWidth,
         height: rowHeight,
         borderBottom: "1px dashed #d7d7d7",
         display: "flex",
@@ -1022,7 +1046,7 @@ function TimelineRow({
       onDrop={handleDrop}
     >
       {/* Grid lines */}
-      {dates.map((_, index) => (
+      {/* {dates.map((_, index) => (
         <Box
           key={index}
           sx={{
@@ -1034,17 +1058,18 @@ function TimelineRow({
             //backgroundColor: "#f0f0f0",
           }}
         />
-      ))}
+      ))} */}
 
       {/* Fulfilment Bar */}
-      {isVisible && (
+      {isVisible && barWidth > 0 && (
         <Box
+          className="fulfilment-bar"
           sx={{
             position: "absolute",
-            left: Math.max(0, barLeft),
+            left: barLeft + 4,
             top: "50%",
             transform: "translateY(-50%)",
-            width: Math.min(barWidth, dates.length * cellWidth - barLeft),
+            width: barWidth,
             height: 40,
             backgroundColor: fulfilment.inventory ? "#e8f5e9" : "#ffebee",
             border: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
@@ -1053,7 +1078,6 @@ function TimelineRow({
             alignItems: "center",
             justifyContent: "center",
             gap: 1,
-            mx: "4px",
             outline: isDragOver ? "2px solid #42a5f5" : "none",
             outlineOffset: 2,
             transition: "outline 0.2s",
