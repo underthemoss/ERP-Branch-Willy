@@ -984,6 +984,10 @@ function TimelineRow({
   const barLeft = visibleStartOffset * cellWidth;
   const barWidth = visibleDuration * cellWidth - 8; // Subtract padding
 
+  // Determine if borders should be shown
+  const showLeftBorder = fulfilmentStart >= dates[0];
+  const showRightBorder = dates.length > 0 && fulfilmentEnd <= dates[dates.length - 1];
+
   console.log("Fulfilment Dates:", {
     barLeft,
     barWidth,
@@ -996,6 +1000,8 @@ function TimelineRow({
     startDate,
     fulfilment,
     dates,
+    showLeftBorder,
+    showRightBorder,
   });
 
   // Determine if fulfilment is within visible range
@@ -1045,21 +1051,6 @@ function TimelineRow({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Grid lines */}
-      {/* {dates.map((_, index) => (
-        <Box
-          key={index}
-          sx={{
-            position: "absolute",
-            left: index * cellWidth,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            //backgroundColor: "#f0f0f0",
-          }}
-        />
-      ))} */}
-
       {/* Fulfilment Bar */}
       {isVisible && barWidth > 0 && (
         <Box
@@ -1072,8 +1063,19 @@ function TimelineRow({
             width: barWidth,
             height: 40,
             backgroundColor: fulfilment.inventory ? "#e8f5e9" : "#ffebee",
-            border: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
-            borderRadius: 1,
+            borderTop: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
+            borderBottom: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
+            borderLeft: showLeftBorder
+              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
+              : "none",
+            borderRight: showRightBorder
+              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
+              : "none",
+            borderRadius: showLeftBorder && showRightBorder ? 1 : 0,
+            borderTopLeftRadius: showLeftBorder ? 4 : 0,
+            borderBottomLeftRadius: showLeftBorder ? 4 : 0,
+            borderTopRightRadius: showRightBorder ? 4 : 0,
+            borderBottomRightRadius: showRightBorder ? 4 : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
