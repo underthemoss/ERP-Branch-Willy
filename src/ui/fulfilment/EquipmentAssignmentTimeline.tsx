@@ -957,7 +957,7 @@ function CustomerInfoRow({
           <CheckCircleIcon
             sx={{
               position: "absolute",
-              top: -8,
+              top: 0,
               right: -8,
               fontSize: 20,
               color: "#66bb6a",
@@ -995,7 +995,7 @@ function CustomerInfoRow({
         >
           {fulfilment.pimCategoryName}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
           <Box>
             <Typography variant="caption" color="text.secondary">
               {format(assignmentStart, "dd/MM/yyyy")}
