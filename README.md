@@ -1,6 +1,6 @@
 # ES-ERP
 
-> Tickets and order management frontend built with Next.js App Router and GraphQL.
+Tickets and order management frontend built with Next.js App Router and GraphQL.
 
 ## Local setup
 
