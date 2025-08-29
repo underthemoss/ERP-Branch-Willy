@@ -1,0 +1,286 @@
+name: Vercel Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+
+      - name: Build Project Artifacts
+        run: vercel build --token=$VERCEL_TOKEN
+
+      - name: Deploy Preview to Vercel
+        id: deploy
+        run: |
+          deployment_url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          echo "deployment-url=$deployment_url" >> $GITHUB_OUTPUT
+
+          # Get deployment inspect URL
+          inspect_url=$(vercel inspect $deployment_url --token=$VERCEL_TOKEN | grep -E "^\s+url:" | awk '{print $2}')
+          echo "inspect-url=$inspect_url" >> $GITHUB_OUTPUT
+
+          echo "### 🔍 Preview Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** $deployment_url" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.head_ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Find Previous Comment
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Vercel Preview Deployment
+
+      - name: Create or Update PR Comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🚀 Vercel Preview Deployment
+
+            **Preview URL:** ${{ steps.deploy.outputs.deployment-url }}
+
+            | Property | Value |
+            |----------|-------|
+            | **Status** | ✅ Ready |
+            | **Preview URL** | [${{ steps.deploy.outputs.deployment-url }}](${{ steps.deploy.outputs.deployment-url }}) |
+            | **Branch** | `${{ github.head_ref }}` |
+            | **Commit** | `${{ github.event.pull_request.head.sha }}` |
+            | **Deployed at** | ${{ github.event.pull_request.updated_at }} |
+
+            ---
+            <sub>This preview deployment will be automatically updated when you push new commits to this PR.</sub>
+          edit-mode: replace
+
+      - name: Post Slack notification for preview
+        if: success() && vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
+        run: |
+          cat > slack_message.txt << EOF
+          {
+            "text": "🔍 Preview Deployment Ready for PR #${{ github.event.pull_request.number }}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "🔍 Preview Deployment Ready",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*PR:*\n#${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author:*\n${{ github.event.pull_request.user.login }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:*\n${{ github.head_ref }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Base Branch:*\n${{ github.base_ref }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Preview URL:*\n${{ steps.deploy.outputs.deployment-url }}"
+                }
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Preview",
+                      "emoji": true
+                    },
+                    "style": "primary",
+                    "url": "${{ steps.deploy.outputs.deployment-url }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View PR",
+                      "emoji": true
+                    },
+                    "url": "${{ github.event.pull_request.html_url }}"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+          if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data @slack_message.txt \
+              ${{ secrets.SLACK_WEBHOOK }}
+          fi
+
+      - name: Post failure comment
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## ❌ Vercel Preview Deployment Failed
+
+            The preview deployment for this PR has failed. Please check the workflow logs for more details.
+
+            | Property | Value |
+            |----------|-------|
+            | **Status** | ❌ Failed |
+            | **Branch** | `${{ github.head_ref }}` |
+            | **Commit** | `${{ github.event.pull_request.head.sha }}` |
+            | **Workflow Run** | [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+            ---
+            <sub>Push new commits to retry the deployment.</sub>
+          edit-mode: replace
+
+      - name: Post Slack notification on failure
+        if: failure() && vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
+        run: |
+          cat > slack_message.txt << EOF
+          {
+            "text": "❌ Preview Deployment Failed for PR #${{ github.event.pull_request.number }}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "❌ Preview Deployment Failed",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*PR:*\n#${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author:*\n${{ github.event.pull_request.user.login }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:*\n${{ github.head_ref }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Error:*\nDeployment failed - check workflow logs"
+                  }
+                ]
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Workflow",
+                      "emoji": true
+                    },
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View PR",
+                      "emoji": true
+                    },
+                    "url": "${{ github.event.pull_request.html_url }}"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+          if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data @slack_message.txt \
+              ${{ secrets.SLACK_WEBHOOK }}
+          fi
+
+  cleanup-on-close:
+    name: Cleanup Preview on PR Close
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Find Previous Comment
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Vercel Preview Deployment
+
+      - name: Update PR Comment for Closed PR
+        if: steps.find-comment.outputs.comment-id
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🔒 Vercel Preview Deployment Closed
+
+            The preview deployment for this PR has been closed.
+
+            | Property | Value |
+            |----------|-------|
+            | **Status** | 🔒 Closed |
+            | **PR Status** | ${{ github.event.pull_request.merged && 'Merged' || 'Closed' }} |
+            | **Branch** | `${{ github.head_ref }}` |
+
+            ---
+            <sub>This preview deployment is no longer available.</sub>
+          edit-mode: replace
