@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Auth0ClientProvider
           domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
           clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
-          audience={process.env.NEXT_PUBLIC_API_URL || ""}
+          audience={process.env.NEXT_PUBLIC_API_URL + '/es-erp-api' || ""}
         >
           <DatadogRumProvider>
             <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
