@@ -12,7 +12,9 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import LogoutIcon from "@mui/icons-material/Logout";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -28,6 +30,8 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
@@ -36,9 +40,24 @@ import React from "react";
 
 export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
-  const { user } = useAuth0();
+  const { user, logout } = useAuth0();
   const pathname = usePathname();
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout({ logoutParams: { returnTo: window.location.origin } });
+    handleMenuClose();
+  };
   const workspaces =
     data?.listWorkspaces?.items.map((d) => {
       return {
@@ -275,9 +294,71 @@ export const NavBar = () => {
         </Box>
 
         <Box sx={{ display: "flex", width: "100%", justifyContent: "flex-end" }}>
-          <IconButton size="small" className="brian">
+          <IconButton
+            size="small"
+            className="brian"
+            onClick={handleMenuClick}
+            aria-controls={open ? "account-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? "true" : undefined}
+          >
             <UnfoldMoreIcon fontSize="small" />
           </IconButton>
+          <Menu
+            id="account-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleMenuClose}
+            onClick={handleMenuClose}
+            PaperProps={{
+              elevation: 0,
+              sx: {
+                overflow: "visible",
+                filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+                mt: 1.5,
+                "& .MuiAvatar-root": {
+                  width: 32,
+                  height: 32,
+                  ml: -0.5,
+                  mr: 1,
+                },
+                "&:before": {
+                  content: '""',
+                  display: "block",
+                  position: "absolute",
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: "background.paper",
+                  transform: "translateY(-50%) rotate(45deg)",
+                  zIndex: 0,
+                },
+              },
+            }}
+            transformOrigin={{ horizontal: "right", vertical: "top" }}
+            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          >
+            <MenuItem disabled onClick={handleMenuClose}>
+              <ListItemIcon>
+                <PersonOutlineIcon fontSize="small" />
+              </ListItemIcon>
+              Profile
+            </MenuItem>
+            <MenuItem disabled onClick={handleMenuClose}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              Account Settings
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
         </Box>
       </Box>
 
