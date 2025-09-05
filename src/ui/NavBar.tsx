@@ -2,7 +2,9 @@ import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import BuildIcon from "@mui/icons-material/Build";
+import BusinessIcon from "@mui/icons-material/Business";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import CheckIcon from "@mui/icons-material/Check";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventNoteIcon from "@mui/icons-material/EventNote";
@@ -40,10 +42,11 @@ import React from "react";
 
 export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
-  const { user, logout } = useAuth0();
+  const { user, logout, loginWithRedirect, getAccessTokenSilently } = useAuth0();
   const pathname = usePathname();
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [switchingOrg, setSwitchingOrg] = React.useState<string | null>(null);
   const open = Boolean(anchorEl);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -58,6 +61,40 @@ export const NavBar = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
     handleMenuClose();
   };
+
+  // Extract organizations from the Auth0 token
+  const organizations = user?.["https://erp.estrack.com/organizations"] || [];
+
+  // Get current organization from token (if available)
+  const currentOrgId = user?.org_id || user?.["https://erp.estrack.com/current_org"];
+
+  const handleOrganizationClick = async (orgId: string) => {
+    setSwitchingOrg(orgId);
+    try {
+      // Try silent authentication first
+      await getAccessTokenSilently({
+        authorizationParams: {
+          organization: orgId,
+        },
+        cacheMode: "off", // Force a new token
+      });
+
+      // If successful, reload to apply new context
+      window.location.reload();
+    } catch (error) {
+      // If silent auth fails, do a full redirect
+      loginWithRedirect({
+        authorizationParams: {
+          organization: orgId,
+        },
+        appState: {
+          returnTo: window.location.pathname,
+        },
+      });
+    }
+    handleMenuClose();
+  };
+
   const workspaces =
     data?.listWorkspaces?.items.map((d) => {
       return {
@@ -293,7 +330,15 @@ export const NavBar = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", width: "100%", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           <IconButton
             size="small"
             className="brian"
@@ -314,20 +359,20 @@ export const NavBar = () => {
               elevation: 0,
               sx: {
                 overflow: "visible",
-                filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-                mt: 1.5,
-                "& .MuiAvatar-root": {
-                  width: 32,
-                  height: 32,
-                  ml: -0.5,
-                  mr: 1,
+                filter: "drop-shadow(0px 0px 40px rgba(0, 0, 0, 0.08))",
+                mt: 1,
+                borderRadius: "12px",
+                minWidth: 200,
+                bgcolor: "white",
+                "& .MuiList-root": {
+                  py: 1,
                 },
                 "&:before": {
                   content: '""',
                   display: "block",
                   position: "absolute",
                   top: 0,
-                  right: 14,
+                  right: 20,
                   width: 10,
                   height: 10,
                   bgcolor: "background.paper",
@@ -339,21 +384,124 @@ export const NavBar = () => {
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem disabled onClick={handleMenuClose}>
-              <ListItemIcon>
-                <PersonOutlineIcon fontSize="small" />
+            <MenuItem
+              disabled
+              onClick={handleMenuClose}
+              sx={{
+                py: 1,
+                px: 2,
+                fontSize: "14px",
+                color: "#8B919E",
+                "&.Mui-disabled": {
+                  opacity: 1,
+                },
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
+                {user?.picture ? (
+                  <Avatar
+                    src={user.picture}
+                    alt={user?.name || user?.email}
+                    sx={{
+                      width: 24,
+                      height: 24,
+                    }}
+                  />
+                ) : (
+                  <PersonOutlineIcon fontSize="small" />
+                )}
               </ListItemIcon>
-              Profile
+              <Typography
+                noWrap
+                sx={{
+                  fontSize: "14px",
+                  color: "#8B919E",
+                  maxWidth: "180px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {user?.name || "Profile"}
+              </Typography>
             </MenuItem>
-            <MenuItem disabled onClick={handleMenuClose}>
-              <ListItemIcon>
-                <SettingsIcon fontSize="small" />
-              </ListItemIcon>
-              Account Settings
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
+            <Divider sx={{ my: 0.5 }} />
+            {organizations.length > 1 && (
+              <>
+                <MenuItem
+                  disabled
+                  sx={{
+                    py: 0.5,
+                    px: 2,
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "#8B919E",
+                    "&.Mui-disabled": {
+                      opacity: 1,
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
+                    <BusinessIcon fontSize="small" />
+                  </ListItemIcon>
+                  Organizations
+                </MenuItem>
+                {organizations.map((org: any) => (
+                  <MenuItem
+                    key={org.id}
+                    onClick={() => handleOrganizationClick(org.id)}
+                    disabled={switchingOrg === org.id}
+                    sx={{
+                      py: 0.75,
+                      px: 2,
+                      pl: 5.5,
+                      fontSize: "14px",
+                      fontFamily: "Inter",
+                      color: currentOrgId === org.id ? "#1976d2" : "#2F2B43",
+                      bgcolor: currentOrgId === org.id ? "rgba(25, 118, 210, 0.08)" : "transparent",
+                      borderRadius: "6px",
+                      mx: 1,
+                      my: 0.25,
+                      "&:hover": {
+                        bgcolor: currentOrgId === org.id ? "rgba(25, 118, 210, 0.12)" : "#F5F5F5",
+                      },
+                      "&.Mui-disabled": {
+                        opacity: 0.6,
+                      },
+                      position: "relative",
+                    }}
+                  >
+                    {currentOrgId === org.id && (
+                      <CheckIcon
+                        fontSize="small"
+                        sx={{
+                          position: "absolute",
+                          left: 24,
+                          color: "#1976d2",
+                          fontSize: "16px",
+                        }}
+                      />
+                    )}
+                    {switchingOrg === org.id ? "Switching..." : org.display_name || org.name}
+                  </MenuItem>
+                ))}
+                <Divider sx={{ my: 0.5 }} />
+              </>
+            )}
+            <MenuItem
+              onClick={handleLogout}
+              sx={{
+                py: 1,
+                px: 2,
+                fontSize: "14px",
+                color: "#2F2B43",
+                "&:hover": {
+                  bgcolor: "#F5F5F5",
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
               Logout
