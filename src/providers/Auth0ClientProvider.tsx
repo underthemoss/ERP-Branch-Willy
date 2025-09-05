@@ -20,6 +20,11 @@ const AuthWall: React.FC<{
         loginWithRedirect();
       }
 
+      // Check for specific error message about USER role
+      if (e.message && e.message.includes("User must have the USER role to authenticate")) {
+        redirect("/auth/no-access");
+      }
+
       redirect("/auth/error");
     });
   }, [getAccessTokenSilently, loginWithRedirect]);
