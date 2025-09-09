@@ -6,7 +6,7 @@ import {
   useGetPurchaseOrderRentalLineItemByIdCreateDialogQuery,
   useUpdateRentalPurchaseOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
-import SearchIcon from "@mui/icons-material/Search";
+import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import {
   Box,
   Button,
@@ -44,6 +44,11 @@ const CreateRentalPurchaseOrderLineItemFulfillmentDetailsStep: React.FC<
   const [deliveryLocation, setDeliveryLocation] = React.useState<string>("");
   const [deliveryCharge, setDeliveryCharge] = React.useState<string>("0.00");
   const [dateRange, setDateRange] = React.useState<[string | null, string | null]>([null, null]);
+  const [locationData, setLocationData] = React.useState<{
+    lat: number | null;
+    lng: number | null;
+    placeId: string;
+  }>({ lat: null, lng: null, placeId: "" });
   const [updateLineItem, { loading: mutationLoading }] =
     useUpdateRentalPurchaseOrderLineCreateDialogMutation();
   const { data, loading, error } = useGetPurchaseOrderRentalLineItemByIdCreateDialogQuery({
@@ -76,6 +81,15 @@ const CreateRentalPurchaseOrderLineItemFulfillmentDetailsStep: React.FC<
 
   const handleContinue = async () => {
     try {
+      // Log location data for future schema updates
+      if (locationData.lat && locationData.lng) {
+        console.log("Delivery location data for future schema update:", {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          placeId: locationData.placeId,
+        });
+      }
+
       await updateLineItem({
         variables: {
           input: {
@@ -112,15 +126,14 @@ const CreateRentalPurchaseOrderLineItemFulfillmentDetailsStep: React.FC<
             <MenuItem value="PICKUP">Pickup</MenuItem>
           </Select>
         </FormControl>
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Delivery Location</InputLabel>
-          <OutlinedInput
-            value={deliveryLocation}
-            onChange={(e) => setDeliveryLocation(e.target.value)}
-            label="Delivery Location"
-            startAdornment={<SearchIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />}
-          />
-        </FormControl>
+        <AddressValidationField
+          value={deliveryLocation}
+          onChange={(value) => setDeliveryLocation(value)}
+          onLocationChange={(lat, lng, placeId) => setLocationData({ lat, lng, placeId })}
+          label="Delivery Location"
+          fullWidth
+          sx={{ mb: 2 }}
+        />
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Delivery Charge</InputLabel>
           <OutlinedInput

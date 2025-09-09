@@ -19,8 +19,9 @@ import {
 import { DialogProps, useDialogs, useNotifications } from "@toolpad/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useSidebar } from "../sidebar/useSidebar";
+import { AddressValidationField } from "./AddressValidationField";
 import {
   BusinessContact,
   PersonContact,
@@ -143,6 +144,9 @@ type BusinessContactFormData = {
   website?: string;
   address?: string;
   notes?: string;
+  lat?: number | null;
+  lng?: number | null;
+  placeId?: string;
 };
 
 export function BusinessContactForm({
@@ -156,6 +160,8 @@ export function BusinessContactForm({
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
     formState: { errors },
   } = useForm<BusinessContactFormData>({
     defaultValues: {
@@ -165,13 +171,35 @@ export function BusinessContactForm({
       website: contact.website ?? "",
       address: contact.address ?? "",
       notes: contact.notes ?? "",
+      lat: null,
+      lng: null,
+      placeId: "",
     },
     mode: "onBlur",
   });
 
   const onSubmit = async (data: BusinessContactFormData) => {
+    // Log location data for future schema updates
+    if (data.lat && data.lng) {
+      console.log("Location data for future schema update:", {
+        lat: data.lat,
+        lng: data.lng,
+        placeId: data.placeId,
+      });
+    }
+
     await updateBusinessContact({
-      variables: { id: contact.id, input: data },
+      variables: {
+        id: contact.id,
+        input: {
+          name: data.name,
+          taxId: data.taxId,
+          phone: data.phone,
+          website: data.website,
+          address: data.address,
+          notes: data.notes,
+        },
+      },
     });
     setIsEditing(false);
   };
@@ -193,14 +221,34 @@ export function BusinessContactForm({
         <TextField label="Tax ID" fullWidth disabled={!isEditing} {...register("taxId")} />
         <TextField label="Phone Number" fullWidth disabled={!isEditing} {...register("phone")} />
         <TextField label="Website" fullWidth disabled={!isEditing} {...register("website")} />
-        <TextField
-          label="Address"
-          fullWidth
-          multiline
-          minRows={4}
-          disabled={!isEditing}
-          {...register("address")}
-        />
+        {isEditing ? (
+          <Controller
+            name="address"
+            control={control}
+            render={({ field }) => (
+              <AddressValidationField
+                value={field.value || ""}
+                onChange={field.onChange}
+                onLocationChange={(lat, lng, placeId) => {
+                  setValue("lat", lat);
+                  setValue("lng", lng);
+                  setValue("placeId", placeId);
+                }}
+                label="Address"
+                fullWidth
+              />
+            )}
+          />
+        ) : (
+          <TextField
+            label="Address"
+            fullWidth
+            multiline
+            minRows={4}
+            disabled={true}
+            {...register("address")}
+          />
+        )}
         <TextField
           label="Notes"
           fullWidth

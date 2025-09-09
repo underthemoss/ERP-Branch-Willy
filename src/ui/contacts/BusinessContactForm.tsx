@@ -1,10 +1,11 @@
 import { graphql } from "@/graphql";
+import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
 import { Box, Button, Grid, TextField } from "@mui/material";
 import { DialogProps } from "@toolpad/core";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { useParams } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 type FormData = {
@@ -13,6 +14,13 @@ type FormData = {
   taxId: string;
   website?: string;
   phone?: string;
+};
+
+type LocationData = {
+  lat: number;
+  lng: number;
+  placeId: string;
+  validatedAddress: string;
 };
 
 export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
@@ -31,30 +39,45 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
   });
 
   const { workspace_id } = useParams<{ workspace_id: string }>();
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
 
   const [createBusinessContact, { loading }] = useCreateBusinessContactMutation();
   const notifications = useNotifications();
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Use validated address if available, otherwise use the original input
+      const finalAddress = locationData?.validatedAddress || data.address;
+
       await createBusinessContact({
         refetchQueries: [],
         variables: {
           workspaceId: workspace_id,
           name: data.businessName,
           phone: data.phone,
-          address: data.address,
+          address: finalAddress,
           taxId: data.taxId,
           website: data.website,
         },
       });
+
+      // Log location data for future use when lat/lng/placeId fields are added to the schema
+      if (locationData) {
+        console.log("Location data saved for future use:", {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          placeId: locationData.placeId,
+          address: finalAddress,
+        });
+      }
+
       notifications.show("New Business contact created!", {
         severity: "success",
       });
       onClose();
     } catch (error) {
       console.error("Error creating business contact:", error);
-      notifications.show("Faild to create business contact", {
+      notifications.show("Failed to create business contact", {
         severity: "error",
       });
       return;
@@ -109,7 +132,32 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
           <Controller
             name="address"
             control={control}
-            render={({ field }) => <TextField {...field} label="Address" fullWidth />}
+            render={({ field, fieldState }) => (
+              <AddressValidationField
+                value={field.value}
+                onChange={field.onChange}
+                onLocationChange={(lat, lng, placeId) => {
+                  setLocationData((prev) => ({
+                    lat,
+                    lng,
+                    placeId,
+                    validatedAddress: prev?.validatedAddress || field.value,
+                  }));
+                }}
+                onValidatedAddressChange={(validatedAddress) => {
+                  setLocationData((prev) => ({
+                    lat: prev?.lat || 0,
+                    lng: prev?.lng || 0,
+                    placeId: prev?.placeId || "",
+                    validatedAddress,
+                  }));
+                  field.onChange(validatedAddress);
+                }}
+                error={fieldState.error}
+                label="Address"
+                fullWidth
+              />
+            )}
           />
         </Grid>
 

@@ -1,0 +1,107 @@
+/* Customer Avatar Marker Styles */
+.customer-avatar-marker {
+  position: relative;
+  /* Critical for preventing drift: centers the marker on the exact position */
+  transform: translate(0%, 0%);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.customer-avatar-marker.hover {
+  transform: translate(0%, -10%) scale(1.1);
+  z-index: 1000;
+}
+
+.avatar-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--status-color);
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-weight: bold;
+  color: white;
+  font-size: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.avatar-initials {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.avatar-pointer {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--status-color);
+  margin-top: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Add a white border effect to the pointer for consistency */
+.avatar-pointer::before {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid #ffffff;
+  top: -12px;
+  left: -10px;
+  z-index: -1;
+}
+
+/* Hover effects */
+.customer-avatar-marker.hover .avatar-circle {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Status-specific enhancements */
+.customer-avatar-marker[data-status="active"] .avatar-circle {
+  animation: pulse-active 2s infinite;
+}
+
+.customer-avatar-marker[data-status="inactive"] .avatar-circle {
+  opacity: 0.8;
+}
+
+/* Subtle pulse animation for active customers */
+@keyframes pulse-active {
+  0% {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 10px rgba(76, 175, 80, 0.4);
+  }
+  100% {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Dark theme compatibility for admin section */
+@media (prefers-color-scheme: dark) {
+  .avatar-circle {
+    border-color: #2d2d2d;
+  }
+
+  .avatar-pointer::before {
+    border-top-color: #2d2d2d;
+  }
+}

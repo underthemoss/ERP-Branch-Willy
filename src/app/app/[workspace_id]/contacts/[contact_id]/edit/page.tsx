@@ -1,5 +1,6 @@
 "use client";
 
+import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import {
   useGetContactByIdQuery,
   useListBusinessContactsQuery,
@@ -51,6 +52,9 @@ export default function EditContactPage() {
     address: "",
     taxId: "",
     website: "",
+    lat: null as number | null,
+    lng: null as number | null,
+    placeId: "",
   });
   const [updateBusiness, { loading: updatingBusiness }] = useUpdateBusinessContactMutation();
 
@@ -87,6 +91,9 @@ export default function EditContactPage() {
         address: data.getContactById.address ?? "",
         taxId: data.getContactById.taxId ?? "",
         website: data.getContactById.website ?? "",
+        lat: null,
+        lng: null,
+        placeId: "",
       });
     }
   }, [data]);
@@ -154,6 +161,15 @@ export default function EditContactPage() {
       return;
     }
     try {
+      // Log location data for future schema updates
+      if (businessForm.lat && businessForm.lng) {
+        console.log("Location data for future schema update:", {
+          lat: businessForm.lat,
+          lng: businessForm.lng,
+          placeId: businessForm.placeId,
+        });
+      }
+
       const result = await updateBusiness({
         variables: {
           id: contact_id,
@@ -307,11 +323,13 @@ export default function EditContactPage() {
               onChange={handleBusinessChange}
               fullWidth
             />
-            <TextField
-              label="Address"
-              name="address"
+            <AddressValidationField
               value={businessForm.address}
-              onChange={handleBusinessChange}
+              onChange={(value: string) => setBusinessForm((prev) => ({ ...prev, address: value }))}
+              onLocationChange={(lat: number, lng: number, placeId: string) =>
+                setBusinessForm((prev) => ({ ...prev, lat, lng, placeId }))
+              }
+              label="Address"
               fullWidth
             />
             <TextField
