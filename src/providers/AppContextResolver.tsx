@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useOrganization } from "@/providers/OrganizationProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
@@ -108,9 +107,6 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
   if (isLoadingOrganizations) {
     return (
       <GradientBackgroundContainer>
-        {/* Animated background */}
-        <AnimatedLoader />
-
         {/* Content overlay */}
         <Box
           sx={{
@@ -160,9 +156,6 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
   if (isSelectingOrganization) {
     return (
       <GradientBackgroundContainer>
-        {/* Animated background */}
-        <AnimatedLoader />
-
         {/* Content overlay */}
         <Box
           sx={{
@@ -675,9 +668,6 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
           )} 0%, ${alpha(theme.palette.primary.dark, 0.1)} 100%)`,
         }}
       >
-        {/* Animated background */}
-        <AnimatedLoader />
-
         {/* Content overlay */}
         <Box
           sx={{
@@ -859,9 +849,6 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
         )} 0%, ${alpha(theme.palette.primary.dark, 0.1)} 100%)`,
       }}
     >
-      {/* Animated background */}
-      <AnimatedLoader />
-
       {/* Content overlay */}
       <Box
         sx={{
