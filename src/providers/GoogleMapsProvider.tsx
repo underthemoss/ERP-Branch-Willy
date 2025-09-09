@@ -62,6 +62,7 @@ export function GoogleMapsProvider({ children, apiKey }: GoogleMapsProviderProps
       libraries={GOOGLE_MAPS_LIBRARIES}
       onLoad={handleLoad}
       onError={handleError}
+      loadingElement={<></>}
     >
       <GoogleMapsContext.Provider
         value={{

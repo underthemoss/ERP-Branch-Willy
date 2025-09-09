@@ -42,11 +42,11 @@ interface WorkspaceProviderProps {
 
 export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }) => {
   const router = useRouter();
-  const { selectedOrganization } = useOrganization();
+  const { selectedOrg } = useOrganization();
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
 
   const { data, loading: workspacesLoading } = useFetchWorkspacesQuery({
-    skip: !selectedOrganization,
+    skip: !selectedOrg,
     fetchPolicy: "cache-and-network",
   });
 
@@ -66,18 +66,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   // Auto-redirect if only one workspace
   useEffect(() => {
-    if (
-      !workspacesLoading &&
-      workspaces?.length === 1 &&
-      selectedOrganization &&
-      !selectedWorkspace
-    ) {
+    if (!workspacesLoading && workspaces?.length === 1 && selectedOrg && !selectedWorkspace) {
       const workspaceId = workspaces[0].id;
       if (workspaceId) {
         selectWorkspace(workspaceId);
       }
     }
-  }, [workspaces, workspacesLoading, selectedOrganization, selectedWorkspace, selectWorkspace]);
+  }, [workspaces, workspacesLoading, selectedOrg, selectedWorkspace, selectWorkspace]);
 
   const value: WorkspaceContextType = {
     workspaces,
