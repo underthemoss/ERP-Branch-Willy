@@ -1,5 +1,6 @@
 "use client";
 
+import { useGoogleMaps } from "@/providers/GoogleMapsProvider";
 import { CheckCircle, Warning } from "@mui/icons-material";
 import {
   Alert,
@@ -12,8 +13,6 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FieldError } from "react-hook-form";
-
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 interface AddressValidationFieldProps {
   value: string;
@@ -71,33 +70,9 @@ export function AddressValidationField({
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
-  const [scriptsLoaded, setScriptsLoaded] = useState(false);
 
-  // Load Google Maps script
-  useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY) return;
-
-    // Check if script is already loaded
-    if (window.google?.maps?.places) {
-      setScriptsLoaded(true);
-      return;
-    }
-
-    // Check if script tag already exists
-    const existingScript = document.querySelector(`script[src*="maps.googleapis.com/maps/api/js"]`);
-    if (existingScript) {
-      existingScript.addEventListener("load", () => setScriptsLoaded(true));
-      return;
-    }
-
-    // Load the script
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptsLoaded(true);
-    document.head.appendChild(script);
-  }, []);
+  // Use the Google Maps provider hook
+  const { apiKey, isReady: scriptsLoaded } = useGoogleMaps();
 
   // Initialize services when scripts are loaded
   useEffect(() => {
@@ -254,7 +229,7 @@ export function AddressValidationField({
     setInputValue(value);
   }, [value]);
 
-  if (!GOOGLE_MAPS_API_KEY) {
+  if (!apiKey) {
     return (
       <TextField
         value={inputValue}

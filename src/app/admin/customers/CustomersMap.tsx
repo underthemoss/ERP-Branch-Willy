@@ -1,18 +1,12 @@
 "use client";
 
+import { useGoogleMaps } from "@/providers/GoogleMapsProvider";
 import { MarkerClusterer, SuperClusterAlgorithm } from "@googlemaps/markerclusterer";
 import { EmailOutlined, LocationOnOutlined, PersonOutlined } from "@mui/icons-material";
 import { Box, Button, Card, Chip, Typography } from "@mui/joy";
-import { GoogleMap, InfoWindow, LoadScript } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow } from "@react-google-maps/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./CustomersMap.css";
-
-// Google Maps API Key and Map ID from environment variables
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-const GOOGLE_MAPS_MAP_ID = "112d521aecda4dd8bcda7b92";
-
-// Libraries to load
-const libraries: ("marker" | "places" | "drawing" | "geometry" | "visualization")[] = ["marker"];
 
 // Map container style
 const mapContainerStyle = {
@@ -187,6 +181,8 @@ export default function CustomersMap({ customers, onViewDetails }: CustomersMapP
   const [clusterer, setClusterer] = useState<MarkerClusterer | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
 
+  const { mapId, apiKey, isReady, isLoading, error } = useGoogleMaps();
+
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
   }, []);
@@ -251,9 +247,30 @@ export default function CustomersMap({ customers, onViewDetails }: CustomersMapP
     };
   }, [map, customers]);
 
-  return (
-    <Card sx={{ p: 0, height: "calc(100vh - 250px)" }}>
-      {!GOOGLE_MAPS_API_KEY ? (
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Card sx={{ p: 0, height: "calc(100vh - 250px)" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            bgcolor: "background.level1",
+          }}
+        >
+          <Typography level="h4">Loading Google Maps...</Typography>
+        </Box>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (error || !apiKey) {
+    return (
+      <Card sx={{ p: 0, height: "calc(100vh - 250px)" }}>
         <Box
           sx={{
             display: "flex",
@@ -272,65 +289,67 @@ export default function CustomersMap({ customers, onViewDetails }: CustomersMapP
             level="body-md"
             sx={{ color: "text.secondary", textAlign: "center", maxWidth: 400 }}
           >
-            The map feature is not currently configured. Please contact your system administrator to
-            enable this feature.
+            {error?.message ||
+              "The map feature is not currently configured. Please contact your system administrator to enable this feature."}
           </Typography>
         </Box>
-      ) : (
-        <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={libraries}>
-          <GoogleMap
-            mapContainerStyle={mapContainerStyle}
-            center={defaultCenter}
-            zoom={4}
-            onLoad={onMapLoad}
-            options={{
-              streetViewControl: false,
-              mapTypeControl: true,
-              mapId: GOOGLE_MAPS_MAP_ID,
-            }}
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ p: 0, height: "calc(100vh - 250px)" }}>
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={defaultCenter}
+        zoom={4}
+        onLoad={onMapLoad}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: true,
+          mapId: mapId,
+        }}
+      >
+        {/* Info Window */}
+        {selectedMarker && (
+          <InfoWindow
+            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+            onCloseClick={() => setSelectedMarker(null)}
           >
-            {/* Info Window */}
-            {selectedMarker && (
-              <InfoWindow
-                position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                onCloseClick={() => setSelectedMarker(null)}
-              >
-                <Box sx={{ p: 1, minWidth: 250 }}>
-                  <Typography level="title-md" sx={{ mb: 1 }}>
-                    {selectedMarker.name}
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                    <Chip size="sm" color={getStatusColor(selectedMarker.status)} variant="soft">
-                      {selectedMarker.status}
-                    </Chip>
-                    <Typography level="body-sm">{selectedMarker.plan}</Typography>
-                  </Box>
-                  <Typography level="body-sm" sx={{ mb: 0.5 }}>
-                    <PersonOutlined sx={{ fontSize: 14, mr: 0.5 }} />
-                    {selectedMarker.contact}
-                  </Typography>
-                  <Typography level="body-sm" sx={{ mb: 0.5 }}>
-                    <EmailOutlined sx={{ fontSize: 14, mr: 0.5 }} />
-                    {selectedMarker.email}
-                  </Typography>
-                  <Typography level="body-sm" sx={{ mb: 1 }}>
-                    <LocationOnOutlined sx={{ fontSize: 14, mr: 0.5 }} />
-                    {selectedMarker.address}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Button size="sm" variant="soft" onClick={() => onViewDetails(selectedMarker)}>
-                      View Details
-                    </Button>
-                    <Button size="sm" variant="outlined">
-                      Edit
-                    </Button>
-                  </Box>
-                </Box>
-              </InfoWindow>
-            )}
-          </GoogleMap>
-        </LoadScript>
-      )}
+            <Box sx={{ p: 1, minWidth: 250 }}>
+              <Typography level="title-md" sx={{ mb: 1 }}>
+                {selectedMarker.name}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                <Chip size="sm" color={getStatusColor(selectedMarker.status)} variant="soft">
+                  {selectedMarker.status}
+                </Chip>
+                <Typography level="body-sm">{selectedMarker.plan}</Typography>
+              </Box>
+              <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                <PersonOutlined sx={{ fontSize: 14, mr: 0.5 }} />
+                {selectedMarker.contact}
+              </Typography>
+              <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                <EmailOutlined sx={{ fontSize: 14, mr: 0.5 }} />
+                {selectedMarker.email}
+              </Typography>
+              <Typography level="body-sm" sx={{ mb: 1 }}>
+                <LocationOnOutlined sx={{ fontSize: 14, mr: 0.5 }} />
+                {selectedMarker.address}
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button size="sm" variant="soft" onClick={() => onViewDetails(selectedMarker)}>
+                  View Details
+                </Button>
+                <Button size="sm" variant="outlined">
+                  Edit
+                </Button>
+              </Box>
+            </Box>
+          </InfoWindow>
+        )}
+      </GoogleMap>
     </Card>
   );
 }

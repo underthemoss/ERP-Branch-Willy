@@ -1,15 +1,10 @@
 "use client";
 
+import { useGoogleMaps } from "@/providers/GoogleMapsProvider";
 import { LocalShipping, LocationOn } from "@mui/icons-material";
 import { Box, Chip, Paper, Typography } from "@mui/material";
-import { GoogleMap, InfoWindow, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Marker } from "@react-google-maps/api";
 import { useCallback, useEffect, useState } from "react";
-
-// Google Maps API Key from environment variables
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
-// Libraries to load
-const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 // Map container style
 const mapContainerStyle = {
@@ -54,11 +49,8 @@ export default function SalesOrderDeliveryMap({ deliveryLocations }: SalesOrderD
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
-  // Use the useJsApiLoader hook for better loading management
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: libraries,
-  });
+  // Use the Google Maps provider hook
+  const { apiKey, isReady: isLoaded, error: loadError } = useGoogleMaps();
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -161,7 +153,7 @@ export default function SalesOrderDeliveryMap({ deliveryLocations }: SalesOrderD
     geocodeAddresses();
   }, [deliveryLocations, isLoaded, map]);
 
-  if (!GOOGLE_MAPS_API_KEY) {
+  if (!apiKey) {
     return (
       <Paper elevation={2} sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
