@@ -6,9 +6,12 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
+import { AppContextResolver } from "@/providers/AppContextResolver";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
+import { OrganizationProvider } from "@/providers/OrganizationProvider";
+import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +48,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           <DatadogRumProvider>
             <GoogleMapsServerProvider>
-              <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
+              <ApolloClientProvider api={api}>
+                <OrganizationProvider>
+                  <WorkspaceProvider>
+                    <AppContextResolver>{children}</AppContextResolver>
+                  </WorkspaceProvider>
+                </OrganizationProvider>
+              </ApolloClientProvider>
             </GoogleMapsServerProvider>
           </DatadogRumProvider>
         </Auth0ClientProvider>

@@ -1,21 +1,21 @@
 "use client";
 
-import { useFetchWorkspacesQuery } from "@/graphql/hooks";
-import { Box, LinearProgress } from "@mui/material";
+import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Page() {
-  const { data, loading } = useFetchWorkspacesQuery();
-  useEffect(() => {
-    if (!loading && data?.listWorkspaces?.items.length) {
-      redirect(`/app/${data?.listWorkspaces?.items[0].id}`);
-    }
-  }, [data, loading]);
+  const { selectedWorkspace } = useWorkspace();
 
-  return (
-    <>
-      <LinearProgress></LinearProgress>Loading workspaces...
-    </>
-  );
+  useEffect(() => {
+    // Once we have a selected workspace, redirect to the app
+    if (selectedWorkspace) {
+      redirect(`/app/${selectedWorkspace}`);
+    }
+  }, [selectedWorkspace]);
+
+  // AppContextResolver handles all loading states and selection screens
+  // This component will only render if context is resolved but no workspace is selected
+  // which shouldn't happen in normal flow
+  return null;
 }
