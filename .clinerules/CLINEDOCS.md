@@ -77,6 +77,12 @@ Always run these in headed mode so i can watch progress.
 
 ---
 
+## Google Maps Integration
+
+The application uses Google Maps for displaying locations, address validation, and geocoding. Maps are integrated through a centralized provider that handles script loading and configuration. To use maps in any component, import the `useGoogleMaps` hook from `@/providers/GoogleMapsProvider`. This hook provides access to the API key, map ID, loading states, and error handling. The provider is already configured at the root level, so maps will work automatically throughout the app. Components can use `@react-google-maps/api` components like `GoogleMap`, `Marker`, and `InfoWindow` directly without needing to wrap them in LoadScript. For address autocomplete, the Places API is available through the provider. Always check `isReady` from the hook before rendering map components to ensure the scripts are loaded.
+
+---
+
 ## Admin Section Guidelines
 
 ### Purpose

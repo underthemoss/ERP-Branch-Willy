@@ -8,6 +8,7 @@ import "@fontsource/roboto/700.css";
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
+import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           audience={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api"}
         >
           <DatadogRumProvider>
-            <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
+            <GoogleMapsServerProvider>
+              <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
+            </GoogleMapsServerProvider>
           </DatadogRumProvider>
         </Auth0ClientProvider>
       </body>
