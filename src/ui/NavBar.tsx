@@ -1,5 +1,6 @@
 import { useFetchWorkspacesQuery } from "@/graphql/hooks";
 import { useAuth0 } from "@auth0/auth0-react";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import BuildIcon from "@mui/icons-material/Build";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -44,6 +45,10 @@ export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
   const { user, logout, loginWithRedirect, getAccessTokenSilently } = useAuth0();
   const pathname = usePathname();
+
+  // Check if user has PLATFORM_ADMIN role in the specific claim
+  const roles = user?.["https://erp.estrack.com/es_erp_roles"] || [];
+  const isPlatformAdmin = roles.includes("PLATFORM_ADMIN");
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchingOrg, setSwitchingOrg] = React.useState<string | null>(null);
@@ -512,8 +517,37 @@ export const NavBar = () => {
 
       <Divider sx={{ width: "100%", my: "12px" }} />
 
-      <Box className="navmenu" sx={{ width: "100%", flex: 1 }}>
-        <List disablePadding>
+      <Box
+        className="navmenu"
+        sx={{
+          width: "100%",
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <List
+          disablePadding
+          sx={{
+            overflow: "auto",
+            flex: 1,
+            "&::-webkit-scrollbar": {
+              width: "6px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "transparent",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#ccc",
+              borderRadius: "3px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#999",
+            },
+          }}
+        >
           {navItems.map((item, index) => (
             <React.Fragment key={index}>
               <ListItem disablePadding>
@@ -655,19 +689,58 @@ export const NavBar = () => {
           ))}
         </List>
       </Box>
+
+      <Divider sx={{ width: "100%", mt: "12px" }} />
+
       <Box
         sx={{
           width: "100%",
-          borderTop: "1px solid #eee",
           p: 1.5,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          position: "relative",
-          bottom: 0,
-          left: 0,
           bgcolor: "#F5F5F5",
+          flexShrink: 0,
         }}
       >
+        {isPlatformAdmin && (
+          <ListItemButton
+            component={Link}
+            href="/admin"
+            selected={pathname.startsWith("/admin")}
+            data-testid="nav-platform-admin"
+            sx={{
+              px: "12px",
+              borderRadius: "8px",
+              color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
+              width: "100%",
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
+                minWidth: "30px",
+              }}
+            >
+              <AdminPanelSettingsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              disableTypography
+              sx={{
+                color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
+                fontFamily: "Inter",
+                fontSize: "14px",
+                fontStyle: "normal",
+                fontWeight: 500,
+                lineHeight: "21px",
+                letterSpacing: "0.28px",
+              }}
+            >
+              Platform Admin
+            </ListItemText>
+          </ListItemButton>
+        )}
         <ListItemButton
           component={Link}
           href={`/app/${currentWorkspace?.id}/settings`}

@@ -5,6 +5,7 @@ import {
   useContactDisplayPage_DeleteContactMutation,
   useContactDisplayPage_GetContactByIdQuery,
 } from "@/graphql/hooks";
+import BusinessLocationMap from "@/ui/contacts/BusinessLocationMap";
 import NotesSection from "@/ui/notes/NotesSection";
 import ReferenceNumbersSection from "@/ui/reference-numbers/ReferenceNumbersSection";
 import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
@@ -433,8 +434,13 @@ export default function ContactDisplayPage() {
               </Box>
             </Paper>
 
+            {/* Location Map - only for Business contacts with address */}
+            {isBusiness && contact.address && (
+              <BusinessLocationMap businessName={contact.name} address={contact.address} />
+            )}
+
             {/* Reporting Designation Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+            <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Reporting Designation
               </Typography>

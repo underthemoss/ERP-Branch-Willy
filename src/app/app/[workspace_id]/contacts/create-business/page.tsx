@@ -1,5 +1,6 @@
 "use client";
 
+import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
 import {
   Alert,
@@ -24,6 +25,12 @@ export default function CreateBusinessPage() {
     taxId: "",
     website: "",
   });
+  const [locationData, setLocationData] = React.useState<{
+    lat: number;
+    lng: number;
+    placeId: string;
+    validatedAddress: string;
+  } | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   const [createBusiness, { loading }] = useCreateBusinessContactMutation();
@@ -43,16 +50,30 @@ export default function CreateBusinessPage() {
       return;
     }
     try {
+      // Use validated address if available, otherwise use the original input
+      const finalAddress = locationData?.validatedAddress || form.address;
+
       const result = await createBusiness({
         variables: {
           workspaceId: workspace_id,
           name: form.name,
           phone: form.phone || undefined,
-          address: form.address || undefined,
+          address: finalAddress || undefined,
           taxId: form.taxId,
           website: form.website || undefined,
         },
       });
+
+      // Log location data for future use when lat/lng/placeId fields are added to the schema
+      if (locationData) {
+        console.log("Location data saved for future use:", {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          placeId: locationData.placeId,
+          address: finalAddress,
+        });
+      }
+
       if (result.data?.createBusinessContact?.id) {
         router.push(`../contacts/${result.data.createBusinessContact.id}`);
       } else {
@@ -87,11 +108,27 @@ export default function CreateBusinessPage() {
             onChange={handleChange}
             fullWidth
           />
-          <TextField
-            label="Address"
-            name="address"
+          <AddressValidationField
             value={form.address}
-            onChange={handleChange}
+            onChange={(value) => setForm((prev) => ({ ...prev, address: value }))}
+            onLocationChange={(lat, lng, placeId) => {
+              setLocationData((prev) => ({
+                lat,
+                lng,
+                placeId,
+                validatedAddress: prev?.validatedAddress || form.address,
+              }));
+            }}
+            onValidatedAddressChange={(validatedAddress) => {
+              setLocationData((prev) => ({
+                lat: prev?.lat || 0,
+                lng: prev?.lng || 0,
+                placeId: prev?.placeId || "",
+                validatedAddress,
+              }));
+              setForm((prev) => ({ ...prev, address: validatedAddress }));
+            }}
+            label="Address"
             fullWidth
           />
           <TextField

@@ -11,6 +11,7 @@ import {
 import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
+import SalesOrderDeliveryMap from "@/ui/sales-orders/SalesOrderDeliveryMap";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -77,9 +78,21 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
       line_items {
         ... on RentalSalesOrderLineItem {
           id
+          delivery_location
+          delivery_method
+          delivery_date
+          so_pim_category {
+            name
+          }
         }
         ... on SaleSalesOrderLineItem {
           id
+          delivery_location
+          delivery_method
+          delivery_date
+          so_pim_category {
+            name
+          }
         }
       }
       buyer {
@@ -687,7 +700,7 @@ export default function SalesOrderDetailPage() {
                 </Typography>
                 <Divider sx={{ mb: 1 }} />
                 {salesOrder.project ? (
-                  <Box>
+                  <Box sx={{ maxHeight: 220, overflowY: "auto", pr: 1 }}>
                     <Typography>
                       Name: <b>{salesOrder.project.name}</b>
                     </Typography>
@@ -734,6 +747,27 @@ export default function SalesOrderDetailPage() {
                 </Button>
               </Box>
             </Paper>
+
+            {/* Delivery Locations Map */}
+            {salesOrder.line_items &&
+              salesOrder.line_items.length > 0 &&
+              (() => {
+                const deliveryLocations = salesOrder.line_items
+                  .filter((item: any) => item.delivery_location)
+                  .map((item: any, index: number) => ({
+                    id: item.id || `item-${index}`,
+                    address: item.delivery_location,
+                    itemDescription: item.so_pim_category?.name || "Item",
+                    deliveryMethod: item.delivery_method,
+                    deliveryDate: item.delivery_date,
+                  }));
+
+                return deliveryLocations.length > 0 ? (
+                  <Box sx={{ mb: 3 }}>
+                    <SalesOrderDeliveryMap deliveryLocations={deliveryLocations} />
+                  </Box>
+                ) : null;
+              })()}
 
             {/* Stubbed Help/Support Card */}
             <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
