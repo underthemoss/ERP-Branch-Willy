@@ -7,6 +7,11 @@ body {
   overscroll-behavior: none;
 }
 
+body {
+  background: linear-gradient(135deg, #f0f9ff 0%, #fafbfc 50%, #f8faff 100%);
+  min-height: 100vh;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
