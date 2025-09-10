@@ -5,10 +5,7 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import { ApolloClientProvider } from "@/providers/ApolloProvider";
-import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
-import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
-import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
+import { ProviderComposer } from "@/providers/ProviderComposer";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -38,17 +35,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ></link>
       </head>
       <body>
-        <Auth0ClientProvider
-          domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
-          clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
-          audience={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api"}
+        <ProviderComposer
+          auth0Domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
+          auth0ClientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
+          auth0Audience={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api"}
+          apiUrl={api}
         >
-          <DatadogRumProvider>
-            <GoogleMapsServerProvider>
-              <ApolloClientProvider api={api}>{children}</ApolloClientProvider>
-            </GoogleMapsServerProvider>
-          </DatadogRumProvider>
-        </Auth0ClientProvider>
+          {children}
+        </ProviderComposer>
       </body>
     </html>
   );
