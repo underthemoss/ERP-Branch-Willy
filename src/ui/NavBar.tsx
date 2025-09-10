@@ -43,7 +43,7 @@ import React from "react";
 
 export const NavBar = () => {
   const { data } = useFetchWorkspacesQuery();
-  const { user, logout, loginWithRedirect, getAccessTokenSilently } = useAuth0();
+  const { user, logout } = useAuth0();
   const pathname = usePathname();
 
   // Check if user has PLATFORM_ADMIN role in the specific claim
@@ -51,7 +51,6 @@ export const NavBar = () => {
   const isPlatformAdmin = roles.includes("PLATFORM_ADMIN");
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [switchingOrg, setSwitchingOrg] = React.useState<string | null>(null);
   const open = Boolean(anchorEl);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -64,39 +63,6 @@ export const NavBar = () => {
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
-    handleMenuClose();
-  };
-
-  // Extract organizations from the Auth0 token
-  const organizations = user?.["https://erp.estrack.com/organizations"] || [];
-
-  // Get current organization from token (if available)
-  const currentOrgId = user?.org_id || user?.["https://erp.estrack.com/current_org"];
-
-  const handleOrganizationClick = async (orgId: string) => {
-    setSwitchingOrg(orgId);
-    try {
-      // Try silent authentication first
-      await getAccessTokenSilently({
-        authorizationParams: {
-          organization: orgId,
-        },
-        cacheMode: "off", // Force a new token
-      });
-
-      // If successful, reload to apply new context
-      window.location.reload();
-    } catch (error) {
-      // If silent auth fails, do a full redirect
-      loginWithRedirect({
-        authorizationParams: {
-          organization: orgId,
-        },
-        appState: {
-          returnTo: window.location.pathname,
-        },
-      });
-    }
     handleMenuClose();
   };
 
@@ -432,68 +398,6 @@ export const NavBar = () => {
               </Typography>
             </MenuItem>
             <Divider sx={{ my: 0.5 }} />
-            {organizations.length > 1 && (
-              <>
-                <MenuItem
-                  disabled
-                  sx={{
-                    py: 0.5,
-                    px: 2,
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    color: "#8B919E",
-                    "&.Mui-disabled": {
-                      opacity: 1,
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
-                    <BusinessIcon fontSize="small" />
-                  </ListItemIcon>
-                  Organizations
-                </MenuItem>
-                {organizations.map((org: any) => (
-                  <MenuItem
-                    key={org.id}
-                    onClick={() => handleOrganizationClick(org.id)}
-                    disabled={switchingOrg === org.id}
-                    sx={{
-                      py: 0.75,
-                      px: 2,
-                      pl: 5.5,
-                      fontSize: "14px",
-                      fontFamily: "Inter",
-                      color: currentOrgId === org.id ? "#1976d2" : "#2F2B43",
-                      bgcolor: currentOrgId === org.id ? "rgba(25, 118, 210, 0.08)" : "transparent",
-                      borderRadius: "6px",
-                      mx: 1,
-                      my: 0.25,
-                      "&:hover": {
-                        bgcolor: currentOrgId === org.id ? "rgba(25, 118, 210, 0.12)" : "#F5F5F5",
-                      },
-                      "&.Mui-disabled": {
-                        opacity: 0.6,
-                      },
-                      position: "relative",
-                    }}
-                  >
-                    {currentOrgId === org.id && (
-                      <CheckIcon
-                        fontSize="small"
-                        sx={{
-                          position: "absolute",
-                          left: 24,
-                          color: "#1976d2",
-                          fontSize: "16px",
-                        }}
-                      />
-                    )}
-                    {switchingOrg === org.id ? "Switching..." : org.display_name || org.name}
-                  </MenuItem>
-                ))}
-                <Divider sx={{ my: 0.5 }} />
-              </>
-            )}
             <MenuItem
               onClick={handleLogout}
               sx={{

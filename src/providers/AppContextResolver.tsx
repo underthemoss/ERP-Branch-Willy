@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
-import { useOrganization } from "@/providers/OrganizationProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { ArrowForward, Dashboard } from "@mui/icons-material";
 import {
@@ -233,37 +232,29 @@ function WorkspaceSelectionScreen({
 export function AppContextResolver({ children }: AppContextResolverProps) {
   const pathname = usePathname();
   const { user } = useAuth0ErpUser();
-  const { selectedOrg, isLoading: isLoadingOrganizations } = useOrganization();
   const { workspaces, isLoadingWorkspaces, selectWorkspace } = useWorkspace();
 
   // Check if user is platform admin accessing admin routes
   const isAdminRoute = pathname?.startsWith("/admin");
   const isPlatformAdminOnAdminRoute = user?.isPlatformAdmin && isAdminRoute;
 
-  // Skip organization selection for platform admins on admin routes
-  if (isPlatformAdminOnAdminRoute && !isLoadingOrganizations) {
+  // Skip workspace selection for platform admins on admin routes
+  if (isPlatformAdminOnAdminRoute && !isLoadingWorkspaces) {
     return <>{children}</>;
   }
 
-  // Determine loading message
-  const getLoadingMessage = () => {
-    if (isLoadingOrganizations) return "Setting up your environment";
-    if (isLoadingWorkspaces) return "Loading workspaces";
-    return "Loading";
-  };
-
-  // Show loading screen if any loading state is active
-  if (isLoadingOrganizations || isLoadingWorkspaces) {
-    return <LoadingScreen message={getLoadingMessage()} />;
+  // Show loading screen if loading workspaces
+  if (isLoadingWorkspaces) {
+    return <LoadingScreen message="Loading workspaces" />;
   }
 
-  // Show workspace selection if organization is selected but no workspace
-  if (selectedOrg && workspaces && workspaces.length > 1) {
+  // Show workspace selection if multiple workspaces
+  if (workspaces && workspaces.length > 1) {
     return <WorkspaceSelectionScreen workspaces={workspaces} onSelectWorkspace={selectWorkspace} />;
   }
 
-  // If we have both organization and workspace, render children
-  if (selectedOrg && workspaces) {
+  // If we have workspaces, render children
+  if (workspaces) {
     return <>{children}</>;
   }
 

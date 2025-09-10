@@ -50,9 +50,6 @@ export default function Page() {
       if (error_description.includes("login_required")) {
         return "Your session has expired. Please log in again to continue.";
       }
-      if (error_description.includes("organization")) {
-        return "There was an issue with your organization access. Please try selecting a different organization or contact support.";
-      }
       return error_description;
     }
 

@@ -3,7 +3,6 @@ import { AppContextResolver } from "@/providers/AppContextResolver";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
-import { OrganizationProvider } from "@/providers/OrganizationProvider";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import React from "react";
 
@@ -31,11 +30,9 @@ export function ProviderComposer({
       <DatadogRumProvider>
         <GoogleMapsServerProvider>
           <ApolloClientProvider api={apiUrl}>
-            <OrganizationProvider>
-              <WorkspaceProvider>
-                <AppContextResolver>{children}</AppContextResolver>
-              </WorkspaceProvider>
-            </OrganizationProvider>
+            <WorkspaceProvider>
+              <AppContextResolver>{children}</AppContextResolver>
+            </WorkspaceProvider>
           </ApolloClientProvider>
         </GoogleMapsServerProvider>
       </DatadogRumProvider>

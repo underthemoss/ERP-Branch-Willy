@@ -10,7 +10,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { useOrganization } from "./OrganizationProvider";
 
 interface Workspace {
   id?: string | null | undefined;
@@ -42,11 +41,9 @@ interface WorkspaceProviderProps {
 
 export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }) => {
   const router = useRouter();
-  const { selectedOrg } = useOrganization();
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
 
   const { data, loading: workspacesLoading } = useFetchWorkspacesQuery({
-    skip: !selectedOrg,
     fetchPolicy: "cache-and-network",
   });
 
@@ -66,13 +63,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   // Auto-redirect if only one workspace
   useEffect(() => {
-    if (!workspacesLoading && workspaces?.length === 1 && selectedOrg && !selectedWorkspace) {
+    if (!workspacesLoading && workspaces?.length === 1 && !selectedWorkspace) {
       const workspaceId = workspaces[0].id;
       if (workspaceId) {
         selectWorkspace(workspaceId);
       }
     }
-  }, [workspaces, workspacesLoading, selectedOrg, selectedWorkspace, selectWorkspace]);
+  }, [workspaces, workspacesLoading, selectedWorkspace, selectWorkspace]);
 
   const value: WorkspaceContextType = {
     workspaces,
