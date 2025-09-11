@@ -2,10 +2,14 @@
 
 import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
+import { BusinessNameWithBrandSearch } from "@/ui/contacts/BusinessNameWithBrandSearch";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
+  Card,
+  CardMedia,
   CircularProgress,
   Container,
   TextField,
@@ -24,6 +28,7 @@ export default function CreateBusinessPage() {
     address: "",
     taxId: "",
     website: "",
+    brandId: null as string | null,
   });
   const [locationData, setLocationData] = React.useState<{
     lat: number;
@@ -31,6 +36,7 @@ export default function CreateBusinessPage() {
     placeId: string;
     validatedAddress: string;
   } | null>(null);
+  const [selectedBrand, setSelectedBrand] = React.useState<any>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   const [createBusiness, { loading }] = useCreateBusinessContactMutation();
@@ -61,18 +67,12 @@ export default function CreateBusinessPage() {
           address: finalAddress || undefined,
           taxId: form.taxId,
           website: form.website || undefined,
+          brandId: form.brandId || undefined,
+          latitude: locationData?.lat || undefined,
+          longitude: locationData?.lng || undefined,
+          placeId: locationData?.placeId || undefined,
         },
       });
-
-      // Log location data for future use when lat/lng/placeId fields are added to the schema
-      if (locationData) {
-        console.log("Location data saved for future use:", {
-          lat: locationData.lat,
-          lng: locationData.lng,
-          placeId: locationData.placeId,
-          address: finalAddress,
-        });
-      }
 
       if (result.data?.createBusinessContact?.id) {
         router.push(`../contacts/${result.data.createBusinessContact.id}`);
@@ -84,6 +84,18 @@ export default function CreateBusinessPage() {
     }
   };
 
+  const handleBrandSelected = React.useCallback((brand: any) => {
+    if (brand) {
+      setSelectedBrand(brand);
+      // Auto-populate website from brand data
+      if (brand.domain) {
+        setForm((prev) => ({ ...prev, website: `https://${brand.domain}` }));
+      }
+    } else {
+      setSelectedBrand(null);
+    }
+  }, []);
+
   return (
     <Container maxWidth="sm">
       <Box mt={4} mb={2}>
@@ -91,15 +103,70 @@ export default function CreateBusinessPage() {
           Add New Business
         </Typography>
       </Box>
+
+      {/* Brand Banner */}
+      {selectedBrand?.images?.find((img: any) => img.type === "banner") && (
+        <Box sx={{ mb: 6, position: "relative" }}>
+          <Card sx={{ height: 200, overflow: "visible" }}>
+            <CardMedia
+              component="img"
+              height="200"
+              image={
+                selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src
+              }
+              alt={`${selectedBrand.name} banner`}
+              sx={{ objectFit: "cover" }}
+            />
+          </Card>
+          {selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
+            <Avatar
+              src={selectedBrand.logos.find((logo: any) => logo.type === "logo")?.formats?.[0]?.src}
+              sx={{
+                position: "absolute",
+                bottom: -40,
+                left: 20,
+                width: 80,
+                height: 80,
+                border: "4px solid white",
+                bgcolor:
+                  selectedBrand.logos.find((logo: any) => logo.type === "logo")?.theme === "dark"
+                    ? "white"
+                    : "grey.900",
+                "& img": {
+                  objectFit: "contain",
+                },
+              }}
+            >
+              {selectedBrand.name?.[0]}
+            </Avatar>
+          )}
+        </Box>
+      )}
+      {/* Brand Banner without logo overlay */}
+      {selectedBrand?.images?.find((img: any) => img.type === "banner") &&
+        !selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
+          <Card sx={{ mb: 3, height: 200 }}>
+            <CardMedia
+              component="img"
+              height="200"
+              image={
+                selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src
+              }
+              alt={`${selectedBrand.name} banner`}
+              sx={{ objectFit: "cover" }}
+            />
+          </Card>
+        )}
+
       <form onSubmit={handleSubmit}>
         <Box display="flex" flexDirection="column" gap={3}>
-          <TextField
-            label="Business Name"
-            name="name"
+          <BusinessNameWithBrandSearch
             value={form.name}
-            onChange={handleChange}
+            onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
+            brandId={form.brandId}
+            onBrandIdChange={(brandId) => setForm((prev) => ({ ...prev, brandId }))}
+            onBrandSelected={handleBrandSelected}
             required
-            fullWidth
           />
           <TextField
             label="Phone"

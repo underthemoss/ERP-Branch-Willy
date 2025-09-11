@@ -24,6 +24,7 @@ interface AddressValidationFieldProps {
   required?: boolean;
   fullWidth?: boolean;
   sx?: any;
+  placeId?: string;
 }
 
 interface AddressValidation {
@@ -61,6 +62,7 @@ export function AddressValidationField({
   required = false,
   fullWidth = true,
   sx,
+  placeId,
 }: AddressValidationFieldProps) {
   const [validation, setValidation] = useState<AddressValidation | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -228,6 +230,14 @@ export function AddressValidationField({
   useEffect(() => {
     setInputValue(value);
   }, [value]);
+
+  // Resolve placeId if provided on mount or when it changes
+  useEffect(() => {
+    if (placeId && scriptsLoaded && placesService.current && !validation) {
+      // Only fetch if we don't already have validation for this placeId
+      fetchPlaceDetails(placeId);
+    }
+  }, [placeId, scriptsLoaded, fetchPlaceDetails, validation]);
 
   if (!apiKey) {
     return (

@@ -17,6 +17,8 @@ export {
   useUpdateBusinessContactMutation,
   useUpdatePersonContactMutation,
   useDeleteContactMutation,
+  useSearchBrandsQuery,
+  useGetBrandByIdQuery,
 } from "@/graphql/hooks";
 
 export const PersonContactFieldsFragment = graphql(`
@@ -45,8 +47,36 @@ export const BusinessContactFieldsFragment = graphql(`
     name
     phone
     address
+    latitude
+    longitude
+    placeId
     taxId
     website
+    brandId
+    brand {
+      id
+      name
+      domain
+      logos {
+        type
+        theme
+        formats {
+          src
+          format
+          width
+          height
+        }
+      }
+      images {
+        type
+        formats {
+          src
+          format
+          width
+          height
+        }
+      }
+    }
     updatedAt
   }
 `);
@@ -123,7 +153,11 @@ graphql(`
     $address: String
     $taxId: String!
     $website: String
+    $brandId: ID
     $resourceMapIds: [ID!]
+    $latitude: Float
+    $longitude: Float
+    $placeId: String
   ) {
     createBusinessContact(
       input: {
@@ -133,7 +167,11 @@ graphql(`
         address: $address
         taxId: $taxId
         website: $website
+        brandId: $brandId
         resourceMapIds: $resourceMapIds
+        latitude: $latitude
+        longitude: $longitude
+        placeId: $placeId
       }
     ) {
       id
@@ -175,6 +213,47 @@ graphql(`
           id
           name
           profilePicture
+        }
+      }
+    }
+  }
+`);
+
+graphql(`
+  query SearchBrands($query: String!) {
+    searchBrands(query: $query) {
+      brandId
+      name
+      domain
+      icon
+    }
+  }
+`);
+
+graphql(`
+  query GetBrandById($brandId: String!) {
+    getBrandById(brandId: $brandId) {
+      id
+      name
+      domain
+      description
+      logos {
+        type
+        theme
+        formats {
+          src
+          format
+          width
+          height
+        }
+      }
+      images {
+        type
+        formats {
+          src
+          format
+          width
+          height
         }
       }
     }
