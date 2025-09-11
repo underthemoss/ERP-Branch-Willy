@@ -106,7 +106,12 @@ export default function CreateBusinessPage() {
 
       {/* Brand Banner */}
       {selectedBrand?.images?.find((img: any) => img.type === "banner") && (
-        <Box sx={{ mb: 6, position: "relative" }}>
+        <Box
+          sx={{
+            mb: selectedBrand?.logos?.find((logo: any) => logo.type === "logo") ? 10 : 3,
+            position: "relative",
+          }}
+        >
           <Card sx={{ height: 200, overflow: "visible" }}>
             <CardMedia
               component="img"
@@ -142,24 +147,14 @@ export default function CreateBusinessPage() {
           )}
         </Box>
       )}
-      {/* Brand Banner without logo overlay */}
-      {selectedBrand?.images?.find((img: any) => img.type === "banner") &&
-        !selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
-          <Card sx={{ mb: 3, height: 200 }}>
-            <CardMedia
-              component="img"
-              height="200"
-              image={
-                selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src
-              }
-              alt={`${selectedBrand.name} banner`}
-              sx={{ objectFit: "cover" }}
-            />
-          </Card>
-        )}
 
       <form onSubmit={handleSubmit}>
-        <Box display="flex" flexDirection="column" gap={3}>
+        <Box
+          display="flex"
+          flexDirection="column"
+          gap={3}
+          sx={{ mt: selectedBrand?.images?.find((img: any) => img.type === "banner") ? 2 : 3 }}
+        >
           <BusinessNameWithBrandSearch
             value={form.name}
             onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}

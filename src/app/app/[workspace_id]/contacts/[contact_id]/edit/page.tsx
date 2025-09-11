@@ -354,7 +354,7 @@ export default function EditContactPage() {
         <>
           {/* Brand Banner */}
           {selectedBrand?.images?.find((img: any) => img.type === "banner") && (
-            <Box sx={{ mb: 6, position: "relative" }}>
+            <Box sx={{ mb: 8, position: "relative" }}>
               <Card sx={{ height: 200, overflow: "visible" }}>
                 <CardMedia
                   component="img"
