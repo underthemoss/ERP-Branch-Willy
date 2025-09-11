@@ -1,7 +1,9 @@
 "use client";
 
-import { useFetchWorkspacesQuery } from "@/graphql/hooks";
-import { useRouter } from "next/navigation";
+import { graphql } from "@/graphql";
+import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
+import { useQuery } from "@apollo/client";
+import { useParams, useRouter } from "next/navigation";
 import React, {
   createContext,
   ReactNode,
@@ -11,14 +13,39 @@ import React, {
   useState,
 } from "react";
 
-interface Workspace {
-  id?: string | null | undefined;
-  name?: string | null | undefined;
-  companyId?: number | null | undefined;
-}
+// Define comprehensive workspace query
+graphql(`
+  query WorkspaceProviderListWorkspaces {
+    listWorkspaces {
+      items {
+        id
+        name
+        companyId
+        description
+        accessType
+        archived
+        archivedAt
+        bannerImageUrl
+        brandId
+        domain
+        logoUrl
+        ownerId
+        createdAt
+        createdBy
+        updatedAt
+        updatedBy
+      }
+    }
+  }
+`);
+
+// Extract the workspace item type from the query
+type WorkspaceItem = NonNullable<
+  NonNullable<ReturnType<typeof useWorkspaceProviderListWorkspacesQuery>["data"]>["listWorkspaces"]
+>["items"][number];
 
 interface WorkspaceContextType {
-  workspaces: Workspace[] | undefined;
+  workspaces: WorkspaceItem[] | undefined;
   selectedWorkspace: string | null;
   isLoadingWorkspaces: boolean;
   selectWorkspace: (workspaceId: string) => void;
@@ -41,13 +68,24 @@ interface WorkspaceProviderProps {
 
 export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }) => {
   const router = useRouter();
+  const params = useParams<{ workspace_id?: string }>();
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
 
-  const { data, loading: workspacesLoading } = useFetchWorkspacesQuery({
+  const { data, loading: workspacesLoading } = useWorkspaceProviderListWorkspacesQuery({
     fetchPolicy: "cache-and-network",
   });
 
   const workspaces = data?.listWorkspaces?.items;
+
+  // Extract workspace ID from params
+  useEffect(() => {
+    if (params?.workspace_id) {
+      // Only set if different to avoid unnecessary re-renders
+      if (params.workspace_id !== selectedWorkspace) {
+        setSelectedWorkspace(params.workspace_id);
+      }
+    }
+  }, [params?.workspace_id, selectedWorkspace]);
 
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -60,16 +98,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const clearWorkspace = useCallback(() => {
     setSelectedWorkspace(null);
   }, []);
-
-  // Auto-redirect if only one workspace
-  useEffect(() => {
-    if (!workspacesLoading && workspaces?.length === 1 && !selectedWorkspace) {
-      const workspaceId = workspaces[0].id;
-      if (workspaceId) {
-        selectWorkspace(workspaceId);
-      }
-    }
-  }, [workspaces, workspacesLoading, selectedWorkspace, selectWorkspace]);
 
   const value: WorkspaceContextType = {
     workspaces,

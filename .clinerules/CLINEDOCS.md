@@ -103,19 +103,20 @@ The admin section should feel distinctly different from the main application - m
 
 #### **Overall Aesthetic**
 
-- **Professional & Serious**: This is for power users managing critical platform operations
+- **Professional & Clean**: This is for power users managing critical platform operations
 - **Data-Dense**: Prioritize information density over whitespace
-- **Dark & Distinguished**: Use a darker, more sophisticated color palette to differentiate from the main app
+- **Light & Distinguished**: Use a clean, professional light theme that feels authoritative yet approachable
 
 #### **Color Palette**
 
-- **Primary**: Deep blues and cool grays (not the bright colors of the main app)
-- **Backgrounds**: Darker backgrounds (#1a1a1a to #2d2d2d range)
+- **Primary**: Professional blues and grays (more subdued than the main app)
+- **Backgrounds**: Light backgrounds with subtle gray tones for sections
 - **Accents**:
   - Red/Orange for warnings and critical actions
   - Green for success states
   - Amber for caution
-- **Text**: Higher contrast ratios for better readability on dark backgrounds
+  - Blue for informational states
+- **Text**: Standard contrast ratios with dark text on light backgrounds for optimal readability
 
 #### **Layout Principles**
 

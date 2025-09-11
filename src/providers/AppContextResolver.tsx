@@ -2,19 +2,8 @@
 
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
-import { ArrowForward, Dashboard } from "@mui/icons-material";
-import {
-  alpha,
-  Box,
-  Card,
-  CardContent,
-  Container,
-  Fade,
-  Grid,
-  LinearProgress,
-  Typography,
-  useTheme,
-} from "@mui/material";
+import { WorkspaceSelectionScreen } from "@/ui/workspace/WorkspaceSelectionScreen";
+import { alpha, Box, Fade, LinearProgress, Typography, useTheme } from "@mui/material";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
@@ -103,136 +92,11 @@ function LoadingScreen({ message }: LoadingScreenProps) {
   );
 }
 
-// Workspace selection screen component
-interface WorkspaceSelectionScreenProps {
-  workspaces: any[];
-  onSelectWorkspace: (workspaceId: string) => void;
-}
-
-function WorkspaceSelectionScreen({
-  workspaces,
-  onSelectWorkspace,
-}: WorkspaceSelectionScreenProps) {
-  const theme = useTheme();
-
-  return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: `linear-gradient(135deg, ${alpha(
-          theme.palette.primary.main,
-          0.05,
-        )} 0%, ${alpha(theme.palette.primary.dark, 0.1)} 100%)`,
-        py: 4,
-      }}
-    >
-      <Container maxWidth="md">
-        <Box>
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
-              <Image
-                src="/logo-erp.png"
-                alt="EquipmentShare"
-                width={200}
-                height={60}
-                priority
-                style={{ objectFit: "contain", width: "auto", height: "auto" }}
-              />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: "text.primary", mb: 2 }}>
-              Select a workspace
-            </Typography>
-            <Typography variant="body1" sx={{ color: "text.secondary" }}>
-              Choose the workspace you&apos;d like to access
-            </Typography>
-          </Box>
-
-          <Grid container spacing={3}>
-            {workspaces.map((workspace, index) => (
-              <Grid key={workspace.id || index} size={{ xs: 12, sm: 6 }}>
-                <Card
-                  sx={{
-                    cursor: "pointer",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: theme.shadows[8],
-                      borderColor: theme.palette.primary.main,
-                      "& .arrow-icon": {
-                        transform: "translateX(4px)",
-                      },
-                    },
-                  }}
-                  onClick={() => workspace.id && onSelectWorkspace(workspace.id)}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: `linear-gradient(135deg, ${alpha(
-                              theme.palette.primary.main,
-                              0.1,
-                            )} 0%, ${alpha(theme.palette.primary.main, 0.2)} 100%)`,
-                          }}
-                        >
-                          <Dashboard sx={{ color: theme.palette.primary.main }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {workspace.name || "Unnamed Workspace"}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                            Workspace ID: {workspace.id}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <ArrowForward
-                        className="arrow-icon"
-                        sx={{
-                          color: "text.secondary",
-                          transition: "transform 0.3s ease",
-                        }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      </Container>
-    </Box>
-  );
-}
-
 // Main component - now much simpler
 export function AppContextResolver({ children }: AppContextResolverProps) {
   const pathname = usePathname();
   const { user } = useAuth0ErpUser();
-  const { workspaces, isLoadingWorkspaces, selectWorkspace } = useWorkspace();
+  const { workspaces, isLoadingWorkspaces, selectedWorkspace } = useWorkspace();
 
   // Check if user is platform admin accessing admin routes
   const isAdminRoute = pathname?.startsWith("/admin");
@@ -248,13 +112,17 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
     return <LoadingScreen message="Loading workspaces" />;
   }
 
-  // Show workspace selection if multiple workspaces
-  if (workspaces && workspaces.length > 1) {
-    return <WorkspaceSelectionScreen workspaces={workspaces} onSelectWorkspace={selectWorkspace} />;
+  // Check if we're on a workspace route but no workspace is selected in context
+  const isWorkspaceRoute = pathname?.startsWith("/app/");
+
+  // Show workspace selection if no workspace is selected and we're not on a workspace route
+  // OR if we have workspaces but none is selected
+  if (workspaces && !selectedWorkspace && !isWorkspaceRoute) {
+    return <WorkspaceSelectionScreen />;
   }
 
-  // If we have workspaces, render children
-  if (workspaces) {
+  // If we have a selected workspace or we're on a workspace route, render children
+  if (workspaces && (selectedWorkspace || isWorkspaceRoute)) {
     return <>{children}</>;
   }
 
