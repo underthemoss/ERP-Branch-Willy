@@ -17,5 +17,5 @@ export default function Page() {
   // AppContextResolver handles all loading states and selection screens
   // This component will only render if context is resolved but no workspace is selected
   // which shouldn't happen in normal flow
-  return null;
+  return <></>;
 }

@@ -11,6 +11,64 @@ input AddTaxLineItemInput {
   value: Float!
 }
 
+type AdminMutationNamespace {
+  """Assign roles to a user (Admin only)"""
+  assignRolesToUser(
+    """Comma-separated role IDs"""
+    roleIds: String!
+
+    """Auth0 user ID"""
+    userId: String!
+  ): Boolean
+
+  """Remove roles from a user (Admin only)"""
+  removeRolesFromUser(
+    """Comma-separated role IDs"""
+    roleIds: String!
+
+    """Auth0 user ID"""
+    userId: String!
+  ): Boolean
+}
+
+type AdminQueryNamespace {
+  """Get a single Auth0 user by ID (Admin only)"""
+  getUserById(
+    """Auth0 user ID"""
+    userId: String!
+  ): Auth0User
+
+  """Get roles assigned to a user (Admin only)"""
+  getUserRoles(
+    """Auth0 user ID"""
+    userId: String!
+  ): [Auth0Role]
+
+  """List all available Auth0 roles (Admin only)"""
+  listRoles: [Auth0Role]
+
+  """Search for users in Auth0 (Admin only)"""
+  searchUsers(
+    """Fields to include"""
+    fields: String
+
+    """Include or exclude fields"""
+    includeFields: Boolean = true
+
+    """Page number (0-based)"""
+    page: Int = 0
+
+    """Results per page"""
+    perPage: Int = 50
+
+    """Auth0 search query"""
+    query: String
+
+    """Sort field and order"""
+    sort: String
+  ): Auth0UsersSearchResult
+}
+
 type Asset {
   category: AssetCategory
   class: AssetClass
@@ -161,6 +219,52 @@ type AssetType {
   name: String
 }
 
+type Auth0Identity {
+  accessToken: String
+  connection: String!
+  isSocial: Boolean!
+  provider: String!
+  userId: String!
+}
+
+type Auth0Role {
+  description: String
+  id: String!
+  name: String!
+}
+
+type Auth0User {
+  appMetadata: JSON
+  blocked: Boolean
+  createdAt: String
+  email: String
+  emailVerified: Boolean
+  familyName: String
+  givenName: String
+  identities: [Auth0Identity]
+  lastIp: String
+  lastLogin: String
+  loginsCount: Int
+  multifactor: [String]
+  name: String
+  nickname: String
+  phoneNumber: String
+  phoneVerified: Boolean
+  picture: String
+  updatedAt: String
+  userId: String!
+  userMetadata: JSON
+  username: String
+}
+
+type Auth0UsersSearchResult {
+  length: Int!
+  limit: Int!
+  start: Int!
+  total: Int!
+  users: [Auth0User!]!
+}
+
 interface BaseTransaction {
   comments: [Comment!]
   createdAt: DateTime
@@ -182,6 +286,71 @@ interface BaseTransaction {
 The `BigInt` scalar type represents non-fractional signed whole numeric values.
 """
 scalar BigInt
+
+type Brand {
+  colors: [BrandColor]
+  createdAt: String!
+  createdBy: String!
+  description: String
+  domain: String
+  fonts: [BrandFont]
+  id: String!
+  images: [BrandImage]
+  links: [BrandLink]
+  logos: [BrandLogo]
+  longDescription: String
+  name: String
+  updatedAt: String!
+  updatedBy: String!
+}
+
+type BrandColor {
+  brightness: Int
+  hex: String!
+  type: String!
+}
+
+type BrandFont {
+  name: String!
+  origin: String
+  originId: String
+  type: String!
+  weights: [Int]
+}
+
+type BrandImage {
+  formats: [BrandImageFormat]
+  type: String
+  url: String
+}
+
+type BrandImageFormat {
+  background: String
+  format: String
+  height: Int
+  size: Int
+  src: String!
+  width: Int
+}
+
+type BrandLink {
+  name: String!
+  url: String!
+}
+
+type BrandLogo {
+  formats: [BrandImageFormat]
+  theme: String
+  type: String
+  url: String
+}
+
+type BrandSearchResult {
+  brandId: String!
+  domain: String!
+  icon: String
+  name: String!
+}
 
 input BulkMarkInventoryReceivedInput {
   conditionNotes: String
@@ -1032,6 +1201,9 @@ type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
+
+  """Admin mutations (Admin only)"""
+  admin: AdminMutationNamespace
   assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
@@ -1076,6 +1248,7 @@ type Mutation {
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
+  refreshBrand(brandId: String!): Brand
   removeFileFromEntity(file_id: String!): File!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
   renameFile(file_id: String!, new_file_name: String!): File!
@@ -1096,6 +1269,7 @@ type Mutation {
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
   submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
+  touchAllContacts(batchSize: Int): TouchAllContactsResult
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
@@ -1510,7 +1684,12 @@ enum PurchaseOrderStatus {
 }
 
 type Query {
+  """Admin operations (Admin only)"""
+  admin: AdminQueryNamespace
   currentUser: JWTPayload
+  getBrandByDomain(domain: String!): Brand
+  getBrandById(brandId: String!): Brand
+  getBrandsByIds(brandIds: [String!]!): [Brand]
   getContactById(id: ID!): Contact
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
   getDefaultTemplates: [ReferenceNumberTemplate!]!
@@ -1587,6 +1766,7 @@ type Query {
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
+  searchBrands(query: String!): [BrandSearchResult]
   usersSearch(searchTerm: String): [User]
 }
 
@@ -2176,6 +2356,10 @@ type TaxObligation {
 enum TaxType {
   FIXED_AMOUNT
   PERCENTAGE
+}
+
+type TouchAllContactsResult {
+  touched: Int!
 }
 
 union Transaction = RentalTransaction | SaleTransaction | ServiceTransaction
