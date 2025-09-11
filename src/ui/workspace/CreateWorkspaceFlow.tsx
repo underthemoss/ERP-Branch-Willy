@@ -18,6 +18,7 @@ import {
   Verified,
 } from "@mui/icons-material";
 import {
+  Alert,
   alpha,
   Avatar,
   Box,
@@ -31,6 +32,7 @@ import {
   Radio,
   RadioGroup,
   Skeleton,
+  Snackbar,
   TextField,
   Typography,
   useTheme,
@@ -138,6 +140,10 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const [selectedBannerUrl, setSelectedBannerUrl] = useState<string | null>(null);
   const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
 
+  // Error handling state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
+
   // Extract domain from user email
   const userDomain = user?.email ? user.email.split("@")[1] : "";
 
@@ -197,6 +203,7 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
 
   const handleCreateWorkspace = async () => {
     setStep("creating");
+    setErrorMessage(null);
 
     try {
       const { data } = await createWorkspace({
@@ -218,14 +225,41 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
         onComplete(data.createWorkspace.id);
       } else {
         // Handle error case - workspace creation failed
-        console.error("Failed to create workspace - no ID returned");
+        setErrorMessage(
+          "Failed to create workspace. Please try again or contact support if the issue persists.",
+        );
+        setShowError(true);
         setStep("settings"); // Go back to last step
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating workspace:", error);
+
+      // Parse error message for user-friendly display
+      let userMessage = "An unexpected error occurred while creating your workspace.";
+
+      if (error?.message) {
+        if (error.message.includes("duplicate") || error.message.includes("already exists")) {
+          userMessage =
+            "A workspace with this name already exists. Please choose a different name.";
+        } else if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          userMessage =
+            "You don't have permission to create a workspace. Please contact your administrator.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          userMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes("validation")) {
+          userMessage =
+            "Please check your input and ensure all required fields are filled correctly.";
+        }
+      }
+
+      setErrorMessage(userMessage);
+      setShowError(true);
       setStep("settings"); // Go back to last step
-      // TODO: Show error message to user via toast or alert
     }
+  };
+
+  const handleCloseError = () => {
+    setShowError(false);
   };
 
   const isValidDomain = (domain: string) => {
@@ -462,7 +496,7 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                                 )?.src || banner.url;
 
                               return (
-                                <Grid size="auto" key={index}>
+                                <Grid size={{ xs: "auto" }} key={index}>
                                   <Box
                                     onClick={() => setSelectedBannerUrl(bannerUrl)}
                                     sx={{
@@ -512,7 +546,7 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                               if (!logoOptionUrl) return null;
 
                               return (
-                                <Grid size="auto" key={index}>
+                                <Grid size={{ xs: "auto" }} key={index}>
                                   <Box
                                     onClick={() => setSelectedLogoUrl(logoOptionUrl)}
                                     sx={{
@@ -772,7 +806,8 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                     (step === "settings" &&
                       accessType === "domain" &&
                       !!customDomain &&
-                      !isValidDomain(customDomain))
+                      !isValidDomain(customDomain)) ||
+                    createLoading
                   }
                   sx={{
                     bgcolor: primaryColor,
@@ -784,13 +819,29 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                     },
                   }}
                 >
-                  {step === "brand" || step === "details" ? "Next" : "Create Workspace"}
+                  {step === "brand" || step === "details"
+                    ? "Next"
+                    : createLoading
+                      ? "Creating..."
+                      : "Create Workspace"}
                 </Button>
               </Box>
             </>
           )}
         </CardContent>
       </Card>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={showError}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseError} severity="error" sx={{ width: "100%" }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

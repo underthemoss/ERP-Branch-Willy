@@ -26,9 +26,7 @@ export function WorkspaceSelectionScreen() {
   const { workspaces, selectWorkspace, isLoadingWorkspaces } = useWorkspace();
   const [showCreateFlow, setShowCreateFlow] = useState(false);
 
-  console.log(workspaces);
   const handleWorkspaceCreated = (workspaceId: string) => {
-    console.log("Workspace created:", workspaceId);
     selectWorkspace(workspaceId);
   };
 
