@@ -1,11 +1,23 @@
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { Box, IconButton, Typography } from "@mui/material";
+import { Avatar, Box, IconButton, Typography } from "@mui/material";
 import { FC } from "react";
 import { useSidebar } from "../sidebar/useSidebar";
 import { BusinessContact, PersonContact } from "./api";
 
 export const ContactListItem: FC<{ contact: BusinessContact | PersonContact }> = ({ contact }) => {
   const { openSidebar } = useSidebar();
+
+  // Get logo for business contacts
+  const businessLogo =
+    contact.__typename === "BusinessContact"
+      ? contact.brand?.logos?.find((l) => l?.type === "logo")?.formats?.[0]?.src
+      : null;
+
+  const logoTheme =
+    contact.__typename === "BusinessContact"
+      ? contact.brand?.logos?.find((l) => l?.type === "logo")?.theme
+      : null;
+
   return (
     <Box
       key={contact.id}
@@ -19,35 +31,36 @@ export const ContactListItem: FC<{ contact: BusinessContact | PersonContact }> =
         border: "1px solid #E5E5EC",
       }}
     >
-      {contact.profilePicture ? (
-        <img
-          src={contact.profilePicture}
-          alt={contact.name}
-          style={{ width: "32px", height: "32px", borderRadius: "50%" }}
-        />
-      ) : (
-        <Box
-          sx={{
-            minWidth: "32px",
-            height: "32px",
-            borderRadius: "50%",
-            backgroundColor: "black",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontWeight: "bold",
-            fontSize: "14px",
-          }}
-        >
-          {contact.name
+      <Avatar
+        src={businessLogo || contact.profilePicture || undefined}
+        sx={{
+          width: 32,
+          height: 32,
+          bgcolor: businessLogo
+            ? logoTheme === "dark"
+              ? "white"
+              : logoTheme === "light"
+                ? "grey.900"
+                : "white"
+            : "black",
+          border: logoTheme === "light" ? "1px solid" : "none",
+          borderColor: "grey.300",
+          "& img": {
+            objectFit: "contain",
+          },
+          fontSize: "14px",
+          fontWeight: "bold",
+        }}
+      >
+        {!businessLogo &&
+          !contact.profilePicture &&
+          contact.name
             .split(" ")
             .slice(-2)
             .map((n) => n[0])
             .join("")
             .toUpperCase()}
-        </Box>
-      )}
+      </Avatar>
       <Box>
         <Typography variant="body1">{contact.name}</Typography>
         <Typography variant="body2" color="grey.400">

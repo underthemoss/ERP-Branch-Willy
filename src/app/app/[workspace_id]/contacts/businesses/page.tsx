@@ -6,6 +6,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import {
+  Avatar,
   Box,
   Button,
   Chip,
@@ -51,6 +52,7 @@ export default function BusinessesContactsPage() {
           notes: contact?.notes ?? "",
           profilePicture: contact?.profilePicture ?? "",
           updatedAt: contact?.updatedAt ?? "",
+          brand: contact?.brand ?? null,
         })) ?? []
     );
   }, [data]);
@@ -73,6 +75,47 @@ export default function BusinessesContactsPage() {
       headerName: "Business Name",
       flex: 2,
       minWidth: 200,
+      renderCell: (params) => {
+        const businessLogo = params.row.brand?.logos?.find((l: any) => l?.type === "logo")
+          ?.formats?.[0]?.src;
+        const logoTheme = params.row.brand?.logos?.find((l: any) => l?.type === "logo")?.theme;
+
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, height: "100%" }}>
+            <Avatar
+              src={businessLogo || params.row.profilePicture || undefined}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: businessLogo
+                  ? logoTheme === "dark"
+                    ? "white"
+                    : logoTheme === "light"
+                      ? "grey.900"
+                      : "white"
+                  : "black",
+                border: logoTheme === "light" ? "1px solid" : "none",
+                borderColor: "grey.300",
+                "& img": {
+                  objectFit: "contain",
+                },
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
+              {!businessLogo &&
+                !params.row.profilePicture &&
+                params.value
+                  ?.split(" ")
+                  .slice(-2)
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()}
+            </Avatar>
+            <Typography>{params.value}</Typography>
+          </Box>
+        );
+      },
     },
     { field: "phone", headerName: "Phone", width: 150 },
     { field: "address", headerName: "Address", width: 200 },
