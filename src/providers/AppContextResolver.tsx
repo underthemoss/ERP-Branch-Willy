@@ -96,7 +96,7 @@ function LoadingScreen({ message }: LoadingScreenProps) {
 export function AppContextResolver({ children }: AppContextResolverProps) {
   const pathname = usePathname();
   const { user } = useAuth0ErpUser();
-  const { workspaces, isLoadingWorkspaces } = useWorkspace();
+  const { workspaces, isLoadingWorkspaces, selectedWorkspace } = useWorkspace();
 
   // Check if user is platform admin accessing admin routes
   const isAdminRoute = pathname?.startsWith("/admin");
@@ -112,13 +112,17 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
     return <LoadingScreen message="Loading workspaces" />;
   }
 
-  // Show workspace selection if multiple workspaces
-  if (workspaces) {
+  // Check if we're on a workspace route but no workspace is selected in context
+  const isWorkspaceRoute = pathname?.startsWith("/app/");
+
+  // Show workspace selection if no workspace is selected and we're not on a workspace route
+  // OR if we have workspaces but none is selected
+  if (workspaces && !selectedWorkspace && !isWorkspaceRoute) {
     return <WorkspaceSelectionScreen />;
   }
 
-  // If we have workspaces, render children
-  if (workspaces) {
+  // If we have a selected workspace or we're on a workspace route, render children
+  if (workspaces && (selectedWorkspace || isWorkspaceRoute)) {
     return <>{children}</>;
   }
 
