@@ -7,11 +7,15 @@ import {
   useUpdateBusinessContactMutation,
   useUpdatePersonContactMutation,
 } from "@/ui/contacts/api";
+import { BusinessNameWithBrandSearch } from "@/ui/contacts/BusinessNameWithBrandSearch";
 import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
+  Card,
+  CardMedia,
   CircularProgress,
   Container,
   MenuItem,
@@ -52,10 +56,16 @@ export default function EditContactPage() {
     address: "",
     taxId: "",
     website: "",
-    lat: null as number | null,
-    lng: null as number | null,
-    placeId: "",
+    brandId: null as string | null,
   });
+  const [locationData, setLocationData] = React.useState<{
+    lat: number;
+    lng: number;
+    placeId: string;
+    validatedAddress: string;
+  } | null>(null);
+  const [initialPlaceId, setInitialPlaceId] = React.useState<string | undefined>(undefined);
+  const [selectedBrand, setSelectedBrand] = React.useState<any>(null);
   const [updateBusiness, { loading: updatingBusiness }] = useUpdateBusinessContactMutation();
 
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -91,10 +101,25 @@ export default function EditContactPage() {
         address: data.getContactById.address ?? "",
         taxId: data.getContactById.taxId ?? "",
         website: data.getContactById.website ?? "",
-        lat: null,
-        lng: null,
-        placeId: "",
+        brandId: data.getContactById.brandId ?? null,
       });
+      // If there's a brand, fetch and set it
+      if (data.getContactById.brand) {
+        setSelectedBrand(data.getContactById.brand);
+      }
+      // Set initial placeId if available
+      if (data.getContactById.placeId) {
+        setInitialPlaceId(data.getContactById.placeId);
+        // Also set initial location data if available
+        if (data.getContactById.latitude && data.getContactById.longitude) {
+          setLocationData({
+            lat: data.getContactById.latitude,
+            lng: data.getContactById.longitude,
+            placeId: data.getContactById.placeId,
+            validatedAddress: data.getContactById.address ?? "",
+          });
+        }
+      }
     }
   }, [data]);
 
@@ -119,6 +144,18 @@ export default function EditContactPage() {
       [e.target.name]: e.target.value,
     }));
   };
+
+  const handleBrandSelected = React.useCallback((brand: any) => {
+    if (brand) {
+      setSelectedBrand(brand);
+      // Auto-populate website from brand data
+      if (brand.domain) {
+        setBusinessForm((prev) => ({ ...prev, website: `https://${brand.domain}` }));
+      }
+    } else {
+      setSelectedBrand(null);
+    }
+  }, []);
 
   // Submit for PersonContact
   const handlePersonSubmit = async (e: React.FormEvent) => {
@@ -161,12 +198,16 @@ export default function EditContactPage() {
       return;
     }
     try {
+      // Use validated address if available, otherwise use the original input
+      const finalAddress = locationData?.validatedAddress || businessForm.address;
+
       // Log location data for future schema updates
-      if (businessForm.lat && businessForm.lng) {
+      if (locationData) {
         console.log("Location data for future schema update:", {
-          lat: businessForm.lat,
-          lng: businessForm.lng,
-          placeId: businessForm.placeId,
+          lat: locationData.lat,
+          lng: locationData.lng,
+          placeId: locationData.placeId,
+          address: finalAddress,
         });
       }
 
@@ -176,9 +217,13 @@ export default function EditContactPage() {
           input: {
             name: businessForm.name,
             phone: businessForm.phone || undefined,
-            address: businessForm.address || undefined,
+            address: finalAddress || undefined,
             taxId: businessForm.taxId,
             website: businessForm.website || undefined,
+            brandId: businessForm.brandId || undefined,
+            latitude: locationData?.lat || undefined,
+            longitude: locationData?.lng || undefined,
+            placeId: locationData?.placeId || undefined,
           },
         },
       });
@@ -306,70 +351,146 @@ export default function EditContactPage() {
         </form>
       )}
       {isBusiness && (
-        <form onSubmit={handleBusinessSubmit}>
-          <Box display="flex" flexDirection="column" gap={3}>
-            <TextField
-              label="Business Name"
-              name="name"
-              value={businessForm.name}
-              onChange={handleBusinessChange}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Phone"
-              name="phone"
-              value={businessForm.phone}
-              onChange={handleBusinessChange}
-              fullWidth
-            />
-            <AddressValidationField
-              value={businessForm.address}
-              onChange={(value: string) => setBusinessForm((prev) => ({ ...prev, address: value }))}
-              onLocationChange={(lat: number, lng: number, placeId: string) =>
-                setBusinessForm((prev) => ({ ...prev, lat, lng, placeId }))
-              }
-              label="Address"
-              fullWidth
-            />
-            <TextField
-              label="Tax ID"
-              name="taxId"
-              value={businessForm.taxId}
-              onChange={handleBusinessChange}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Website"
-              name="website"
-              value={businessForm.website}
-              onChange={handleBusinessChange}
-              fullWidth
-            />
-            {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
-            <Box display="flex" justifyContent="flex-end" gap={2}>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => router.back()}
-                disabled={updatingBusiness}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                disabled={updatingBusiness}
-                sx={{ minWidth: 120 }}
-                data-testid="save-contact"
-              >
-                {updatingBusiness ? <CircularProgress size={24} /> : "Save Changes"}
-              </Button>
+        <>
+          {/* Brand Banner */}
+          {selectedBrand?.images?.find((img: any) => img.type === "banner") && (
+            <Box sx={{ mb: 6, position: "relative" }}>
+              <Card sx={{ height: 200, overflow: "visible" }}>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={
+                    selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]
+                      ?.src
+                  }
+                  alt={`${selectedBrand.name} banner`}
+                  sx={{ objectFit: "cover" }}
+                />
+              </Card>
+              {selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
+                <Avatar
+                  src={
+                    selectedBrand.logos.find((logo: any) => logo.type === "logo")?.formats?.[0]?.src
+                  }
+                  sx={{
+                    position: "absolute",
+                    bottom: -40,
+                    left: 20,
+                    width: 80,
+                    height: 80,
+                    border: "4px solid white",
+                    bgcolor:
+                      selectedBrand.logos.find((logo: any) => logo.type === "logo")?.theme ===
+                      "dark"
+                        ? "white"
+                        : "grey.900",
+                    "& img": {
+                      objectFit: "contain",
+                    },
+                  }}
+                >
+                  {selectedBrand.name?.[0]}
+                </Avatar>
+              )}
             </Box>
-          </Box>
-        </form>
+          )}
+          {/* Brand Banner without logo overlay */}
+          {selectedBrand?.images?.find((img: any) => img.type === "banner") &&
+            !selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
+              <Card sx={{ mb: 3, height: 200 }}>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={
+                    selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]
+                      ?.src
+                  }
+                  alt={`${selectedBrand.name} banner`}
+                  sx={{ objectFit: "cover" }}
+                />
+              </Card>
+            )}
+
+          <form onSubmit={handleBusinessSubmit}>
+            <Box display="flex" flexDirection="column" gap={3}>
+              <BusinessNameWithBrandSearch
+                value={businessForm.name}
+                onChange={(value) => setBusinessForm((prev) => ({ ...prev, name: value }))}
+                brandId={businessForm.brandId}
+                onBrandIdChange={(brandId) => setBusinessForm((prev) => ({ ...prev, brandId }))}
+                onBrandSelected={handleBrandSelected}
+                required
+              />
+              <TextField
+                label="Phone"
+                name="phone"
+                value={businessForm.phone}
+                onChange={handleBusinessChange}
+                fullWidth
+              />
+              <AddressValidationField
+                value={businessForm.address}
+                onChange={(value) => setBusinessForm((prev) => ({ ...prev, address: value }))}
+                onLocationChange={(lat, lng, placeId) => {
+                  setLocationData((prev) => ({
+                    lat,
+                    lng,
+                    placeId,
+                    validatedAddress: prev?.validatedAddress || businessForm.address,
+                  }));
+                }}
+                onValidatedAddressChange={(validatedAddress) => {
+                  setLocationData((prev) => ({
+                    lat: prev?.lat || 0,
+                    lng: prev?.lng || 0,
+                    placeId: prev?.placeId || "",
+                    validatedAddress,
+                  }));
+                  setBusinessForm((prev) => ({ ...prev, address: validatedAddress }));
+                }}
+                label="Address"
+                fullWidth
+                placeId={initialPlaceId}
+              />
+              <TextField
+                label="Tax ID"
+                name="taxId"
+                value={businessForm.taxId}
+                onChange={handleBusinessChange}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Website"
+                name="website"
+                value={businessForm.website}
+                onChange={handleBusinessChange}
+                fullWidth
+              />
+              {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
+              <Box display="flex" justifyContent="flex-end" gap={2}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => router.back()}
+                  disabled={updatingBusiness}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                  disabled={updatingBusiness}
+                  sx={{ minWidth: 120 }}
+                  data-testid="save-contact"
+                >
+                  {updatingBusiness ? <CircularProgress size={24} /> : "Save Changes"}
+                </Button>
+              </Box>
+            </Box>
+          </form>
+        </>
       )}
     </Container>
   );

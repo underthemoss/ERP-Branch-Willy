@@ -1,11 +1,12 @@
 import { graphql } from "@/graphql";
 import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
-import { Box, Button, Grid, TextField } from "@mui/material";
+import { BusinessNameWithBrandSearch } from "@/ui/contacts/BusinessNameWithBrandSearch";
+import { Avatar, Box, Button, Card, CardMedia, Grid, TextField, Typography } from "@mui/material";
 import { DialogProps } from "@toolpad/core";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { useParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 type FormData = {
@@ -14,6 +15,7 @@ type FormData = {
   taxId: string;
   website?: string;
   phone?: string;
+  brandId?: string | null;
 };
 
 type LocationData = {
@@ -28,6 +30,7 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
     handleSubmit,
     control,
     formState: { errors },
+    setValue,
   } = useForm<FormData>({
     defaultValues: {
       businessName: "",
@@ -35,14 +38,36 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
       taxId: "",
       website: "",
       phone: "",
+      brandId: null,
     },
   });
 
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<any>(null);
 
   const [createBusinessContact, { loading }] = useCreateBusinessContactMutation();
   const notifications = useNotifications();
+
+  const handleBrandSelected = useCallback(
+    (brand: any) => {
+      if (brand) {
+        setSelectedBrand(brand);
+        // Handle both brandId (from search) and id (from getBrandById)
+        const brandIdValue = brand.brandId || brand.id;
+        setValue("brandId", brandIdValue);
+        // Auto-populate website from brand data
+        if (brand.domain) {
+          setValue("website", `https://${brand.domain}`);
+        }
+        // Note: Brand API doesn't provide address, so we can't auto-populate it
+      } else {
+        setSelectedBrand(null);
+        setValue("brandId", null);
+      }
+    },
+    [setValue],
+  );
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -58,6 +83,7 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
           address: finalAddress,
           taxId: data.taxId,
           website: data.website,
+          brandId: data.brandId,
         },
       });
 
@@ -91,20 +117,58 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
       noValidate
       sx={{ maxWidth: 600, mx: "auto", mt: 4 }}
     >
-      <Grid container spacing="24px">
+      {/* Brand Banner */}
+      {selectedBrand?.images?.find((img: any) => img.type === "banner") && (
+        <Card sx={{ mb: 3, position: "relative", height: 200 }}>
+          <CardMedia
+            component="img"
+            height="200"
+            image={
+              selectedBrand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src
+            }
+            alt={`${selectedBrand.name} banner`}
+            sx={{ objectFit: "cover" }}
+          />
+          {selectedBrand?.logos?.find((logo: any) => logo.type === "logo") && (
+            <Avatar
+              src={selectedBrand.logos.find((logo: any) => logo.type === "logo")?.formats?.[0]?.src}
+              sx={{
+                position: "absolute",
+                bottom: -30,
+                left: 20,
+                width: 80,
+                height: 80,
+                border: "4px solid white",
+              }}
+            >
+              {selectedBrand.name?.[0]}
+            </Avatar>
+          )}
+        </Card>
+      )}
+
+      <Grid container spacing="24px" sx={{ mt: selectedBrand?.images?.length ? 4 : 0 }}>
         <Grid size={{ xs: 12 }}>
           <Controller
             name="businessName"
             control={control}
             rules={{ required: "Business name is required" }}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Business Name"
-                required
-                fullWidth
-                error={!!errors.businessName}
-                helperText={errors.businessName?.message}
+            render={({ field, fieldState }) => (
+              <Controller
+                name="brandId"
+                control={control}
+                render={({ field: brandField }) => (
+                  <BusinessNameWithBrandSearch
+                    value={field.value}
+                    onChange={field.onChange}
+                    brandId={brandField.value || null}
+                    onBrandIdChange={brandField.onChange}
+                    onBrandSelected={handleBrandSelected}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                    required
+                  />
+                )}
               />
             )}
           />

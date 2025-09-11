@@ -370,14 +370,19 @@ type BulkMarkInventoryReceivedResult {
 type BusinessContact {
   accountsPayableContactId: String
   address: String
+  brand: Brand
+  brandId: String
   contactType: ContactType!
   createdAt: DateTime!
   createdBy: String!
   employees: ListPersonContactsResult
   id: ID!
+  latitude: Float
+  longitude: Float
   name: String!
   notes: String
   phone: String
+  placeId: String
   profilePicture: String
   resourceMapIds: [String!]
   resource_map_entries: [ResourceMapResource!]!
@@ -390,9 +395,13 @@ type BusinessContact {
 input BusinessContactInput {
   accountsPayableContactId: ID
   address: String
+  brandId: ID
+  latitude: Float
+  longitude: Float
   name: String!
   notes: String
   phone: String
+  placeId: String
   profilePicture: String
   resourceMapIds: [ID!]
   taxId: String
@@ -1273,6 +1282,7 @@ type Mutation {
   touchAllContacts(batchSize: Int): TouchAllContactsResult
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
+  updateBusinessBrandId(brandId: ID!, id: ID!): BusinessContact
   updateBusinessContact(id: ID!, input: UpdateBusinessContactInput!): BusinessContact
   updateBusinessName(id: ID!, name: String!): BusinessContact
   updateBusinessPhone(id: ID!, phone: String!): BusinessContact
@@ -2402,9 +2412,13 @@ enum TransactionType {
 input UpdateBusinessContactInput {
   accountsPayableContactId: ID
   address: String
+  brandId: ID
+  latitude: Float
+  longitude: Float
   name: String
   notes: String
   phone: String
+  placeId: String
   profilePicture: String
   resourceMapIds: [ID!]
   taxId: String

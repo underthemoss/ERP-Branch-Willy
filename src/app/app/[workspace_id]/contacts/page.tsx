@@ -6,6 +6,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import {
+  Avatar,
   Box,
   Button,
   Chip,
@@ -71,6 +72,8 @@ export default function ContactsPage() {
           notes: contact?.notes ?? "",
           profilePicture: contact?.profilePicture ?? "",
           updatedAt: contact?.updatedAt ?? "",
+          brand: isBusiness ? (contact?.brand ?? null) : null,
+          __typename: contact?.__typename,
         };
       }) ?? []
     );
@@ -94,6 +97,52 @@ export default function ContactsPage() {
       headerName: "Name",
       flex: 2,
       minWidth: 200,
+      renderCell: (params) => {
+        const businessLogo =
+          params.row.__typename === "BusinessContact" && params.row.brand
+            ? params.row.brand?.logos?.find((l: any) => l?.type === "logo")?.formats?.[0]?.src
+            : null;
+        const logoTheme =
+          params.row.__typename === "BusinessContact" && params.row.brand
+            ? params.row.brand?.logos?.find((l: any) => l?.type === "logo")?.theme
+            : null;
+
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, height: "100%" }}>
+            <Avatar
+              src={businessLogo || params.row.profilePicture || undefined}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: businessLogo
+                  ? logoTheme === "dark"
+                    ? "white"
+                    : logoTheme === "light"
+                      ? "grey.900"
+                      : "white"
+                  : "black",
+                border: logoTheme === "light" ? "1px solid" : "none",
+                borderColor: "grey.300",
+                "& img": {
+                  objectFit: "contain",
+                },
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
+              {!businessLogo &&
+                !params.row.profilePicture &&
+                params.value
+                  ?.split(" ")
+                  .slice(-2)
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()}
+            </Avatar>
+            <Typography>{params.value}</Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "type",

@@ -10,10 +10,12 @@ import NotesSection from "@/ui/notes/NotesSection";
 import ReferenceNumbersSection from "@/ui/reference-numbers/ReferenceNumbersSection";
 import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
 import {
+  Avatar,
   Box,
   Button,
   Card,
   CardContent,
+  CardMedia,
   Chip,
   Container,
   Dialog,
@@ -54,6 +56,29 @@ graphql(`
           phone
           address
           website
+          brandId
+          brand {
+            id
+            name
+            domain
+            logos {
+              type
+              theme
+              formats {
+                src
+                width
+                height
+              }
+            }
+            images {
+              type
+              formats {
+                src
+                width
+                height
+              }
+            }
+          }
           employees {
             items {
               id
@@ -73,6 +98,29 @@ graphql(`
         address
         taxId
         website
+        brandId
+        brand {
+          id
+          name
+          domain
+          logos {
+            type
+            theme
+            formats {
+              src
+              width
+              height
+            }
+          }
+          images {
+            type
+            formats {
+              src
+              width
+              height
+            }
+          }
+        }
         createdAt
         updatedAt
         resource_map_entries {
@@ -127,6 +175,14 @@ export default function ContactDisplayPage() {
     });
   }
 
+  // Get brand from either business contact directly or from person's business
+  const brand =
+    isBusiness && contact.brand
+      ? contact.brand
+      : isPerson && contact.business?.brand
+        ? contact.business.brand
+        : null;
+
   return (
     <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
       {loading && (
@@ -140,148 +196,265 @@ export default function ContactDisplayPage() {
         </Typography>
       )}
       {contact && (
-        <Grid container spacing={3}>
-          {/* Main Content */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            {/* Top Card: Contact Overview */}
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-              <Grid container alignItems="center" justifyContent="space-between">
-                <Grid size={{ xs: 12, md: 8 }}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="h4" gutterBottom>
-                      {contact.name}
-                    </Typography>
-                    <Chip
-                      label={isPerson ? "Person" : "Business"}
-                      color={isPerson ? "secondary" : "primary"}
-                      sx={{ fontWeight: 600, fontSize: "1rem" }}
-                    />
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    sx={{ mr: 1 }}
-                    data-testid="edit-contact"
-                    onClick={() => router.push(`/app/${workspace_id}/contacts/${contact.id}/edit`)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    data-testid="delete-contact"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    Delete
-                  </Button>
-                </Grid>
-              </Grid>
-              <Divider sx={{ my: 2 }} />
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Contact Type: {isPerson ? "Person" : "Business"}
-                </Typography>
-              </Box>
-            </Paper>
+        <>
+          {/* Brand Banner */}
+          {brand?.images?.find((img: any) => img.type === "banner") && (
+            <Box sx={{ mb: 6, position: "relative" }}>
+              <Card sx={{ height: 200, overflow: "visible" }}>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={brand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src}
+                  alt={`${brand.name} banner`}
+                  sx={{ objectFit: "cover" }}
+                />
+              </Card>
+              {brand?.logos?.find((logo: any) => logo.type === "logo") && (
+                <Avatar
+                  src={brand.logos.find((logo: any) => logo.type === "logo")?.formats?.[0]?.src}
+                  sx={{
+                    position: "absolute",
+                    bottom: -40,
+                    left: 20,
+                    width: 80,
+                    height: 80,
+                    border: "4px solid white",
+                    bgcolor:
+                      brand.logos.find((logo: any) => logo.type === "logo")?.theme === "dark"
+                        ? "white"
+                        : "grey.900",
+                    "& img": {
+                      objectFit: "contain",
+                    },
+                  }}
+                >
+                  {brand.name?.[0]}
+                </Avatar>
+              )}
+            </Box>
+          )}
+          {/* Brand Banner without logo overlay */}
+          {brand?.images?.find((img: any) => img.type === "banner") &&
+            !brand?.logos?.find((logo: any) => logo.type === "logo") && (
+              <Card sx={{ mb: 3, height: 200 }}>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={brand.images.find((img: any) => img.type === "banner")?.formats?.[0]?.src}
+                  alt={`${brand.name} banner`}
+                  sx={{ objectFit: "cover" }}
+                />
+              </Card>
+            )}
 
-            {/* Details Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Contact Details
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Typography>
-                  <strong>Phone:</strong> {contact.phone || "—"}
-                </Typography>
-                {isPerson && (
-                  <>
-                    <Typography>
-                      <strong>Email:</strong> {contact.email || "—"}
-                    </Typography>
-                    <Typography>
-                      <strong>Role:</strong> {contact.role || "—"}
-                    </Typography>
-                    <Typography>
-                      <strong>Business ID:</strong> {contact.businessId || "—"}
-                    </Typography>
-                  </>
-                )}
-                {isBusiness && (
-                  <>
-                    <Typography>
-                      <strong>Address:</strong> {contact.address || "—"}
-                    </Typography>
-                    <Typography>
-                      <strong>Tax ID:</strong> {contact.taxId || "—"}
-                    </Typography>
-                    <Typography>
-                      <strong>Website:</strong> {contact.website || "—"}
-                    </Typography>
-                  </>
-                )}
-                <Typography>
-                  <strong>Notes:</strong> {contact.notes || "—"}
-                </Typography>
-              </Box>
-            </Paper>
-            {/* Business Information for Person */}
-            {isPerson && contact.business && (
+          <Grid container spacing={3}>
+            {/* Main Content */}
+            <Grid size={{ xs: 12, md: 8 }}>
+              {/* Top Card: Contact Overview */}
+              <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+                <Grid container alignItems="center" justifyContent="space-between">
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="h4" gutterBottom>
+                        {contact.name}
+                      </Typography>
+                      <Chip
+                        label={isPerson ? "Person" : "Business"}
+                        color={isPerson ? "secondary" : "primary"}
+                        sx={{ fontWeight: 600, fontSize: "1rem" }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      sx={{ mr: 1 }}
+                      data-testid="edit-contact"
+                      onClick={() =>
+                        router.push(`/app/${workspace_id}/contacts/${contact.id}/edit`)
+                      }
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      data-testid="delete-contact"
+                      onClick={() => setDeleteDialogOpen(true)}
+                    >
+                      Delete
+                    </Button>
+                  </Grid>
+                </Grid>
+                <Divider sx={{ my: 2 }} />
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Contact Type: {isPerson ? "Person" : "Business"}
+                  </Typography>
+                </Box>
+              </Paper>
+
+              {/* Details Card */}
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Associated Business
+                  Contact Details
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 <Box display="flex" flexDirection="column" gap={2}>
                   <Typography>
-                    <strong>Name:</strong>{" "}
-                    <Button
-                      variant="text"
-                      color="primary"
-                      onClick={() =>
-                        router.push(`/app/${workspace_id}/contacts/${contact.business?.id}`)
-                      }
-                      sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
-                    >
-                      {contact.business.name}
-                    </Button>
+                    <strong>Phone:</strong> {contact.phone || "—"}
                   </Typography>
+                  {isPerson && (
+                    <>
+                      <Typography>
+                        <strong>Email:</strong> {contact.email || "—"}
+                      </Typography>
+                      <Typography>
+                        <strong>Role:</strong> {contact.role || "—"}
+                      </Typography>
+                      <Typography>
+                        <strong>Business ID:</strong> {contact.businessId || "—"}
+                      </Typography>
+                    </>
+                  )}
+                  {isBusiness && (
+                    <>
+                      <Typography>
+                        <strong>Address:</strong> {contact.address || "—"}
+                      </Typography>
+                      <Typography>
+                        <strong>Tax ID:</strong> {contact.taxId || "—"}
+                      </Typography>
+                      <Typography>
+                        <strong>Website:</strong> {contact.website || "—"}
+                      </Typography>
+                    </>
+                  )}
                   <Typography>
-                    <strong>Phone:</strong> {contact.business.phone || "—"}
-                  </Typography>
-                  <Typography>
-                    <strong>Address:</strong> {contact.business.address || "—"}
-                  </Typography>
-                  <Typography>
-                    <strong>Website:</strong> {contact.business.website || "—"}
+                    <strong>Notes:</strong> {contact.notes || "—"}
                   </Typography>
                 </Box>
               </Paper>
-            )}
-
-            {/* Colleagues for Person */}
-            {isPerson &&
-              contact.business &&
-              contact.business.employees &&
-              contact.business.employees.items.length > 1 && (
+              {/* Business Information for Person */}
+              {isPerson && contact.business && (
                 <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
-                    Colleagues at {contact.business.name}
+                    Associated Business
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Box display="flex" flexDirection="column" gap={2}>
-                    {contact.business.employees.items
-                      .filter((colleague) => colleague.id !== contact.id)
-                      .map((colleague) => (
-                        <Box key={colleague.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                    <Typography>
+                      <strong>Name:</strong>{" "}
+                      <Button
+                        variant="text"
+                        color="primary"
+                        onClick={() =>
+                          router.push(`/app/${workspace_id}/contacts/${contact.business?.id}`)
+                        }
+                        sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
+                      >
+                        {contact.business.name}
+                      </Button>
+                    </Typography>
+                    <Typography>
+                      <strong>Phone:</strong> {contact.business.phone || "—"}
+                    </Typography>
+                    <Typography>
+                      <strong>Address:</strong> {contact.business.address || "—"}
+                    </Typography>
+                    <Typography>
+                      <strong>Website:</strong> {contact.business.website || "—"}
+                    </Typography>
+                  </Box>
+                </Paper>
+              )}
+
+              {/* Colleagues for Person */}
+              {isPerson &&
+                contact.business &&
+                contact.business.employees &&
+                contact.business.employees.items.length > 1 && (
+                  <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Colleagues at {contact.business.name}
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Box display="flex" flexDirection="column" gap={2}>
+                      {contact.business.employees.items
+                        .filter((colleague) => colleague.id !== contact.id)
+                        .map((colleague) => (
+                          <Box
+                            key={colleague.id}
+                            sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}
+                          >
+                            <Typography variant="subtitle1">
+                              <Button
+                                variant="text"
+                                color="primary"
+                                onClick={() =>
+                                  router.push(`/app/${workspace_id}/contacts/${colleague.id}`)
+                                }
+                                sx={{
+                                  textTransform: "none",
+                                  p: 0,
+                                  minWidth: "auto",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {colleague.name}
+                              </Button>
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>Role:</strong> {colleague.role || "—"}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>Email:</strong> {colleague.email || "—"}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>Phone:</strong> {colleague.phone || "—"}
+                            </Typography>
+                          </Box>
+                        ))}
+                    </Box>
+                  </Paper>
+                )}
+
+              {/* Employees List for Business */}
+              {isBusiness && contact.employees && (
+                <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h6">
+                      Employees ({contact.employees.items.length})
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() =>
+                        router.push(
+                          `/app/${workspace_id}/contacts/create-employee?businessId=${contact.id}`,
+                        )
+                      }
+                    >
+                      Add Employee
+                    </Button>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    {contact.employees.items.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        No employees added yet.
+                      </Typography>
+                    ) : (
+                      contact.employees.items.map((employee) => (
+                        <Box key={employee.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
                           <Typography variant="subtitle1">
                             <Button
                               variant="text"
                               color="primary"
                               onClick={() =>
-                                router.push(`/app/${workspace_id}/contacts/${colleague.id}`)
+                                router.push(`/app/${workspace_id}/contacts/${employee.id}`)
                               }
                               sx={{
                                 textTransform: "none",
@@ -290,213 +463,160 @@ export default function ContactDisplayPage() {
                                 fontWeight: 600,
                               }}
                             >
-                              {colleague.name}
+                              {employee.name}
                             </Button>
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            <strong>Role:</strong> {colleague.role || "—"}
+                            <strong>Role:</strong> {employee.role || "—"}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            <strong>Email:</strong> {colleague.email || "—"}
+                            <strong>Email:</strong> {employee.email || "—"}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            <strong>Phone:</strong> {colleague.phone || "—"}
+                            <strong>Phone:</strong> {employee.phone || "—"}
                           </Typography>
                         </Box>
-                      ))}
+                      ))
+                    )}
                   </Box>
                 </Paper>
               )}
 
-            {/* Employees List for Business */}
-            {isBusiness && contact.employees && (
+              {/* Reference Numbers Section - only for Business contacts */}
+              {isBusiness && (
+                <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                  <ReferenceNumbersSection businessContactId={contact.id} />
+                </Paper>
+              )}
+
+              {/* Notes Section */}
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6">Employees ({contact.employees.items.length})</Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={() =>
-                      router.push(
-                        `/app/${workspace_id}/contacts/create-employee?businessId=${contact.id}`,
-                      )
-                    }
-                  >
-                    Add Employee
-                  </Button>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
+                <NotesSection entityId={contact.id} />
+              </Paper>
+            </Grid>
+
+            {/* Sidebar */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              {/* Metadata Card */}
+              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Metadata
+                </Typography>
+                <Divider sx={{ mb: 1 }} />
                 <Box display="flex" flexDirection="column" gap={2}>
-                  {contact.employees.items.length === 0 ? (
+                  <Box>
                     <Typography variant="body2" color="text.secondary">
-                      No employees added yet.
+                      ID
                     </Typography>
-                  ) : (
-                    contact.employees.items.map((employee) => (
-                      <Box key={employee.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
-                        <Typography variant="subtitle1">
-                          <Button
-                            variant="text"
-                            color="primary"
-                            onClick={() =>
-                              router.push(`/app/${workspace_id}/contacts/${employee.id}`)
-                            }
-                            sx={{ textTransform: "none", p: 0, minWidth: "auto", fontWeight: 600 }}
-                          >
-                            {employee.name}
-                          </Button>
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Role:</strong> {employee.role || "—"}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Email:</strong> {employee.email || "—"}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Phone:</strong> {employee.phone || "—"}
-                        </Typography>
-                      </Box>
-                    ))
+                    <Typography variant="body2" fontWeight="bold">
+                      {contact.id}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Type
+                    </Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {isPerson ? "Person" : "Business"}
+                    </Typography>
+                  </Box>
+                  {isPerson && (
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Email
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {contact.email || "—"}
+                      </Typography>
+                    </Box>
+                  )}
+                  {"createdAt" in contact && contact.createdAt && (
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Created At
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {formatDate(contact.createdAt)}
+                      </Typography>
+                    </Box>
+                  )}
+                  {"updatedAt" in contact && contact.updatedAt && (
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Updated At
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {formatDate(contact.updatedAt)}
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
               </Paper>
-            )}
 
-            {/* Reference Numbers Section - only for Business contacts */}
-            {isBusiness && (
-              <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <ReferenceNumbersSection businessContactId={contact.id} />
+              {/* Location Map - only for Business contacts with address */}
+              {isBusiness && contact.address && (
+                <BusinessLocationMap businessName={contact.name} address={contact.address} />
+              )}
+
+              {/* Reporting Designation Card */}
+              <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Reporting Designation
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <ResourceMapSearchSelector
+                  readonly={true}
+                  onSelectionChange={() => {}}
+                  selectedIds={isPerson && contact.resourceMapIds ? contact.resourceMapIds : []}
+                />
               </Paper>
-            )}
 
-            {/* Notes Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={contact.id} />
-            </Paper>
+              {/* Stubbed Help/Support Card */}
+              <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
+                <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-block",
+                      width: 24,
+                      height: 24,
+                      bgcolor: "#ffe082",
+                      borderRadius: "50%",
+                      mr: 1,
+                      textAlign: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ?
+                  </Box>
+                  Need help with this contact?
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Our team would be happy to help you with any kind of problem you might have!
+                </Typography>
+                <Button variant="contained" color="warning" size="small" disabled>
+                  Get Help (stub)
+                </Button>
+              </Paper>
+
+              {/* Stubbed Quick Links */}
+              <Paper elevation={1} sx={{ p: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Quick Links
+                </Typography>
+                <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                  Invite Team (stub)
+                </Button>
+                <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
+                  View All Contacts (stub)
+                </Button>
+                <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
+                  Upgrade Plan (stub)
+                </Button>
+              </Paper>
+            </Grid>
           </Grid>
-
-          {/* Sidebar */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            {/* Metadata Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Metadata
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    ID
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {contact.id}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Type
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {isPerson ? "Person" : "Business"}
-                  </Typography>
-                </Box>
-                {isPerson && (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Email
-                    </Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {contact.email || "—"}
-                    </Typography>
-                  </Box>
-                )}
-                {"createdAt" in contact && contact.createdAt && (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Created At
-                    </Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {formatDate(contact.createdAt)}
-                    </Typography>
-                  </Box>
-                )}
-                {"updatedAt" in contact && contact.updatedAt && (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Updated At
-                    </Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {formatDate(contact.updatedAt)}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Paper>
-
-            {/* Location Map - only for Business contacts with address */}
-            {isBusiness && contact.address && (
-              <BusinessLocationMap businessName={contact.name} address={contact.address} />
-            )}
-
-            {/* Reporting Designation Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3, mt: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Reporting Designation
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <ResourceMapSearchSelector
-                readonly={true}
-                onSelectionChange={() => {}}
-                selectedIds={isPerson && contact.resourceMapIds ? contact.resourceMapIds : []}
-              />
-            </Paper>
-
-            {/* Stubbed Help/Support Card */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
-              <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box
-                  component="span"
-                  sx={{
-                    display: "inline-block",
-                    width: 24,
-                    height: 24,
-                    bgcolor: "#ffe082",
-                    borderRadius: "50%",
-                    mr: 1,
-                    textAlign: "center",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ?
-                </Box>
-                Need help with this contact?
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Our team would be happy to help you with any kind of problem you might have!
-              </Typography>
-              <Button variant="contained" color="warning" size="small" disabled>
-                Get Help (stub)
-              </Button>
-            </Paper>
-
-            {/* Stubbed Quick Links */}
-            <Paper elevation={1} sx={{ p: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Quick Links
-              </Typography>
-              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                Invite Team (stub)
-              </Button>
-              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                View All Contacts (stub)
-              </Button>
-              <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
-                Upgrade Plan (stub)
-              </Button>
-            </Paper>
-          </Grid>
-        </Grid>
+        </>
       )}
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
