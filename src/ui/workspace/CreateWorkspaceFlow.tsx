@@ -1,7 +1,8 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useGetBrandByDomainLazyQuery } from "@/graphql/hooks";
+import { WorkspaceAccessType } from "@/graphql/graphql";
+import { useCreateWorkspaceMutation, useGetBrandByDomainLazyQuery } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import {
   Business,
@@ -78,6 +79,38 @@ graphql(`
   }
 `);
 
+// Define the GraphQL mutation for creating workspace
+graphql(`
+  mutation CreateWorkspace(
+    $name: String!
+    $accessType: WorkspaceAccessType!
+    $description: String
+    $brandId: String
+    $logoUrl: String
+    $bannerImageUrl: String
+    $archived: Boolean
+  ) {
+    createWorkspace(
+      name: $name
+      accessType: $accessType
+      description: $description
+      brandId: $brandId
+      logoUrl: $logoUrl
+      bannerImageUrl: $bannerImageUrl
+      archived: $archived
+    ) {
+      id
+      name
+      description
+      accessType
+      domain
+      logoUrl
+      bannerImageUrl
+      brandId
+    }
+  }
+`);
+
 interface CreateWorkspaceFlowProps {
   onComplete: (workspaceId: string) => void;
   onCancel: () => void;
@@ -92,6 +125,9 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const [getBrandByDomain, { loading, data, error }] = useGetBrandByDomainLazyQuery({
     fetchPolicy: "cache-and-network",
   });
+
+  // GraphQL mutation hook
+  const [createWorkspace, { loading: createLoading }] = useCreateWorkspaceMutation();
 
   // Form state
   const [workspaceName, setWorkspaceName] = useState("");
@@ -162,19 +198,34 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const handleCreateWorkspace = async () => {
     setStep("creating");
 
-    // Mock workspace creation - in production, this would call a mutation
-    setTimeout(() => {
-      console.log("Creating workspace with:", {
-        name: workspaceName,
-        description: workspaceDescription,
-        accessType,
-        domainRestriction: accessType === "domain" ? customDomain || domainRestriction : null,
-        brandData,
+    try {
+      const { data } = await createWorkspace({
+        variables: {
+          name: workspaceName,
+          description: workspaceDescription || undefined,
+          accessType:
+            accessType === "domain"
+              ? WorkspaceAccessType.SameDomain
+              : WorkspaceAccessType.InviteOnly,
+          brandId: brandData?.id || undefined,
+          logoUrl: selectedLogoUrl || defaultLogoUrl || undefined,
+          bannerImageUrl: selectedBannerUrl || defaultBannerUrl || undefined,
+          archived: false,
+        },
       });
 
-      // In production, this would return the actual workspace ID
-      onComplete("ws-new-001");
-    }, 2000);
+      if (data?.createWorkspace?.id) {
+        onComplete(data.createWorkspace.id);
+      } else {
+        // Handle error case - workspace creation failed
+        console.error("Failed to create workspace - no ID returned");
+        setStep("settings"); // Go back to last step
+      }
+    } catch (error) {
+      console.error("Error creating workspace:", error);
+      setStep("settings"); // Go back to last step
+      // TODO: Show error message to user via toast or alert
+    }
   };
 
   const isValidDomain = (domain: string) => {
@@ -252,109 +303,109 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
             <>
               {/* Workspace Preview Card - Show on all steps */}
               {(brandData || error) && (
-                    <Card
+                <Card
+                  sx={{
+                    mb: 3,
+                    overflow: "hidden",
+                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                    boxShadow: theme.shadows[2],
+                  }}
+                >
+                  {/* Preview Banner */}
+                  {coverPhotoUrl && (
+                    <Box
                       sx={{
-                        mb: 3,
-                        overflow: "hidden",
-                        border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                        boxShadow: theme.shadows[2],
+                        height: 120,
+                        backgroundImage: `url(${coverPhotoUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        position: "relative",
                       }}
-                    >
-                      {/* Preview Banner */}
-                      {coverPhotoUrl && (
-                        <Box
-                          sx={{
-                            height: 120,
-                            backgroundImage: `url(${coverPhotoUrl})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                            position: "relative",
-                          }}
-                        />
-                      )}
+                    />
+                  )}
 
-                      {/* Preview Content */}
-                      <Box sx={{ p: 2, bgcolor: "background.paper" }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                          <Avatar
-                            src={displayLogoUrl || undefined}
-                            sx={{
-                              width: 48,
-                              height: 48,
-                              bgcolor: alpha(primaryColor, 0.1),
-                              "& img": { objectFit: "contain", p: 0.5 },
-                            }}
-                          >
-                            {workspaceName?.[0] || "W"}
-                          </Avatar>
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                {workspaceName || "Workspace Name"}
-                              </Typography>
-                              {accessType === "domain" ? (
-                                <Domain sx={{ fontSize: 18, color: primaryColor }} />
-                              ) : (
-                                <Lock sx={{ fontSize: 16, color: "text.secondary" }} />
-                              )}
-                            </Box>
-                            <Typography variant="caption" color="text.secondary">
-                              {workspaceDescription || brandData?.domain || "company.com"}
-                            </Typography>
-                          </Box>
+                  {/* Preview Content */}
+                  <Box sx={{ p: 2, bgcolor: "background.paper" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+                      <Avatar
+                        src={displayLogoUrl || undefined}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: alpha(primaryColor, 0.1),
+                          "& img": { objectFit: "contain", p: 0.5 },
+                        }}
+                      >
+                        {workspaceName?.[0] || "W"}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {workspaceName || "Workspace Name"}
+                          </Typography>
+                          {accessType === "domain" ? (
+                            <Domain sx={{ fontSize: 18, color: primaryColor }} />
+                          ) : (
+                            <Lock sx={{ fontSize: 16, color: "text.secondary" }} />
+                          )}
                         </Box>
-
-                        {/* Social Links */}
-                        {brandData?.links && brandData.links.length > 0 && (
-                          <Box sx={{ display: "flex", gap: 1, mt: 2, mb: 1 }}>
-                            {brandData.links.map((link: any) => {
-                              const linkName = link.name.toLowerCase();
-                              let Icon = Language;
-
-                              if (linkName === "twitter" || linkName === "x") Icon = Twitter;
-                              else if (linkName === "facebook") Icon = Facebook;
-                              else if (linkName === "instagram") Icon = Instagram;
-                              else if (linkName === "linkedin") Icon = LinkedIn;
-
-                              return (
-                                <Box
-                                  key={link.name}
-                                  component="a"
-                                  href={link.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 1,
-                                    bgcolor: alpha(theme.palette.divider, 0.08),
-                                    color: "text.secondary",
-                                    transition: "all 0.2s",
-                                    textDecoration: "none",
-                                    "&:hover": {
-                                      bgcolor: alpha(primaryColor, 0.1),
-                                      color: primaryColor,
-                                      transform: "translateY(-2px)",
-                                    },
-                                  }}
-                                >
-                                  <Icon sx={{ fontSize: 18 }} />
-                                </Box>
-                              );
-                            })}
-                          </Box>
-                        )}
-
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "text.secondary", display: "block", mt: 1 }}
-                        >
-                          Preview of your workspace appearance
+                        <Typography variant="caption" color="text.secondary">
+                          {workspaceDescription || brandData?.domain || "company.com"}
                         </Typography>
                       </Box>
+                    </Box>
+
+                    {/* Social Links */}
+                    {brandData?.links && brandData.links.length > 0 && (
+                      <Box sx={{ display: "flex", gap: 1, mt: 2, mb: 1 }}>
+                        {brandData.links.map((link: any) => {
+                          const linkName = link.name.toLowerCase();
+                          let Icon = Language;
+
+                          if (linkName === "twitter" || linkName === "x") Icon = Twitter;
+                          else if (linkName === "facebook") Icon = Facebook;
+                          else if (linkName === "instagram") Icon = Instagram;
+                          else if (linkName === "linkedin") Icon = LinkedIn;
+
+                          return (
+                            <Box
+                              key={link.name}
+                              component="a"
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1,
+                                bgcolor: alpha(theme.palette.divider, 0.08),
+                                color: "text.secondary",
+                                transition: "all 0.2s",
+                                textDecoration: "none",
+                                "&:hover": {
+                                  bgcolor: alpha(primaryColor, 0.1),
+                                  color: primaryColor,
+                                  transform: "translateY(-2px)",
+                                },
+                              }}
+                            >
+                              <Icon sx={{ fontSize: 18 }} />
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    )}
+
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", display: "block", mt: 1 }}
+                    >
+                      Preview of your workspace appearance
+                    </Typography>
+                  </Box>
                 </Card>
               )}
 

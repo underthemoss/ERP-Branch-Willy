@@ -1235,6 +1235,7 @@ type Mutation {
   createServiceFulfilment(input: CreateServiceFulfilmentInput!): ServiceFulfilment
   createTransaction(input: TransactionInput!): Transaction
   createWorkflowConfiguration(input: CreateWorkflowConfigurationInput!): WorkflowConfiguration
+  createWorkspace(accessType: WorkspaceAccessType!, archived: Boolean, bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String!): Workspace
   deleteContactById(id: ID!): Boolean
   deleteFulfilment(id: ID!): Boolean
   deleteInventory(id: String!, input: DeleteInventoryInput!): Boolean!
@@ -2620,7 +2621,25 @@ type WorkflowConfiguration {
 }
 
 type Workspace {
-  companyId: Int
+  accessType: WorkspaceAccessType!
+  archived: Boolean!
+  archivedAt: String
+  bannerImageUrl: String
+  brandId: String
+  companyId: Int!
+  createdAt: String!
+  createdBy: String!
+  description: String
+  domain: String
   id: ID
-  name: String
+  logoUrl: String
+  name: String!
+  ownerId: String!
+  updatedAt: String!
+  updatedBy: String!
+}
+
+enum WorkspaceAccessType {
+  INVITE_ONLY
+  SAME_DOMAIN
 }
