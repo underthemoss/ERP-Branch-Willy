@@ -21,6 +21,24 @@ type AdminMutationNamespace {
     userId: String!
   ): Boolean
 
+  """Delete a specific SpiceDB relationship"""
+  deleteRelationship(
+    """Relation type (e.g., "member", "admin")"""
+    relation: String!
+
+    """Resource ID"""
+    resourceId: String!
+
+    """Resource type (e.g., "erp/workspace")"""
+    resourceType: String!
+
+    """Subject ID"""
+    subjectId: String!
+
+    """Subject type (e.g., "erp/user")"""
+    subjectType: String!
+  ): DeleteRelationshipResult!
+
   """Remove roles from a user (Admin only)"""
   removeRolesFromUser(
     """Comma-separated role IDs"""
@@ -43,6 +61,39 @@ type AdminQueryNamespace {
     """Auth0 user ID"""
     userId: String!
   ): [Auth0Role]
+
+  """List available relations and permissions for a resource type"""
+  listAvailableRelations(
+    """Resource type to get relations for (e.g., "erp/workspace")"""
+    resourceType: String
+  ): [AvailableRelation!]!
+
+  """List SpiceDB relationships with optional filters"""
+  listRelationships(
+    """Pagination cursor from previous request"""
+    cursor: String
+
+    """Maximum number of results to return"""
+    limit: Int = 100
+
+    """Filter by relation type (e.g., "member", "admin")"""
+    relation: String
+
+    """Filter by specific resource ID"""
+    resourceId: String
+
+    """Filter by resource type (e.g., "erp/workspace")"""
+    resourceType: String
+
+    """Filter by specific subject ID"""
+    subjectId: String
+
+    """Filter by subject type (e.g., "erp/user")"""
+    subjectType: String
+  ): ListRelationshipsResult!
+
+  """List all resource types defined in the SpiceDB schema"""
+  listResourceTypes: [String!]!
 
   """List all available Auth0 roles (Admin only)"""
   listRoles: [Auth0Role]
@@ -263,6 +314,14 @@ type Auth0UsersSearchResult {
   start: Int!
   total: Int!
   users: [Auth0User!]!
+}
+
+type AvailableRelation {
+  allowedResourceTypes: [String!]!
+  allowedSubjectTypes: [String!]!
+  description: String
+  isComputed: Boolean!
+  relation: String!
 }
 
 interface BaseTransaction {
@@ -667,6 +726,11 @@ scalar DateTime
 
 input DeleteInventoryInput {
   reason: String!
+}
+
+type DeleteRelationshipResult {
+  message: String
+  success: Boolean!
 }
 
 enum DeliveryMethod {
@@ -1149,6 +1213,11 @@ input ListPricesPage {
 type ListPricesResult {
   items: [Price!]!
   page: PaginationInfo!
+}
+
+type ListRelationshipsResult {
+  cursor: String
+  relationships: [SpiceDBRelationship!]!
 }
 
 input ListRentalFulfilmentsFilter {
@@ -2335,6 +2404,23 @@ input SetInvoiceTaxInput {
 type SignedUploadUrl {
   key: String!
   url: String!
+}
+
+type SpiceDBObjectReference {
+  id: String!
+  type: String!
+}
+
+type SpiceDBRelationship {
+  relation: String!
+  resource: SpiceDBObjectReference!
+  subject: SpiceDBSubjectReference!
+}
+
+type SpiceDBSubjectReference {
+  id: String!
+  relation: String
+  type: String!
 }
 
 enum SupportedContentType {

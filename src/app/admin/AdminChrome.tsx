@@ -9,6 +9,7 @@ import {
   GroupOutlined,
   HomeOutlined,
   LogoutOutlined,
+  PolicyOutlined,
   SecurityOutlined,
   SettingsOutlined,
   StorageOutlined,
@@ -55,6 +56,12 @@ export const AdminChrome: React.FC<{ children: React.ReactNode }> = ({ children 
       href: "/admin/users",
       icon: <GroupOutlined />,
       selected: pathname === "/admin/users",
+    },
+    {
+      text: "Authz",
+      href: "/admin/authz",
+      icon: <PolicyOutlined />,
+      selected: pathname.startsWith("/admin/authz"),
     },
     {
       text: "System",
