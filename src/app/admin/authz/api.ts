@@ -86,3 +86,12 @@ export const DELETE_RELATIONSHIP_MUTATION = graphql(`
     }
   }
 `);
+
+// Get raw Zed schema from SpiceDB
+export const GET_RAW_ZED_SCHEMA_QUERY = graphql(`
+  query GetRawZedSchema {
+    admin {
+      rawZedSchema
+    }
+  }
+`);

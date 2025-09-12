@@ -98,6 +98,9 @@ type AdminQueryNamespace {
   """List all available Auth0 roles (Admin only)"""
   listRoles: [Auth0Role]
 
+  """Returns the raw SpiceDB Zed schema from SpiceDB"""
+  rawZedSchema: String!
+
   """Search for users in Auth0 (Admin only)"""
   searchUsers(
     """Fields to include"""

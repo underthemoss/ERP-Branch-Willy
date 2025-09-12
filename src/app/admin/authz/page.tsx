@@ -9,6 +9,7 @@ import {
   AddOutlined,
   DownloadOutlined,
   RefreshOutlined,
+  SchemaOutlined,
   SecurityOutlined,
 } from "@mui/icons-material";
 import {
@@ -26,6 +27,7 @@ import {
 import { useCallback, useState } from "react";
 import { RelationshipFilters } from "./components/RelationshipFilters";
 import { RelationshipsTable } from "./components/RelationshipsTable";
+import { SchemaModal } from "./components/SchemaModal";
 
 export default function AuthzPage() {
   const [filters, setFilters] = useState<{
@@ -38,6 +40,7 @@ export default function AuthzPage() {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [relationshipToDelete, setRelationshipToDelete] = useState<any>(null);
+  const [schemaModalOpen, setSchemaModalOpen] = useState(false);
 
   // Fetch resource types for filters
   const { data: resourceTypesData } = useListResourceTypesQuery({
@@ -213,6 +216,14 @@ export default function AuthzPage() {
             >
               Export CSV
             </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              startDecorator={<SchemaOutlined />}
+              onClick={() => setSchemaModalOpen(true)}
+            >
+              View Schema
+            </Button>
             <Box sx={{ flex: 1 }} />
             <Button
               size="sm"
@@ -305,6 +316,9 @@ export default function AuthzPage() {
           )}
         </ModalDialog>
       </Modal>
+
+      {/* Schema Modal */}
+      <SchemaModal open={schemaModalOpen} onClose={() => setSchemaModalOpen(false)} />
     </Box>
   );
 }
