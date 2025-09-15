@@ -109,7 +109,7 @@ export default function BusinessLocationMap({ businessName, address }: BusinessL
     };
 
     findPlace();
-  }, [address, isLoaded]);
+  }, [address, isLoaded, apiKey]);
 
   if (!apiKey) {
     return (

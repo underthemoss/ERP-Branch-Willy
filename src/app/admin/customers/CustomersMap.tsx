@@ -245,7 +245,7 @@ export default function CustomersMap({ customers, onViewDetails }: CustomersMapP
       });
       markersRef.current = [];
     };
-  }, [map, customers]);
+  }, [map, customers, clusterer]);
 
   // Show loading state
   if (isLoading) {

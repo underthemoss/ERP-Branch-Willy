@@ -849,6 +849,105 @@ type HasuraClaims {
   x_hasura_user_id: String
 }
 
+type IntakeForm {
+  createdAt: DateTime!
+  createdBy: String!
+  id: ID!
+  isActive: Boolean!
+  isDeleted: Boolean!
+  project: IntakeFormProject
+  projectId: ID
+  updatedAt: DateTime!
+  updatedBy: String!
+  workspace: IntakeFormWorkspace
+  workspaceId: ID!
+}
+
+input IntakeFormInput {
+  isActive: Boolean!
+  projectId: ID
+  workspaceId: ID!
+}
+
+type IntakeFormLineItem {
+  description: String!
+  durationInDays: Int!
+  quantity: Int!
+  startDate: DateTime!
+  type: RequestType!
+}
+
+input IntakeFormLineItemInput {
+  description: String!
+  durationInDays: Int!
+  quantity: Int!
+  startDate: DateTime!
+  type: RequestType!
+}
+
+type IntakeFormPage {
+  items: [IntakeForm!]!
+  page: IntakeFormPageInfo!
+}
+
+type IntakeFormPageInfo {
+  number: Int!
+  size: Int!
+  totalItems: Int!
+  totalPages: Int!
+}
+
+type IntakeFormProject {
+  id: String!
+  name: String!
+  projectCode: String!
+}
+
+type IntakeFormSubmission {
+  companyName: String
+  createdAt: DateTime!
+  email: String!
+  formId: ID!
+  id: ID!
+  lineItems: [IntakeFormLineItem!]
+  name: String!
+  phone: String
+  purchaseOrderNumber: String
+  salesOrderId: ID
+  workspaceId: ID!
+}
+
+input IntakeFormSubmissionInput {
+  companyName: String
+  email: String!
+  formId: ID!
+  lineItems: [IntakeFormLineItemInput!]
+  name: String!
+  phone: String
+  purchaseOrderNumber: String
+  workspaceId: ID!
+}
+
+type IntakeFormSubmissionPage {
+  items: [IntakeFormSubmission!]!
+  page: IntakeFormSubmissionPageInfo!
+}
+
+type IntakeFormSubmissionPageInfo {
+  number: Int!
+  size: Int!
+  totalItems: Int!
+  totalPages: Int!
+}
+
+type IntakeFormWorkspace {
+  bannerImageUrl: String
+  companyId: Int!
+  id: ID!
+  logoUrl: String
+  name: String!
+}
+
 type Inventory {
   actualReturnDate: DateTime
   asset: Asset
@@ -1293,6 +1392,12 @@ type Mutation {
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createCharge(input: CreateChargeInput!): Charge
   createFulfilmentReservation(input: CreateFulfilmentReservationInput!): FulfilmentReservation!
+
+  """Create a new intake form"""
+  createIntakeForm(input: IntakeFormInput!): IntakeForm
+
+  """Create a new intake form submission"""
+  createIntakeFormSubmission(input: IntakeFormSubmissionInput!): IntakeFormSubmission
   createInventory(input: CreateInventoryInput!): Inventory!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
@@ -1319,6 +1424,9 @@ type Mutation {
   createWorkspace(accessType: WorkspaceAccessType!, archived: Boolean, bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String!): Workspace
   deleteContactById(id: ID!): Boolean
   deleteFulfilment(id: ID!): Boolean
+
+  """Soft delete an intake form"""
+  deleteIntakeForm(id: String!): IntakeForm
   deleteInventory(id: String!, input: DeleteInventoryInput!): Boolean!
   deleteInvoice(id: String!): Boolean!
   deleteNote(id: String!): Note
@@ -1338,6 +1446,9 @@ type Mutation {
   runNightlyRentalChargesJob: [RentalFulfilment!]!
   runNightlyRentalChargesJobAsync: Boolean
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
+
+  """Set the active status of an intake form"""
+  setIntakeFormActive(id: String!, isActive: Boolean!): IntakeForm
 
   """
   DEPRECATED: Use addTaxLineItem instead for more flexible tax management
@@ -1362,6 +1473,9 @@ type Mutation {
   updateBusinessWebsite(id: ID!, website: String!): BusinessContact
   updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
   updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
+
+  """Update an existing intake form submission"""
+  updateIntakeFormSubmission(id: String!, input: UpdateIntakeFormSubmissionInput!): IntakeFormSubmission
   updateInventoryActualReturnDate(actualReturnDate: DateTime!, id: String!): Inventory
   updateInventoryExpectedReturnDate(expectedReturnDate: DateTime!, id: String!): Inventory
   updateInventorySerialisedId(id: String!, input: UpdateInventorySerialisedIdInput!): Inventory
@@ -1777,6 +1891,9 @@ type Query {
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
   getDefaultTemplates: [ReferenceNumberTemplate!]!
   getFulfilmentById(id: ID!): Fulfilment
+
+  """Get a single intake form by ID"""
+  getIntakeFormById(id: String!): IntakeForm
   getInventoryReservationById(id: ID!): InventoryReservation
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
@@ -1802,6 +1919,12 @@ type Query {
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
+
+  """List all intake form submissions for a workspace with pagination"""
+  listIntakeFormSubmissions(limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
+
+  """List all intake forms for a workspace with pagination"""
+  listIntakeForms(limit: Int, page: Int, workspaceId: String!): IntakeFormPage
   listInventory(query: ListInventoryQuery): InventoryResponse!
   listInventoryGroupedByPimCategoryId(query: ListInventoryQuery): InventoryGroupedByCategoryResponse!
   listInventoryReservations(filter: ListInventoryReservationsFilter, page: ListInventoryPage): InventoryReservationsResponse!
@@ -2056,6 +2179,11 @@ type RentalTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+enum RequestType {
+  PURCHASE
+  RENTAL
 }
 
 enum ReservationType {
@@ -2512,6 +2640,12 @@ input UpdateBusinessContactInput {
   resourceMapIds: [ID!]
   taxId: String
   website: String
+}
+
+input UpdateIntakeFormSubmissionInput {
+  lineItems: [IntakeFormLineItemInput!]
+  purchaseOrderNumber: String
+  salesOrderId: ID
 }
 
 input UpdateInventorySerialisedIdInput {

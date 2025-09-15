@@ -474,7 +474,13 @@ export default function EditInvoiceTaxesDialog({
         });
       }
     }
-  }, [open, invoiceData?.invoiceById?.id]); // Only depend on invoice ID to prevent refetching
+  }, [
+    open,
+    invoiceData?.invoiceById,
+    suggestedTaxItems.length,
+    suggestLoading,
+    suggestTaxObligations,
+  ]); // Only depend on invoice ID to prevent refetching
 
   const handleUpdateItem = (index: number, field: keyof TaxLineItem, value: any) => {
     const updated = [...editedItems];

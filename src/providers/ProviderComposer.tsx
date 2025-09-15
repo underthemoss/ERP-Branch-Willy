@@ -1,6 +1,7 @@
 import { ApolloClientProvider } from "@/providers/ApolloProvider";
 import { AppContextResolver } from "@/providers/AppContextResolver";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
+import { AuthWall } from "@/providers/AuthWall";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
@@ -8,32 +9,42 @@ import React from "react";
 
 interface ProviderComposerProps {
   children: React.ReactNode;
-  auth0Domain: string;
-  auth0ClientId: string;
-  auth0Audience: string;
-  apiUrl: string;
 }
+
+const apiUrl =
+  process.env.NEXT_PUBLIC_GQL_URL || process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
+const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "";
+const auth0ClientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "";
+const auth0Audience = process.env.NEXT_PUBLIC_API_URL + "/es-erp-api";
 
 /**
  * ProviderComposer consolidates all application providers in a single component.
  * This maintains the correct nesting order while keeping the layout clean.
  */
-export function ProviderComposer({
-  children,
-  auth0Domain,
-  auth0ClientId,
-  auth0Audience,
-  apiUrl,
-}: ProviderComposerProps) {
+export function ProviderComposer({ children }: ProviderComposerProps) {
+  return (
+    <Auth0ClientProvider domain={auth0Domain} clientId={auth0ClientId} audience={auth0Audience}>
+      <AuthWall>
+        <DatadogRumProvider>
+          <GoogleMapsServerProvider>
+            <ApolloClientProvider api={apiUrl}>
+              <WorkspaceProvider>
+                <AppContextResolver>{children}</AppContextResolver>
+              </WorkspaceProvider>
+            </ApolloClientProvider>
+          </GoogleMapsServerProvider>
+        </DatadogRumProvider>
+      </AuthWall>
+    </Auth0ClientProvider>
+  );
+}
+
+export function ProviderComposerNoAuth({ children }: ProviderComposerProps) {
   return (
     <Auth0ClientProvider domain={auth0Domain} clientId={auth0ClientId} audience={auth0Audience}>
       <DatadogRumProvider>
         <GoogleMapsServerProvider>
-          <ApolloClientProvider api={apiUrl}>
-            <WorkspaceProvider>
-              <AppContextResolver>{children}</AppContextResolver>
-            </WorkspaceProvider>
-          </ApolloClientProvider>
+          <ApolloClientProvider api={apiUrl}>{children}</ApolloClientProvider>
         </GoogleMapsServerProvider>
       </DatadogRumProvider>
     </Auth0ClientProvider>

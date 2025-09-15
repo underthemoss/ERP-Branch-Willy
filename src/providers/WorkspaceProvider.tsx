@@ -2,8 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
-import { useQuery } from "@apollo/client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import React, {
   createContext,
   ReactNode,
@@ -70,6 +69,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const router = useRouter();
   const params = useParams<{ workspace_id?: string }>();
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
+  const pathname = usePathname() || "";
 
   const { data, loading: workspacesLoading } = useWorkspaceProviderListWorkspacesQuery({
     fetchPolicy: "cache-and-network",
@@ -90,9 +90,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
       setSelectedWorkspace(workspaceId);
+      // If already within this workspace path, don't navigate
+      if (pathname === `/app/${workspaceId}` || pathname.startsWith(`/app/${workspaceId}/`)) {
+        return;
+      }
       router.push(`/app/${workspaceId}`);
     },
-    [router],
+    [router, pathname],
   );
 
   const clearWorkspace = useCallback(() => {

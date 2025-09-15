@@ -245,7 +245,7 @@ export default function InvoiceDisplayPage() {
         window.location.href = `/app/${workspaceId}/invoices`;
       }, 1000);
     }
-  }, [deleteData]);
+  }, [deleteData, workspaceId]);
 
   // Helper to format ISO date strings
   function formatDate(dateString?: string | null) {

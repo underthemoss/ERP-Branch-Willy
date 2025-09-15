@@ -5,7 +5,6 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import { ProviderComposer } from "@/providers/ProviderComposer";
 import React from "react";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +13,6 @@ export const metadata: Metadata = {
   title: "ES-ERP",
   description: "Equipmentshare",
 };
-
-const api =
-  process.env.NEXT_PUBLIC_GQL_URL || process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,16 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           rel="stylesheet"
         ></link>
       </head>
-      <body>
-        <ProviderComposer
-          auth0Domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ""}
-          auth0ClientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ""}
-          auth0Audience={process.env.NEXT_PUBLIC_API_URL + "/es-erp-api"}
-          apiUrl={api}
-        >
-          {children}
-        </ProviderComposer>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

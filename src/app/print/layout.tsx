@@ -1,7 +1,7 @@
+"use client";
+
+import { ProviderComposer } from "@/providers/ProviderComposer";
+
 export default function PrintLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+  return <ProviderComposer>{children}</ProviderComposer>;
 }

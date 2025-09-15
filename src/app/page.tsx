@@ -1,10 +1,11 @@
 "use client";
 
+import { ProviderComposer } from "@/providers/ProviderComposer";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
-export default function Page() {
+function PageContent() {
   const { selectedWorkspace } = useWorkspace();
 
   useEffect(() => {
@@ -18,4 +19,12 @@ export default function Page() {
   // This component will only render if context is resolved but no workspace is selected
   // which shouldn't happen in normal flow
   return <></>;
+}
+
+export default function Page() {
+  return (
+    <ProviderComposer>
+      <PageContent />
+    </ProviderComposer>
+  );
 }

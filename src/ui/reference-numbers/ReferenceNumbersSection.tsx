@@ -179,18 +179,21 @@ export default function ReferenceNumbersSection({
     }
   };
 
-  const handleDelete = async (templateId: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+  const handleDelete = React.useCallback(
+    async (templateId: string) => {
+      if (!confirm("Are you sure you want to delete this template?")) return;
 
-    try {
-      await deleteTemplate({
-        variables: { id: templateId },
-      });
-      await refetch();
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to delete template");
-    }
-  };
+      try {
+        await deleteTemplate({
+          variables: { id: templateId },
+        });
+        await refetch();
+      } catch (err: any) {
+        setErrorMsg(err.message || "Failed to delete template");
+      }
+    },
+    [deleteTemplate, refetch, setErrorMsg],
+  );
 
   // Check if all template types are configured
   const allTypesConfigured = React.useMemo(() => {

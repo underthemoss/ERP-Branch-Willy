@@ -1,12 +1,13 @@
 "use client";
 
+import { ProviderComposer } from "@/providers/ProviderComposer";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Box, CircularProgress, Typography } from "@mui/joy";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminChrome } from "./AdminChrome";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated } = useAuth0();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -59,4 +60,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return <AdminChrome>{children}</AdminChrome>;
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProviderComposer>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </ProviderComposer>
+  );
 }

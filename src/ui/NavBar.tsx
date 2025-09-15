@@ -16,6 +16,7 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import LogoutIcon from "@mui/icons-material/Logout";
+import MailIcon from "@mui/icons-material/Mail";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
@@ -86,6 +87,13 @@ export const NavBar = () => {
       icon: <HomeOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}`,
       testId: "nav-home",
+    },
+    {
+      text: "Intake Forms",
+      href: `/app/${currentWorkspace?.id}/intake-forms`,
+      icon: <MailIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/intake-forms`,
+      testId: "nav-intake-forms",
     },
     {
       text: "Sales Orders",
