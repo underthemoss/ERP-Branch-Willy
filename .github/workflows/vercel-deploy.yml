@@ -29,10 +29,21 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+      - name: Pull Vercel Environment Information (staging)
+        run: vercel pull --yes --environment=staging --token=$VERCEL_TOKEN
 
-      - name: Build Project Artifacts
+      - name: Debug environment variables (staging)
+        run: |
+          echo "=== NEXT_PUBLIC_* visible at staging build time ==="
+          printenv | sort | grep '^NEXT_PUBLIC_' || echo "No NEXT_PUBLIC_ vars found"
+          echo ""
+          echo "=== .vercel directory ==="
+          ls -la .vercel || true
+          echo ""
+          echo "=== .vercel/.env.staging.local ==="
+          [ -f .vercel/.env.staging.local ] && cat .vercel/.env.staging.local || echo "No .vercel/.env.staging.local"
+
+      - name: Build Project Artifacts (staging)
         run: vercel build --target=staging --token=$VERCEL_TOKEN
 
       - name: Deploy to Staging
@@ -40,16 +51,16 @@ jobs:
         run: |
           deployment_url=$(vercel deploy --prebuilt --target=staging --token=$VERCEL_TOKEN --no-wait)
           echo "deployment-url=$deployment_url" >> $GITHUB_OUTPUT
-
-          # Get deployment ID from the URL
           deployment_id=$(echo "$deployment_url" | sed 's|https://||' | cut -d'.' -f1)
           echo "deployment-id=$deployment_id" >> $GITHUB_OUTPUT
 
-          echo "### 🚀 Staging Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** $deployment_url" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment ID:** $deployment_id" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### 🚀 Staging Deployment"
+            echo "**URL:** $deployment_url"
+            echo "**Deployment ID:** $deployment_id"
+            echo "**Branch:** ${{ github.ref_name }}"
+            echo "**Commit:** ${{ github.sha }}"
+          } >> $GITHUB_STEP_SUMMARY
 
       - name: Post Slack notification for staging
         if: success()
@@ -58,73 +69,23 @@ jobs:
           {
             "text": "✅ Staging Deployment Successful",
             "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "✅ Staging Deployment Successful",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Environment:*\nStaging"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Deployed by:*\n${{ github.actor }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${{ github.ref_name }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n\`${{ github.sha }}\`"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Deployment URL:*\n${{ steps.deploy.outputs.deployment-url }}"
-                }
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Deployment",
-                      "emoji": true
-                    },
-                    "url": "${{ steps.deploy.outputs.deployment-url }}"
-                  },
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "Approve Production",
-                      "emoji": true
-                    },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                ]
-              }
+              { "type": "header", "text": { "type": "plain_text", "text": "✅ Staging Deployment Successful", "emoji": true } },
+              { "type": "section", "fields": [
+                { "type": "mrkdwn", "text": "*Environment:*\nStaging" },
+                { "type": "mrkdwn", "text": "*Deployed by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                { "type": "mrkdwn", "text": "*Commit:*\n\`${{ github.sha }}\`" }
+              ]},
+              { "type": "section", "text": { "type": "mrkdwn", "text": "*Deployment URL:*\n${{ steps.deploy.outputs.deployment-url }}" }},
+              { "type": "actions", "elements": [
+                { "type": "button", "text": { "type": "plain_text", "text": "View Deployment", "emoji": true }, "url": "${{ steps.deploy.outputs.deployment-url }}" },
+                { "type": "button", "text": { "type": "plain_text", "text": "Approve Production", "emoji": true }, "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]}
             ]
           }
           EOF
-
           if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data @slack_message.txt \
-              ${{ secrets.SLACK_WEBHOOK }}
+            curl -X POST -H 'Content-type: application/json' --data @slack_message.txt ${{ secrets.SLACK_WEBHOOK }}
           fi
 
       - name: Post Slack notification on failure
@@ -134,68 +95,30 @@ jobs:
           {
             "text": "❌ Staging Deployment Failed",
             "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "❌ Staging Deployment Failed",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Environment:*\nStaging"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Failed by:*\n${{ github.actor }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${{ github.ref_name }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n\`${{ github.sha }}\`"
-                  }
-                ]
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Workflow",
-                      "emoji": true
-                    },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                ]
-              }
+              { "type": "header", "text": { "type": "plain_text", "text": "❌ Staging Deployment Failed", "emoji": true } },
+              { "type": "section", "fields": [
+                { "type": "mrkdwn", "text": "*Environment:*\nStaging" },
+                { "type": "mrkdwn", "text": "*Failed by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                { "type": "mrkdwn", "text": "*Commit:*\n\`${{ github.sha }}\`" }
+              ]},
+              { "type": "actions", "elements": [
+                { "type": "button", "text": { "type": "plain_text", "text": "View Workflow", "emoji": true }, "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]}
             ]
           }
           EOF
-
           if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data @slack_message.txt \
-              ${{ secrets.SLACK_WEBHOOK }}
+            curl -X POST -H 'Content-type: application/json' --data @slack_message.txt ${{ secrets.SLACK_WEBHOOK }}
           fi
 
-  # NOTE prod happens automatically, we'll likely change this later when it's not a team of two..
-  # Also environment deployments "requires reviewers" feature is only available on the Enterprise plan.
-  promote-to-production:
-    name: Promote to Production
+  build-and-deploy-production:
+    name: Build & Deploy Production
     needs: deploy-staging
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: ${{ steps.promote.outputs.production-url }}
+      url: ${{ steps.deploy.outputs.production-url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -209,34 +132,50 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Promote Staging to Production
-        id: promote
+      # Pull *production* env vars (writes .vercel/.env.production.local)
+      - name: Pull Vercel Environment Information (production)
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+
+      - name: Debug environment variables (production)
         run: |
-          # Use the Vercel API to promote the staging deployment to production
-          echo "Promoting deployment ${{ needs.deploy-staging.outputs.deployment-id }} to production..."
+          echo "=== NEXT_PUBLIC_* visible at production build time ==="
+          printenv | sort | grep '^NEXT_PUBLIC_' || echo "No NEXT_PUBLIC_ vars found"
+          echo ""
+          echo "=== .vercel directory ==="
+          ls -la .vercel || true
+          echo ""
+          echo "=== .vercel/.env.production.local ==="
+          [ -f .vercel/.env.production.local ] && cat .vercel/.env.production.local || echo "No .vercel/.env.production.local"
 
-          # First, we need to alias the deployment to production
-          production_url=$(vercel promote ${{ needs.deploy-staging.outputs.deployment-url }} --yes --token=$VERCEL_TOKEN --scope=$VERCEL_ORG_ID)
+      # Fresh prod build (bakes prod NEXT_PUBLIC_* into the bundle)
+      - name: Build Project Artifacts (production)
+        run: vercel build --target=production --token=$VERCEL_TOKEN
 
+      - name: Deploy to Production
+        id: deploy
+        run: |
+          production_url=$(vercel deploy --prebuilt --target=production --token=$VERCEL_TOKEN --no-wait)
           echo "production-url=$production_url" >> $GITHUB_OUTPUT
+          production_id=$(echo "$production_url" | sed 's|https://||' | cut -d'.' -f1)
+          echo "production-id=$production_id" >> $GITHUB_OUTPUT
 
-          echo "### 🎉 Production Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** $production_url" >> $GITHUB_STEP_SUMMARY
-          echo "**Promoted from:** ${{ needs.deploy-staging.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Approved by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### 🎉 Production Deployment"
+            echo "**URL:** $production_url"
+            echo "**Deployment ID:** $production_id"
+            echo "**Promoted from:** ${{ needs.deploy-staging.outputs.deployment-url }}" # historical reference only
+            echo "**Approved by:** ${{ github.actor }}"
+            echo "**Branch:** ${{ github.ref_name }}"
+            echo "**Commit:** ${{ github.sha }}"
+          } >> $GITHUB_STEP_SUMMARY
 
       - name: Create Git Tag for Production
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
-          # Create a production tag with timestamp
           PROD_TAG="prod-$(date +'%Y%m%d-%H%M%S')"
           git tag -a $PROD_TAG -m "Production deployment from ${{ github.sha }}"
           git push origin $PROD_TAG
-
           echo "Created production tag: $PROD_TAG"
 
       - name: Post Slack notification for production
@@ -246,81 +185,24 @@ jobs:
           {
             "text": "🎉 Production Deployment Successful",
             "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "🎉 Production Deployment Successful",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Environment:*\nProduction"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Approved by:*\n${{ github.actor }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${{ github.ref_name }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n\`${{ github.sha }}\`"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Production URL:*\n${{ steps.promote.outputs.production-url }}"
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Promoted from Staging:*\n${{ needs.deploy-staging.outputs.deployment-url }}"
-                }
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Production",
-                      "emoji": true
-                    },
-                    "style": "primary",
-                    "url": "${{ steps.promote.outputs.production-url }}"
-                  },
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Workflow",
-                      "emoji": true
-                    },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                ]
-              }
+              { "type": "header", "text": { "type": "plain_text", "text": "🎉 Production Deployment Successful", "emoji": true } },
+              { "type": "section", "fields": [
+                { "type": "mrkdwn", "text": "*Environment:*\nProduction" },
+                { "type": "mrkdwn", "text": "*Approved by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                { "type": "mrkdwn", "text": "*Commit:*\n\`${{ github.sha }}\`" }
+              ]},
+              { "type": "section", "text": { "type": "mrkdwn", "text": "*Production URL:*\n${{ steps.deploy.outputs.production-url }}" }},
+              { "type": "section", "text": { "type": "mrkdwn", "text": "*Built with Production envs.*" }},
+              { "type": "actions", "elements": [
+                { "type": "button", "text": { "type": "plain_text", "text": "View Production", "emoji": true }, "style": "primary", "url": "${{ steps.deploy.outputs.production-url }}" },
+                { "type": "button", "text": { "type": "plain_text", "text": "View Workflow", "emoji": true }, "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]}
             ]
           }
           EOF
-
           if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data @slack_message.txt \
-              ${{ secrets.SLACK_WEBHOOK }}
+            curl -X POST -H 'Content-type: application/json' --data @slack_message.txt ${{ secrets.SLACK_WEBHOOK }}
           fi
 
       - name: Post Slack notification on failure
@@ -330,55 +212,19 @@ jobs:
           {
             "text": "❌ Production Deployment Failed",
             "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "❌ Production Deployment Failed",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Environment:*\nProduction"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Failed by:*\n${{ github.actor }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${{ github.ref_name }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n\`${{ github.sha }}\`"
-                  }
-                ]
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Workflow",
-                      "emoji": true
-                    },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                ]
-              }
+              { "type": "header", "text": { "type": "plain_text", "text": "❌ Production Deployment Failed", "emoji": true } },
+              { "type": "section", "fields": [
+                { "type": "mrkdwn", "text": "*Environment:*\nProduction" },
+                { "type": "mrkdwn", "text": "*Failed by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                { "type": "mrkdwn", "text": "*Commit:*\n\`${{ github.sha }}\`" }
+              ]},
+              { "type": "actions", "elements": [
+                { "type": "button", "text": { "type": "plain_text", "text": "View Workflow", "emoji": true }, "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+              ]}
             ]
           }
           EOF
-
           if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data @slack_message.txt \
-              ${{ secrets.SLACK_WEBHOOK }}
+            curl -X POST -H 'Content-type: application/json' --data @slack_message.txt ${{ secrets.SLACK_WEBHOOK }}
           fi
