@@ -1,6 +1,12 @@
 "use client";
 
-import { useDeletePriceBookByIdMutation, useGetPriceBookByIdQuery } from "@/ui/prices/api";
+import FileUpload from "@/ui/FileUpload";
+import {
+  useDeletePriceBookByIdMutation,
+  useExportPricesMutation,
+  useGetPriceBookByIdQuery,
+  useImportPricesMutation,
+} from "@/ui/prices/api";
 import { PricesTable } from "@/ui/prices/PriceBookPricesTable";
 import {
   Box,
@@ -17,6 +23,7 @@ import {
   Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { useNotifications } from "@toolpad/core/useNotifications";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -24,9 +31,15 @@ import * as React from "react";
 export default function PriceBook() {
   const { price_book_id, workspace_id } = useParams();
   const router = useRouter();
+  const notifications = useNotifications();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [deletePriceBook] = useDeletePriceBookByIdMutation();
+
+  // Export / Import state and mutations
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false);
+  const [runExportPrices, { loading: exporting }] = useExportPricesMutation();
+  const [runImportPrices, { loading: importing }] = useImportPricesMutation();
 
   const { data, loading, error } = useGetPriceBookByIdQuery({
     variables: {
@@ -44,14 +57,46 @@ export default function PriceBook() {
         <Typography variant="h4" gutterBottom>
           Price Book
         </Typography>
-        <Button
-          variant="contained"
-          color="error"
-          onClick={() => setDeleteDialogOpen(true)}
-          sx={{ minWidth: 100 }}
-        >
-          Delete
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              try {
+                const res = await runExportPrices({
+                  variables: { priceBookId: price_book_id as string },
+                });
+                const url = res.data?.exportPrices?.url;
+                if (url) {
+                  window.open(url, "_blank", "noopener,noreferrer");
+                } else {
+                  notifications.show("Export did not return a file URL.", { severity: "error" });
+                }
+              } catch (e: any) {
+                notifications.show(e?.message || "Failed to export prices.", { severity: "error" });
+              }
+            }}
+            disabled={exporting || isLoading}
+            sx={{ minWidth: 100 }}
+          >
+            Export
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => setImportDialogOpen(true)}
+            disabled={isLoading}
+            sx={{ minWidth: 100 }}
+          >
+            Import
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setDeleteDialogOpen(true)}
+            sx={{ minWidth: 100 }}
+          >
+            Delete
+          </Button>
+        </Box>
       </Box>
       {isLoading ? (
         <Card variant="outlined" sx={{ mb: 4, backgroundColor: "#fafbfc" }}>
@@ -360,11 +405,54 @@ export default function PriceBook() {
             router.push(`/app/${workspace_id}/prices/price-books`);
           } catch (err) {
             setDeleting(false);
-            alert("Failed to delete price book.");
+            notifications.show("Failed to delete price book.", { severity: "error" });
           }
         }}
         deleting={deleting}
       />
+
+      {/* Import Prices Dialog */}
+      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
+        <DialogTitle>Import Prices</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Upload a CSV file to import prices into this price book.
+          </DialogContentText>
+          <FileUpload
+            acceptedTypes={["text/csv", "application/vnd.ms-excel", ".csv"]}
+            entityId={price_book_id as string}
+            label="Select CSV file"
+            helperText="Accepted format: .csv"
+            onUploadSuccess={async ({ fileId }) => {
+              if (!fileId) {
+                notifications.show("Upload failed to create a file record.", { severity: "error" });
+                return;
+              }
+              try {
+                const res = await runImportPrices({
+                  variables: { fileId, priceBookId: price_book_id as string },
+                });
+                const imported = res.data?.importPrices?.imported ?? 0;
+                const failed = res.data?.importPrices?.failed ?? 0;
+                setImportDialogOpen(false);
+                notifications.show(`Import complete. Imported: ${imported}, Failed: ${failed}`, {
+                  severity: "success",
+                });
+              } catch (err: any) {
+                notifications.show(err?.message || "Failed to import prices.", {
+                  severity: "error",
+                });
+              }
+            }}
+            onError={(e) => notifications.show(e.message, { severity: "error" })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportDialogOpen(false)} color="inherit" disabled={importing}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 }

@@ -849,6 +849,12 @@ type HasuraClaims {
   x_hasura_user_id: String
 }
 
+type ImportPricesResult {
+  errors: [String!]!
+  failed: Int!
+  imported: Int!
+}
+
 type IntakeForm {
   createdAt: DateTime!
   createdBy: String!
@@ -1435,7 +1441,9 @@ type Mutation {
   deleteProject(id: String!): Project
   deleteReferenceNumberTemplate(id: String!): Boolean
   deleteWorkflowConfigurationById(id: ID!): Boolean
+  exportPrices(priceBookId: ID): File
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
+  importPrices(fileId: ID!, priceBookId: ID!): ImportPricesResult
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   refreshBrand(brandId: String!): Brand
@@ -2558,6 +2566,7 @@ enum SupportedContentType {
   APPLICATION_PDF
   IMAGE_JPEG
   IMAGE_PNG
+  TEXT_CSV
 }
 
 type TaxAnalysisResult {

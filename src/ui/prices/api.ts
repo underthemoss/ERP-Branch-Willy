@@ -5,6 +5,8 @@ import {
   useCreateSalePriceMutation as _useCreateSalePriceMutation,
   useDeletePriceBookByIdMutation as _useDeletePriceBookByIdMutation,
   useDeletePriceByIdMutation as _useDeletePriceByIdMutation,
+  useExportPricesMutation as _useExportPricesMutation,
+  useImportPricesMutation as _useImportPricesMutation,
   useUpdateRentalPriceMutation as _useUpdateRentalPriceMutation,
   useUpdateSalePriceMutation as _useUpdateSalePriceMutation,
 } from "@/graphql/hooks";
@@ -275,6 +277,41 @@ export function useDeletePriceByIdMutation(
   options?: Parameters<typeof _useDeletePriceByIdMutation>[0],
 ) {
   return _useDeletePriceByIdMutation({
+    ...options,
+    refetchQueries: ["ListPrices"],
+  });
+}
+
+graphql(`
+  mutation ExportPrices($priceBookId: ID) {
+    exportPrices(priceBookId: $priceBookId) {
+      id
+      file_key
+      file_name
+      mime_type
+      url
+    }
+  }
+`);
+
+graphql(`
+  mutation ImportPrices($fileId: ID!, $priceBookId: ID!) {
+    importPrices(fileId: $fileId, priceBookId: $priceBookId) {
+      imported
+      failed
+      errors
+    }
+  }
+`);
+
+export function useExportPricesMutation(options?: Parameters<typeof _useExportPricesMutation>[0]) {
+  return _useExportPricesMutation({
+    ...options,
+  });
+}
+
+export function useImportPricesMutation(options?: Parameters<typeof _useImportPricesMutation>[0]) {
+  return _useImportPricesMutation({
     ...options,
     refetchQueries: ["ListPrices"],
   });

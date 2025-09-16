@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import type { SupportedContentType } from "@/graphql/graphql";
 import { useAddFileToEntityMutation, useGetSignedUploadUrlLazyQuery } from "@/graphql/hooks";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Alert, Box, Button, LinearProgress, Typography } from "@mui/material";
@@ -16,7 +17,7 @@ const getSignedUploadUrlDocument = graphql(`
 `);
 
 type FileUploadProps = {
-  onUploadSuccess: (result: { key: string; url: string; file: File }) => void;
+  onUploadSuccess: (result: { key: string; url: string; file: File; fileId?: string }) => void;
   onError?: (error: Error) => void;
   acceptedTypes?: string[];
   label?: string;
@@ -26,10 +27,21 @@ type FileUploadProps = {
   entityId?: string;
 };
 
-const SUPPORTED_CONTENT_TYPE_MAP: Record<string, "IMAGE_JPEG" | "IMAGE_PNG" | "APPLICATION_PDF"> = {
+type ClientSupportedContentType = "IMAGE_JPEG" | "IMAGE_PNG" | "APPLICATION_PDF" | "TEXT_CSV";
+
+const SUPPORTED_CONTENT_TYPE_MAP: Record<string, ClientSupportedContentType> = {
   "image/jpeg": "IMAGE_JPEG",
   "image/png": "IMAGE_PNG",
   "application/pdf": "APPLICATION_PDF",
+  "text/csv": "TEXT_CSV",
+  "application/vnd.ms-excel": "TEXT_CSV",
+};
+
+const SUPPORTED_CONTENT_TYPE_TO_MIME: Record<ClientSupportedContentType, string> = {
+  IMAGE_JPEG: "image/jpeg",
+  IMAGE_PNG: "image/png",
+  APPLICATION_PDF: "application/pdf",
+  TEXT_CSV: "text/csv",
 };
 
 const addFileToEntityMutation = graphql(`
@@ -55,7 +67,14 @@ const addFileToEntityMutation = graphql(`
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadSuccess,
   onError,
-  acceptedTypes = ["image/jpeg", "image/png", "application/pdf"],
+  acceptedTypes = [
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+    "text/csv",
+    "application/vnd.ms-excel",
+    ".csv",
+  ],
   label = "",
   helperText,
   multiple = false,
@@ -70,9 +89,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [getUploadUrl] = useGetSignedUploadUrlLazyQuery();
   const [addFileToEntity] = useAddFileToEntityMutation();
   // Helper to map file type to SupportedContentType
-  function getSupportedContentType(
-    file: File,
-  ): "IMAGE_JPEG" | "IMAGE_PNG" | "APPLICATION_PDF" | null {
+  function getSupportedContentType(file: File): ClientSupportedContentType | null {
     return SUPPORTED_CONTENT_TYPE_MAP[file.type] || null;
   }
 
@@ -89,7 +106,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     const file = fileArr[0];
     const supportedType = getSupportedContentType(file);
     if (!supportedType) {
-      const errMsg = "Unsupported file type. Only PDF, JPEG, PNG allowed.";
+      const errMsg = "Unsupported file type.";
       setError(errMsg);
       onError?.(new Error(errMsg));
       return;
@@ -100,7 +117,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     try {
       // Get signed upload URL
       const { data, error: gqlError } = await getUploadUrl({
-        variables: { contentType: supportedType as any, originalFilename: file.name },
+        variables: {
+          contentType: supportedType as SupportedContentType,
+          originalFilename: file.name,
+        },
       });
 
       if (gqlError || !data?.getSignedUploadUrl) {
@@ -113,7 +133,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", url, true);
-        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.setRequestHeader("Content-Type", SUPPORTED_CONTENT_TYPE_TO_MIME[supportedType]);
 
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
@@ -137,9 +157,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         xhr.send(file);
       });
 
-      // If entityId is set, call addFileToEntity
+      // If entityId is set, call addFileToEntity and capture returned file id
+      let createdFileId: string | undefined;
       if (entityId) {
-        await addFileToEntity({
+        const addRes = await addFileToEntity({
           variables: {
             file_key: key,
             file_name: file.name,
@@ -147,10 +168,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             parent_entity_id: entityId,
           },
         });
+        createdFileId = addRes.data?.addFileToEntity.id;
       }
 
       setUploading(false);
-      onUploadSuccess({ key, url, file });
+      onUploadSuccess({ key, url, file, fileId: createdFileId });
     } catch (err: any) {
       setUploading(false);
       setError(err.message || "Upload failed");
