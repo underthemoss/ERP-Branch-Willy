@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TruncatedId } from "./TruncatedId";
 
 interface Relationship {
   resource: {
@@ -186,16 +187,7 @@ export function RelationshipsTable({
                       >
                         {rel.resource.type}:
                       </Typography>
-                      <Typography
-                        component="span"
-                        sx={{
-                          fontFamily: "monospace",
-                          fontSize: 12,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {rel.resource.id}
-                      </Typography>
+                      <TruncatedId id={rel.resource.id} maxLength={25} />
                       <Tooltip title="Navigate to resource">
                         <IconButton
                           size="sm"
@@ -229,16 +221,7 @@ export function RelationshipsTable({
                       >
                         {rel.subject.type}:
                       </Typography>
-                      <Typography
-                        component="span"
-                        sx={{
-                          fontFamily: "monospace",
-                          fontSize: 12,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {rel.subject.id}
-                      </Typography>
+                      <TruncatedId id={rel.subject.id} maxLength={25} />
                       {rel.subject.relation && (
                         <>
                           <Typography
