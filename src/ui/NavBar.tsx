@@ -22,6 +22,7 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SettingsIcon from "@mui/icons-material/Settings";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import {
@@ -406,6 +407,25 @@ export const NavBar = () => {
               </Typography>
             </MenuItem>
             <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              component={Link}
+              href="/"
+              onClick={handleMenuClose}
+              sx={{
+                py: 1,
+                px: 2,
+                fontSize: "14px",
+                color: "#2F2B43",
+                "&:hover": {
+                  bgcolor: "#F5F5F5",
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
+                <SwapHorizIcon fontSize="small" />
+              </ListItemIcon>
+              Switch Workspace
+            </MenuItem>
             <MenuItem
               onClick={handleLogout}
               sx={{
