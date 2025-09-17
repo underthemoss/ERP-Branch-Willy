@@ -50,6 +50,7 @@ import React from "react";
 export const NavBar = () => {
   const currentWorkspace = useSelectedWorkspace();
   const currentWorkspaceId = useSelectedWorkspaceId();
+  const { workspaces, selectWorkspace } = useWorkspace();
   const { user, logout } = useAuth0();
   const pathname = usePathname();
 
@@ -57,6 +58,7 @@ export const NavBar = () => {
   const roles = user?.["https://erp.estrack.com/es_erp_roles"] || [];
   const isPlatformAdmin = roles.includes("PLATFORM_ADMIN");
   const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
+  const [expandedWorkspaces, setExpandedWorkspaces] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -223,221 +225,358 @@ export const NavBar = () => {
         position: "relative",
       }}
     >
-      <Box
-        className="workspaceSwitcher"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <Avatar
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: "transparent",
-            borderRadius: "10px",
-            boxShadow: "0px 0px 40px rgba(0, 0, 0, 0.04)",
-          }}
-        >
-          {currentWorkspace?.logoUrl ? (
-            <img
-              src={currentWorkspace.logoUrl}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "10px",
-              }}
-            />
-          ) : (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                fontSize: "14px",
-                letterSpacing: "-0.08px",
-              }}
-            >
-              {currentWorkspace?.name?.slice(0, 1)}
-            </Typography>
-          )}
-        </Avatar>
-
-        <Box
-          className="ws-name-and-email"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            marginLeft: "6px",
-            width: "172px",
-            gap: "6px",
-          }}
-        >
-          <Typography
-            noWrap
+      <Box className="workspaceSwitcher" sx={{ width: "100%" }}>
+        {/* Current Workspace Header */}
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+          <Avatar
             sx={{
-              fontFamily: "Inter",
-              fontSize: "14px",
-              fontStyle: "normal",
-              fontWeight: "500",
-              lineHeight: "18px",
-              letterSpacing: "-0.2px",
-              color: "#2F2B43",
+              width: 40,
+              height: 40,
+              bgcolor: "transparent",
+              borderRadius: "10px",
+              boxShadow: "0px 0px 40px rgba(0, 0, 0, 0.04)",
             }}
           >
-            {currentWorkspace?.name}
-          </Typography>
-
-          <Typography
-            noWrap
-            sx={{
-              color: "#8B919E",
-              fontFamily: "Inter",
-              fontSize: "12px",
-              fontStyle: "normal",
-              fontWeight: "400",
-              lineHeight: "16px",
-              letterSpacing: "-0.2px",
-            }}
-          >
-            {user?.email}
-          </Typography>
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            width: "100%",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <IconButton
-            size="small"
-            className="brian"
-            onClick={handleMenuClick}
-            aria-controls={open ? "account-menu" : undefined}
-            aria-haspopup="true"
-            aria-expanded={open ? "true" : undefined}
-          >
-            <UnfoldMoreIcon fontSize="small" />
-          </IconButton>
-          <Menu
-            id="account-menu"
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleMenuClose}
-            onClick={handleMenuClose}
-            PaperProps={{
-              elevation: 0,
-              sx: {
-                overflow: "visible",
-                filter: "drop-shadow(0px 0px 40px rgba(0, 0, 0, 0.08))",
-                mt: 1,
-                borderRadius: "12px",
-                minWidth: 200,
-                bgcolor: "white",
-                "& .MuiList-root": {
-                  py: 1,
-                },
-                "&:before": {
-                  content: '""',
-                  display: "block",
-                  position: "absolute",
-                  top: 0,
-                  right: 20,
-                  width: 10,
-                  height: 10,
-                  bgcolor: "background.paper",
-                  transform: "translateY(-50%) rotate(45deg)",
-                  zIndex: 0,
-                },
-              },
-            }}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-          >
-            <MenuItem
-              disabled
-              onClick={handleMenuClose}
-              sx={{
-                py: 1,
-                px: 2,
-                fontSize: "14px",
-                color: "#8B919E",
-                "&.Mui-disabled": {
-                  opacity: 1,
-                },
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
-                {user?.picture ? (
-                  <Avatar
-                    src={user.picture}
-                    alt={user?.name || user?.email}
-                    sx={{
-                      width: 24,
-                      height: 24,
-                    }}
-                  />
-                ) : (
-                  <PersonOutlineIcon fontSize="small" />
-                )}
-              </ListItemIcon>
+            {currentWorkspace?.logoUrl ? (
+              <img
+                src={currentWorkspace.logoUrl}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "10px",
+                }}
+              />
+            ) : (
               <Typography
-                noWrap
                 sx={{
+                  fontWeight: 700,
                   fontSize: "14px",
-                  color: "#8B919E",
-                  maxWidth: "180px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  letterSpacing: "-0.08px",
                 }}
               >
-                {user?.name || "Profile"}
+                {currentWorkspace?.name?.slice(0, 1)}
               </Typography>
-            </MenuItem>
-            <Divider sx={{ my: 0.5 }} />
-            <MenuItem
-              component={Link}
-              href="/"
+            )}
+          </Avatar>
+
+          <Box
+            className="ws-name-and-email"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              marginLeft: "6px",
+              flex: 1,
+              gap: "6px",
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              noWrap
+              sx={{
+                fontFamily: "Inter",
+                fontSize: "14px",
+                fontStyle: "normal",
+                fontWeight: "500",
+                lineHeight: "18px",
+                letterSpacing: "-0.2px",
+                color: "#2F2B43",
+              }}
+            >
+              {currentWorkspace?.name}
+            </Typography>
+
+            <Typography
+              noWrap
+              sx={{
+                color: "#8B919E",
+                fontFamily: "Inter",
+                fontSize: "12px",
+                fontStyle: "normal",
+                fontWeight: "400",
+                lineHeight: "16px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              {user?.email}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedWorkspaces(!expandedWorkspaces);
+              }}
+              data-testid="expand-workspaces"
+              sx={{
+                color: "grey.400",
+                borderRadius: "8px",
+              }}
+            >
+              {expandedWorkspaces ? (
+                <ExpandLess fontSize="small" />
+              ) : (
+                <ExpandMore fontSize="small" />
+              )}
+            </IconButton>
+            <IconButton
+              size="small"
+              className="brian"
+              onClick={handleMenuClick}
+              aria-controls={open ? "account-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? "true" : undefined}
+            >
+              <UnfoldMoreIcon fontSize="small" />
+            </IconButton>
+            <Menu
+              id="account-menu"
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
               onClick={handleMenuClose}
-              sx={{
-                py: 1,
-                px: 2,
-                fontSize: "14px",
-                color: "#2F2B43",
-                "&:hover": {
-                  bgcolor: "#F5F5F5",
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  overflow: "visible",
+                  filter: "drop-shadow(0px 0px 40px rgba(0, 0, 0, 0.08))",
+                  mt: 1,
+                  borderRadius: "12px",
+                  minWidth: 200,
+                  bgcolor: "white",
+                  "& .MuiList-root": {
+                    py: 1,
+                  },
+                  "&:before": {
+                    content: '""',
+                    display: "block",
+                    position: "absolute",
+                    top: 0,
+                    right: 20,
+                    width: 10,
+                    height: 10,
+                    bgcolor: "background.paper",
+                    transform: "translateY(-50%) rotate(45deg)",
+                    zIndex: 0,
+                  },
                 },
               }}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             >
-              <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
-                <SwapHorizIcon fontSize="small" />
-              </ListItemIcon>
-              Switch Workspace
-            </MenuItem>
-            <MenuItem
-              onClick={handleLogout}
-              sx={{
-                py: 1,
-                px: 2,
-                fontSize: "14px",
-                color: "#2F2B43",
-                "&:hover": {
-                  bgcolor: "#F5F5F5",
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              Logout
-            </MenuItem>
-          </Menu>
+              <MenuItem
+                disabled
+                onClick={handleMenuClose}
+                sx={{
+                  py: 1,
+                  px: 2,
+                  fontSize: "14px",
+                  color: "#8B919E",
+                  "&.Mui-disabled": {
+                    opacity: 1,
+                  },
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
+                  {user?.picture ? (
+                    <Avatar
+                      src={user.picture}
+                      alt={user?.name || user?.email}
+                      sx={{
+                        width: 24,
+                        height: 24,
+                      }}
+                    />
+                  ) : (
+                    <PersonOutlineIcon fontSize="small" />
+                  )}
+                </ListItemIcon>
+                <Typography
+                  noWrap
+                  sx={{
+                    fontSize: "14px",
+                    color: "#8B919E",
+                    maxWidth: "180px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user?.name || "Profile"}
+                </Typography>
+              </MenuItem>
+              <Divider sx={{ my: 0.5 }} />
+              <MenuItem
+                component={Link}
+                href="/"
+                onClick={handleMenuClose}
+                sx={{
+                  py: 1,
+                  px: 2,
+                  fontSize: "14px",
+                  color: "#2F2B43",
+                  "&:hover": {
+                    bgcolor: "#F5F5F5",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
+                  <SwapHorizIcon fontSize="small" />
+                </ListItemIcon>
+                Switch Workspace
+              </MenuItem>
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  py: 1,
+                  px: 2,
+                  fontSize: "14px",
+                  color: "#2F2B43",
+                  "&:hover": {
+                    bgcolor: "#F5F5F5",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Logout
+              </MenuItem>
+            </Menu>
+          </Box>
         </Box>
+
+        {/* Expanded Workspaces List */}
+        {expandedWorkspaces && workspaces && workspaces.length > 0 && (
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#8B919E",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                mb: 1,
+                px: 1,
+              }}
+            >
+              Workspaces
+            </Typography>
+            <List disablePadding>
+              {workspaces.map((workspace) => (
+                <ListItem key={workspace.id} disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      if (workspace.id && workspace.id !== currentWorkspaceId) {
+                        selectWorkspace(workspace.id);
+                      }
+                    }}
+                    selected={workspace.id === currentWorkspaceId}
+                    data-testid={`workspace-${workspace.id}`}
+                    sx={{
+                      px: 1,
+                      py: 0.75,
+                      borderRadius: "8px",
+                      mb: 0.5,
+                      "&:hover": {
+                        bgcolor: "rgba(0, 0, 0, 0.04)",
+                      },
+                      "&.Mui-selected": {
+                        bgcolor: "rgba(25, 118, 210, 0.08)",
+                        "&:hover": {
+                          bgcolor: "rgba(25, 118, 210, 0.12)",
+                        },
+                      },
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: "transparent",
+                        borderRadius: "8px",
+                        boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.04)",
+                        mr: 1.5,
+                      }}
+                    >
+                      {workspace.logoUrl ? (
+                        <img
+                          src={workspace.logoUrl}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      ) : (
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "12px",
+                            letterSpacing: "-0.08px",
+                            color:
+                              workspace.id === currentWorkspaceId
+                                ? "primary.main"
+                                : "text.secondary",
+                          }}
+                        >
+                          {workspace.name?.slice(0, 1)}
+                        </Typography>
+                      )}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        noWrap
+                        sx={{
+                          fontFamily: "Inter",
+                          fontSize: "13px",
+                          fontWeight: workspace.id === currentWorkspaceId ? 600 : 500,
+                          lineHeight: "16px",
+                          letterSpacing: "-0.1px",
+                          color: workspace.id === currentWorkspaceId ? "primary.main" : "#2F2B43",
+                        }}
+                      >
+                        {workspace.name}
+                      </Typography>
+                      {workspace.description && (
+                        <Typography
+                          noWrap
+                          sx={{
+                            fontSize: "11px",
+                            color: "#8B919E",
+                            lineHeight: "14px",
+                            mt: 0.25,
+                          }}
+                        >
+                          {workspace.description}
+                        </Typography>
+                      )}
+                    </Box>
+                    {workspace.id === currentWorkspaceId && (
+                      <CheckIcon
+                        sx={{
+                          fontSize: 16,
+                          color: "primary.main",
+                          ml: 1,
+                        }}
+                      />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
       </Box>
 
       <Divider sx={{ width: "100%", my: "12px" }} />
