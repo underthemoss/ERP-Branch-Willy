@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
-import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { useWorkspace, useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { WorkspaceSelectionScreen } from "@/ui/workspace/WorkspaceSelectionScreen";
 import { alpha, Box, Fade, LinearProgress, Typography, useTheme } from "@mui/material";
 import Image from "next/image";
@@ -96,7 +96,8 @@ function LoadingScreen({ message }: LoadingScreenProps) {
 export function AppContextResolver({ children }: AppContextResolverProps) {
   const pathname = usePathname();
   const { user } = useAuth0ErpUser();
-  const { workspaces, isLoadingWorkspaces, selectedWorkspace } = useWorkspace();
+  const { workspaces, isLoadingWorkspaces } = useWorkspace();
+  const selectedWorkspace = useSelectedWorkspace();
 
   // Check if user is platform admin accessing admin routes
   const isAdminRoute = pathname?.startsWith("/admin");

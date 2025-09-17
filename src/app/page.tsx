@@ -1,17 +1,17 @@
 "use client";
 
 import { ProviderComposer } from "@/providers/ProviderComposer";
-import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
 function PageContent() {
-  const { selectedWorkspace } = useWorkspace();
+  const selectedWorkspace = useSelectedWorkspace();
 
   useEffect(() => {
     // Once we have a selected workspace, redirect to the app
     if (selectedWorkspace) {
-      redirect(`/app/${selectedWorkspace}`);
+      redirect(`/app/${selectedWorkspace.id}`);
     }
   }, [selectedWorkspace]);
 
