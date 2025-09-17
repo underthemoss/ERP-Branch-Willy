@@ -47,6 +47,29 @@ type AdminMutationNamespace {
     """Auth0 user ID"""
     userId: String!
   ): Boolean
+
+  """Create or update a SpiceDB relationship"""
+  writeRelationship(
+    """Relation type (e.g., "member", "admin")"""
+    relation: String!
+
+    """Resource ID"""
+    resourceId: String!
+
+    """Resource type (e.g., "erp/workspace")"""
+    resourceType: String!
+
+    """Subject ID"""
+    subjectId: String!
+
+    """
+    Optional subject relation for indirect relationships (e.g., "member" for group membership)
+    """
+    subjectRelation: String
+
+    """Subject type (e.g., "erp/user")"""
+    subjectType: String!
+  ): WriteRelationshipResult!
 }
 
 type AdminQueryNamespace {
@@ -2895,4 +2918,12 @@ type Workspace {
 enum WorkspaceAccessType {
   INVITE_ONLY
   SAME_DOMAIN
+}
+
+type WriteRelationshipResult {
+  message: String
+
+  """The created/updated relationship"""
+  relationship: SpiceDBRelationship
+  success: Boolean!
 }

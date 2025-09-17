@@ -25,6 +25,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useCallback, useState } from "react";
+import { CreateRelationshipDialog } from "./components/CreateRelationshipDialog";
 import { RelationshipFilters } from "./components/RelationshipFilters";
 import { RelationshipsTable } from "./components/RelationshipsTable";
 import { SchemaModal } from "./components/SchemaModal";
@@ -41,6 +42,7 @@ export default function AuthzPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [relationshipToDelete, setRelationshipToDelete] = useState<any>(null);
   const [schemaModalOpen, setSchemaModalOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch resource types for filters
   const { data: resourceTypesData } = useListResourceTypesQuery({
@@ -229,8 +231,7 @@ export default function AuthzPage() {
               size="sm"
               variant="solid"
               startDecorator={<AddOutlined />}
-              disabled
-              title="Create relationship functionality not yet implemented"
+              onClick={() => setCreateDialogOpen(true)}
             >
               Add Relationship
             </Button>
@@ -319,6 +320,13 @@ export default function AuthzPage() {
 
       {/* Schema Modal */}
       <SchemaModal open={schemaModalOpen} onClose={() => setSchemaModalOpen(false)} />
+
+      {/* Create Relationship Dialog */}
+      <CreateRelationshipDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSuccess={() => refetch()}
+      />
     </Box>
   );
 }

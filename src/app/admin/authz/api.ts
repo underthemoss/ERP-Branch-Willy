@@ -87,6 +87,44 @@ export const DELETE_RELATIONSHIP_MUTATION = graphql(`
   }
 `);
 
+// Create/write a SpiceDB relationship
+export const WRITE_RELATIONSHIP_MUTATION = graphql(`
+  mutation WriteRelationship(
+    $resourceType: String!
+    $resourceId: String!
+    $relation: String!
+    $subjectType: String!
+    $subjectId: String!
+    $subjectRelation: String
+  ) {
+    admin {
+      writeRelationship(
+        resourceType: $resourceType
+        resourceId: $resourceId
+        relation: $relation
+        subjectType: $subjectType
+        subjectId: $subjectId
+        subjectRelation: $subjectRelation
+      ) {
+        success
+        message
+        relationship {
+          resource {
+            type
+            id
+          }
+          relation
+          subject {
+            type
+            id
+            relation
+          }
+        }
+      }
+    }
+  }
+`);
+
 // Get raw Zed schema from SpiceDB
 export const GET_RAW_ZED_SCHEMA_QUERY = graphql(`
   query GetRawZedSchema {
