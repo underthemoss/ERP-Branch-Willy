@@ -1,4 +1,8 @@
-import { useFetchWorkspacesQuery } from "@/graphql/hooks";
+import {
+  useSelectedWorkspace,
+  useSelectedWorkspaceId,
+  useWorkspace,
+} from "@/providers/WorkspaceProvider";
 import { useAuth0 } from "@auth0/auth0-react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
@@ -44,7 +48,8 @@ import { usePathname } from "next/navigation";
 import React from "react";
 
 export const NavBar = () => {
-  const { data } = useFetchWorkspacesQuery();
+  const currentWorkspace = useSelectedWorkspace();
+  const currentWorkspaceId = useSelectedWorkspaceId();
   const { user, logout } = useAuth0();
   const pathname = usePathname();
 
@@ -67,18 +72,6 @@ export const NavBar = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
     handleMenuClose();
   };
-
-  const workspaces =
-    data?.listWorkspaces?.items.map((d) => {
-      return {
-        id: d.id,
-        name: d.name,
-        subtext: d.companyId,
-        image: "/favicon.ico",
-      };
-    }) || [];
-
-  const currentWorkspace = workspaces[0];
 
   // Navigation menu items
   const navItems = [
@@ -246,9 +239,9 @@ export const NavBar = () => {
             boxShadow: "0px 0px 40px rgba(0, 0, 0, 0.04)",
           }}
         >
-          {currentWorkspace?.image ? (
+          {currentWorkspace?.logoUrl ? (
             <img
-              src={currentWorkspace?.image}
+              src={currentWorkspace.logoUrl}
               alt=""
               style={{
                 width: "100%",
