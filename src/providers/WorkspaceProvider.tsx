@@ -1,7 +1,11 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
+import {
+  useWorkspaceProviderJoinWorkspaceMutation,
+  useWorkspaceProviderListJoinableWorkspacesQuery,
+  useWorkspaceProviderListWorkspacesQuery,
+} from "@/graphql/hooks";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { createContext, ReactNode, useCallback, useContext, useMemo } from "react";
 
@@ -31,6 +35,56 @@ graphql(`
   }
 `);
 
+// Define joinable workspaces query
+graphql(`
+  query WorkspaceProviderListJoinableWorkspaces {
+    listJoinableWorkspaces {
+      items {
+        id
+        name
+        companyId
+        description
+        accessType
+        archived
+        archivedAt
+        bannerImageUrl
+        brandId
+        domain
+        logoUrl
+        ownerId
+        createdAt
+        createdBy
+        updatedAt
+        updatedBy
+      }
+    }
+  }
+`);
+
+// Define join workspace mutation
+graphql(`
+  mutation WorkspaceProviderJoinWorkspace($workspaceId: String!) {
+    joinWorkspace(workspaceId: $workspaceId) {
+      id
+      name
+      companyId
+      description
+      accessType
+      archived
+      archivedAt
+      bannerImageUrl
+      brandId
+      domain
+      logoUrl
+      ownerId
+      createdAt
+      createdBy
+      updatedAt
+      updatedBy
+    }
+  }
+`);
+
 // Extract the workspace item type from the query
 type WorkspaceItem = NonNullable<
   NonNullable<ReturnType<typeof useWorkspaceProviderListWorkspacesQuery>["data"]>["listWorkspaces"]
@@ -38,8 +92,11 @@ type WorkspaceItem = NonNullable<
 
 interface WorkspaceContextType {
   workspaces: WorkspaceItem[] | undefined;
+  joinableWorkspaces: WorkspaceItem[] | undefined;
   isLoadingWorkspaces: boolean;
+  isLoadingJoinableWorkspaces: boolean;
   selectWorkspace: (workspaceId: string) => void;
+  joinWorkspace: (workspaceId: string) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -83,11 +140,26 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const router = useRouter();
   const pathname = usePathname() || "";
 
-  const { data, loading: workspacesLoading } = useWorkspaceProviderListWorkspacesQuery({
+  const {
+    data,
+    loading: workspacesLoading,
+    refetch: refetchWorkspaces,
+  } = useWorkspaceProviderListWorkspacesQuery({
     fetchPolicy: "cache-and-network",
   });
 
+  const {
+    data: joinableData,
+    loading: joinableWorkspacesLoading,
+    refetch: refetchJoinableWorkspaces,
+  } = useWorkspaceProviderListJoinableWorkspacesQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [joinWorkspaceMutation] = useWorkspaceProviderJoinWorkspaceMutation();
+
   const workspaces = data?.listWorkspaces?.items;
+  const joinableWorkspaces = joinableData?.listJoinableWorkspaces?.items;
 
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -100,10 +172,37 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     [router, pathname],
   );
 
+  const joinWorkspace = useCallback(
+    async (workspaceId: string) => {
+      try {
+        const result = await joinWorkspaceMutation({
+          variables: { workspaceId },
+        });
+
+        if (result.data?.joinWorkspace) {
+          // Successfully joined workspace
+          // Refetch both workspace lists to update the UI
+          await Promise.all([refetchWorkspaces(), refetchJoinableWorkspaces()]);
+
+          // Navigate to the newly joined workspace
+          router.push(`/app/${workspaceId}`);
+        }
+      } catch (error) {
+        console.error("Failed to join workspace:", error);
+        // TODO: Add proper error handling/notification here
+        // For now, just log the error
+      }
+    },
+    [joinWorkspaceMutation, refetchWorkspaces, refetchJoinableWorkspaces, router],
+  );
+
   const value: WorkspaceContextType = {
     workspaces,
+    joinableWorkspaces,
     isLoadingWorkspaces: workspacesLoading,
+    isLoadingJoinableWorkspaces: joinableWorkspacesLoading,
     selectWorkspace,
+    joinWorkspace,
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

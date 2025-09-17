@@ -1467,6 +1467,7 @@ type Mutation {
   exportPrices(priceBookId: ID): File
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
   importPrices(fileId: ID!, priceBookId: ID!): ImportPricesResult
+  joinWorkspace(workspaceId: String!): Workspace
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   refreshBrand(brandId: String!): Brand
@@ -1960,6 +1961,7 @@ type Query {
   listInventoryGroupedByPimCategoryId(query: ListInventoryQuery): InventoryGroupedByCategoryResponse!
   listInventoryReservations(filter: ListInventoryReservationsFilter, page: ListInventoryPage): InventoryReservationsResponse!
   listInvoices(query: ListInvoicesQuery): InvoicesResponse!
+  listJoinableWorkspaces: ListWorkspacesResult!
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult

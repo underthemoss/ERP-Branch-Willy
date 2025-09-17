@@ -1,7 +1,7 @@
 "use client";
 
 import { useWorkspace } from "@/providers/WorkspaceProvider";
-import { Add, ArrowForward, Business, HourglassEmpty } from "@mui/icons-material";
+import { Add, ArrowForward, Business, HourglassEmpty, PersonAdd } from "@mui/icons-material";
 import {
   alpha,
   Box,
@@ -23,7 +23,14 @@ import { CreateWorkspaceFlow } from "./CreateWorkspaceFlow";
 
 export function WorkspaceSelectionScreen() {
   const theme = useTheme();
-  const { workspaces, selectWorkspace, isLoadingWorkspaces } = useWorkspace();
+  const {
+    workspaces,
+    joinableWorkspaces,
+    selectWorkspace,
+    joinWorkspace,
+    isLoadingWorkspaces,
+    isLoadingJoinableWorkspaces,
+  } = useWorkspace();
   const [showCreateFlow, setShowCreateFlow] = useState(false);
 
   const handleWorkspaceCreated = (workspaceId: string) => {
@@ -109,7 +116,8 @@ export function WorkspaceSelectionScreen() {
                       disablePadding
                       sx={{
                         borderBottom:
-                          index < workspaces.length - 1
+                          index < workspaces.length - 1 ||
+                          (joinableWorkspaces && joinableWorkspaces.length > 0)
                             ? `1px solid ${alpha(theme.palette.divider, 0.08)}`
                             : "none",
                       }}
@@ -233,12 +241,144 @@ export function WorkspaceSelectionScreen() {
                   </Box>
                 )}
 
+                {/* Show joinable workspaces */}
+                {joinableWorkspaces &&
+                  joinableWorkspaces.length > 0 &&
+                  joinableWorkspaces.map((workspace: any, index: number) => (
+                    <ListItem
+                      key={`joinable-${workspace.id}`}
+                      disablePadding
+                      sx={{
+                        borderBottom:
+                          index < joinableWorkspaces.length - 1
+                            ? `1px solid ${alpha(theme.palette.divider, 0.08)}`
+                            : "none",
+                      }}
+                    >
+                      <ListItemButton
+                        sx={{
+                          py: 2,
+                          px: 2,
+                          "&:hover": {
+                            bgcolor: alpha(theme.palette.info.main, 0.04),
+                          },
+                        }}
+                        onClick={(e) => e.preventDefault()} // Prevent default click behavior
+                      >
+                        {/* Square banner with centered logo avatar */}
+                        <Box
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            position: "relative",
+                            borderRadius: 2,
+                            overflow: "hidden",
+                            bgcolor: workspace.bannerImageUrl
+                              ? "transparent"
+                              : alpha(theme.palette.info.main, 0.1),
+                            backgroundImage: workspace.bannerImageUrl
+                              ? `url(${workspace.bannerImageUrl})`
+                              : "none",
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {/* Logo Avatar */}
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: "50%",
+                              bgcolor: "background.paper",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: 1,
+                              border: `2px solid ${alpha(theme.palette.background.paper, 0.9)}`,
+                            }}
+                          >
+                            {workspace.logoUrl ? (
+                              <Box
+                                component="img"
+                                src={workspace.logoUrl}
+                                alt={workspace.name}
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  objectFit: "contain",
+                                }}
+                              />
+                            ) : (
+                              <Business sx={{ color: "info.main", fontSize: 24 }} />
+                            )}
+                          </Box>
+                        </Box>
+
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              {workspace.name || "Unnamed Workspace"}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {workspace.description || "No description"}
+                              </Typography>
+                              {workspace.domain && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: "info.main",
+                                    display: "inline-block",
+                                    mt: 0.5,
+                                  }}
+                                >
+                                  {workspace.domain}
+                                </Typography>
+                              )}
+                            </Box>
+                          }
+                          sx={{ ml: 2 }}
+                        />
+
+                        {/* Join Button */}
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<PersonAdd />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (workspace.id) {
+                              joinWorkspace(workspace.id);
+                            }
+                          }}
+                          sx={{
+                            borderColor: "info.main",
+                            color: "info.main",
+                            "&:hover": {
+                              borderColor: "info.dark",
+                              bgcolor: alpha(theme.palette.info.main, 0.04),
+                            },
+                          }}
+                        >
+                          Join
+                        </Button>
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+
                 {/* Create New Workspace */}
                 <ListItem
                   disablePadding
                   sx={{
                     borderTop:
-                      workspaces && workspaces.length > 0
+                      (workspaces && workspaces.length > 0) ||
+                      (joinableWorkspaces && joinableWorkspaces.length > 0)
                         ? `1px solid ${alpha(theme.palette.divider, 0.1)}`
                         : "none",
                     bgcolor: alpha(theme.palette.background.default, 0.5),
