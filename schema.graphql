@@ -1982,6 +1982,7 @@ type Query {
   llm: Llm
   searchBrands(query: String!): [BrandSearchResult]
   usersSearch(searchTerm: String): [User]
+  validEnterpriseDomain(domain: String!): ValidEnterpriseDomainResult!
 }
 
 type Quote {
@@ -2831,6 +2832,12 @@ type User {
   firstName: String!
   id: String!
   lastName: String!
+}
+
+type ValidEnterpriseDomainResult {
+  domain: String!
+  isValid: Boolean!
+  reason: String
 }
 
 type Workflow {

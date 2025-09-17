@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
-import { useWorkspace, useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
 import { WorkspaceSelectionScreen } from "@/ui/workspace/WorkspaceSelectionScreen";
 import { alpha, Box, Fade, LinearProgress, Typography, useTheme } from "@mui/material";
 import Image from "next/image";

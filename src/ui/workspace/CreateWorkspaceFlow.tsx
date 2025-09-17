@@ -2,7 +2,11 @@
 
 import { graphql } from "@/graphql";
 import { WorkspaceAccessType } from "@/graphql/graphql";
-import { useCreateWorkspaceMutation, useGetBrandByDomainLazyQuery } from "@/graphql/hooks";
+import {
+  useCreateWorkspaceMutation,
+  useGetBrandByDomainLazyQuery,
+  useValidEnterpriseDomainLazyQuery,
+} from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import {
   Business,
@@ -40,7 +44,7 @@ import {
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-// Define the GraphQL query
+// Define the GraphQL queries
 graphql(`
   query GetBrandByDomain($domain: String!) {
     getBrandByDomain(domain: $domain) {
@@ -77,6 +81,16 @@ graphql(`
         name
         url
       }
+    }
+  }
+`);
+
+graphql(`
+  query ValidEnterpriseDomain($domain: String!) {
+    validEnterpriseDomain(domain: $domain) {
+      domain
+      isValid
+      reason
     }
   }
 `);
@@ -123,8 +137,15 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const { user } = useAuth0ErpUser();
   const [step, setStep] = useState<"brand" | "details" | "settings" | "creating">("brand");
 
-  // GraphQL query hook
+  // GraphQL query hooks
   const [getBrandByDomain, { loading, data, error }] = useGetBrandByDomainLazyQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [
+    validateEnterpriseDomain,
+    { loading: domainValidationLoading, data: domainValidationData, error: domainValidationError },
+  ] = useValidEnterpriseDomainLazyQuery({
     fetchPolicy: "cache-and-network",
   });
 
@@ -136,7 +157,6 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [accessType, setAccessType] = useState<"domain" | "invite">("invite");
   const [domainRestriction, setDomainRestriction] = useState("");
-  const [customDomain, setCustomDomain] = useState("");
   const [selectedBannerUrl, setSelectedBannerUrl] = useState<string | null>(null);
   const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
 
@@ -149,6 +169,11 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
 
   // Brand data from API
   const brandData = data?.getBrandByDomain;
+
+  // Domain validation data
+  const domainValidation = domainValidationData?.validEnterpriseDomain;
+  const isDomainValid = domainValidation?.isValid ?? false;
+  const domainValidationReason = domainValidation?.reason;
 
   // Extract brand colors
   const primaryColor =
@@ -183,9 +208,10 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   useEffect(() => {
     if (userDomain) {
       getBrandByDomain({ variables: { domain: userDomain } });
+      validateEnterpriseDomain({ variables: { domain: userDomain } });
       setDomainRestriction(userDomain);
     }
-  }, [userDomain, getBrandByDomain]);
+  }, [userDomain, getBrandByDomain, validateEnterpriseDomain]);
 
   useEffect(() => {
     if (brandData) {
@@ -260,11 +286,6 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
 
   const handleCloseError = () => {
     setShowError(false);
-  };
-
-  const isValidDomain = (domain: string) => {
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\.[a-zA-Z]{2,}$/;
-    return domainRegex.test(domain);
   };
 
   if (step === "creating") {
@@ -654,7 +675,8 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                       sx={{
                         mb: 2,
                         p: 2,
-                        cursor: "pointer",
+                        cursor: isDomainValid ? "pointer" : "not-allowed",
+                        opacity: isDomainValid ? 1 : 0.6,
                         border: `2px solid ${
                           accessType === "domain" ? primaryColor : alpha(theme.palette.divider, 0.3)
                         }`,
@@ -662,12 +684,13 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                         bgcolor:
                           accessType === "domain" ? alpha(primaryColor, 0.02) : "transparent",
                       }}
-                      onClick={() => setAccessType("domain")}
+                      onClick={() => isDomainValid && setAccessType("domain")}
                     >
                       <FormControlLabel
                         value="domain"
                         control={
                           <Radio
+                            disabled={!isDomainValid}
                             sx={{ color: primaryColor, "&.Mui-checked": { color: primaryColor } }}
                           />
                         }
@@ -676,43 +699,41 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                               <Domain color={accessType === "domain" ? "primary" : "action"} />
                               <Typography variant="subtitle2">
-                                Allow anyone from @
-                                {customDomain || domainRestriction || "yourdomain.com"}
+                                Allow anyone from @{domainRestriction || "yourdomain.com"}
                               </Typography>
+                              {domainValidationLoading && (
+                                <CircularProgress size={16} sx={{ ml: 1 }} />
+                              )}
+                              {!domainValidationLoading && isDomainValid && (
+                                <CheckCircle
+                                  sx={{ fontSize: 16, color: theme.palette.success.main, ml: 1 }}
+                                />
+                              )}
                             </Box>
                             <Typography variant="caption" color="text.secondary">
-                              Anyone with an email from this domain can automatically join
+                              {isDomainValid
+                                ? "Anyone with an email from this domain can automatically join"
+                                : domainValidationReason ||
+                                  "This domain is not eligible for automatic access"}
                             </Typography>
                           </Box>
                         }
                       />
 
-                      {accessType === "domain" && (
-                        <TextField
-                          fullWidth
-                          label="Domain"
-                          value={customDomain || domainRestriction}
-                          onChange={(e) => setCustomDomain(e.target.value)}
-                          margin="normal"
-                          size="small"
-                          placeholder="yourdomain.com"
-                          error={customDomain ? !isValidDomain(customDomain) : false}
-                          helperText={
-                            customDomain && !isValidDomain(customDomain)
-                              ? "Please enter a valid domain"
-                              : "Users with this email domain can join"
-                          }
+                      {!isDomainValid && domainValidationReason && (
+                        <Box
                           sx={{
-                            "& .MuiOutlinedInput-root.Mui-focused": {
-                              "& fieldset": {
-                                borderColor: primaryColor,
-                              },
-                            },
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: primaryColor,
-                            },
+                            mt: 2,
+                            p: 1.5,
+                            borderRadius: 1,
+                            bgcolor: alpha(theme.palette.warning.main, 0.1),
+                            border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           }}
-                        />
+                        >
+                          <Typography variant="caption" color="warning.main">
+                            <strong>Domain not eligible:</strong> {domainValidationReason}
+                          </Typography>
+                        </Box>
                       )}
                     </Card>
 
@@ -801,14 +822,7 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
                         : handleCreateWorkspace
                   }
                   fullWidth
-                  disabled={
-                    (step === "details" && !workspaceName.trim()) ||
-                    (step === "settings" &&
-                      accessType === "domain" &&
-                      !!customDomain &&
-                      !isValidDomain(customDomain)) ||
-                    createLoading
-                  }
+                  disabled={(step === "details" && !workspaceName.trim()) || createLoading}
                   sx={{
                     bgcolor: primaryColor,
                     "&:hover": {
