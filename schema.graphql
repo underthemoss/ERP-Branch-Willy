@@ -1390,6 +1390,11 @@ type ListWorkflowConfigurationsResult {
   page: PaginationInfo!
 }
 
+type ListWorkspaceMembersResult {
+  items: [WorkspaceMember!]!
+  page: PaginationInfo!
+}
+
 type ListWorkspacesResult {
   items: [Workspace!]!
   page: PaginationInfo!
@@ -2017,6 +2022,7 @@ type Query {
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listUserResourcePermissions(resourceId: ID!, resourceType: ResourceType!): ListUserPermissionsResult!
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
+  listWorkspaceMembers(workspaceId: String!): ListWorkspaceMembersResult!
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
   searchBrands(query: String!): [BrandSearchResult]
@@ -2954,6 +2960,18 @@ type Workspace {
 enum WorkspaceAccessType {
   INVITE_ONLY
   SAME_DOMAIN
+}
+
+type WorkspaceMember {
+  role: WorkspaceMemberRole!
+  user: User
+  userId: String!
+}
+
+enum WorkspaceMemberRole {
+  ADMIN
+  INVITED
+  MEMBER
 }
 
 type WriteRelationshipResult {
