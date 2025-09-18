@@ -1,6 +1,8 @@
 "use client";
 
+import { useWorkspace } from "@/providers/WorkspaceProvider";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -17,6 +19,19 @@ export default function SettingsPage() {
     ? params.workspace_id[0]
     : params?.workspace_id;
 
+  // Get user permissions for the workspace
+  const { permissions, isLoadingPermissions } = useWorkspace();
+
+  if (isLoadingPermissions) {
+    return (
+      <Box
+        sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ padding: 4, maxWidth: 600 }}>
       <Typography variant="h4" gutterBottom>
@@ -25,21 +40,26 @@ export default function SettingsPage() {
 
       <Divider sx={{ my: 3 }} />
 
-      <Typography variant="h6" gutterBottom>
-        Workspace
-      </Typography>
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workspace`}>
-            <ListItemText
-              primary="Workspace Settings"
-              secondary="Edit name, description, logo, banner, and invite settings"
-            />
-          </ListItemButton>
-        </ListItem>
-      </List>
+      {/* Only show Workspace Settings section if user has manage permissions */}
+      {permissions?.permissionMap?.ERP_WORKSPACE_MANAGE && (
+        <>
+          <Typography variant="h6" gutterBottom>
+            Workspace
+          </Typography>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workspace`}>
+                <ListItemText
+                  primary="Workspace Settings"
+                  secondary="Edit name, description, logo, banner, and invite settings"
+                />
+              </ListItemButton>
+            </ListItem>
+          </List>
 
-      <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3 }} />
+        </>
+      )}
 
       <Typography variant="h6" gutterBottom>
         General

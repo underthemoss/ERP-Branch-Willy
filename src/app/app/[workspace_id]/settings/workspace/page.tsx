@@ -9,7 +9,7 @@ import {
   useValidEnterpriseDomainLazyQuery,
 } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
-import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
 import {
   Business,
   CheckCircle,
@@ -22,6 +22,7 @@ import {
   Public,
   Save,
   Twitter,
+  Warning,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -140,6 +141,7 @@ export default function WorkspaceSettingsPage() {
   const theme = useTheme();
   const { user } = useAuth0ErpUser();
   const currentWorkspace = useSelectedWorkspace();
+  const { permissions, isLoadingPermissions } = useWorkspace();
 
   const [activeTab, setActiveTab] = useState(0);
 
@@ -331,6 +333,38 @@ export default function WorkspaceSettingsPage() {
     return (
       <Box sx={{ p: 4 }}>
         <Typography>Loading workspace...</Typography>
+      </Box>
+    );
+  }
+
+  // Check if permissions are still loading
+  if (isLoadingPermissions) {
+    return (
+      <Box
+        sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Check if user has manage permissions
+  if (!permissions?.permissionMap?.ERP_WORKSPACE_MANAGE) {
+    return (
+      <Box sx={{ p: 4, maxWidth: 600, mx: "auto", mt: 8 }}>
+        <Card sx={{ p: 4, textAlign: "center" }}>
+          <Warning sx={{ fontSize: 64, color: "warning.main", mb: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            Access Denied
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            You don&apos;t have permission to manage workspace settings. Only workspace
+            administrators can access this page.
+          </Typography>
+          <Button variant="contained" onClick={() => window.history.back()} sx={{ mt: 2 }}>
+            Go Back
+          </Button>
+        </Card>
       </Box>
     );
   }

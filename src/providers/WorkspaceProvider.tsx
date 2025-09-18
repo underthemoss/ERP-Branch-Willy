@@ -2,8 +2,10 @@
 
 import { graphql } from "@/graphql";
 import {
+  ResourceType,
   useWorkspaceProviderJoinWorkspaceMutation,
   useWorkspaceProviderListJoinableWorkspacesQuery,
+  useWorkspaceProviderListUserResourcePermissionsQuery,
   useWorkspaceProviderListWorkspacesQuery,
 } from "@/graphql/hooks";
 import { useParams, usePathname, useRouter } from "next/navigation";
@@ -85,10 +87,39 @@ graphql(`
   }
 `);
 
+// Define user permissions query
+graphql(`
+  query WorkspaceProviderListUserResourcePermissions(
+    $resourceId: ID!
+    $resourceType: ResourceType!
+  ) {
+    listUserResourcePermissions(resourceId: $resourceId, resourceType: $resourceType) {
+      permissions {
+        permissionMap {
+          ERP_DOMAIN_IS_MEMBER
+          ERP_WORKSPACE_CAN_JOIN
+          ERP_WORKSPACE_MANAGE
+          ERP_WORKSPACE_READ
+        }
+        permissions
+        resourceId
+        resourceType
+      }
+    }
+  }
+`);
+
 // Extract the workspace item type from the query
 type WorkspaceItem = NonNullable<
   NonNullable<ReturnType<typeof useWorkspaceProviderListWorkspacesQuery>["data"]>["listWorkspaces"]
 >["items"][number];
+
+// Extract the permissions type from the query
+type UserPermissions = NonNullable<
+  NonNullable<
+    ReturnType<typeof useWorkspaceProviderListUserResourcePermissionsQuery>["data"]
+  >["listUserResourcePermissions"]
+>["permissions"];
 
 interface WorkspaceContextType {
   workspaces: WorkspaceItem[] | undefined;
@@ -97,6 +128,9 @@ interface WorkspaceContextType {
   isLoadingJoinableWorkspaces: boolean;
   selectWorkspace: (workspaceId: string) => void;
   joinWorkspace: (workspaceId: string) => void;
+  permissions: UserPermissions | undefined;
+  isLoadingPermissions: boolean;
+  refetchPermissions: () => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -139,6 +173,7 @@ interface WorkspaceProviderProps {
 export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname() || "";
+  const workspaceId = useSelectedWorkspaceId();
 
   const {
     data,
@@ -156,10 +191,25 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     fetchPolicy: "cache-and-network",
   });
 
+  // Fetch permissions for the current workspace
+  const {
+    data: permissionsData,
+    loading: permissionsLoading,
+    refetch: refetchPermissions,
+  } = useWorkspaceProviderListUserResourcePermissionsQuery({
+    variables: {
+      resourceId: workspaceId || "",
+      resourceType: ResourceType.ErpWorkspace,
+    },
+    skip: !workspaceId, // Skip if no workspace is selected
+    fetchPolicy: "cache-and-network",
+  });
+
   const [joinWorkspaceMutation] = useWorkspaceProviderJoinWorkspaceMutation();
 
   const workspaces = data?.listWorkspaces?.items;
   const joinableWorkspaces = joinableData?.listJoinableWorkspaces?.items;
+  const permissions = permissionsData?.listUserResourcePermissions?.permissions;
 
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -203,6 +253,11 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     isLoadingJoinableWorkspaces: joinableWorkspacesLoading,
     selectWorkspace,
     joinWorkspace,
+    permissions,
+    isLoadingPermissions: permissionsLoading,
+    refetchPermissions: () => {
+      refetchPermissions();
+    },
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

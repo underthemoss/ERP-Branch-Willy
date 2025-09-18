@@ -1376,6 +1376,10 @@ type ListTransactionResult {
   page: PaginationInfo!
 }
 
+type ListUserPermissionsResult {
+  permissions: UserPermission!
+}
+
 input ListWorkflowConfigurationsPage {
   number: Int
   size: Int
@@ -1595,6 +1599,13 @@ type PaginationInfo {
 enum PaginationOrder {
   ASC
   DESC
+}
+
+enum PermissionType {
+  ERP_DOMAIN_IS_MEMBER
+  ERP_WORKSPACE_CAN_JOIN
+  ERP_WORKSPACE_MANAGE
+  ERP_WORKSPACE_READ
 }
 
 type PersonContact {
@@ -2004,6 +2015,7 @@ type Query {
   """Lists all top-level projects (where parent_project is null)."""
   listTopLevelProjects: [Project]
   listTransactions(workspaceId: ID!): ListTransactionResult!
+  listUserResourcePermissions(resourceId: ID!, resourceType: ResourceType!): ListUserPermissionsResult!
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
@@ -2245,6 +2257,12 @@ type ResourceMapResource {
   tenant_id: String!
   type: String
   value: String
+}
+
+enum ResourceType {
+  ERP_DOMAIN
+  ERP_USER
+  ERP_WORKSPACE
 }
 
 type SaleFulfilment implements FulfilmentBase {
@@ -2859,6 +2877,20 @@ type User {
   firstName: String!
   id: String!
   lastName: String!
+}
+
+type UserPermission {
+  permissionMap: UserPermissionMap!
+  permissions: [PermissionType!]!
+  resourceId: String!
+  resourceType: ResourceType!
+}
+
+type UserPermissionMap {
+  ERP_DOMAIN_IS_MEMBER: Boolean
+  ERP_WORKSPACE_CAN_JOIN: Boolean
+  ERP_WORKSPACE_MANAGE: Boolean
+  ERP_WORKSPACE_READ: Boolean
 }
 
 type ValidEnterpriseDomainResult {
