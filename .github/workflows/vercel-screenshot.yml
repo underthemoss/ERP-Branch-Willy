@@ -138,13 +138,19 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: "claude-sonnet-4-20250805"
-          mcp_servers: |
-            playwright:
-              command: npx
-              args: ["@playwright/mcp@latest"]
-              env:
-                PLAYWRIGHT_BROWSER: chromium
+          anthropic_model: "claude-sonnet-4-20250805"
+          mcp_config: |
+            {
+              "mcpServers": {
+                "playwright": {
+                  "command": "npx",
+                  "args": ["@playwright/mcp@latest"],
+                  "env": {
+                    "PLAYWRIGHT_BROWSER": "chromium"
+                  }
+                }
+              }
+            }
           allowed_tools: |
             MCP:playwright:browser_navigate
             MCP:playwright:browser_resize
