@@ -36,7 +36,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-            --model claude-4-0-sonnet-latest
+            --model claude-sonnet-4-20250514
             --mcp-config '{"mcpServers": {"playwright": {"command": "npx", "args": ["@playwright/mcp@latest"], "env": {"PLAYWRIGHT_BROWSER": "chromium"}}}}'
             --allowedTools mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,Bash
           prompt: |
