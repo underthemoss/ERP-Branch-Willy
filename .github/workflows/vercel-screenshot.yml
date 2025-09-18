@@ -1,11 +1,11 @@
-name: Staging Screenshot Capture
+name: Staging Application Explorer
 
 on:
   workflow_dispatch:
 
 jobs:
-  capture-screenshot:
-    name: Capture Staging Screenshots
+  explore-application:
+    name: Comprehensive Application Exploration
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,57 +33,125 @@ jobs:
       - name: Run Claude Screenshot Capture
         id: claude-screenshot
         uses: anthropics/claude-code-action@v1
+        env:
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --model claude-sonnet-4-20250514
             --mcp-config '{"mcpServers": {"playwright": {"command": "npx", "args": ["@playwright/mcp@latest"], "env": {"PLAYWRIGHT_BROWSER": "chromium"}}}}'
-            --allowedTools Edit,Read,Write,mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,Bash
+            --allowedTools Edit,Read,Write,mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_snapshot,mcp__playwright__browser_fill_form,mcp__playwright__browser_wait_for,mcp__playwright__browser_hover,mcp__playwright__browser_select_option,mcp__playwright__browser_tabs,Bash
           prompt: |
-            You are tasked with capturing screenshots of the staging environment using the Playwright MCP server.
+            You are tasked with exhaustively exploring and documenting the staging ERP application.
 
             The staging URL is: https://staging-erp.estrack.com/
+            
+            ## Environment Variables
+            The test user password is available in the environment variable: TEST_USER_PASSWORD
+            You can access it using: $TEST_USER_PASSWORD
 
-            Please follow these steps:
+            ## Main Task: Comprehensive Application Exploration
 
-            1. First, install the browser if needed using the mcp__playwright__browser_install tool
+            Create and maintain a todo list that you continuously update as you discover new features. Be exhaustive in your exploration.
+
+            ### Initial Setup:
+            1. Install the browser if needed using mcp__playwright__browser_install
             2. Navigate to the staging URL using mcp__playwright__browser_navigate
-            3. Take screenshots at different viewport sizes:
-               - Desktop: 1920x1080 - save as screenshots/staging-desktop.png
-               - Tablet: 768x1024 - save as screenshots/staging-tablet.png  
-               - Mobile: 375x812 - save as screenshots/staging-mobile.png
-            4. For each viewport:
-               - Use mcp__playwright__browser_resize to set the viewport size
-               - Use mcp__playwright__browser_take_screenshot to capture the screenshot with the appropriate filename
-            5. Also capture a full-page screenshot at 1920x1080 as screenshots/staging-fullpage.png
-            6. Create a slick marketing page including screenshots of the app, render it in playwright, save another screenshot of the full marketing page.
-            6. Close the browser when done using mcp__playwright__browser_close
+            3. Set viewport to 1920x1080 for optimal viewing
 
-            Make sure all screenshots are saved in the screenshots/ directory.
-            Verify the screenshots were created successfully by listing the directory contents.
+            ### Account Creation:
+            1. Create a new account with:
+               - Email: test@erp.test
+               - Password: Use the value from environment variable $TEST_USER_PASSWORD
+            2. Complete any onboarding or setup flows
+            3. Take screenshots of each step
 
-      - name: Upload Screenshots as Artifacts
+            ### Feature Exploration (be exhaustive):
+            Your mission is to discover EVERYTHING the application can do. Start from the main navigation and systematically explore every single feature you can find. 
+            
+            Create and continuously update a comprehensive todo list as you discover new areas. Don't assume what features exist - actually explore and find them yourself.
+            
+            For each feature area you discover:
+            - Click on every menu item and navigation element
+            - Explore all sub-sections and nested features
+            - Create multiple examples of any entities you can create
+            - Test all available actions and operations
+            - Document what you find
+            - Take screenshots of everything
+            
+            Be curious and thorough - if you see a button, click it. If you see a form, fill it. If you see a menu, explore every option.
+
+            ### Discovery Process:
+            - As you explore, continuously update your todo list with newly discovered features
+            - Click on every menu item, button, and link you find
+            - Open all dialogs and modals
+            - Test all forms and inputs
+            - Look for hidden or advanced features
+            - Check tooltips and help text
+            - Explore right-click menus if available
+            - Test keyboard shortcuts
+
+            ### Screenshot Strategy:
+            - Take screenshots of EVERY unique screen and feature
+            - Capture both empty states and populated states
+            - Screenshot forms before and after filling
+            - Capture error states if you encounter them
+            - Save screenshots with descriptive names like:
+              - screenshots/01-login-page.png
+              - screenshots/02-dashboard-main.png
+              - screenshots/03-contacts-list.png
+              - screenshots/04-contact-create-form.png
+              - etc.
+
+            ### Entity Creation:
+            For each entity type you discover, create multiple examples:
+            - At least 3-5 of each type of entity
+            - Use varied, realistic data
+            - Test different configurations and options
+            - Document any validation rules you discover
+
+            ### Final Steps:
+            1. Create a comprehensive HTML report documenting all discovered features
+            2. Include a feature map/sitemap
+            3. List all entities created
+            4. Note any bugs or issues found
+            5. Take a final screenshot of your HTML report, also include the html in the screenshots folder
+            6. Create a slick marketing landing page HTML, take a screenshot, include the html in the screenshots folder 
+            6. Close the browser when completely done
+
+            ### Important Notes:
+            - Be thorough and methodical
+            - Don't skip any features
+            - Keep updating your todo list as you discover new areas
+            - Take more screenshots rather than fewer
+            - Document everything you find
+            - If you encounter errors, screenshot them and continue exploring
+
+            Save all screenshots in the screenshots/ directory with clear, numbered naming.
+            At the end, verify all screenshots were created by listing the directory contents.
+
+      - name: Upload Exploration Artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-screenshots-${{ github.run_number }}
+          name: staging-exploration-${{ github.run_number }}
           path: screenshots/
           retention-days: 30
 
-      - name: Generate Screenshot Summary
+      - name: Generate Exploration Summary
         if: success()
         run: |
-          echo "## 📸 Staging Screenshots Captured" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔍 Application Exploration Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Screenshots have been captured for the staging environment." >> $GITHUB_STEP_SUMMARY
+          echo "Comprehensive exploration of the staging ERP application has been completed." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Staging URL:** https://staging-erp.estrack.com/" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Account:** test@erp.test" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Captured Views:" >> $GITHUB_STEP_SUMMARY
-          echo "- Desktop (1920x1080)" >> $GITHUB_STEP_SUMMARY
-          echo "- Tablet (768x1024)" >> $GITHUB_STEP_SUMMARY
-          echo "- Mobile (375x812)" >> $GITHUB_STEP_SUMMARY
-          echo "- Full Page (1920x1080)" >> $GITHUB_STEP_SUMMARY
+          echo "### Exploration Summary:" >> $GITHUB_STEP_SUMMARY
+          echo "The agent has completed an exhaustive exploration of the application." >> $GITHUB_STEP_SUMMARY
+          echo "All discovered features have been documented and captured in screenshots." >> $GITHUB_STEP_SUMMARY
+          echo "Multiple entities of each type have been created for testing." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
@@ -94,9 +162,9 @@ jobs:
       - name: Handle Failure
         if: failure()
         run: |
-          echo "## ❌ Screenshot Capture Failed" >> $GITHUB_STEP_SUMMARY
+          echo "## ❌ Application Exploration Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Failed to capture screenshots for the staging environment." >> $GITHUB_STEP_SUMMARY
+          echo "Failed to complete the exploration of the staging environment." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
           echo "- Workflow Run: [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
