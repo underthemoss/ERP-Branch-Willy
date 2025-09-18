@@ -34,7 +34,15 @@ graphql(`
           email
           firstName
           lastName
-          companyId
+          picture
+          lastLoginLocation {
+            city
+            countryCode
+            countryName
+            latitude
+            longitude
+            timezone
+          }
         }
       }
       page {
@@ -181,7 +189,7 @@ export default function WorkspaceMembersPage() {
               <TableCell>Member</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
-              <TableCell align="center">Company ID</TableCell>
+              <TableCell>Location</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -201,18 +209,26 @@ export default function WorkspaceMembersPage() {
                     ? `${user.firstName} ${user.lastName}`
                     : user?.firstName || user?.lastName || "Unknown User";
 
+                const location = user?.lastLoginLocation;
+                const locationDisplay =
+                  location?.city && location?.countryName
+                    ? `${location.city}, ${location.countryName}`
+                    : location?.countryName || "-";
+
                 return (
                   <TableRow key={member.userId} hover>
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <Avatar
+                          src={user?.picture}
                           sx={{
                             bgcolor: "primary.main",
                             width: 40,
                             height: 40,
                           }}
                         >
-                          {getInitials(user?.firstName, user?.lastName, user?.email)}
+                          {!user?.picture &&
+                            getInitials(user?.firstName, user?.lastName, user?.email)}
                         </Avatar>
                         <Box>
                           <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -237,10 +253,13 @@ export default function WorkspaceMembersPage() {
                         sx={{ fontWeight: 500 }}
                       />
                     </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-                        {user?.companyId || "-"}
-                      </Typography>
+                    <TableCell>
+                      <Typography variant="body2">{locationDisplay}</Typography>
+                      {location?.timezone && (
+                        <Typography variant="caption" color="text.secondary">
+                          {location.timezone}
+                        </Typography>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

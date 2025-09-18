@@ -2882,7 +2882,18 @@ type User {
   email: String!
   firstName: String!
   id: String!
+  lastLoginLocation: UserLocationInfo
   lastName: String!
+  picture: String
+}
+
+type UserLocationInfo {
+  city: String
+  countryCode: String
+  countryName: String
+  latitude: Float
+  longitude: Float
+  timezone: String
 }
 
 type UserPermission {
