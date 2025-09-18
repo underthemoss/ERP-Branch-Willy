@@ -26,6 +26,22 @@ export default function SettingsPage() {
       <Divider sx={{ my: 3 }} />
 
       <Typography variant="h6" gutterBottom>
+        Workspace
+      </Typography>
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workspace`}>
+            <ListItemText
+              primary="Workspace Settings"
+              secondary="Edit name, description, logo, banner, and invite settings"
+            />
+          </ListItemButton>
+        </ListItem>
+      </List>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="h6" gutterBottom>
         General
       </Typography>
       <List>

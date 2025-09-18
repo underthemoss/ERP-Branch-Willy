@@ -1540,6 +1540,8 @@ type Mutation {
   updateSalesOrderLineItem(input: UpdateSalesOrderLineItemInput): SalesOrderLineItem @deprecated(reason: "use updateSaleSalesOrderLineItem")
   updateTaxLineItem(input: UpdateTaxLineItemInput!): Invoice!
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
+  updateWorkspaceAccessType(accessType: WorkspaceAccessType!, workspaceId: String!): Workspace
+  updateWorkspaceSettings(bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String, workspaceId: String!): Workspace
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
 }
 
