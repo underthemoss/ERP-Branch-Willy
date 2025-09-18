@@ -32,12 +32,12 @@ jobs:
 
       - name: Run Claude with Playwright MCP
         id: claude-screenshot
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          anthropic_model: "claude-sonnet-4-20250805"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          mode: agent
+          claude_args: |
+            --model claude-4-0-sonnet-20250805
+            --allowedTools Edit,Read,Write
           mcp_config: |
             {
               "mcpServers": {
@@ -50,15 +50,7 @@ jobs:
                 }
               }
             }
-          allowed_tools: |
-            MCP:playwright:browser_navigate
-            MCP:playwright:browser_resize
-            MCP:playwright:browser_take_screenshot
-            MCP:playwright:browser_close
-            MCP:playwright:browser_install
-            Bash(ls -la screenshots)
-            Bash(pwd)
-          custom_instructions: |
+          prompt: |
             You are tasked with capturing screenshots of the staging environment using the Playwright MCP server.
 
             The staging URL is: https://staging-erp.estrack.com/
