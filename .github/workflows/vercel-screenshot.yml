@@ -56,6 +56,7 @@ jobs:
                - Use mcp__playwright__browser_resize to set the viewport size
                - Use mcp__playwright__browser_take_screenshot to capture the screenshot with the appropriate filename
             5. Also capture a full-page screenshot at 1920x1080 as screenshots/staging-fullpage.png
+            6. Create a slick marketing page including screenshots of the app, render it in playwright, save another screenshot of the full marketing page.
             6. Close the browser when done using mcp__playwright__browser_close
 
             Make sure all screenshots are saved in the screenshots/ directory.
