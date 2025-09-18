@@ -1,27 +1,16 @@
-name: Vercel Preview Screenshot
+name: Staging Screenshot Capture
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push:
     branches:
       - main
-  workflow_run:
-    workflows: ["Vercel Preview Deployment"]
-    types:
-      - completed
 
 jobs:
   capture-screenshot:
-    name: Capture Preview Screenshot
+    name: Capture Staging Screenshots
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' || 
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,97 +22,6 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
-
-      - name: Get PR Number
-        id: pr-number
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          else
-            # For workflow_run events, extract PR number from the workflow run
-            PR_NUMBER=$(gh api /repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }} \
-              --jq '.pull_requests[0].number' || echo "")
-            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Wait for Vercel Deployment
-        id: wait-for-deployment
-        run: |
-          echo "Waiting for Vercel deployment to complete and comment to be updated..."
-          MAX_ATTEMPTS=40
-          ATTEMPT=0
-          PREVIEW_URL=""
-
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            echo "Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS - Checking for Vercel deployment URL..."
-            
-            # Get all comments sorted by created_at in descending order
-            COMMENTS_JSON=$(gh api /repos/${{ github.repository }}/issues/${{ steps.pr-number.outputs.pr_number }}/comments --paginate)
-            
-            # Find comments from github-actions bot that contain Vercel Preview Deployment
-            # Get the most recent one by reversing the array and taking the last match
-            COMMENT=$(echo "$COMMENTS_JSON" | jq -r '.[] | select(.user.login == "github-actions[bot]") | .body' | grep -B50 -A50 "Vercel Preview Deployment" | head -n 100)
-            
-            if [ -n "$COMMENT" ]; then
-              # Debug: Show what we found
-              echo "Found a comment with Vercel Preview Deployment"
-              echo "Full comment content:"
-              echo "===================="
-              echo "$COMMENT"
-              echo "===================="
-              
-              # Check if comment contains "Ready" status
-              if echo "$COMMENT" | grep -q "✅ Ready"; then
-                echo "Deployment shows Ready status"
-              fi
-              
-              # Extract the preview URL - looking for the Vercel app URL
-              # Try multiple patterns to be sure
-              PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[a-zA-Z0-9.-]+\.vercel\.app' | head -n 1)
-              
-              if [ -z "$PREVIEW_URL" ]; then
-                # Try pattern with underscores and other characters
-                PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[a-zA-Z0-9._-]+\.vercel\.app' | head -n 1)
-              fi
-              
-              if [ -z "$PREVIEW_URL" ]; then
-                # Try to find any https URL that might be the preview
-                echo "Trying broader URL search..."
-                PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[^[:space:]<>"\]]+' | grep vercel | head -n 1)
-              fi
-              
-              if [ -n "$PREVIEW_URL" ]; then
-                # Clean up the URL in case it has trailing characters
-                PREVIEW_URL=$(echo "$PREVIEW_URL" | sed 's/[)]$//')
-                echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
-                echo "✅ Successfully found preview URL: $PREVIEW_URL"
-                break
-              else
-                echo "URL not found in comment yet. The deployment might still be in progress..."
-                echo "Will retry in 20 seconds..."
-              fi
-            else
-              echo "No Vercel deployment comment from github-actions bot found yet..."
-            fi
-            
-            ATTEMPT=$((ATTEMPT + 1))
-            sleep 20
-          done
-
-          if [ -z "$PREVIEW_URL" ]; then
-            echo "❌ Failed to find Vercel preview URL after $MAX_ATTEMPTS attempts"
-            echo "This might mean:"
-            echo "  1. The Vercel deployment is still in progress"
-            echo "  2. The deployment failed"
-            echo "  3. The comment format has changed"
-            echo ""
-            echo "Please check the PR comments manually for the Vercel deployment status."
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Setup MCP Server
         run: |
@@ -160,22 +58,22 @@ jobs:
             Bash(ls -la screenshots)
             Bash(pwd)
           custom_instructions: |
-            You are tasked with capturing screenshots of a Vercel preview deployment using the Playwright MCP server.
+            You are tasked with capturing screenshots of the staging environment using the Playwright MCP server.
 
-            The preview URL is: ${{ steps.wait-for-deployment.outputs.preview_url }}
+            The staging URL is: https://staging-erp.estrack.com/
 
             Please follow these steps:
 
             1. First, install the browser if needed using the browser_install tool
-            2. Navigate to the preview URL using browser_navigate
+            2. Navigate to the staging URL using browser_navigate
             3. Take screenshots at different viewport sizes:
-               - Desktop: 1920x1080 - save as screenshots/preview-desktop.png
-               - Tablet: 768x1024 - save as screenshots/preview-tablet.png  
-               - Mobile: 375x812 - save as screenshots/preview-mobile.png
+               - Desktop: 1920x1080 - save as screenshots/staging-desktop.png
+               - Tablet: 768x1024 - save as screenshots/staging-tablet.png  
+               - Mobile: 375x812 - save as screenshots/staging-mobile.png
             4. For each viewport:
                - Use browser_resize to set the viewport size
                - Use browser_take_screenshot to capture the screenshot with the appropriate filename
-            5. Also capture a full-page screenshot at 1920x1080 as screenshots/preview-fullpage.png
+            5. Also capture a full-page screenshot at 1920x1080 as screenshots/staging-fullpage.png
             6. Close the browser when done using browser_close
 
             Make sure all screenshots are saved in the screenshots/ directory.
@@ -185,167 +83,40 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: preview-screenshots-${{ steps.pr-number.outputs.pr_number }}
+          name: staging-screenshots-${{ github.run_number }}
           path: screenshots/
-          retention-days: 7
+          retention-days: 30
 
-      - name: Create Screenshot Comment
-        if: success()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ steps.pr-number.outputs.pr_number }}
-          body: |
-            ## 📸 Preview Screenshots
-
-            Screenshots have been captured for the Vercel preview deployment.
-
-            **Preview URL:** ${{ steps.wait-for-deployment.outputs.preview_url }}
-
-            ### Desktop View (1920x1080)
-            ![Desktop Screenshot](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/preview-screenshots-${{ steps.pr-number.outputs.pr_number }}/preview-desktop.png)
-
-            ### Tablet View (768x1024)
-            ![Tablet Screenshot](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/preview-screenshots-${{ steps.pr-number.outputs.pr_number }}/preview-tablet.png)
-
-            ### Mobile View (375x812)
-            ![Mobile Screenshot](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/preview-screenshots-${{ steps.pr-number.outputs.pr_number }}/preview-mobile.png)
-
-            ---
-            <sub>Screenshots captured at ${{ github.event.pull_request.updated_at || github.event.workflow_run.updated_at }}</sub>
-            <sub>[Download all screenshots](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>
-
-      - name: Alternative Screenshot Display with Base64
+      - name: Generate Screenshot Summary
         if: success()
         run: |
-          # Convert screenshots to base64 and create comment with embedded images
-          if [ -d "screenshots" ]; then
-            COMMENT_BODY="## 📸 Preview Screenshots\n\n"
-            COMMENT_BODY+="Screenshots have been captured for the Vercel preview deployment.\n\n"
-            COMMENT_BODY+="**Preview URL:** ${{ steps.wait-for-deployment.outputs.preview_url }}\n\n"
-            
-            # Desktop screenshot
-            if [ -f "screenshots/preview-desktop.png" ]; then
-              DESKTOP_BASE64=$(base64 -w 0 screenshots/preview-desktop.png)
-              COMMENT_BODY+="### Desktop View (1920x1080)\n"
-              COMMENT_BODY+="<details><summary>Click to view</summary>\n\n"
-              COMMENT_BODY+="![Desktop Screenshot](data:image/png;base64,${DESKTOP_BASE64:0:65000})\n\n"
-              COMMENT_BODY+="</details>\n\n"
-            fi
-            
-            # Tablet screenshot
-            if [ -f "screenshots/preview-tablet.png" ]; then
-              TABLET_BASE64=$(base64 -w 0 screenshots/preview-tablet.png)
-              COMMENT_BODY+="### Tablet View (768x1024)\n"
-              COMMENT_BODY+="<details><summary>Click to view</summary>\n\n"
-              COMMENT_BODY+="![Tablet Screenshot](data:image/png;base64,${TABLET_BASE64:0:65000})\n\n"
-              COMMENT_BODY+="</details>\n\n"
-            fi
-            
-            # Mobile screenshot
-            if [ -f "screenshots/preview-mobile.png" ]; then
-              MOBILE_BASE64=$(base64 -w 0 screenshots/preview-mobile.png)
-              COMMENT_BODY+="### Mobile View (375x812)\n"
-              COMMENT_BODY+="<details><summary>Click to view</summary>\n\n"
-              COMMENT_BODY+="![Mobile Screenshot](data:image/png;base64,${MOBILE_BASE64:0:65000})\n\n"
-              COMMENT_BODY+="</details>\n\n"
-            fi
-            
-            COMMENT_BODY+="---\n"
-            COMMENT_BODY+="<sub>Screenshots captured at $(date -u +"%Y-%m-%d %H:%M:%S UTC")</sub>\n"
-            COMMENT_BODY+="<sub>[Download all screenshots](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
-            
-            # Save comment to file
-            echo "$COMMENT_BODY" > comment.md
-            
-            # Post comment using GitHub CLI
-            gh pr comment ${{ steps.pr-number.outputs.pr_number }} --body-file comment.md
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      # - name: Post Slack Notification
-      #   if: success() && vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
-      #   run: |
-      #     cat > slack_message.txt << EOF
-      #     {
-      #       "text": "📸 Screenshots captured for PR #${{ steps.pr-number.outputs.pr_number }}",
-      #       "blocks": [
-      #         {
-      #           "type": "header",
-      #           "text": {
-      #             "type": "plain_text",
-      #             "text": "📸 Preview Screenshots Ready",
-      #             "emoji": true
-      #           }
-      #         },
-      #         {
-      #           "type": "section",
-      #           "fields": [
-      #             {
-      #               "type": "mrkdwn",
-      #               "text": "*PR:*\n#${{ steps.pr-number.outputs.pr_number }}"
-      #             },
-      #             {
-      #               "type": "mrkdwn",
-      #               "text": "*Preview URL:*\n${{ steps.wait-for-deployment.outputs.preview_url }}"
-      #             }
-      #           ]
-      #         },
-      #         {
-      #           "type": "section",
-      #           "text": {
-      #             "type": "mrkdwn",
-      #             "text": "Screenshots have been captured at multiple viewport sizes (desktop, tablet, mobile) and posted to the PR."
-      #           }
-      #         },
-      #         {
-      #           "type": "actions",
-      #           "elements": [
-      #             {
-      #               "type": "button",
-      #               "text": {
-      #                 "type": "plain_text",
-      #                 "text": "View PR",
-      #                 "emoji": true
-      #               },
-      #               "url": "https://github.com/${{ github.repository }}/pull/${{ steps.pr-number.outputs.pr_number }}"
-      #             },
-      #             {
-      #               "type": "button",
-      #               "text": {
-      #                 "type": "plain_text",
-      #                 "text": "View Screenshots",
-      #                 "emoji": true
-      #               },
-      #               "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #             }
-      #           ]
-      #         }
-      #       ]
-      #     }
-      #     EOF
-
-      #     if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
-      #       curl -X POST -H 'Content-type: application/json' \
-      #         --data @slack_message.txt \
-      #         ${{ secrets.SLACK_WEBHOOK }}
-      #     fi
+          echo "## 📸 Staging Screenshots Captured" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Screenshots have been captured for the staging environment." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging URL:** https://staging-erp.estrack.com/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Captured Views:" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop (1920x1080)" >> $GITHUB_STEP_SUMMARY
+          echo "- Tablet (768x1024)" >> $GITHUB_STEP_SUMMARY
+          echo "- Mobile (375x812)" >> $GITHUB_STEP_SUMMARY
+          echo "- Full Page (1920x1080)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[Download Screenshots](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
       - name: Handle Failure
         if: failure()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ steps.pr-number.outputs.pr_number }}
-          body: |
-            ## ❌ Screenshot Capture Failed
-
-            Failed to capture screenshots for the Vercel preview deployment.
-
-            **Error Details:**
-            - Workflow Run: [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - Time: ${{ github.event.pull_request.updated_at || github.event.workflow_run.updated_at }}
-
-            Please check the workflow logs for more information.
-
-            ---
-            <sub>The workflow will retry on the next commit to this PR.</sub>
+        run: |
+          echo "## ❌ Screenshot Capture Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Failed to capture screenshots for the staging environment." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Workflow Run: [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for more information." >> $GITHUB_STEP_SUMMARY
