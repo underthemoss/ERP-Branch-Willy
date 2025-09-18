@@ -1,9 +1,7 @@
 name: Staging Screenshot Capture
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   capture-screenshot:
