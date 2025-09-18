@@ -38,7 +38,7 @@ jobs:
           claude_args: |
             --model claude-sonnet-4-20250514
             --mcp-config '{"mcpServers": {"playwright": {"command": "npx", "args": ["@playwright/mcp@latest"], "env": {"PLAYWRIGHT_BROWSER": "chromium"}}}}'
-            --allowedTools mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,Bash
+            --allowedTools Edit,Read,Write,mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,Bash
           prompt: |
             You are tasked with capturing screenshots of the staging environment using the Playwright MCP server.
 
