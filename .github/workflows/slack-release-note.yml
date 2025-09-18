@@ -26,8 +26,8 @@ jobs:
 
       - name: Generate release notes
         run: |
-          # Install Claude CLI
-          npm install -g @anthropic-ai/claude-cli
+          # Install Claude Code CLI
+          npm install -g @anthropic-ai/claude-code
           
           # Get the last commit details
           COMMIT_SHA=$(git rev-parse HEAD)
@@ -35,8 +35,11 @@ jobs:
           COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
           COMMIT_BODY=$(git log -1 --pretty=format:"%b")
           
-          # Create a prompt for Claude
-          PROMPT="Generate user facing release notes for the following commit:
+          # Set up API key
+          export ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
+          
+          # Generate release notes using Claude Code in non-interactive mode
+          claude -p "Generate user facing release notes for the following commit:
 
           Commit: $COMMIT_SHA
           Author: $COMMIT_AUTHOR
@@ -45,7 +48,7 @@ jobs:
           
           Please format the release notes with these sections:
           - User facing changes
-          - Other changes
+          - Other changes  
           - Author
           - Commit Link
           - Limerick
@@ -54,11 +57,9 @@ jobs:
           Include the author name: $COMMIT_AUTHOR
           Include a link to the commit: https://github.com/EquipmentShare/es-erp/commit/$COMMIT_SHA
           
-          Be brief and clear in your descriptions."
+          Be brief and clear in your descriptions.
           
-          # Generate release notes using Claude
-          export ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
-          echo "$PROMPT" | claude --model claude-3-5-sonnet-20241022 --max-tokens 1000 > release_note.txt
+          Write the release notes to a file called release_note.txt" --yes --no-interactive
           
           # Display the generated notes for debugging
           echo "Generated release notes:"
