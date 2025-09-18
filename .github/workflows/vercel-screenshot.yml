@@ -37,6 +37,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           anthropic_model: "claude-sonnet-4-20250805"
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          mode: agent
           mcp_config: |
             {
               "mcpServers": {
