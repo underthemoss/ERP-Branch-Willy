@@ -1,3 +1,5 @@
+"use client";
+
 import {
   useSelectedWorkspace,
   useSelectedWorkspaceId,
@@ -33,6 +35,7 @@ import {
   Avatar,
   Box,
   Divider,
+  Drawer,
   IconButton,
   List,
   ListItem,
@@ -42,17 +45,25 @@ import {
   Menu,
   MenuItem,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 
-export const NavBar = () => {
+interface NavBarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
   const currentWorkspace = useSelectedWorkspace();
   const currentWorkspaceId = useSelectedWorkspaceId();
   const { workspaces, selectWorkspace } = useWorkspace();
   const { user, logout } = useAuth0();
   const pathname = usePathname();
+  const router = useRouter();
 
   // Check if user has PLATFORM_ADMIN role in the specific claim
   const roles = user?.["https://erp.estrack.com/es_erp_roles"] || [];
@@ -73,6 +84,13 @@ export const NavBar = () => {
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
     handleMenuClose();
+  };
+
+  const handleNavigation = (href: string) => {
+    router.push(href);
+    if (onNavigate) {
+      onNavigate();
+    }
   };
 
   // Navigation menu items
@@ -211,7 +229,6 @@ export const NavBar = () => {
 
   return (
     <Box
-      className="navbar"
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -220,8 +237,8 @@ export const NavBar = () => {
         pb: 2,
         px: 2,
         bgcolor: "#F5F5F5",
-        height: "100vh",
-        width: 288,
+        height: "100%",
+        width: "100%",
         position: "relative",
       }}
     >
@@ -416,9 +433,10 @@ export const NavBar = () => {
               </MenuItem>
               <Divider sx={{ my: 0.5 }} />
               <MenuItem
-                component={Link}
-                href="/"
-                onClick={handleMenuClose}
+                onClick={() => {
+                  handleNavigation("/");
+                  handleMenuClose();
+                }}
                 sx={{
                   py: 1,
                   px: 2,
@@ -478,6 +496,9 @@ export const NavBar = () => {
                     onClick={() => {
                       if (workspace.id && workspace.id !== currentWorkspaceId) {
                         selectWorkspace(workspace.id);
+                        if (onNavigate) {
+                          onNavigate();
+                        }
                       }
                     }}
                     selected={workspace.id === currentWorkspaceId}
@@ -618,8 +639,7 @@ export const NavBar = () => {
                 {item.subitems ? (
                   <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
                     <ListItemButton
-                      component={Link}
-                      href={item.href}
+                      onClick={() => handleNavigation(item.href)}
                       selected={item.selected}
                       data-testid={item.testId}
                       sx={{
@@ -675,8 +695,7 @@ export const NavBar = () => {
                   </Box>
                 ) : (
                   <ListItemButton
-                    component={Link}
-                    href={item.href}
+                    onClick={() => handleNavigation(item.href)}
                     selected={item.selected}
                     data-testid={item.testId}
                     sx={{
@@ -712,8 +731,7 @@ export const NavBar = () => {
                 item.subitems.map((subitem, subindex) => (
                   <ListItem disablePadding key={subindex}>
                     <ListItemButton
-                      component={Link}
-                      href={subitem.href}
+                      onClick={() => handleNavigation(subitem.href)}
                       selected={subitem.selected}
                       data-testid={subitem.testId}
                       sx={{
@@ -769,8 +787,7 @@ export const NavBar = () => {
       >
         {isPlatformAdmin && (
           <ListItemButton
-            component={Link}
-            href="/admin"
+            onClick={() => handleNavigation("/admin")}
             selected={pathname.startsWith("/admin")}
             data-testid="nav-platform-admin"
             sx={{
@@ -806,8 +823,7 @@ export const NavBar = () => {
           </ListItemButton>
         )}
         <ListItemButton
-          component={Link}
-          href={`/app/${currentWorkspace?.id}/settings`}
+          onClick={() => handleNavigation(`/app/${currentWorkspace?.id}/settings`)}
           selected={pathname === `/app/${currentWorkspace?.id}/settings`}
           data-testid="nav-settings"
           sx={{
@@ -844,6 +860,54 @@ export const NavBar = () => {
           </ListItemText>
         </ListItemButton>
       </Box>
+    </Box>
+  );
+};
+
+export const NavBar: React.FC<NavBarProps> = ({ mobileOpen = false, onMobileClose }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const drawerWidth = 288;
+
+  if (isMobile) {
+    return (
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
+            boxSizing: "border-box",
+            width: drawerWidth,
+            bgcolor: "#F5F5F5",
+          },
+        }}
+      >
+        <NavBarContent onNavigate={onMobileClose} />
+      </Drawer>
+    );
+  }
+
+  return (
+    <Box
+      className="navbar"
+      sx={{
+        display: { xs: "none", md: "flex" },
+        flexDirection: "column",
+        alignItems: "flex-start",
+        bgcolor: "#F5F5F5",
+        height: "100vh",
+        width: drawerWidth,
+        position: "relative",
+        flexShrink: 0,
+      }}
+    >
+      <NavBarContent />
     </Box>
   );
 };

@@ -1,9 +1,19 @@
 "use client";
 
+import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
-import { Box, Breadcrumbs, IconButton, InputBase, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Breadcrumbs,
+  IconButton,
+  InputBase,
+  Paper,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { NextLink } from "./NextLink";
@@ -11,17 +21,25 @@ import { useSidebar } from "./sidebar/useSidebar";
 
 const SHORTCUT = "⌘ /";
 
-const ToolbarActions: React.FC<{ toggleSideBar: () => void }> = ({ toggleSideBar }) => {
+interface ToolbarActionsProps {
+  toggleSideBar: () => void;
+  toggleMobileNav?: () => void;
+}
+
+const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleSideBar, toggleMobileNav }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   return (
     <Box display="flex" gap={2} alignItems="center">
-      {/* Search pill */}
+      {/* Search pill - hide on very small screens */}
       <Paper
         component="form"
         elevation={0}
         sx={{
           px: 1.5,
           py: 0.5,
-          display: "flex",
+          display: { xs: "none", sm: "flex" },
           alignItems: "center",
           width: 220,
           borderRadius: 50,
@@ -55,9 +73,15 @@ const ToolbarActions: React.FC<{ toggleSideBar: () => void }> = ({ toggleSideBar
   );
 };
 
-export const Topbar = function () {
+interface TopbarProps {
+  onMobileNavToggle?: () => void;
+}
+
+export const Topbar: React.FC<TopbarProps> = ({ onMobileNavToggle }) => {
   const { closeSidebar } = useSidebar();
   const pathname = usePathname();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // Split, filter out empty segments, then slice to ignore /app/id
   const pathSegments = pathname.split("/").filter(Boolean);
@@ -80,45 +104,73 @@ export const Topbar = function () {
         flexWrap: "wrap",
         alignItems: "center",
         gap: 2,
-        px: "28px",
-        py: "15px",
+        px: { xs: "12px", sm: "28px" },
+        py: { xs: "10px", sm: "15px" },
         borderBottom: "1px solid #ddd",
         justifyContent: "space-between",
       }}
     >
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{
-          color: "rgba(28, 28, 28, 0.40)",
-          fontFamily: "Inter",
-          fontSize: "14px",
-          fontStyle: "normal",
-          fontWeight: 400,
-          lineHeight: "20px",
-        }}
-        separator={"/"}
-      >
-        {breadcrumbs.map((breadcrumb, i) => {
-          // Build the path up to this breadcrumb
-          const href =
-            "/" +
-            pathSegments
-              .slice(0, i + 3) // +3 to account for skipped segments
-              .join("/");
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, minWidth: 0 }}>
+        {/* Hamburger menu for mobile - positioned on the left */}
+        {isMobile && onMobileNavToggle && (
+          <IconButton
+            size="small"
+            aria-label="open navigation menu"
+            onClick={onMobileNavToggle}
+            sx={{
+              display: { xs: "block", md: "none" },
+            }}
+          >
+            <MenuIcon fontSize="small" />
+          </IconButton>
+        )}
 
-          // Last breadcrumb is not a link
-          if (i === breadcrumbs.length - 1) {
-            return <span key={i}>{humanize(breadcrumb)}</span>;
-          }
-          return (
-            <NextLink key={i} href={href}>
-              {humanize(breadcrumb)}
-            </NextLink>
-          );
-        })}
-      </Breadcrumbs>
-      <Box>
-        <ToolbarActions toggleSideBar={closeSidebar} />
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{
+            color: "rgba(28, 28, 28, 0.40)",
+            fontFamily: "Inter",
+            fontSize: { xs: "12px", sm: "14px" },
+            fontStyle: "normal",
+            fontWeight: 400,
+            lineHeight: "20px",
+            flex: 1,
+            minWidth: 0,
+            "& .MuiBreadcrumbs-ol": {
+              flexWrap: "nowrap",
+            },
+            "& .MuiBreadcrumbs-li": {
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            },
+          }}
+          separator="/"
+        >
+          {breadcrumbs.map((breadcrumb, i) => {
+            // Build the path up to this breadcrumb
+            const href =
+              "/" +
+              pathSegments
+                .slice(0, i + 3) // +3 to account for skipped segments
+                .join("/");
+
+            // Last breadcrumb is not a link
+            if (i === breadcrumbs.length - 1) {
+              return <span key={i}>{humanize(breadcrumb)}</span>;
+            }
+            return (
+              <NextLink key={i} href={href}>
+                {humanize(breadcrumb)}
+              </NextLink>
+            );
+          })}
+        </Breadcrumbs>
+      </Box>
+
+      <Box sx={{ flexShrink: 0 }}>
+        <ToolbarActions toggleSideBar={closeSidebar} toggleMobileNav={onMobileNavToggle} />
       </Box>
     </Box>
   );
