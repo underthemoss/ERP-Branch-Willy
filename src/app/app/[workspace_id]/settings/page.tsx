@@ -40,21 +40,36 @@ export default function SettingsPage() {
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Only show Workspace Settings section if user has manage permissions */}
-      {permissions?.permissionMap?.ERP_WORKSPACE_MANAGE && (
+      {/* Workspace section - show different items based on permissions */}
+      {(permissions?.permissionMap?.ERP_WORKSPACE_MANAGE || permissions?.permissionMap?.ERP_WORKSPACE_READ) && (
         <>
           <Typography variant="h6" gutterBottom>
             Workspace
           </Typography>
           <List>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workspace`}>
-                <ListItemText
-                  primary="Workspace Settings"
-                  secondary="Edit name, description, logo, banner, and invite settings"
-                />
-              </ListItemButton>
-            </ListItem>
+            {/* Workspace Settings - only for users with manage permissions */}
+            {permissions?.permissionMap?.ERP_WORKSPACE_MANAGE && (
+              <ListItem disablePadding>
+                <ListItemButton component={Link} href={`/app/${workspaceId}/settings/workspace`}>
+                  <ListItemText
+                    primary="Workspace Settings"
+                    secondary="Edit name, description, logo, banner, and invite settings"
+                  />
+                </ListItemButton>
+              </ListItem>
+            )}
+            
+            {/* Workspace Members - for users with read permissions */}
+            {permissions?.permissionMap?.ERP_WORKSPACE_READ && (
+              <ListItem disablePadding>
+                <ListItemButton component={Link} href={`/app/${workspaceId}/settings/members`}>
+                  <ListItemText
+                    primary="Workspace Members"
+                    secondary="View team members and their roles"
+                  />
+                </ListItemButton>
+              </ListItem>
+            )}
           </List>
 
           <Divider sx={{ my: 3 }} />
