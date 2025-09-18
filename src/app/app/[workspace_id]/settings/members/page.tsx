@@ -3,7 +3,7 @@
 import { graphql } from "@/graphql";
 import { useListWorkspaceMembersQuery } from "@/graphql/hooks";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
-import { Group, Warning } from "@mui/icons-material";
+import { Group, Map, Warning } from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -21,6 +21,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import MembersMapDialog from "./components/MembersMapDialog";
 
 // Define the GraphQL query for listing workspace members
 graphql(`
@@ -63,6 +65,7 @@ export default function WorkspaceMembersPage() {
 
   const currentWorkspace = useSelectedWorkspace();
   const { permissions, isLoadingPermissions } = useWorkspace();
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   // Fetch workspace members
   const { data, loading, error } = useListWorkspaceMembersQuery({
@@ -180,6 +183,14 @@ export default function WorkspaceMembersPage() {
             </Typography>
           </Box>
         </Box>
+        <Button
+          variant="outlined"
+          startIcon={<Map />}
+          onClick={() => setMapDialogOpen(true)}
+          disabled={members.length === 0}
+        >
+          View on Map
+        </Button>
       </Box>
 
       <TableContainer component={Paper} elevation={1}>
@@ -277,6 +288,12 @@ export default function WorkspaceMembersPage() {
           </Typography>
         </Box>
       )}
+
+      <MembersMapDialog
+        open={mapDialogOpen}
+        onClose={() => setMapDialogOpen(false)}
+        members={members}
+      />
     </Box>
   );
 }
