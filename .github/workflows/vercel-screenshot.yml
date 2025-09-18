@@ -60,21 +60,23 @@ jobs:
             echo "Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS - Checking for Vercel deployment comment..."
             
             # Get all comments and look for Vercel Preview Deployment
-            COMMENTS=$(gh api /repos/${{ github.repository }}/issues/${{ steps.pr-number.outputs.pr_number }}/comments \
-              --jq '.[] | select(.body | contains("Vercel Preview Deployment")) | .body')
+            # We need to handle multi-line comments properly
+            COMMENTS_JSON=$(gh api /repos/${{ github.repository }}/issues/${{ steps.pr-number.outputs.pr_number }}/comments)
             
-            if [ -n "$COMMENTS" ]; then
-              echo "Found comment(s) with 'Vercel Preview Deployment'"
+            # Extract the body of comments that contain "Vercel Preview Deployment"
+            COMMENT=$(echo "$COMMENTS_JSON" | jq -r '.[] | select(.body | contains("Vercel Preview Deployment")) | .body' | head -1)
+            
+            if [ -n "$COMMENT" ]; then
+              echo "Found comment with 'Vercel Preview Deployment'"
               
-              # Look for a comment that contains "✅ Ready" or just extract URL from latest comment
-              COMMENT=$(echo "$COMMENTS" | head -n 1)
+              # Debug: Show the full comment (first 1000 chars)
+              echo "Comment preview (first 1000 chars):"
+              echo "${COMMENT:0:1000}"
+              echo "---"
               
-              # Debug: Show first 500 chars of comment
-              echo "Comment preview: ${COMMENT:0:500}"
-              
-              # Extract the preview URL - it appears after "Preview URL:" in the table
-              # The URL format is https://es-[hash]-equipmentshare.vercel.app
-              PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[a-zA-Z0-9-]+\.vercel\.app' | head -n 1)
+              # Extract the preview URL - it appears in the table
+              # The URL format is https://es-[hash]-equipmentshare.vercel.app or similar
+              PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[a-zA-Z0-9.-]+\.vercel\.app' | head -n 1)
               
               if [ -n "$PREVIEW_URL" ]; then
                 echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
@@ -82,6 +84,14 @@ jobs:
                 break
               else
                 echo "URL not found in comment yet, might still be deploying..."
+                # Try to find any URL pattern in case format is different
+                echo "Attempting broader URL search..."
+                PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[^[:space:]]+vercel[^[:space:]]*' | head -n 1)
+                if [ -n "$PREVIEW_URL" ]; then
+                  echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+                  echo "✅ Found preview URL (broader search): $PREVIEW_URL"
+                  break
+                fi
               fi
             else
               echo "No Vercel deployment comment found yet..."
