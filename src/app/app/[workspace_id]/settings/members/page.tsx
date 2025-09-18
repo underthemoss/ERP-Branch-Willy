@@ -7,9 +7,11 @@ import { Group, Warning } from "@mui/icons-material";
 import {
   Avatar,
   Box,
+  Button,
   Card,
   Chip,
   CircularProgress,
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -17,8 +19,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  Button,
-  Paper,
 } from "@mui/material";
 import { useParams } from "next/navigation";
 

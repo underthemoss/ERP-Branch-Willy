@@ -41,7 +41,8 @@ export default function SettingsPage() {
       <Divider sx={{ my: 3 }} />
 
       {/* Workspace section - show different items based on permissions */}
-      {(permissions?.permissionMap?.ERP_WORKSPACE_MANAGE || permissions?.permissionMap?.ERP_WORKSPACE_READ) && (
+      {(permissions?.permissionMap?.ERP_WORKSPACE_MANAGE ||
+        permissions?.permissionMap?.ERP_WORKSPACE_READ) && (
         <>
           <Typography variant="h6" gutterBottom>
             Workspace
@@ -58,7 +59,7 @@ export default function SettingsPage() {
                 </ListItemButton>
               </ListItem>
             )}
-            
+
             {/* Workspace Members - for users with read permissions */}
             {permissions?.permissionMap?.ERP_WORKSPACE_READ && (
               <ListItem disablePadding>
