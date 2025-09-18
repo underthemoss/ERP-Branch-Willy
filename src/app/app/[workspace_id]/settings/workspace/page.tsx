@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { WorkspaceAccessType } from "@/graphql/graphql";
 import {
   useGetBrandByDomainLazyQuery,
   useUpdateWorkspaceAccessTypeMutation,
@@ -285,7 +286,10 @@ export default function WorkspaceSettingsPage() {
       await updateWorkspaceAccessType({
         variables: {
           workspaceId: currentWorkspace.id,
-          accessType: accessType === "domain" ? "SAME_DOMAIN" : "INVITE_ONLY",
+          accessType:
+            accessType === "domain"
+              ? WorkspaceAccessType.SameDomain
+              : WorkspaceAccessType.InviteOnly,
         },
       });
 
