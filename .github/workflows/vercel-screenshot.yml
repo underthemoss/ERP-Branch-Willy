@@ -59,24 +59,25 @@ jobs:
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             echo "Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS - Checking for Vercel deployment URL..."
             
-            # Get all comments and look for Vercel Preview Deployment with a URL
-            COMMENTS_JSON=$(gh api /repos/${{ github.repository }}/issues/${{ steps.pr-number.outputs.pr_number }}/comments)
+            # Get all comments sorted by created_at in descending order
+            COMMENTS_JSON=$(gh api /repos/${{ github.repository }}/issues/${{ steps.pr-number.outputs.pr_number }}/comments --paginate)
             
-            # Look for the most recent comment from github-actions bot with Vercel Preview Deployment
-            COMMENT=$(echo "$COMMENTS_JSON" | jq -r '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("Vercel Preview Deployment"))) | .body' | tail -1)
+            # Find comments from github-actions bot that contain Vercel Preview Deployment
+            # Get the most recent one by reversing the array and taking the last match
+            COMMENT=$(echo "$COMMENTS_JSON" | jq -r '.[] | select(.user.login == "github-actions[bot]") | .body' | grep -B50 -A50 "Vercel Preview Deployment" | head -n 100)
             
             if [ -n "$COMMENT" ]; then
-              # Check if comment contains "Ready" status - if not, deployment might still be in progress
-              if echo "$COMMENT" | grep -q "✅ Ready"; then
-                echo "Found comment with 'Vercel Preview Deployment' and Ready status"
-              else
-                echo "Found Vercel comment but deployment not ready yet..."
-              fi
+              # Debug: Show what we found
+              echo "Found a comment with Vercel Preview Deployment"
+              echo "Full comment content:"
+              echo "===================="
+              echo "$COMMENT"
+              echo "===================="
               
-              # Debug: Show the full comment (first 2000 chars to see more)
-              echo "Comment content (first 2000 chars):"
-              echo "${COMMENT:0:2000}"
-              echo "--- End of comment preview ---"
+              # Check if comment contains "Ready" status
+              if echo "$COMMENT" | grep -q "✅ Ready"; then
+                echo "Deployment shows Ready status"
+              fi
               
               # Extract the preview URL - looking for the Vercel app URL
               # Try multiple patterns to be sure
@@ -88,11 +89,14 @@ jobs:
               fi
               
               if [ -z "$PREVIEW_URL" ]; then
-                # Try to extract from markdown link format [text](url)
-                PREVIEW_URL=$(echo "$COMMENT" | grep -oE '\[https://[^]]+\.vercel\.app[^]]*\]\(https://[^)]+\.vercel\.app[^)]*\)' | grep -oE 'https://[^)]+\.vercel\.app' | head -n 1)
+                # Try to find any https URL that might be the preview
+                echo "Trying broader URL search..."
+                PREVIEW_URL=$(echo "$COMMENT" | grep -oE 'https://[^[:space:]<>"\]]+' | grep vercel | head -n 1)
               fi
               
               if [ -n "$PREVIEW_URL" ]; then
+                # Clean up the URL in case it has trailing characters
+                PREVIEW_URL=$(echo "$PREVIEW_URL" | sed 's/[)]$//')
                 echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
                 echo "✅ Successfully found preview URL: $PREVIEW_URL"
                 break
