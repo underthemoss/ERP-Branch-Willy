@@ -30,26 +30,15 @@ jobs:
           # Create screenshots directory
           mkdir -p screenshots
 
-      - name: Run Claude with Playwright MCP
+      - name: Run Claude Screenshot Capture
         id: claude-screenshot
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-            --model claude-4-0-sonnet-20250805
-            --allowedTools Edit,Read,Write
-          mcp_config: |
-            {
-              "mcpServers": {
-                "playwright": {
-                  "command": "npx",
-                  "args": ["@playwright/mcp@latest"],
-                  "env": {
-                    "PLAYWRIGHT_BROWSER": "chromium"
-                  }
-                }
-              }
-            }
+            --model claude-3-5-sonnet-20241022
+            --mcp-config '{"mcpServers": {"playwright": {"command": "npx", "args": ["@playwright/mcp@latest"], "env": {"PLAYWRIGHT_BROWSER": "chromium"}}}}'
+            --allowedTools mcp__playwright__browser_navigate,mcp__playwright__browser_resize,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_close,mcp__playwright__browser_install,Bash
           prompt: |
             You are tasked with capturing screenshots of the staging environment using the Playwright MCP server.
 
@@ -57,17 +46,17 @@ jobs:
 
             Please follow these steps:
 
-            1. First, install the browser if needed using the browser_install tool
-            2. Navigate to the staging URL using browser_navigate
+            1. First, install the browser if needed using the mcp__playwright__browser_install tool
+            2. Navigate to the staging URL using mcp__playwright__browser_navigate
             3. Take screenshots at different viewport sizes:
                - Desktop: 1920x1080 - save as screenshots/staging-desktop.png
                - Tablet: 768x1024 - save as screenshots/staging-tablet.png  
                - Mobile: 375x812 - save as screenshots/staging-mobile.png
             4. For each viewport:
-               - Use browser_resize to set the viewport size
-               - Use browser_take_screenshot to capture the screenshot with the appropriate filename
+               - Use mcp__playwright__browser_resize to set the viewport size
+               - Use mcp__playwright__browser_take_screenshot to capture the screenshot with the appropriate filename
             5. Also capture a full-page screenshot at 1920x1080 as screenshots/staging-fullpage.png
-            6. Close the browser when done using browser_close
+            6. Close the browser when done using mcp__playwright__browser_close
 
             Make sure all screenshots are saved in the screenshots/ directory.
             Verify the screenshots were created successfully by listing the directory contents.
