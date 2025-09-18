@@ -59,12 +59,12 @@ jobs:
             2. Navigate to the staging URL using mcp__playwright__browser_navigate
             3. Set viewport to 1920x1080 for optimal viewing
 
-            ### Account Creation:
-            1. Create a new account with:
+            ### Login:
+            1. Log in to the application using the provided credentials:
                - Email: test@erp.test
                - Password: Use the value from environment variable $TEST_USER_PASSWORD
-            2. Complete any onboarding or setup flows
-            3. Take screenshots of each step
+            2. Take a screenshot of the login page before and after logging in
+            3. Handle any post-login flows (workspace selection, etc.)
 
             ### Feature Exploration (be exhaustive):
             Your mission is to discover EVERYTHING the application can do. Start from the main navigation and systematically explore every single feature you can find. 
@@ -146,7 +146,7 @@ jobs:
           echo "Comprehensive exploration of the staging ERP application has been completed." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Staging URL:** https://staging-erp.estrack.com/" >> $GITHUB_STEP_SUMMARY
-          echo "**Test Account:** test@erp.test" >> $GITHUB_STEP_SUMMARY
+          echo "**Login Account:** test@erp.test" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Exploration Summary:" >> $GITHUB_STEP_SUMMARY
           echo "The agent has completed an exhaustive exploration of the application." >> $GITHUB_STEP_SUMMARY
