@@ -1,0 +1,18 @@
+name: Daily Report
+on:
+  schedule:
+    - cron: "0 9 * * MON-FRI"
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "Generate a summary of yesterday's commits and write the results to ./notes.txt"
+          claude_args: "--model claude-opus-4-1-20250805"
+      - name: Post to Slack
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          cat notes.txt | node ./scripts/notify-slack.js

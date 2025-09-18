@@ -57,9 +57,7 @@ jobs:
           Include the author name: $COMMIT_AUTHOR
           Include a link to the commit: https://github.com/EquipmentShare/es-erp/commit/$COMMIT_SHA
 
-          Be brief and clear in your descriptions.
-
-          Write the release notes to a file called release_note.txt" > release_note.txt
+          Be brief and clear in your descriptions." > release_note.txt
 
           # Display the generated notes for debugging
           echo "Generated release notes:"
@@ -69,4 +67,4 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
-          node ./scripts/release-note-slack-post.js
+          cat release_note.txt | node ./scripts/notify-slack.js
