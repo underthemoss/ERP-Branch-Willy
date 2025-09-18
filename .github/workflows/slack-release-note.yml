@@ -26,9 +26,43 @@ jobs:
 
       - name: Generate release notes
         run: |
-          npm install -g @openai/codex
-          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          codex exec --full-auto "Generate user facing release notes for the last commit, be brief. Use headings 'User facing changes', 'Other changes', 'Author', 'Commit Link' and 'Limerick'. Use simple plain text formating with emojiis, no markdown. Include the author of the changes. Include a link to the changes like https://github.com/EquipmentShare/es-erp/commit/xxxxx. Write notes to a new file called release_note.txt"
+          # Install Claude CLI
+          npm install -g @anthropic-ai/claude-cli
+          
+          # Get the last commit details
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s")
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
+          COMMIT_BODY=$(git log -1 --pretty=format:"%b")
+          
+          # Create a prompt for Claude
+          PROMPT="Generate user facing release notes for the following commit:
+
+          Commit: $COMMIT_SHA
+          Author: $COMMIT_AUTHOR
+          Message: $COMMIT_MESSAGE
+          Body: $COMMIT_BODY
+          
+          Please format the release notes with these sections:
+          - User facing changes
+          - Other changes
+          - Author
+          - Commit Link
+          - Limerick
+          
+          Use simple plain text formatting with emojis, no markdown.
+          Include the author name: $COMMIT_AUTHOR
+          Include a link to the commit: https://github.com/EquipmentShare/es-erp/commit/$COMMIT_SHA
+          
+          Be brief and clear in your descriptions."
+          
+          # Generate release notes using Claude
+          export ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
+          echo "$PROMPT" | claude --model claude-3-5-sonnet-20241022 --max-tokens 1000 > release_note.txt
+          
+          # Display the generated notes for debugging
+          echo "Generated release notes:"
+          cat release_note.txt
 
       - name: Post to Slack
         env:
