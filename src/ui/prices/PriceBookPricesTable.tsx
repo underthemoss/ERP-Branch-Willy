@@ -1,6 +1,7 @@
 "use client";
 
 import { PriceType } from "@/graphql/graphql";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import {
   useDeletePriceByIdMutation,
   useListPricesQuery,
@@ -156,6 +157,7 @@ const createColumns = (
 ];
 
 export function PricesTable() {
+  const workspaceId = useSelectedWorkspaceId() as string;
   const { price_book_id } = useParams<{ price_book_id: string }>();
 
   // State for selected category and class
@@ -191,6 +193,7 @@ export function PricesTable() {
   // Fetch prices, filter by selected category and price type (server-side)
   const { data, loading, error } = useListPricesQuery({
     variables: {
+      workspaceId,
       priceBookId: price_book_id,
       ...(selectedClass ? { name: selectedClass } : {}),
       ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),

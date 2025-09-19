@@ -1,3 +1,4 @@
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import {
   Box,
   Button,
@@ -30,6 +31,7 @@ export function AddNewPriceDialog({
   priceBookId,
   onSuccess,
 }: AddNewPriceDialogProps) {
+  const workspaceId = useSelectedWorkspaceId() as string;
   const [formCategoryId, setFormCategoryId] = React.useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = React.useState<PimProductFields | null>(null);
 
@@ -91,6 +93,7 @@ export function AddNewPriceDialog({
         await createRentalPrice({
           variables: {
             input: {
+              workspaceId,
               name: data.class,
               pimCategoryId: formCategoryId,
               priceBookId,
@@ -113,6 +116,7 @@ export function AddNewPriceDialog({
         await createSalePrice({
           variables: {
             input: {
+              workspaceId,
               name: data.class,
               pimCategoryId: formCategoryId,
               priceBookId,

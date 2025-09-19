@@ -3,28 +3,6 @@
 import { graphql } from "@/graphql";
 
 graphql(`
-  query GetPricesCreateDialog {
-    listPrices(page: { number: 0, size: 10000 }, filter: { priceType: RENTAL }) {
-      items {
-        __typename
-        ... on RentalPrice {
-          priceBook {
-            id
-            name
-          }
-          id
-          pricePerDayInCents
-          pricePerWeekInCents
-          pricePerMonthInCents
-          pimProductId
-          pimCategoryId
-        }
-      }
-    }
-  }
-`);
-
-graphql(`
   query GetSalesOrderRentalLineItemByIdCreateDialog($id: String!) {
     getSalesOrderLineItemById(id: $id) {
       ... on RentalSalesOrderLineItem {

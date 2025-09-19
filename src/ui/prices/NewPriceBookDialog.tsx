@@ -38,7 +38,7 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const [createPriceBook, { loading, error }] = useCreatePriceBookMutation();
   const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
-    variables: { page: { number: 1, size: 100 } },
+    variables: { page: { number: 1, size: 100 }, filter: { workspaceId: workspace_id! } },
   });
   const { data: companiesData, loading: companiesLoading } = useListBusinessContactsQuery({
     variables: {
@@ -66,6 +66,7 @@ export function NewPriceBookDialog({ open, onClose }: DialogProps) {
     const response = await createPriceBook({
       variables: {
         input: {
+          workspaceId: workspace_id!,
           name: data.name,
           notes: data.notes,
           parentPriceBookId: data.parentPriceBookId || undefined,

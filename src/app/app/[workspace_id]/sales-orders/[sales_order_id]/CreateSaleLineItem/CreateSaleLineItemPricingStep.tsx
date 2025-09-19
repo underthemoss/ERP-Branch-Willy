@@ -5,6 +5,7 @@ import {
   useGetSalesOrderSaleLineItemByIdCreateDialogQuery,
   useUpdateSaleSalesOrderLineCreateDialogMutation,
 } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import { useGetPimCategoryByIdQuery } from "@/ui/pim/api";
 import { useCreateSalePriceMutation, useListPricesQuery } from "@/ui/prices/api";
 import {
@@ -61,6 +62,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
   Footer,
   pimCategoryId,
 }) => {
+  const workspaceId = useSelectedWorkspaceId() as string;
   const [updateLineItem, { loading: mutationLoading }] =
     useUpdateSaleSalesOrderLineCreateDialogMutation();
 
@@ -82,6 +84,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
   } = useListPricesQuery({
     fetchPolicy: "cache-and-network",
     variables: {
+      workspaceId,
       priceType: PriceType.Sale,
       shouldListPriceBooks: true,
       pimCategoryId: pimCategoryId,

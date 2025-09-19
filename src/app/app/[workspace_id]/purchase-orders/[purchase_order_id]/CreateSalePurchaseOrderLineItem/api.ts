@@ -3,37 +3,6 @@
 import { graphql } from "@/graphql";
 
 graphql(`
-  query GetPricesSaleCreateDialog {
-    listPrices(page: { number: 0, size: 10000 }, filter: { priceType: SALE }) {
-      items {
-        __typename
-        ... on SalePrice {
-          priceBook {
-            id
-            name
-          }
-          pimProduct {
-            name
-            make
-            model
-            pim_category_path
-          }
-          pimCategory {
-            name
-            id
-            path
-          }
-          id
-          pimCategoryId
-          pimProductId
-          unitCostInCents
-        }
-      }
-    }
-  }
-`);
-
-graphql(`
   query GetPurchaseOrderSaleLineItemByIdCreateDialog($id: String!) {
     getPurchaseOrderLineItemById(id: $id) {
       ... on SalePurchaseOrderLineItem {

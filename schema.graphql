@@ -606,6 +606,7 @@ input CreatePriceBookInput {
   """Percentage factor for the parent price book"""
   parentPriceBookPercentageFactor: Float = 1
   projectId: ID
+  workspaceId: ID!
 }
 
 input CreateReferenceNumberTemplateInput {
@@ -644,6 +645,7 @@ input CreateRentalPriceInput {
   pricePerDayInCents: Int!
   pricePerMonthInCents: Int!
   pricePerWeekInCents: Int!
+  workspaceId: ID!
 }
 
 input CreateRentalPurchaseOrderLineItemInput {
@@ -694,6 +696,7 @@ input CreateSalePriceInput {
   pimProductId: ID
   priceBookId: ID
   unitCostInCents: Int!
+  workspaceId: ID!
 }
 
 input CreateSalePurchaseOrderLineItemInput {
@@ -884,8 +887,11 @@ type IntakeForm {
   id: ID!
   isActive: Boolean!
   isDeleted: Boolean!
+  isPublic: Boolean!
+  pricebookId: ID
   project: IntakeFormProject
   projectId: ID
+  sharedWithEmails: [String!]!
   updatedAt: DateTime!
   updatedBy: String!
   workspace: IntakeFormWorkspace
@@ -894,7 +900,10 @@ type IntakeForm {
 
 input IntakeFormInput {
   isActive: Boolean!
+  isPublic: Boolean
+  pricebookId: ID
   projectId: ID
+  sharedWithEmails: [String!]
   workspaceId: ID!
 }
 
@@ -1319,6 +1328,10 @@ type ListPimProductsResult {
   page: PaginationInfo!
 }
 
+input ListPriceBooksFilter {
+  workspaceId: ID!
+}
+
 input ListPriceBooksPage {
   number: Int! = 1
   size: Int! = 10
@@ -1334,6 +1347,7 @@ input ListPricesFilter {
   pimCategoryId: String
   priceBookId: String
   priceType: PriceType
+  workspaceId: ID!
 }
 
 input ListPricesPage {
@@ -1473,7 +1487,7 @@ type Mutation {
   deleteProject(id: String!): Project
   deleteReferenceNumberTemplate(id: String!): Boolean
   deleteWorkflowConfigurationById(id: ID!): Boolean
-  exportPrices(priceBookId: ID): File
+  exportPrices(priceBookId: ID!): File
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
   importPrices(fileId: ID!, priceBookId: ID!): ImportPricesResult
   joinWorkspace(workspaceId: String!): Workspace
@@ -1608,9 +1622,31 @@ enum PaginationOrder {
 
 enum PermissionType {
   ERP_DOMAIN_IS_MEMBER
+  ERP_INTAKE_FORM_CREATE_SUBMISSION
+  ERP_INTAKE_FORM_READ
+  ERP_INTAKE_FORM_READ_SUBMISSIONS
+  ERP_INTAKE_FORM_SUBMISSION_READ
+  ERP_INTAKE_FORM_SUBMISSION_UPDATE
+  ERP_INTAKE_FORM_UPDATE
+  ERP_INTAKE_FORM_UPDATE_SUBMISSIONS
+  ERP_PRICEBOOK_PRICE_READ
+  ERP_PRICEBOOK_PRICE_UPDATE
+  ERP_PRICEBOOK_READ
+  ERP_PRICEBOOK_UPDATE
   ERP_WORKSPACE_CAN_JOIN
+  ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS
+  ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
+  ERP_WORKSPACE_CAN_MANAGE_PRICES
+  ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS
+  ERP_WORKSPACE_CREATE_INTAKE_FORM
+  ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION
+  ERP_WORKSPACE_CREATE_PRICE_BOOK
   ERP_WORKSPACE_MANAGE
   ERP_WORKSPACE_READ
+  ERP_WORKSPACE_READ_INTAKE_FORMS
+  ERP_WORKSPACE_READ_INTAKE_FORM_SUBMISSIONS
+  ERP_WORKSPACE_READ_PRICES
+  ERP_WORKSPACE_READ_PRICE_BOOKS
 }
 
 type PersonContact {
@@ -1680,7 +1716,6 @@ type PriceBook {
   businessContact: BusinessContact
   businessContactId: ID
   comments: [Note!]!
-  companyId: String!
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
@@ -1698,6 +1733,7 @@ type PriceBook {
   updatedAt: DateTime!
   updatedBy: String!
   updatedByUser: User
+  workspaceId: ID!
 }
 
 enum PriceType {
@@ -1983,10 +2019,10 @@ type Query {
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult
-  listPriceBookCategories(priceBookId: String): [PimCategory!]!
-  listPriceBooks(page: ListPriceBooksPage!): ListPriceBooksResult
-  listPriceNames(pimCategoryId: String, priceBookId: String): [String!]!
-  listPrices(filter: ListPricesFilter, page: ListPricesPage!): ListPricesResult
+  listPriceBookCategories(priceBookId: String, workspaceId: ID!): [PimCategory!]!
+  listPriceBooks(filter: ListPriceBooksFilter!, page: ListPriceBooksPage!): ListPriceBooksResult
+  listPriceNames(pimCategoryId: String, priceBookId: String, workspaceId: ID!): [String!]!
+  listPrices(filter: ListPricesFilter!, page: ListPricesPage!): ListPricesResult
 
   """
   Lists all possible project contact relation codes and their descriptions.
@@ -2115,7 +2151,6 @@ type RentalFulfilment implements FulfilmentBase {
 }
 
 type RentalPrice {
-  companyId: String!
   createdAt: DateTime!
   createdBy: String!
   id: ID!
@@ -2136,6 +2171,7 @@ type RentalPrice {
   pricePerWeekInCents: Int!
   priceType: PriceType!
   updatedAt: DateTime!
+  workspaceId: ID!
 }
 
 type RentalPurchaseOrderLineItem {
@@ -2267,6 +2303,10 @@ type ResourceMapResource {
 
 enum ResourceType {
   ERP_DOMAIN
+  ERP_INTAKE_FORM
+  ERP_INTAKE_FORM_SUBMISSION
+  ERP_PRICEBOOK
+  ERP_PRICEBOOK_PRICE
   ERP_USER
   ERP_WORKSPACE
 }
@@ -2306,7 +2346,6 @@ type SaleFulfilment implements FulfilmentBase {
 }
 
 type SalePrice {
-  companyId: String!
   createdAt: DateTime!
   createdBy: String!
   discounts: JSON
@@ -2326,6 +2365,7 @@ type SalePrice {
   priceType: PriceType!
   unitCostInCents: Int!
   updatedAt: DateTime!
+  workspaceId: ID!
 }
 
 type SalePurchaseOrderLineItem {
@@ -2905,9 +2945,31 @@ type UserPermission {
 
 type UserPermissionMap {
   ERP_DOMAIN_IS_MEMBER: Boolean
+  ERP_INTAKE_FORM_CREATE_SUBMISSION: Boolean
+  ERP_INTAKE_FORM_READ: Boolean
+  ERP_INTAKE_FORM_READ_SUBMISSIONS: Boolean
+  ERP_INTAKE_FORM_SUBMISSION_READ: Boolean
+  ERP_INTAKE_FORM_SUBMISSION_UPDATE: Boolean
+  ERP_INTAKE_FORM_UPDATE: Boolean
+  ERP_INTAKE_FORM_UPDATE_SUBMISSIONS: Boolean
+  ERP_PRICEBOOK_PRICE_READ: Boolean
+  ERP_PRICEBOOK_PRICE_UPDATE: Boolean
+  ERP_PRICEBOOK_READ: Boolean
+  ERP_PRICEBOOK_UPDATE: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_PRICES: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS: Boolean
+  ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean
+  ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION: Boolean
+  ERP_WORKSPACE_CREATE_PRICE_BOOK: Boolean
   ERP_WORKSPACE_MANAGE: Boolean
   ERP_WORKSPACE_READ: Boolean
+  ERP_WORKSPACE_READ_INTAKE_FORMS: Boolean
+  ERP_WORKSPACE_READ_INTAKE_FORM_SUBMISSIONS: Boolean
+  ERP_WORKSPACE_READ_PRICES: Boolean
+  ERP_WORKSPACE_READ_PRICE_BOOKS: Boolean
 }
 
 type ValidEnterpriseDomainResult {

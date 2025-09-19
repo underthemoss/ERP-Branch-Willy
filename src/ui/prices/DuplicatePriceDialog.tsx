@@ -1,5 +1,6 @@
 "use client";
 
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import {
   Box,
   Button,
@@ -37,6 +38,7 @@ export function DuplicatePriceDialog({
   price,
   onSuccess,
 }: DuplicatePriceDialogProps) {
+  const workspaceId = useSelectedWorkspaceId() as string;
   const isRentalPrice = price?.__typename === "RentalPrice";
   const isSalePrice = price?.__typename === "SalePrice";
 
@@ -121,6 +123,7 @@ export function DuplicatePriceDialog({
         await createRentalPrice({
           variables: {
             input: {
+              workspaceId,
               name: data.class,
               pimCategoryId: formCategoryId,
               priceBookId: price?.priceBook?.id || "",
@@ -143,6 +146,7 @@ export function DuplicatePriceDialog({
         await createSalePrice({
           variables: {
             input: {
+              workspaceId,
               name: data.class,
               pimCategoryId: formCategoryId,
               priceBookId: price?.priceBook?.id || "",
