@@ -41,6 +41,7 @@ export default function AllPrices() {
       ...(selectedPriceTypes.length === 1 ? { priceType: selectedPriceTypes[0] } : {}),
       shouldListPriceBooks: true,
       page: { number: 1, size: 1000 },
+      workspaceId: workspace_id!,
     },
     fetchPolicy: "cache-and-network",
   });

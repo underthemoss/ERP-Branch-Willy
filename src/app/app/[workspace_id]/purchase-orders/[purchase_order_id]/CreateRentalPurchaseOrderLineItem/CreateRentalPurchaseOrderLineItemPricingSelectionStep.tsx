@@ -84,6 +84,7 @@ const CreateRentalPurchaseOrderLineItemPricingSelectionStep: React.FC<
   } = useListPricesQuery({
     fetchPolicy: "cache-and-network",
     variables: {
+      workspaceId: workspace_id,
       priceType: PriceType.Rental,
       shouldListPriceBooks: true,
       pimCategoryId: pimCategoryId,

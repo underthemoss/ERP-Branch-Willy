@@ -1,13 +1,16 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { ContactType } from "@/graphql/graphql";
 import {
+  useContactSelectorListQuery,
   useCreateIntakeFormMutation,
   useDeleteIntakeFormMutation,
   useListIntakeFormsQuery,
   useListIntakeFormSubmissionsQuery,
 } from "@/graphql/hooks";
 import SubmissionsTable from "@/ui/intake-forms/SubmissionsTable";
+import { useListPriceBooksQuery } from "@/ui/prices/api";
 import ProjectSelector from "@/ui/ProjectSelector";
 import {
   Add as AddIcon,
@@ -21,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -49,6 +53,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
 
@@ -165,6 +170,14 @@ export default function IntakeFormsPage() {
   const [newFormName, setNewFormName] = useState("");
   const [newFormProjectId, setNewFormProjectId] = useState("");
   const [newFormActive, setNewFormActive] = useState(true);
+  const [newFormPricebookId, setNewFormPricebookId] = useState("");
+  const [newFormIsPublic, setNewFormIsPublic] = useState(false);
+  const [sharedEmails, setSharedEmails] = useState<string[]>([]);
+  const [shareSelected, setShareSelected] = useState<(string | { email: string; name: string })[]>(
+    [],
+  );
+  const [shareInputValue, setShareInputValue] = useState("");
+  const [shareError, setShareError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Fetch intake forms
@@ -179,12 +192,50 @@ export default function IntakeFormsPage() {
     fetchPolicy: "cache-and-network",
   });
 
+  // Fetch pricebooks for dropdown
+  const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
+    variables: { page: { number: 1, size: 200 }, filter: { workspaceId } },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Contacts for share suggestions
+  const { data: contactsData } = useContactSelectorListQuery({
+    variables: { workspaceId, page: { number: 1, size: 1000 }, contactType: ContactType.Person },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const personOptions = React.useMemo(() => {
+    const items = contactsData?.listContacts?.items || [];
+    const persons: { email: string; name: string }[] = items
+      .filter((c: any) => c?.__typename === "PersonContact" && c.email)
+      .map((c: any) => ({ email: c.email, name: c.name }));
+    const seen = new Set<string>();
+    return persons.filter((p) => (seen.has(p.email) ? false : (seen.add(p.email), true)));
+  }, [contactsData]);
+
+  // Hide already-selected emails from suggestions to prevent toggling/removal behavior
+  const filteredPersonOptions = React.useMemo(
+    () => personOptions.filter((p) => !sharedEmails.includes(p.email)),
+    [personOptions, sharedEmails],
+  );
+
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const emailFilter = createFilterOptions<{ email: string; name: string }>({
+    stringify: (o) => `${o.name} ${o.email}`,
+  });
+
   const [createIntakeForm] = useCreateIntakeFormMutation({
     onCompleted: () => {
       setCreateDialogOpen(false);
       setNewFormName("");
       setNewFormProjectId("");
       setNewFormActive(true);
+      setNewFormPricebookId("");
+      setNewFormIsPublic(false);
+      setSharedEmails([]);
+      setShareSelected([]);
+      setShareInputValue("");
       refetch();
     },
   });
@@ -213,7 +264,6 @@ export default function IntakeFormsPage() {
   };
 
   const handleCreateForm = async () => {
-    const now = new Date().toISOString();
     await createIntakeForm({
       variables: {
         input: {
@@ -221,7 +271,11 @@ export default function IntakeFormsPage() {
           projectId: newFormProjectId || null,
           isActive: newFormActive,
         },
-      },
+        // Extra top-level variables for planned API update
+        pricebookId: newFormPricebookId || null,
+        isPublic: newFormIsPublic,
+        sharedWithEmails: newFormIsPublic ? [] : sharedEmails,
+      } as any,
     });
   };
 
@@ -235,12 +289,12 @@ export default function IntakeFormsPage() {
     // You could add a toast notification here
   };
 
-  const forms = data?.listIntakeForms?.items || [];
+  const forms: IntakeForm[] = (data?.listIntakeForms?.items as IntakeForm[]) || [];
   const filteredForms = forms.filter((form) =>
     form.id.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const allSubmissions = submissionsData?.listIntakeFormSubmissions?.items || [];
+  const allSubmissions = (submissionsData?.listIntakeFormSubmissions?.items as any[]) || [];
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -364,7 +418,7 @@ export default function IntakeFormsPage() {
                 </TableCell>
               </TableRow>
             )}
-            {filteredForms.map((form) => (
+            {filteredForms.map((form: IntakeForm) => (
               <TableRow key={form.id} hover>
                 <TableCell>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -531,6 +585,152 @@ export default function IntakeFormsPage() {
               }
               label="Active (Accept submissions)"
             />
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Pricebook (Optional)
+              </Typography>
+              <Autocomplete
+                options={priceBooksData?.listPriceBooks?.items || []}
+                getOptionLabel={(option) => option?.name ?? ""}
+                loading={priceBooksLoading}
+                value={
+                  (priceBooksData?.listPriceBooks?.items || []).find(
+                    (pb) => pb.id === newFormPricebookId,
+                  ) || null
+                }
+                onChange={(_, newValue) => setNewFormPricebookId(newValue?.id || "")}
+                renderInput={(params) => <TextField {...params} placeholder="Select a pricebook" />}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: "block" }}
+              >
+                Choose a pricebook to drive pricing on this form
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Visibility
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={newFormIsPublic}
+                    onChange={(e) => setNewFormIsPublic(e.target.checked)}
+                  />
+                }
+                label={newFormIsPublic ? "Public (anyone with the link)" : "Private"}
+              />
+              {!newFormIsPublic && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Share with people
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    options={filteredPersonOptions}
+                    filterOptions={emailFilter}
+                    value={shareSelected}
+                    inputValue={shareInputValue}
+                    onInputChange={(_, val) => {
+                      setShareInputValue(val);
+                      if (shareError) setShareError(null);
+                    }}
+                    onChange={(_, newValue) => {
+                      const entries = newValue as (string | { email: string; name: string })[];
+                      const invalids = entries.filter(
+                        (v) => typeof v === "string" && !isValidEmail(v.trim()),
+                      ) as string[];
+                      const sanitized = entries.filter(
+                        (v) => !(typeof v === "string" && !isValidEmail(v.trim())),
+                      );
+                      setShareSelected(sanitized as any);
+                      const emails = sanitized
+                        .map((v) => (typeof v === "string" ? v.trim() : v.email))
+                        .filter((e) => e.length > 0);
+                      setSharedEmails(Array.from(new Set(emails)));
+                      if (invalids.length > 0) {
+                        setShareError("Enter a valid email address");
+                      } else {
+                        setShareError(null);
+                        setShareInputValue("");
+                      }
+                    }}
+                    getOptionLabel={(option) =>
+                      typeof option === "string" ? option : `${option.name} <${option.email}>`
+                    }
+                    renderTags={(value, getTagProps) =>
+                      value.map((v, index) => {
+                        const label = typeof v === "string" ? v : v.name ? `${v.name}` : v.email;
+                        return (
+                          <Chip
+                            {...getTagProps({ index })}
+                            key={typeof v === "string" ? v : v.email}
+                            label={label}
+                            size="small"
+                          />
+                        );
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="contact or email"
+                        error={!!shareError}
+                        helperText={shareError ?? undefined}
+                        onKeyDown={(e) => {
+                          if (!shareInputValue) return;
+                          if (e.key === "Enter" || e.key === "," || e.key === " ") {
+                            e.preventDefault();
+                            const tokens = shareInputValue
+                              .split(/[,\s]+/)
+                              .map((t) => t.trim())
+                              .filter(Boolean);
+                            if (tokens.length > 0) {
+                              const valid = tokens.filter((t) => isValidEmail(t));
+                              const invalid = tokens.filter((t) => !isValidEmail(t));
+                              const dedupedValid = valid.filter((t) => !sharedEmails.includes(t));
+                              if (dedupedValid.length > 0) {
+                                setShareSelected([
+                                  ...shareSelected,
+                                  ...dedupedValid,
+                                ] as unknown as any);
+                                setSharedEmails(
+                                  Array.from(new Set([...sharedEmails, ...dedupedValid])),
+                                );
+                              }
+                              if (invalid.length > 0) {
+                                setShareError("Enter a valid email address");
+                              } else {
+                                setShareError(null);
+                                setShareInputValue("");
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    )}
+                    isOptionEqualToValue={(opt, val) => {
+                      const oEmail = typeof opt === "string" ? opt : opt.email;
+                      const vEmail = typeof val === "string" ? val : val.email;
+                      return oEmail === vEmail;
+                    }}
+                    ListboxProps={{ style: { maxHeight: 300 } }}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 0.5, display: "block" }}
+                  >
+                    People selected from suggestions are added by email; custom entries are treated
+                    as emails.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>

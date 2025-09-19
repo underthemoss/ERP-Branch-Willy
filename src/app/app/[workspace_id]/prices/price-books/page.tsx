@@ -12,16 +12,17 @@ import * as React from "react";
 
 export default function Prices() {
   const dialogs = useDialogs();
+  const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading, error } = useListPriceBooksQuery({
     variables: {
       page: {
         size: 100,
       },
+      filter: { workspaceId: workspace_id! },
     },
     fetchPolicy: "cache-and-network",
   });
   const router = useRouter();
-  const { workspace_id } = useParams<{ workspace_id: string }>();
 
   // Define columns for the DataGridPro
   const columns = React.useMemo<GridColDef<any>[]>(

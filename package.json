@@ -24,7 +24,8 @@
     "codex": "codex --full-auto -m o3",
     "codex:codereview": "git fetch origin main && git diff $(git merge-base origin/main HEAD)...HEAD > diff.patch && npx ts-node-dev ./scripts/code-review-retry.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "tsc-check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",

@@ -98,6 +98,7 @@ export const SalePriceFieldsFragment = graphql(`
 
 graphql(`
   query ListPrices(
+    $workspaceId: ID!
     $page: ListPricesPage!
     $priceBookId: String
     $pimCategoryId: String
@@ -107,6 +108,7 @@ graphql(`
   ) {
     listPrices(
       filter: {
+        workspaceId: $workspaceId
         priceBookId: $priceBookId
         pimCategoryId: $pimCategoryId
         name: $name
@@ -124,12 +126,17 @@ graphql(`
         }
       }
     }
-    listPriceBookCategories(priceBookId: $priceBookId) {
+    listPriceBookCategories(workspaceId: $workspaceId, priceBookId: $priceBookId) {
       id
       name
     }
-    listPriceNames(priceBookId: $priceBookId, pimCategoryId: $pimCategoryId)
-    listPriceBooks(page: { size: 200 }) @include(if: $shouldListPriceBooks) {
+    listPriceNames(
+      workspaceId: $workspaceId
+      priceBookId: $priceBookId
+      pimCategoryId: $pimCategoryId
+    )
+    listPriceBooks(filter: { workspaceId: $workspaceId }, page: { size: 200 })
+      @include(if: $shouldListPriceBooks) {
       items {
         ...PriceBookFields
       }
@@ -144,8 +151,8 @@ graphql(`
 `);
 
 graphql(`
-  query ListPriceBooks($page: ListPriceBooksPage!) {
-    listPriceBooks(page: $page) {
+  query ListPriceBooks($filter: ListPriceBooksFilter!, $page: ListPriceBooksPage!) {
+    listPriceBooks(page: $page, filter: $filter) {
       items {
         ...PriceBookFields
       }
@@ -283,7 +290,7 @@ export function useDeletePriceByIdMutation(
 }
 
 graphql(`
-  mutation ExportPrices($priceBookId: ID) {
+  mutation ExportPrices($priceBookId: ID!) {
     exportPrices(priceBookId: $priceBookId) {
       id
       file_key
