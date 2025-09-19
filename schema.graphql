@@ -2050,7 +2050,7 @@ type Query {
 
   """List resource map entities by parent_id (with tenant scoping)"""
   listResourceMapEntriesByParentId(parent_id: String!): [ResourceMapResource]
-  listSalesOrders(limit: Int = 20, offset: Int = 0): SalesOrderListResult
+  listSalesOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): SalesOrderListResult
 
   """
   Lists all possible scope_of_work codes and their descriptions, including recommended usage and stage meaning.
