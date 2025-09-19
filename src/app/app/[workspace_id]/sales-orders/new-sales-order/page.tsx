@@ -75,6 +75,7 @@ export default function NewSalesOrderPage() {
       const result = await createSalesOrder({
         variables: {
           input: {
+            workspace_id: workspace_id,
             buyer_id: buyerId!,
             project_id: projectId!,
             purchase_order_number: purchaseOrderNumber.trim(),

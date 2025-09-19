@@ -1633,11 +1633,15 @@ enum PermissionType {
   ERP_PRICEBOOK_PRICE_UPDATE
   ERP_PRICEBOOK_READ
   ERP_PRICEBOOK_UPDATE
+  ERP_SALES_ORDER_READ
+  ERP_SALES_ORDER_UPDATE
   ERP_WORKSPACE_CAN_JOIN
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_MANAGE_PRICES
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS
+  ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
+  ERP_WORKSPACE_CAN_READ_SALES_ORDERS
   ERP_WORKSPACE_CREATE_INTAKE_FORM
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION
   ERP_WORKSPACE_CREATE_PRICE_BOOK
@@ -2307,6 +2311,7 @@ enum ResourceType {
   ERP_INTAKE_FORM_SUBMISSION
   ERP_PRICEBOOK
   ERP_PRICEBOOK_PRICE
+  ERP_SALES_ORDER
   ERP_USER
   ERP_WORKSPACE
 }
@@ -2467,6 +2472,7 @@ type SalesOrder {
   updated_at: String!
   updated_by: String!
   updated_by_user: User
+  workspace_id: String
 }
 
 input SalesOrderInput {
@@ -2474,6 +2480,7 @@ input SalesOrderInput {
   project_id: String
   purchase_order_number: String!
   sales_order_number: String
+  workspace_id: String!
 }
 
 union SalesOrderLineItem = RentalSalesOrderLineItem | SaleSalesOrderLineItem
@@ -2877,6 +2884,7 @@ input UpdateSalesOrderInput {
   project_id: String
   purchase_order_number: String
   sales_order_number: String
+  workspace_id: String
 }
 
 input UpdateSalesOrderLineItemInput {
@@ -2956,11 +2964,15 @@ type UserPermissionMap {
   ERP_PRICEBOOK_PRICE_UPDATE: Boolean
   ERP_PRICEBOOK_READ: Boolean
   ERP_PRICEBOOK_UPDATE: Boolean
+  ERP_SALES_ORDER_READ: Boolean
+  ERP_SALES_ORDER_UPDATE: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
+  ERP_WORKSPACE_CAN_READ_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION: Boolean
   ERP_WORKSPACE_CREATE_PRICE_BOOK: Boolean
@@ -3017,12 +3029,12 @@ type Workspace {
   archivedAt: String
   bannerImageUrl: String
   brandId: String
-  companyId: Int!
+  companyId: Int
   createdAt: String
   createdBy: String
   description: String
   domain: String
-  id: ID
+  id: ID!
   logoUrl: String
   name: String!
   ownerId: String
