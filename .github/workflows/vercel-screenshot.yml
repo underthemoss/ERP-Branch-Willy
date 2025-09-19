@@ -45,7 +45,7 @@ jobs:
             You are tasked with exhaustively exploring and documenting the staging ERP application.
 
             The staging URL is: https://staging-erp.estrack.com/
-            
+
             ## Environment Variables
             The test user password is available in the environment variable: TEST_USER_PASSWORD
             You can access it using: $TEST_USER_PASSWORD
@@ -68,9 +68,9 @@ jobs:
 
             ### Feature Exploration (be exhaustive):
             Your mission is to discover EVERYTHING the application can do. Start from the main navigation and systematically explore every single feature you can find. 
-            
+
             Create and continuously update a comprehensive todo list as you discover new areas. Don't assume what features exist - actually explore and find them yourself.
-            
+
             For each feature area you discover:
             - Click on every menu item and navigation element
             - Explore all sub-sections and nested features
@@ -78,7 +78,7 @@ jobs:
             - Test all available actions and operations
             - Document what you find
             - Take screenshots of everything
-            
+
             Be curious and thorough - if you see a button, click it. If you see a form, fill it. If you see a menu, explore every option.
 
             ### Discovery Process:
