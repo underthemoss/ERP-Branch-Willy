@@ -25,8 +25,8 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 graphql(`
-  query SalesOrdersWithLookups($limit: Int = 20, $offset: Int = 0) {
-    listSalesOrders(limit: $limit, offset: $offset) {
+  query SalesOrdersWithLookups($limit: Int = 20, $offset: Int = 0, $workspaceId: String!) {
+    listSalesOrders(limit: $limit, offset: $offset, workspaceId: $workspaceId) {
       items {
         id
         sales_order_number
@@ -89,8 +89,9 @@ export default function SalesOrdersPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading, error } = useSalesOrdersWithLookupsQuery({
     variables: {
-      limit: 100,
+      limit: 1000,
       offset: 0,
+      workspaceId: workspace_id,
     },
     fetchPolicy: "cache-and-network",
   });
