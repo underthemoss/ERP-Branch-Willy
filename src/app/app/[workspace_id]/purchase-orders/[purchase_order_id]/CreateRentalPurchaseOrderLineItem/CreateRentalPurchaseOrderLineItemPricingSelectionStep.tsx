@@ -215,6 +215,7 @@ const CreateRentalPurchaseOrderLineItemPricingSelectionStep: React.FC<
       const input: any = {
         pimCategoryId,
         name: formData.name,
+        workspaceId: workspace_id,
       };
 
       if (formData.priceBookId && formData.priceBookId !== "custom-price") {

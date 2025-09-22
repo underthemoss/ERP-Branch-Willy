@@ -183,6 +183,7 @@ const CreateSaleLineItemPricingSelectionStep: React.FC<PricingSelectionStepProps
       const input: any = {
         pimCategoryId,
         name: formData.name,
+        workspaceId: workspaceId,
       };
 
       if (formData.priceBookId) {
