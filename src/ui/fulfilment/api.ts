@@ -278,7 +278,7 @@ export const UnassignInventoryFromRentalFulfilment = graphql(`
 `);
 
 export const ListRentalFulfilments = graphql(`
-  query ListRentalFulfilments($filter: ListRentalFulfilmentsFilter, $page: ListFulfilmentsPage) {
+  query ListRentalFulfilments($filter: ListRentalFulfilmentsFilter!, $page: ListFulfilmentsPage) {
     listRentalFulfilments(filter: $filter, page: $page) {
       items {
         ...InventoryAssignment_RentalFulFulfilmentFields

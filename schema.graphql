@@ -822,6 +822,7 @@ interface FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 input FulfilmentPimInput {
@@ -1232,6 +1233,7 @@ input ListFulfilmentsFilter {
   salesOrderType: FulfilmentType
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 input ListFulfilmentsPage {
@@ -1378,6 +1380,7 @@ input ListRentalFulfilmentsFilter {
   timelineStartDate: DateTime
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 type ListRentalFulfilmentsResult {
@@ -1622,6 +1625,9 @@ enum PaginationOrder {
 
 enum PermissionType {
   ERP_DOMAIN_IS_MEMBER
+  ERP_FULFILMENT_DELETE
+  ERP_FULFILMENT_READ
+  ERP_FULFILMENT_UPDATE
   ERP_INTAKE_FORM_CREATE_SUBMISSION
   ERP_INTAKE_FORM_READ
   ERP_INTAKE_FORM_READ_SUBMISSIONS
@@ -2014,7 +2020,7 @@ type Query {
   listCharges(filter: ListChargesFilter, page: PageInfoInput): ChargePage
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
-  listFulfilments(filter: ListFulfilmentsFilter, page: ListFulfilmentsPage): ListFulfilmentsResult
+  listFulfilments(filter: ListFulfilmentsFilter!, page: ListFulfilmentsPage): ListFulfilmentsResult
 
   """List all intake form submissions for a workspace with pagination"""
   listIntakeFormSubmissions(limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
@@ -2047,7 +2053,7 @@ type Query {
   listProjectsByParentProjectId(parent_project: String!): [Project]
   listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
-  listRentalFulfilments(filter: ListRentalFulfilmentsFilter, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
+  listRentalFulfilments(filter: ListRentalFulfilmentsFilter!, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
 
   """
   Get all resource map entries filtered by tenant_id (from the calling user company id)
@@ -2158,6 +2164,7 @@ type RentalFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 type RentalPrice {
@@ -2313,6 +2320,7 @@ type ResourceMapResource {
 
 enum ResourceType {
   ERP_DOMAIN
+  ERP_FULFILMENT
   ERP_INTAKE_FORM
   ERP_INTAKE_FORM_SUBMISSION
   ERP_PRICEBOOK
@@ -2355,6 +2363,7 @@ type SaleFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 type SalePrice {
@@ -2607,6 +2616,7 @@ type ServiceFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
+  workspaceId: ID!
 }
 
 type ServiceTask {
@@ -2961,6 +2971,9 @@ type UserPermission {
 
 type UserPermissionMap {
   ERP_DOMAIN_IS_MEMBER: Boolean
+  ERP_FULFILMENT_DELETE: Boolean
+  ERP_FULFILMENT_READ: Boolean
+  ERP_FULFILMENT_UPDATE: Boolean
   ERP_INTAKE_FORM_CREATE_SUBMISSION: Boolean
   ERP_INTAKE_FORM_READ: Boolean
   ERP_INTAKE_FORM_READ_SUBMISSIONS: Boolean

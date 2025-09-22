@@ -124,7 +124,7 @@ graphql(`
   }
 
   query ListFulfilmentsFulfilmentDashboardPage(
-    $filter: ListFulfilmentsFilter
+    $filter: ListFulfilmentsFilter!
     $page: ListFulfilmentsPage
   ) {
     listFulfilments(filter: $filter, page: $page) {
@@ -328,7 +328,7 @@ export default function FulfillmentDashboard() {
     error: fulfillmentsError,
   } = useListFulfilmentsFulfilmentDashboardPageQuery({
     fetchPolicy: "cache-and-network",
-    variables: { page: { number: 1, size: 1000 }, filter: {} },
+    variables: { page: { number: 1, size: 1000 }, filter: { workspaceId: workspace_id } },
   });
 
   useEffect(() => {

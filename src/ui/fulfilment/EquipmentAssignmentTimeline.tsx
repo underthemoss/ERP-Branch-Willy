@@ -173,6 +173,7 @@ export default function EquipmentAssignmentTimeline() {
   const { data, loading, error } = useListRentalFulfilmentsQuery({
     variables: {
       filter: {
+        workspaceId: workspaceId,
         salesOrderType: FulfilmentType.Rental,
         timelineStartDate: startDate,
         timelineEndDate: endDate,
