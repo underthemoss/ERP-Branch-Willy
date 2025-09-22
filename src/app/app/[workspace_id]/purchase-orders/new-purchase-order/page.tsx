@@ -75,6 +75,7 @@ export default function NewPurchaseOrderPage() {
       const result = await createPurchaseOrder({
         variables: {
           input: {
+            workspace_id: workspace_id,
             seller_id: sellerId!,
             project_id: projectId!,
           },

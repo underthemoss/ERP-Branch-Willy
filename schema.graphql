@@ -1633,6 +1633,8 @@ enum PermissionType {
   ERP_PRICEBOOK_PRICE_UPDATE
   ERP_PRICEBOOK_READ
   ERP_PRICEBOOK_UPDATE
+  ERP_PURCHASE_ORDER_READ
+  ERP_PURCHASE_ORDER_UPDATE
   ERP_SALES_ORDER_READ
   ERP_SALES_ORDER_UPDATE
   ERP_WORKSPACE_CAN_JOIN
@@ -1640,7 +1642,9 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_MANAGE_PRICES
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS
+  ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
+  ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS
   ERP_WORKSPACE_CREATE_INTAKE_FORM
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION
@@ -1898,6 +1902,7 @@ type PurchaseOrder {
   updated_at: String!
   updated_by: String!
   updated_by_user: User
+  workspace_id: String
 }
 
 type PurchaseOrderFulfillmentProgress {
@@ -1927,6 +1932,7 @@ input PurchaseOrderInput {
   project_id: String
   purchase_order_number: String
   seller_id: String!
+  workspace_id: String!
 }
 
 union PurchaseOrderLineItem = RentalPurchaseOrderLineItem | SalePurchaseOrderLineItem
@@ -2039,7 +2045,7 @@ type Query {
   listProjectStatusCodes: [ProjectStatusCode]
   listProjects: [Project]
   listProjectsByParentProjectId(parent_project: String!): [Project]
-  listPurchaseOrders(limit: Int = 20, offset: Int = 0): PurchaseOrderListResult
+  listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
   listRentalFulfilments(filter: ListRentalFulfilmentsFilter, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
 
@@ -2311,6 +2317,7 @@ enum ResourceType {
   ERP_INTAKE_FORM_SUBMISSION
   ERP_PRICEBOOK
   ERP_PRICEBOOK_PRICE
+  ERP_PURCHASE_ORDER
   ERP_SALES_ORDER
   ERP_USER
   ERP_WORKSPACE
@@ -2776,6 +2783,7 @@ input UpdatePurchaseOrderInput {
   project_id: String
   purchase_order_number: String
   seller_id: String
+  workspace_id: String
 }
 
 input UpdatePurchaseOrderLineItemInput {
@@ -2964,6 +2972,8 @@ type UserPermissionMap {
   ERP_PRICEBOOK_PRICE_UPDATE: Boolean
   ERP_PRICEBOOK_READ: Boolean
   ERP_PRICEBOOK_UPDATE: Boolean
+  ERP_PURCHASE_ORDER_READ: Boolean
+  ERP_PURCHASE_ORDER_UPDATE: Boolean
   ERP_SALES_ORDER_READ: Boolean
   ERP_SALES_ORDER_UPDATE: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
@@ -2971,7 +2981,9 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
+  ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION: Boolean
