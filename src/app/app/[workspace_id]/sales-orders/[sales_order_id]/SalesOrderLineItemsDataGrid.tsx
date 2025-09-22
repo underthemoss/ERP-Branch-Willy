@@ -386,22 +386,26 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
       headerName: "Created By User",
       minWidth: 160,
       flex: 1,
-      valueGetter: (_, row) =>
-        row.created_by_user
-          ? `${row.created_by_user.firstName ?? ""} ${row.created_by_user.lastName ?? ""}`.trim() ||
-            "-"
-          : "-",
+      valueGetter: (_, row) => {
+        if (!row.created_by_user) return "-";
+        const firstName = row.created_by_user?.firstName ?? "";
+        const lastName = row.created_by_user?.lastName ?? "";
+        const fullName = `${firstName} ${lastName}`.trim();
+        return fullName || "-";
+      },
     },
     {
       field: "updated_by_user",
       headerName: "Updated By User",
       minWidth: 160,
       flex: 1,
-      valueGetter: (_, row) =>
-        row.updated_by_user
-          ? `${row.updated_by_user.firstName ?? ""} ${row.updated_by_user.lastName ?? ""}`.trim() ||
-            "-"
-          : "-",
+      valueGetter: (_, row) => {
+        if (!row.updated_by_user) return "-";
+        const firstName = row.updated_by_user?.firstName ?? "";
+        const lastName = row.updated_by_user?.lastName ?? "";
+        const fullName = `${firstName} ${lastName}`.trim();
+        return fullName || "-";
+      },
     },
     {
       field: "created_at",
@@ -770,13 +774,15 @@ export const SalesOrderLineItemsDataGrid: React.FC<SalesOrderLineItemsDataGridPr
                     <Typography variant="body2">
                       <strong>Created By:</strong>{" "}
                       {row.created_by_user
-                        ? `${row.created_by_user.firstName} ${row.created_by_user.lastName}`
+                        ? `${row.created_by_user?.firstName ?? ""} ${row.created_by_user?.lastName ?? ""}`.trim() ||
+                          "-"
                         : "-"}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Updated By:</strong>{" "}
                       {row.updated_by_user
-                        ? `${row.updated_by_user.firstName} ${row.updated_by_user.lastName}`
+                        ? `${row.updated_by_user?.firstName ?? ""} ${row.updated_by_user?.lastName ?? ""}`.trim() ||
+                          "-"
                         : "-"}
                     </Typography>
                     <Typography variant="body2">

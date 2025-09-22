@@ -270,7 +270,13 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
       headerName: "Created By",
       flex: 1,
       minWidth: 180,
-      valueGetter: (value: any) => `${value.firstName} ${value.lastName}`,
+      valueGetter: (value: any) => {
+        if (!value) return "-";
+        const firstName = value?.firstName ?? "";
+        const lastName = value?.lastName ?? "";
+        const fullName = `${firstName} ${lastName}`.trim();
+        return fullName || "-";
+      },
     },
     {
       field: "created_at",
