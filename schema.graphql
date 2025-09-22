@@ -822,7 +822,7 @@ interface FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 input FulfilmentPimInput {
@@ -1233,7 +1233,7 @@ input ListFulfilmentsFilter {
   salesOrderType: FulfilmentType
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 input ListFulfilmentsPage {
@@ -1380,7 +1380,7 @@ input ListRentalFulfilmentsFilter {
   timelineStartDate: DateTime
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 type ListRentalFulfilmentsResult {
@@ -2164,7 +2164,7 @@ type RentalFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 type RentalPrice {
@@ -2363,7 +2363,7 @@ type SaleFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 type SalePrice {
@@ -2616,7 +2616,7 @@ type ServiceFulfilment implements FulfilmentBase {
   updatedAt: DateTime!
   workflowColumnId: ID
   workflowId: ID
-  workspace_id: ID!
+  workspaceId: ID!
 }
 
 type ServiceTask {
