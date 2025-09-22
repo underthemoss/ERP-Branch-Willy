@@ -26,8 +26,8 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 graphql(`
-  query PurchaseOrdersWithLookups($limit: Int = 20, $offset: Int = 0) {
-    listPurchaseOrders(limit: $limit, offset: $offset) {
+  query PurchaseOrdersWithLookups($workspaceId: String!, $limit: Int = 20, $offset: Int = 0) {
+    listPurchaseOrders(workspaceId: $workspaceId, limit: $limit, offset: $offset) {
       items {
         id
         project {
@@ -98,6 +98,7 @@ export default function PurchaseOrdersPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading, error } = usePurchaseOrdersWithLookupsQuery({
     variables: {
+      workspaceId: workspace_id,
       limit: 100,
       offset: 0,
     },
