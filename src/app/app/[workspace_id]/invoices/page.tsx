@@ -226,11 +226,16 @@ const columns: GridColDef[] = [
 
 export default function InvoicesPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const params = useParams();
+  const workspaceId = params.workspace_id as string;
+
   const { data, loading, error, refetch } = useListInvoicesInvoiceListPageQuery({
     fetchPolicy: "cache-and-network",
     variables: {
       query: {
-        filter: {},
+        filter: {
+          workspaceId,
+        },
         page: {},
       },
     },
@@ -322,7 +327,7 @@ export default function InvoicesPage() {
           setCreateDialogOpen(false);
           refetch();
         }}
-        workspaceId={useParams().workspace_id as string}
+        workspaceId={workspaceId}
       />
     </>
   );
