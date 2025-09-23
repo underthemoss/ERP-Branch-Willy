@@ -56,6 +56,15 @@ export const CONTACT_SELECTOR_LIST = graphql(`
           name
           website
           profilePicture
+          brand {
+            logos {
+              type
+              theme
+              formats {
+                src
+              }
+            }
+          }
           employees {
             items {
               id
@@ -332,10 +341,78 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
     props: TreeItemProps,
     ref: React.Ref<HTMLLIElement>,
   ) {
+    const contact = contacts.find((c) => c.id === props.itemId);
+
+    // Get business branding for business contacts
+    const businessLogo =
+      contact?.__typename === "BusinessContact"
+        ? contact.brand?.logos?.find((l) => l?.type === "logo")?.formats?.[0]?.src
+        : null;
+
+    const logoTheme =
+      contact?.__typename === "BusinessContact"
+        ? contact.brand?.logos?.find((l) => l?.type === "logo")?.theme
+        : null;
+
+    // Custom label with avatar
+    const labelWithAvatar = (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Avatar
+          src={businessLogo || contact?.profilePicture || undefined}
+          sx={{
+            width: 24,
+            height: 24,
+            bgcolor: businessLogo
+              ? logoTheme === "dark"
+                ? "white"
+                : logoTheme === "light"
+                  ? "grey.900"
+                  : "white"
+              : contact?.__typename === "BusinessContact"
+                ? "primary.main"
+                : "grey.500",
+            border: logoTheme === "light" ? "1px solid" : "none",
+            borderColor: "grey.300",
+            "& img": {
+              objectFit: "contain",
+            },
+            fontSize: "10px",
+            fontWeight: "bold",
+          }}
+        >
+          {!businessLogo && !contact?.profilePicture && (
+            <>
+              {contact?.__typename === "PersonContact" ? (
+                <PersonIcon sx={{ fontSize: 14 }} />
+              ) : contact?.__typename === "BusinessContact" ? (
+                contact.name
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+              ) : (
+                "?"
+              )}
+            </>
+          )}
+        </Avatar>
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          <Typography variant="body2">{props.label}</Typography>
+          {contact?.__typename === "PersonContact" && contact.email && (
+            <Typography variant="caption" color="text.secondary">
+              {contact.email}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    );
+
     return (
       <TreeItem
         {...props}
         ref={ref}
+        label={labelWithAvatar}
         slots={{
           content: CustomContent,
         }}
@@ -354,6 +431,17 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
         (() => {
           const selectedContact = contacts.find((c) => c.id === contactId);
 
+          // Get business branding for business contacts
+          const businessLogo =
+            selectedContact?.__typename === "BusinessContact"
+              ? selectedContact.brand?.logos?.find((l) => l?.type === "logo")?.formats?.[0]?.src
+              : null;
+
+          const logoTheme =
+            selectedContact?.__typename === "BusinessContact"
+              ? selectedContact.brand?.logos?.find((l) => l?.type === "logo")?.theme
+              : null;
+
           // Format the label for the chip
           let chipLabel = "Unknown";
           if (selectedContact) {
@@ -366,22 +454,56 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
             }
           }
 
+          // Create avatar component for the chip icon
+          const avatarIcon = (
+            <Avatar
+              src={businessLogo || selectedContact?.profilePicture || undefined}
+              sx={{
+                width: 24,
+                height: 24,
+                bgcolor: businessLogo
+                  ? logoTheme === "dark"
+                    ? "white"
+                    : logoTheme === "light"
+                      ? "grey.900"
+                      : "white"
+                  : selectedContact?.__typename === "BusinessContact"
+                    ? "primary.main"
+                    : "grey.500",
+                border: logoTheme === "light" ? "1px solid" : "none",
+                borderColor: "grey.300",
+                "& img": {
+                  objectFit: "contain",
+                },
+                fontSize: "12px",
+                fontWeight: "bold",
+              }}
+            >
+              {!businessLogo && !selectedContact?.profilePicture && (
+                <>
+                  {selectedContact?.__typename === "PersonContact" ? (
+                    <PersonIcon sx={{ fontSize: 16 }} />
+                  ) : selectedContact?.__typename === "BusinessContact" ? (
+                    selectedContact.name
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                  ) : (
+                    "?"
+                  )}
+                </>
+              )}
+            </Avatar>
+          );
+
           return (
             <Tooltip title={chipLabel} arrow>
               <Chip
                 size="medium"
                 variant="filled"
-                icon={
-                  <Box p={1} pt={1.5}>
-                    {selectedContact?.__typename === "PersonContact" ? (
-                      <PersonIcon />
-                    ) : selectedContact?.__typename === "BusinessContact" ? (
-                      <BusinessIcon />
-                    ) : (
-                      "?"
-                    )}
-                  </Box>
-                }
+                icon={avatarIcon}
                 label={chipLabel}
                 onDelete={() => {
                   onChange("");
@@ -394,6 +516,9 @@ export const ContactSelector: React.FC<ContactSelectorProps> = ({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                  },
+                  "& .MuiChip-icon": {
+                    ml: 0.5,
                   },
                 }}
               />
