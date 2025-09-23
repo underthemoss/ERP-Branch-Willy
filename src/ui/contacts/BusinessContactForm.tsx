@@ -1,10 +1,10 @@
 import { graphql } from "@/graphql";
+import { useNotification } from "@/providers/NotificationProvider";
 import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import { useCreateBusinessContactMutation } from "@/ui/contacts/api";
 import { BusinessNameWithBrandSearch } from "@/ui/contacts/BusinessNameWithBrandSearch";
 import { Avatar, Box, Button, Card, CardMedia, Grid, TextField, Typography } from "@mui/material";
 import { DialogProps } from "@toolpad/core";
-import { useNotifications } from "@toolpad/core/useNotifications";
 import { useParams } from "next/navigation";
 import React, { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -47,7 +47,7 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
   const [selectedBrand, setSelectedBrand] = useState<any>(null);
 
   const [createBusinessContact, { loading }] = useCreateBusinessContactMutation();
-  const notifications = useNotifications();
+  const { notifySuccess, notifyError } = useNotification();
 
   const handleBrandSelected = useCallback(
     (brand: any) => {
@@ -97,15 +97,11 @@ export function BusinessContactForm({ onClose }: Pick<DialogProps, "onClose">) {
         });
       }
 
-      notifications.show("New Business contact created!", {
-        severity: "success",
-      });
+      notifySuccess("New Business contact created!");
       onClose();
     } catch (error) {
       console.error("Error creating business contact:", error);
-      notifications.show("Failed to create business contact", {
-        severity: "error",
-      });
+      notifyError("Failed to create business contact");
       return;
     }
   };

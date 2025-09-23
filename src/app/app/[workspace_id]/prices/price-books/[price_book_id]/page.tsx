@@ -1,5 +1,6 @@
 "use client";
 
+import { useNotification } from "@/providers/NotificationProvider";
 import FileUpload from "@/ui/FileUpload";
 import {
   useDeletePriceBookByIdMutation,
@@ -23,7 +24,6 @@ import {
   Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
-import { useNotifications } from "@toolpad/core/useNotifications";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -31,7 +31,7 @@ import * as React from "react";
 export default function PriceBook() {
   const { price_book_id, workspace_id } = useParams();
   const router = useRouter();
-  const notifications = useNotifications();
+  const { notifySuccess, notifyError } = useNotification();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [deletePriceBook] = useDeletePriceBookByIdMutation();
@@ -69,10 +69,10 @@ export default function PriceBook() {
                 if (url) {
                   window.open(url, "_blank", "noopener,noreferrer");
                 } else {
-                  notifications.show("Export did not return a file URL.", { severity: "error" });
+                  notifyError("Export did not return a file URL.");
                 }
               } catch (e: any) {
-                notifications.show(e?.message || "Failed to export prices.", { severity: "error" });
+                notifyError(e?.message || "Failed to export prices.");
               }
             }}
             disabled={exporting || isLoading}
@@ -405,7 +405,7 @@ export default function PriceBook() {
             router.push(`/app/${workspace_id}/prices/price-books`);
           } catch (err) {
             setDeleting(false);
-            notifications.show("Failed to delete price book.", { severity: "error" });
+            notifyError("Failed to delete price book.");
           }
         }}
         deleting={deleting}
@@ -425,7 +425,7 @@ export default function PriceBook() {
             helperText="Accepted format: .csv"
             onUploadSuccess={async ({ fileId }) => {
               if (!fileId) {
-                notifications.show("Upload failed to create a file record.", { severity: "error" });
+                notifyError("Upload failed to create a file record.");
                 return;
               }
               try {
@@ -435,16 +435,12 @@ export default function PriceBook() {
                 const imported = res.data?.importPrices?.imported ?? 0;
                 const failed = res.data?.importPrices?.failed ?? 0;
                 setImportDialogOpen(false);
-                notifications.show(`Import complete. Imported: ${imported}, Failed: ${failed}`, {
-                  severity: "success",
-                });
+                notifySuccess(`Import complete. Imported: ${imported}, Failed: ${failed}`);
               } catch (err: any) {
-                notifications.show(err?.message || "Failed to import prices.", {
-                  severity: "error",
-                });
+                notifyError(err?.message || "Failed to import prices.");
               }
             }}
-            onError={(e) => notifications.show(e.message, { severity: "error" })}
+            onError={(e) => notifyError(e.message)}
           />
         </DialogContent>
         <DialogActions>
