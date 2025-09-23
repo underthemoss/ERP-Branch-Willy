@@ -53,17 +53,7 @@ jobs:
           - Commit Link
           - Limerick
 
-          Use simple plain text formatting with emojis.
-
-          Formatting with Slack mrkdwn
-          Use *bold*, _italic_, ~strikethrough~.
-          Use `inline code` or triple backticks for code blocks.
-          Use > at the start of a line for blockquotes.
-          Use - or 1. with a space for lists.
-          Use <https://example.com|custom text> for links.
-          Use <@U12345> to mention a user, <#C12345> for a channel.
-          Do not use Markdown headers (# Heading) — Slack doesn’t support them.
-          No tables, images, or advanced layouts — only text formatting.
+          Use simple plain text formatting with emojis. MARK DOWN IS NOT SUPPORTED
 
           Include the author name: $COMMIT_AUTHOR
           Include a link to the commit: https://github.com/EquipmentShare/es-erp/commit/$COMMIT_SHA
@@ -75,7 +65,7 @@ jobs:
           cat release_note.txt
 
       - name: Post to Slack
-        if: true
+        if: false
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
