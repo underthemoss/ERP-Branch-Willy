@@ -1,13 +1,25 @@
 "use client";
 
+import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
-import { Add, ArrowForward, Business, HourglassEmpty, PersonAdd } from "@mui/icons-material";
+import { useAuth0 } from "@auth0/auth0-react";
+import {
+  Add,
+  AdminPanelSettings,
+  ArrowForward,
+  Business,
+  HourglassEmpty,
+  Logout,
+  PersonAdd,
+} from "@mui/icons-material";
 import {
   alpha,
+  Avatar,
   Box,
   Button,
   CircularProgress,
   Container,
+  Divider,
   List,
   ListItem,
   ListItemButton,
@@ -18,6 +30,7 @@ import {
   useTheme,
 } from "@mui/material";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { CreateWorkspaceFlow } from "./CreateWorkspaceFlow";
 
@@ -31,6 +44,8 @@ export function WorkspaceSelectionScreen() {
     isLoadingWorkspaces,
     isLoadingJoinableWorkspaces,
   } = useWorkspace();
+  const { user } = useAuth0ErpUser();
+  const { logout } = useAuth0();
   const [showCreateFlow, setShowCreateFlow] = useState(false);
 
   const handleWorkspaceCreated = (workspaceId: string) => {
@@ -409,6 +424,93 @@ export function WorkspaceSelectionScreen() {
               </List>
             )}
           </Paper>
+
+          {/* User Profile Card */}
+          {user && (
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 3,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    src={user.picture}
+                    alt={user.name || user.email}
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      bgcolor: user.picture ? "transparent" : "primary.main",
+                    }}
+                  >
+                    {!user.picture && (user.name || user.email || "U").charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                      {user.name || "User"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {user.email}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Logout />}
+                  onClick={() =>
+                    logout({
+                      logoutParams: {
+                        returnTo: window.location.origin,
+                      },
+                    })
+                  }
+                  sx={{
+                    borderColor: alpha(theme.palette.divider, 0.3),
+                    color: "text.secondary",
+                    "&:hover": {
+                      borderColor: "error.main",
+                      color: "error.main",
+                      bgcolor: alpha(theme.palette.error.main, 0.04),
+                    },
+                  }}
+                >
+                  Logout
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {/* Admin Dashboard Link - Simple, centered link for platform admins */}
+          {user && user.isPlatformAdmin && (
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Link href="/admin" passHref style={{ textDecoration: "none" }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "primary.main",
+                    cursor: "pointer",
+                    "&:hover": {
+                      textDecoration: "underline",
+                    },
+                  }}
+                >
+                  Admin Dashboard
+                </Typography>
+              </Link>
+            </Box>
+          )}
         </Box>
       </Container>
     </Box>
