@@ -77,6 +77,61 @@ Always run these in headed mode so i can watch progress.
 
 ---
 
+## Notification System
+
+The application uses a custom notification provider built with MUI Snackbar and notistack. To display notifications in any component:
+
+### Usage
+
+```typescript
+import { useNotification } from "@/providers/NotificationProvider";
+
+function MyComponent() {
+  const { notifySuccess, notifyError, notifyWarning, notifyInfo, notify } =
+    useNotification();
+
+  // Success notification
+  notifySuccess("Operation completed successfully!");
+
+  // Error notification
+  notifyError("An error occurred");
+
+  // Warning notification
+  notifyWarning("Please review your input");
+
+  // Info notification
+  notifyInfo("New updates available");
+
+  // Custom notification with options
+  notify("Custom message", {
+    variant: "success",
+    persist: true, // Won't auto-dismiss
+    autoHideDuration: 10000, // 10 seconds
+    anchorOrigin: { vertical: "top", horizontal: "center" },
+  });
+}
+```
+
+### Key Features
+
+- **5 variants**: default, success, error, warning, info
+- **Auto-dismiss**: 5 seconds by default (customizable)
+- **Prevents duplicates**: Same messages won't stack
+- **Max 3 notifications**: Shows up to 3 at once
+- **Close button**: Every notification has a close icon
+- **Position**: Bottom-left by default (customizable)
+
+### Best Practices
+
+- Use `notifySuccess` for successful operations (saves, updates, deletes)
+- Use `notifyError` for API errors or failed operations
+- Use `notifyWarning` for validation issues or important notices
+- Use `notifyInfo` for general information
+- Keep messages concise and actionable
+- Avoid showing too many notifications at once
+
+---
+
 ## Google Maps Integration
 
 The application uses Google Maps for displaying locations, address validation, and geocoding. Maps are integrated through a centralized provider that handles script loading and configuration. To use maps in any component, import the `useGoogleMaps` hook from `@/providers/GoogleMapsProvider`. This hook provides access to the API key, map ID, loading states, and error handling. The provider is already configured at the root level, so maps will work automatically throughout the app. Components can use `@react-google-maps/api` components like `GoogleMap`, `Marker`, and `InfoWindow` directly without needing to wrap them in LoadScript. For address autocomplete, the Places API is available through the provider. Always check `isReady` from the hook before rendering map components to ensure the scripts are loaded.

@@ -8,6 +8,7 @@ import {
   useValidEnterpriseDomainLazyQuery,
 } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
+import { useNotification } from "@/providers/NotificationProvider";
 import {
   Business,
   CheckCircle,
@@ -22,7 +23,6 @@ import {
   Verified,
 } from "@mui/icons-material";
 import {
-  Alert,
   alpha,
   Avatar,
   Box,
@@ -36,7 +36,6 @@ import {
   Radio,
   RadioGroup,
   Skeleton,
-  Snackbar,
   TextField,
   Typography,
   useTheme,
@@ -135,6 +134,7 @@ interface CreateWorkspaceFlowProps {
 export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlowProps) {
   const theme = useTheme();
   const { user } = useAuth0ErpUser();
+  const { notifySuccess, notifyError } = useNotification();
   const [step, setStep] = useState<"brand" | "details" | "settings" | "creating">("brand");
 
   // GraphQL query hooks
@@ -159,10 +159,6 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
   const [domainRestriction, setDomainRestriction] = useState("");
   const [selectedBannerUrl, setSelectedBannerUrl] = useState<string | null>(null);
   const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
-
-  // Error handling state
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showError, setShowError] = useState(false);
 
   // Extract domain from user email
   const userDomain = user?.email ? user.email.split("@")[1] : "";
@@ -229,7 +225,6 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
 
   const handleCreateWorkspace = async () => {
     setStep("creating");
-    setErrorMessage(null);
 
     try {
       const { data } = await createWorkspace({
@@ -248,13 +243,13 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
       });
 
       if (data?.createWorkspace?.id) {
+        notifySuccess("Workspace created successfully!");
         onComplete(data.createWorkspace.id);
       } else {
         // Handle error case - workspace creation failed
-        setErrorMessage(
+        notifyError(
           "Failed to create workspace. Please try again or contact support if the issue persists.",
         );
-        setShowError(true);
         setStep("settings"); // Go back to last step
       }
     } catch (error: any) {
@@ -278,14 +273,9 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
         }
       }
 
-      setErrorMessage(userMessage);
-      setShowError(true);
+      notifyError(userMessage);
       setStep("settings"); // Go back to last step
     }
-  };
-
-  const handleCloseError = () => {
-    setShowError(false);
   };
 
   if (step === "creating") {
@@ -844,18 +834,6 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
           )}
         </CardContent>
       </Card>
-
-      {/* Error Snackbar */}
-      <Snackbar
-        open={showError}
-        autoHideDuration={6000}
-        onClose={handleCloseError}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert onClose={handleCloseError} severity="error" sx={{ width: "100%" }}>
-          {errorMessage}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

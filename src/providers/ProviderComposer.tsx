@@ -4,6 +4,7 @@ import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import { AuthWall } from "@/providers/AuthWall";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
+import { NotificationProvider } from "@/providers/NotificationProvider";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import React from "react";
 
@@ -27,11 +28,13 @@ export function ProviderComposer({ children }: ProviderComposerProps) {
       <AuthWall>
         <DatadogRumProvider>
           <GoogleMapsServerProvider>
-            <ApolloClientProvider api={apiUrl}>
-              <WorkspaceProvider>
-                <AppContextResolver>{children}</AppContextResolver>
-              </WorkspaceProvider>
-            </ApolloClientProvider>
+            <NotificationProvider>
+              <ApolloClientProvider api={apiUrl}>
+                <WorkspaceProvider>
+                  <AppContextResolver>{children}</AppContextResolver>
+                </WorkspaceProvider>
+              </ApolloClientProvider>
+            </NotificationProvider>
           </GoogleMapsServerProvider>
         </DatadogRumProvider>
       </AuthWall>
@@ -44,7 +47,9 @@ export function ProviderComposerNoAuth({ children }: ProviderComposerProps) {
     <Auth0ClientProvider domain={auth0Domain} clientId={auth0ClientId} audience={auth0Audience}>
       <DatadogRumProvider>
         <GoogleMapsServerProvider>
-          <ApolloClientProvider api={apiUrl}>{children}</ApolloClientProvider>
+          <NotificationProvider>
+            <ApolloClientProvider api={apiUrl}>{children}</ApolloClientProvider>
+          </NotificationProvider>
         </GoogleMapsServerProvider>
       </DatadogRumProvider>
     </Auth0ClientProvider>
