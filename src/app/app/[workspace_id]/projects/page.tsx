@@ -26,8 +26,8 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 graphql(`
-  query listTopLevelProjects {
-    listTopLevelProjects {
+  query listTopLevelProjects($workspaceId: String!) {
+    listTopLevelProjects(workspaceId: $workspaceId) {
       id
       name
       project_code
@@ -53,7 +53,9 @@ graphql(`
 `);
 
 export default function ProjectsPage() {
+  const { workspace_id } = useParams<{ workspace_id: string }>();
   const { data, loading } = useListTopLevelProjectsQuery({
+    variables: { workspaceId: workspace_id },
     fetchPolicy: "cache-and-network",
   });
 
@@ -233,7 +235,6 @@ export default function ProjectsPage() {
   ];
 
   const router = useRouter();
-  const { workspace_id } = useParams<{ workspace_id: string }>();
 
   return (
     <PageContainer>
