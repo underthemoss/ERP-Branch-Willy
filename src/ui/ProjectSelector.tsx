@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { ContactType as GqlContactType } from "@/graphql/graphql";
 import { useProjectSelectorListSelectorQuery } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import FolderIcon from "@mui/icons-material/Folder";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
@@ -34,8 +35,8 @@ import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 import React, { useCallback, useMemo, useState } from "react";
 
 export const CONTACT_SELECTOR_LIST = graphql(`
-  query ProjectSelectorListSelector {
-    listProjects {
+  query ProjectSelectorListSelector($workspaceId: String!) {
+    listProjects(workspaceId: $workspaceId) {
       parent_project
       id
       name
@@ -62,8 +63,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ projectId, onC
   const [expanded, setExpanded] = useState<string[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const workspaceId = useSelectedWorkspaceId();
 
   const { data, loading, error } = useProjectSelectorListSelectorQuery({
+    variables: { workspaceId: workspaceId || "" },
+    skip: !workspaceId,
     fetchPolicy: "cache-and-network",
   });
 

@@ -4,8 +4,8 @@ import { graphql } from "@/graphql";
 export { useListProjectsQuery } from "@/graphql/hooks";
 
 graphql(`
-  query ListProjects {
-    listProjects {
+  query ListProjects($workspaceId: String!) {
+    listProjects(workspaceId: $workspaceId) {
       id
       name
       project_code

@@ -233,6 +233,7 @@ export default function EditProjectPage() {
               contact_id: c.id,
               relation_to_project: c.relationToProject as ProjectContactRelationEnum,
             })),
+            workspaceId: workspace_id,
           },
         },
       });

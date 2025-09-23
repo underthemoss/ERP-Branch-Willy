@@ -1644,6 +1644,8 @@ enum PermissionType {
   ERP_PRICEBOOK_PRICE_UPDATE
   ERP_PRICEBOOK_READ
   ERP_PRICEBOOK_UPDATE
+  ERP_PROJECT_READ
+  ERP_PROJECT_UPDATE
   ERP_PURCHASE_ORDER_READ
   ERP_PURCHASE_ORDER_UPDATE
   ERP_SALES_ORDER_READ
@@ -1654,9 +1656,11 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_INVOICES
   ERP_WORKSPACE_CAN_MANAGE_PRICES
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS
+  ERP_WORKSPACE_CAN_MANAGE_PROJECTS
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
   ERP_WORKSPACE_CAN_READ_INVOICES
+  ERP_WORKSPACE_CAN_READ_PROJECTS
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS
   ERP_WORKSPACE_CREATE_INTAKE_FORM
@@ -1796,6 +1800,7 @@ type Project {
   updated_at: String!
   updated_by: String!
   updated_by_user: User
+  workspaceId: String!
 }
 
 type ProjectContact {
@@ -1855,6 +1860,7 @@ input ProjectInput {
   Project status. Allowed values: CONCEPT_OPPORTUNITY, BIDDING_TENDERING, PRE_CONSTRUCTION, MOBILIZATION, ACTIVE_CONSTRUCTION, SUBSTANTIAL_COMPLETION, CLOSE_OUT, WARRANTY_MAINTENANCE, ARCHIVED_CLOSED
   """
   status: ProjectStatusEnum
+  workspaceId: String!
 }
 
 type ProjectStatusCode {
@@ -2056,7 +2062,7 @@ type Query {
   Lists all possible project status codes and their descriptions, including recommended usage and stage meaning.
   """
   listProjectStatusCodes: [ProjectStatusCode]
-  listProjects: [Project]
+  listProjects(workspaceId: String!): [Project]
   listProjectsByParentProjectId(parent_project: String!): [Project]
   listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
@@ -2077,7 +2083,7 @@ type Query {
   listScopeOfWorkCodes: [ScopeOfWorkCode]
 
   """Lists all top-level projects (where parent_project is null)."""
-  listTopLevelProjects: [Project]
+  listTopLevelProjects(workspaceId: String!): [Project]
   listTransactions(workspaceId: ID!): ListTransactionResult!
   listUserResourcePermissions(resourceId: ID!, resourceType: ResourceType!): ListUserPermissionsResult!
   listWorkflowConfigurations(page: ListWorkflowConfigurationsPage): ListWorkflowConfigurationsResult
@@ -2333,6 +2339,7 @@ enum ResourceType {
   ERP_INVOICE
   ERP_PRICEBOOK
   ERP_PRICEBOOK_PRICE
+  ERP_PROJECT
   ERP_PURCHASE_ORDER
   ERP_SALES_ORDER
   ERP_USER
@@ -2995,6 +3002,8 @@ type UserPermissionMap {
   ERP_PRICEBOOK_PRICE_UPDATE: Boolean
   ERP_PRICEBOOK_READ: Boolean
   ERP_PRICEBOOK_UPDATE: Boolean
+  ERP_PROJECT_READ: Boolean
+  ERP_PROJECT_UPDATE: Boolean
   ERP_PURCHASE_ORDER_READ: Boolean
   ERP_PURCHASE_ORDER_UPDATE: Boolean
   ERP_SALES_ORDER_READ: Boolean
@@ -3005,9 +3014,11 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_INVOICES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PRICE_BOOKS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_INVOICES: Boolean
+  ERP_WORKSPACE_CAN_READ_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean

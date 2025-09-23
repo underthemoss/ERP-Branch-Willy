@@ -162,6 +162,7 @@ export default function CreateProjectPage() {
               contact_id: c.id,
               relation_to_project: c.relationToProject as ProjectContactRelationEnum,
             })),
+            workspaceId: params.workspace_id,
           },
         },
       });
