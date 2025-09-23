@@ -65,7 +65,7 @@ jobs:
           cat release_note.txt
 
       - name: Post to Slack
-        if: false
+        if: true
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |

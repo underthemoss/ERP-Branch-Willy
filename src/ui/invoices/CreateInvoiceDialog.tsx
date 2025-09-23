@@ -53,6 +53,7 @@ export default function CreateInvoiceDialog({
         input: {
           buyerId,
           sellerId,
+          workspaceId,
         },
       },
     });
