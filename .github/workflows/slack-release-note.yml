@@ -57,7 +57,7 @@ jobs:
 
           Formatting with Slack mrkdwn
           Use *bold*, _italic_, ~strikethrough~.
-          Use `inline code` or triple backticks (```) for code blocks.
+          Use `inline code` or triple backticks for code blocks.
           Use > at the start of a line for blockquotes.
           Use - or 1. with a space for lists.
           Use <https://example.com|custom text> for links.
