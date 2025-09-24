@@ -53,7 +53,7 @@ export const WorkspaceAccessIcon: React.FC<WorkspaceAccessIconProps> = ({
   const normalized = normalizeAccessType(accessType);
   if (!normalized) return null;
 
-  const label = normalized === "SAME_DOMAIN" ? "Same domain workspace" : "Invite-only workspace";
+  const label = normalized === "SAME_DOMAIN" ? "Shared workspace" : "Invite-only workspace";
 
   const icon =
     normalized === "SAME_DOMAIN" ? (
