@@ -5,6 +5,7 @@ import {
   useSelectedWorkspaceId,
   useWorkspace,
 } from "@/providers/WorkspaceProvider";
+import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
@@ -288,20 +289,27 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
               minWidth: 0,
             }}
           >
-            <Typography
-              noWrap
-              sx={{
-                fontFamily: "Inter",
-                fontSize: "14px",
-                fontStyle: "normal",
-                fontWeight: "500",
-                lineHeight: "18px",
-                letterSpacing: "-0.2px",
-                color: "#2F2B43",
-              }}
-            >
-              {currentWorkspace?.name}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+              <Typography
+                noWrap
+                sx={{
+                  fontFamily: "Inter",
+                  fontSize: "14px",
+                  fontStyle: "normal",
+                  fontWeight: "500",
+                  lineHeight: "18px",
+                  letterSpacing: "-0.2px",
+                  color: "#2F2B43",
+                }}
+              >
+                {currentWorkspace?.name}
+              </Typography>
+              <WorkspaceAccessIcon
+                accessType={currentWorkspace?.accessType}
+                size={14}
+                color="#8B919E"
+              />
+            </Box>
 
             <Typography
               noWrap
@@ -556,19 +564,26 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
                       )}
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        noWrap
-                        sx={{
-                          fontFamily: "Inter",
-                          fontSize: "13px",
-                          fontWeight: workspace.id === currentWorkspaceId ? 600 : 500,
-                          lineHeight: "16px",
-                          letterSpacing: "-0.1px",
-                          color: workspace.id === currentWorkspaceId ? "primary.main" : "#2F2B43",
-                        }}
-                      >
-                        {workspace.name}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+                        <Typography
+                          noWrap
+                          sx={{
+                            fontFamily: "Inter",
+                            fontSize: "13px",
+                            fontWeight: workspace.id === currentWorkspaceId ? 600 : 500,
+                            lineHeight: "16px",
+                            letterSpacing: "-0.1px",
+                            color: workspace.id === currentWorkspaceId ? "primary.main" : "#2F2B43",
+                          }}
+                        >
+                          {workspace.name}
+                        </Typography>
+                        <WorkspaceAccessIcon
+                          accessType={workspace.accessType}
+                          size={14}
+                          color={workspace.id === currentWorkspaceId ? "primary.main" : "#8B919E"}
+                        />
+                      </Box>
                       {workspace.description && (
                         <Typography
                           noWrap

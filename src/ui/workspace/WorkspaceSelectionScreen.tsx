@@ -2,6 +2,7 @@
 
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Add,
@@ -206,9 +207,16 @@ export function WorkspaceSelectionScreen() {
 
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {workspace.name || "Unnamed Workspace"}
-                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {workspace.name || "Unnamed Workspace"}
+                              </Typography>
+                              <WorkspaceAccessIcon
+                                accessType={workspace.accessType}
+                                size={16}
+                                color="text.secondary"
+                              />
+                            </Box>
                           }
                           secondary={
                             <Box>
@@ -335,9 +343,16 @@ export function WorkspaceSelectionScreen() {
 
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {workspace.name || "Unnamed Workspace"}
-                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {workspace.name || "Unnamed Workspace"}
+                              </Typography>
+                              <WorkspaceAccessIcon
+                                accessType={workspace.accessType}
+                                size={16}
+                                color="info.main"
+                              />
+                            </Box>
                           }
                           secondary={
                             <Box>
