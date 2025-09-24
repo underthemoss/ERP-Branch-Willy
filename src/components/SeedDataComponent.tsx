@@ -1,16 +1,17 @@
 "use client";
 
+import { graphql } from "@/graphql";
 import {
   ProjectContactRelationEnum,
   ProjectStatusEnum,
   ScopeOfWorkEnum,
-  useCreatePurchaseOrderMutation,
-  useCreateSalesOrderMutation,
-  useSeedScriptCreateBusinessContactMutation,
-  useSeedScriptCreatePersonContactMutation,
-  useSeedScriptCreatePriceBookMutation,
-  useSeedScriptCreateProjectMutation,
-  useSeedScriptCreateWorkspaceMutation,
+  useSeedCreateBusinessContactMutation,
+  useSeedCreatePersonContactMutation,
+  useSeedCreatePriceBookMutation,
+  useSeedCreateProjectMutation,
+  useSeedCreatePurchaseOrderMutation,
+  useSeedCreateSalesOrderMutation,
+  useSeedCreateWorkspaceMutation,
   WorkspaceAccessType,
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
@@ -36,6 +37,116 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useState } from "react";
+
+// Define seed mutations for codegen
+const SEED_CREATE_WORKSPACE_MUTATION = graphql(`
+  mutation SeedCreateWorkspace(
+    $name: String!
+    $accessType: WorkspaceAccessType!
+    $description: String
+    $archived: Boolean
+  ) {
+    createWorkspace(
+      name: $name
+      accessType: $accessType
+      description: $description
+      archived: $archived
+    ) {
+      id
+      name
+      description
+      accessType
+      archived
+    }
+  }
+`);
+
+const SEED_CREATE_BUSINESS_CONTACT_MUTATION = graphql(`
+  mutation SeedCreateBusinessContact($input: BusinessContactInput!) {
+    createBusinessContact(input: $input) {
+      id
+      name
+      address
+      phone
+      website
+      notes
+      workspaceId
+    }
+  }
+`);
+
+const SEED_CREATE_PERSON_CONTACT_MUTATION = graphql(`
+  mutation SeedCreatePersonContact($input: PersonContactInput!) {
+    createPersonContact(input: $input) {
+      id
+      name
+      email
+      phone
+      role
+      notes
+      businessId
+      workspaceId
+    }
+  }
+`);
+
+const SEED_CREATE_PROJECT_MUTATION = graphql(`
+  mutation SeedCreateProject($input: ProjectInput!) {
+    createProject(input: $input) {
+      id
+      name
+      project_code
+      description
+      status
+      scope_of_work
+      workspaceId
+      project_contacts {
+        contact_id
+        relation_to_project
+      }
+    }
+  }
+`);
+
+const SEED_CREATE_PRICE_BOOK_MUTATION = graphql(`
+  mutation SeedCreatePriceBook($input: CreatePriceBookInput!) {
+    createPriceBook(input: $input) {
+      id
+      name
+      location
+      notes
+      isDefault
+      businessContactId
+      projectId
+      workspaceId
+    }
+  }
+`);
+
+const SEED_CREATE_SALES_ORDER_MUTATION = graphql(`
+  mutation SeedCreateSalesOrder($input: SalesOrderInput!) {
+    createSalesOrder(input: $input) {
+      id
+      purchase_order_number
+      sales_order_number
+      buyer_id
+      project_id
+      workspace_id
+    }
+  }
+`);
+
+const SEED_CREATE_PURCHASE_ORDER_MUTATION = graphql(`
+  mutation SeedCreatePurchaseOrder($input: PurchaseOrderInput!) {
+    createPurchaseOrder(input: $input) {
+      id
+      purchase_order_number
+      seller_id
+      project_id
+      workspace_id
+    }
+  }
+`);
 
 interface SeedStep {
   id: string;
@@ -73,13 +184,13 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
   ]);
 
   // Mutations
-  const [createWorkspace] = useSeedScriptCreateWorkspaceMutation();
-  const [createBusinessContact] = useSeedScriptCreateBusinessContactMutation();
-  const [createPersonContact] = useSeedScriptCreatePersonContactMutation();
-  const [createProject] = useSeedScriptCreateProjectMutation();
-  const [createPriceBook] = useSeedScriptCreatePriceBookMutation();
-  const [createSalesOrder] = useCreateSalesOrderMutation();
-  const [createPurchaseOrder] = useCreatePurchaseOrderMutation();
+  const [createWorkspace] = useSeedCreateWorkspaceMutation();
+  const [createBusinessContact] = useSeedCreateBusinessContactMutation();
+  const [createPersonContact] = useSeedCreatePersonContactMutation();
+  const [createProject] = useSeedCreateProjectMutation();
+  const [createPriceBook] = useSeedCreatePriceBookMutation();
+  const [createSalesOrder] = useSeedCreateSalesOrderMutation();
+  const [createPurchaseOrder] = useSeedCreatePurchaseOrderMutation();
 
   const updateStepStatus = (stepId: string, status: SeedStep["status"], errorMessage?: string) => {
     setSteps((prev) =>
