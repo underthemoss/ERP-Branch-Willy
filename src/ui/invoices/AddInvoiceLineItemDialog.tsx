@@ -144,6 +144,7 @@ export default function AddInvoiceLineItemDialog({
   // Prepare filter for unallocated charges (not yet invoiced)
   const chargesFilter = {
     invoiceId: null,
+    workspaceId: workspaceId,
   };
 
   const {
@@ -604,6 +605,7 @@ export default function AddInvoiceLineItemDialog({
                       amountInCents: Math.round(Number(miscAmount) * 100),
                       chargeType: ChargeType.Sale,
                       contactId: buyerId,
+                      workspaceId: workspaceId,
                     },
                   },
                 });
