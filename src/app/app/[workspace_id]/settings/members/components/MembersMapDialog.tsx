@@ -133,7 +133,6 @@ export default function MembersMapDialog({ open, onClose, members }: MembersMapD
   };
 
   const getRoleColor = (role: string) => {
-    debugger;
     switch (role) {
       case "admin":
         return "primary";
