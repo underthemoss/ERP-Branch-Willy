@@ -237,8 +237,8 @@ export const SetExpectedRentalEndDate = graphql(`
 `);
 
 export const ListChargesForFulfilment = graphql(`
-  query ListChargesForFulfilment($fulfilmentId: ID!) {
-    listCharges(filter: { fulfilmentId: $fulfilmentId }) {
+  query ListChargesForFulfilment($fulfilmentId: ID!, $workspaceId: ID!) {
+    listCharges(filter: { fulfilmentId: $fulfilmentId, workspaceId: $workspaceId }) {
       items {
         id
         amountInCents

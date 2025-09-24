@@ -51,7 +51,7 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
     loading: chargesLoading,
     refetch: refetchCharges,
   } = useListChargesForFulfilmentQuery({
-    variables: { fulfilmentId: fulfillmentId },
+    variables: { fulfilmentId: fulfillmentId, workspaceId: workspace_id },
   });
   const charges = (chargesData?.listCharges?.items || []).slice().sort((a, b) => {
     const aDate = a.billingPeriodEnd ? new Date(a.billingPeriodEnd).getTime() : 0;

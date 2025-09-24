@@ -520,6 +520,7 @@ type Charge {
   salesOrderId: ID
   salesOrderLineItem: SalesOrderLineItem
   salesOrderLineItemId: ID
+  workspaceId: ID!
 }
 
 type ChargePage {
@@ -560,6 +561,7 @@ input CreateChargeInput {
   purchaseOrderNumber: ID
   salesOrderId: ID
   salesOrderLineItemId: ID
+  workspaceId: ID!
 }
 
 input CreateFulfilmentReservationInput {
@@ -1213,6 +1215,7 @@ input ListChargesFilter {
   projectId: ID
   purchaseOrderNumber: ID
   salesOrderId: ID
+  workspaceId: ID!
 }
 
 input ListContactsFilter {
@@ -1632,6 +1635,9 @@ enum PaginationOrder {
 }
 
 enum PermissionType {
+  ERP_CHARGE_DELETE
+  ERP_CHARGE_READ
+  ERP_CHARGE_UPDATE
   ERP_CONTACT_DELETE
   ERP_CONTACT_READ
   ERP_CONTACT_UPDATE
@@ -1660,6 +1666,7 @@ enum PermissionType {
   ERP_SALES_ORDER_UPDATE
   ERP_WORKSPACE_ADD_USER
   ERP_WORKSPACE_CAN_JOIN
+  ERP_WORKSPACE_CAN_MANAGE_CHARGES
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
@@ -1669,6 +1676,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
+  ERP_WORKSPACE_CAN_READ_CHARGES
   ERP_WORKSPACE_CAN_READ_CONTACTS
   ERP_WORKSPACE_CAN_READ_INVOICES
   ERP_WORKSPACE_CAN_READ_PROJECTS
@@ -2043,7 +2051,7 @@ type Query {
   invoiceById(id: String!): Invoice
   listAssetSchedules(asset_id: String, limit: Int = 20, offset: Int = 0, project_id: String): AssetScheduleListResult
   listAssets(page: ListAssetsPage): ListAssetsResult
-  listCharges(filter: ListChargesFilter, page: PageInfoInput): ChargePage
+  listCharges(filter: ListChargesFilter!, page: PageInfoInput): ChargePage
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter!, page: ListFulfilmentsPage): ListFulfilmentsResult
@@ -2345,6 +2353,7 @@ type ResourceMapResource {
 }
 
 enum ResourceType {
+  ERP_CHARGE
   ERP_CONTACT
   ERP_DOMAIN
   ERP_FULFILMENT
@@ -2999,6 +3008,9 @@ type UserPermission {
 }
 
 type UserPermissionMap {
+  ERP_CHARGE_DELETE: Boolean
+  ERP_CHARGE_READ: Boolean
+  ERP_CHARGE_UPDATE: Boolean
   ERP_CONTACT_DELETE: Boolean
   ERP_CONTACT_READ: Boolean
   ERP_CONTACT_UPDATE: Boolean
@@ -3027,6 +3039,7 @@ type UserPermissionMap {
   ERP_SALES_ORDER_UPDATE: Boolean
   ERP_WORKSPACE_ADD_USER: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_CHARGES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
@@ -3036,6 +3049,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
+  ERP_WORKSPACE_CAN_READ_CHARGES: Boolean
   ERP_WORKSPACE_CAN_READ_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_READ_INVOICES: Boolean
   ERP_WORKSPACE_CAN_READ_PROJECTS: Boolean
@@ -3135,6 +3149,8 @@ Roles a user can have in a workspace (auto-generated from SpiceDB schema)
 enum WorkspaceUserRole {
   admin
   all_resources_reader
+  charge_manager
+  charge_reader
   contact_manager
   contact_reader
   intake_form_submissions_manager
@@ -3143,6 +3159,7 @@ enum WorkspaceUserRole {
   intake_forms_reader
   invoice_manager
   invoice_reader
+  member
   price_books_manager
   price_books_reader
   project_manager
