@@ -9,8 +9,6 @@ import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import BuildIcon from "@mui/icons-material/Build";
-import BusinessIcon from "@mui/icons-material/Business";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
@@ -26,7 +24,6 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MailIcon from "@mui/icons-material/Mail";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import PostAddIcon from "@mui/icons-material/PostAdd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
@@ -49,7 +46,6 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 
@@ -139,39 +135,11 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       testId: "nav-rental-fulfillment",
     },
     {
-      text: "Tickets",
-      href: `/app/${currentWorkspace?.id}/work-orders`,
-      icon: <BuildIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/work-orders`,
-      testId: "nav-work-orders",
-    },
-    {
-      text: "Transactions",
-      href: `/app/${currentWorkspace?.id}/transactions`,
-      icon: <ReceiptLongIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/transactions`,
-      testId: "nav-transactions",
-    },
-    {
       text: "Invoices",
       href: `/app/${currentWorkspace?.id}/invoices`,
       icon: <ReceiptLongIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/invoices`,
       testId: "nav-invoices",
-    },
-    {
-      text: "Assignments",
-      href: `/app/${currentWorkspace?.id}/assignments`,
-      icon: <PostAddIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/assignments`,
-      testId: "nav-assignments",
-    },
-    {
-      text: "Assets",
-      href: `/app/${currentWorkspace?.id}/assets`,
-      icon: <DescriptionOutlinedIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/assets`,
-      testId: "nav-assets",
     },
     {
       text: "Inventory",
