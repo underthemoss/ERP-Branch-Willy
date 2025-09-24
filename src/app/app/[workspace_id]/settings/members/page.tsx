@@ -30,7 +30,7 @@ graphql(`
     listWorkspaceMembers(workspaceId: $workspaceId) {
       items {
         userId
-        role
+        roles
         user {
           id
           email
@@ -133,7 +133,7 @@ export default function WorkspaceMembersPage() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case "ADMIN":
+      case "admin":
         return "primary";
       case "MEMBER":
         return "success";
@@ -146,7 +146,7 @@ export default function WorkspaceMembersPage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "ADMIN":
+      case "admin":
         return "Admin";
       case "MEMBER":
         return "Member";
@@ -257,12 +257,23 @@ export default function WorkspaceMembersPage() {
                       <Typography variant="body2">{user?.email || "No email"}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={getRoleLabel(member.role)}
-                        color={getRoleColor(member.role)}
-                        size="small"
-                        sx={{ fontWeight: 500 }}
-                      />
+                      <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                        {member.roles && member.roles.length > 0 ? (
+                          member.roles.map((role: string) => (
+                            <Chip
+                              key={role}
+                              label={getRoleLabel(role)}
+                              color={getRoleColor(role)}
+                              size="small"
+                              sx={{ fontWeight: 500 }}
+                            />
+                          ))
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No roles assigned
+                          </Typography>
+                        )}
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{locationDisplay}</Typography>

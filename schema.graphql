@@ -890,10 +890,12 @@ type IntakeForm {
   isActive: Boolean!
   isDeleted: Boolean!
   isPublic: Boolean!
+  pricebook: PriceBook
   pricebookId: ID
   project: IntakeFormProject
   projectId: ID
-  sharedWithEmails: [String!]!
+  sharedWithUserIds: [ID!]!
+  sharedWithUsers: [User]!
   updatedAt: DateTime!
   updatedBy: String!
   workspace: IntakeFormWorkspace
@@ -1496,12 +1498,14 @@ type Mutation {
   exportPrices(priceBookId: ID!): File
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
   importPrices(fileId: ID!, priceBookId: ID!): ImportPricesResult
+  inviteUserToWorkspace(email: String!, roles: [WorkspaceUserRole!]!, workspaceId: String!): WorkspaceMember
   joinWorkspace(workspaceId: String!): Workspace
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   refreshBrand(brandId: String!): Brand
   removeFileFromEntity(file_id: String!): File!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
+  removeUserFromWorkspace(userId: String!, workspaceId: String!): Boolean
   renameFile(file_id: String!, new_file_name: String!): File!
   resetSequenceNumber(newValue: Int = 1, templateId: String!): Boolean
   runNightlyRentalChargesJob: [RentalFulfilment!]!
@@ -1571,6 +1575,7 @@ type Mutation {
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   updateWorkspaceAccessType(accessType: WorkspaceAccessType!, workspaceId: String!): Workspace
   updateWorkspaceSettings(bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String, workspaceId: String!): Workspace
+  updateWorkspaceUserRoles(roles: [WorkspaceUserRole!]!, userId: String!, workspaceId: String!): WorkspaceMember
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
 }
 
@@ -1627,6 +1632,9 @@ enum PaginationOrder {
 }
 
 enum PermissionType {
+  ERP_CONTACT_DELETE
+  ERP_CONTACT_READ
+  ERP_CONTACT_UPDATE
   ERP_DOMAIN_IS_MEMBER
   ERP_FULFILMENT_DELETE
   ERP_FULFILMENT_READ
@@ -1650,7 +1658,9 @@ enum PermissionType {
   ERP_PURCHASE_ORDER_UPDATE
   ERP_SALES_ORDER_READ
   ERP_SALES_ORDER_UPDATE
+  ERP_WORKSPACE_ADD_USER
   ERP_WORKSPACE_CAN_JOIN
+  ERP_WORKSPACE_CAN_MANAGE_CONTACTS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_MANAGE_INVOICES
@@ -1659,6 +1669,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
+  ERP_WORKSPACE_CAN_READ_CONTACTS
   ERP_WORKSPACE_CAN_READ_INVOICES
   ERP_WORKSPACE_CAN_READ_PROJECTS
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS
@@ -1672,6 +1683,8 @@ enum PermissionType {
   ERP_WORKSPACE_READ_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_READ_PRICES
   ERP_WORKSPACE_READ_PRICE_BOOKS
+  ERP_WORKSPACE_REMOVE_USER
+  ERP_WORKSPACE_UPDATE_USER_ROLES
 }
 
 type PersonContact {
@@ -2332,6 +2345,7 @@ type ResourceMapResource {
 }
 
 enum ResourceType {
+  ERP_CONTACT
   ERP_DOMAIN
   ERP_FULFILMENT
   ERP_INTAKE_FORM
@@ -2985,6 +2999,9 @@ type UserPermission {
 }
 
 type UserPermissionMap {
+  ERP_CONTACT_DELETE: Boolean
+  ERP_CONTACT_READ: Boolean
+  ERP_CONTACT_UPDATE: Boolean
   ERP_DOMAIN_IS_MEMBER: Boolean
   ERP_FULFILMENT_DELETE: Boolean
   ERP_FULFILMENT_READ: Boolean
@@ -3008,7 +3025,9 @@ type UserPermissionMap {
   ERP_PURCHASE_ORDER_UPDATE: Boolean
   ERP_SALES_ORDER_READ: Boolean
   ERP_SALES_ORDER_UPDATE: Boolean
+  ERP_WORKSPACE_ADD_USER: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INVOICES: Boolean
@@ -3017,6 +3036,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
+  ERP_WORKSPACE_CAN_READ_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_READ_INVOICES: Boolean
   ERP_WORKSPACE_CAN_READ_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS: Boolean
@@ -3030,6 +3050,8 @@ type UserPermissionMap {
   ERP_WORKSPACE_READ_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_READ_PRICES: Boolean
   ERP_WORKSPACE_READ_PRICE_BOOKS: Boolean
+  ERP_WORKSPACE_REMOVE_USER: Boolean
+  ERP_WORKSPACE_UPDATE_USER_ROLES: Boolean
 }
 
 type ValidEnterpriseDomainResult {
@@ -3096,15 +3118,39 @@ enum WorkspaceAccessType {
 }
 
 type WorkspaceMember {
-  role: WorkspaceMemberRole!
+  roles: [WorkspaceUserRole!]!
   user: User
   userId: String!
 }
 
-enum WorkspaceMemberRole {
-  ADMIN
-  INVITED
-  MEMBER
+type WorkspaceRoleInfo {
+  description: String
+  label: String
+  role: WorkspaceUserRole!
+}
+
+"""
+Roles a user can have in a workspace (auto-generated from SpiceDB schema)
+"""
+enum WorkspaceUserRole {
+  admin
+  all_resources_reader
+  contact_manager
+  contact_reader
+  intake_form_submissions_manager
+  intake_form_submissions_reader
+  intake_forms_manager
+  intake_forms_reader
+  invoice_manager
+  invoice_reader
+  price_books_manager
+  price_books_reader
+  project_manager
+  project_reader
+  purchase_order_manager
+  purchase_order_reader
+  sales_order_manager
+  sales_order_reader
 }
 
 type WriteRelationshipResult {

@@ -19,7 +19,7 @@ import { useCallback, useMemo, useState } from "react";
 
 interface Member {
   userId: string;
-  role: string;
+  roles: string[];
   user?: {
     id?: string;
     email?: string;
@@ -133,8 +133,9 @@ export default function MembersMapDialog({ open, onClose, members }: MembersMapD
   };
 
   const getRoleColor = (role: string) => {
+    debugger;
     switch (role) {
-      case "ADMIN":
+      case "admin":
         return "primary";
       case "MEMBER":
         return "success";
@@ -147,7 +148,7 @@ export default function MembersMapDialog({ open, onClose, members }: MembersMapD
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "ADMIN":
+      case "admin":
         return "Admin";
       case "MEMBER":
         return "Member";
@@ -317,14 +318,23 @@ export default function MembersMapDialog({ open, onClose, members }: MembersMapD
                   </Box>
 
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                       <Person fontSize="small" color="action" />
-                      <Chip
-                        label={getRoleLabel(selectedMember.role)}
-                        color={getRoleColor(selectedMember.role)}
-                        size="small"
-                        sx={{ fontWeight: 500 }}
-                      />
+                      {selectedMember.roles && selectedMember.roles.length > 0 ? (
+                        selectedMember.roles.map((role) => (
+                          <Chip
+                            key={role}
+                            label={getRoleLabel(role)}
+                            color={getRoleColor(role)}
+                            size="small"
+                            sx={{ fontWeight: 500 }}
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          No roles assigned
+                        </Typography>
+                      )}
                     </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
