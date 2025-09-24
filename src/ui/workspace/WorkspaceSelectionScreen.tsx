@@ -1,5 +1,6 @@
 "use client";
 
+import SeedDataComponent from "@/components/SeedDataComponent";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
@@ -96,6 +97,13 @@ export function WorkspaceSelectionScreen() {
             <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: 500, mx: "auto" }}>
               Choose a workspace to continue
             </Typography>
+
+            {/* Development-only seed data button */}
+            {process.env.NODE_ENV === "development" && (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                <SeedDataComponent variant="button" />
+              </Box>
+            )}
           </Box>
 
           <Paper
