@@ -36,6 +36,7 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 // Define seed mutations for codegen
@@ -161,7 +162,9 @@ interface SeedDataComponentProps {
 
 export default function SeedDataComponent({ variant = "card" }: SeedDataComponentProps) {
   const { notifySuccess, notifyError } = useNotification();
+  const router = useRouter();
   const [isRunning, setIsRunning] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createdData, setCreatedData] = useState<{
     workspace?: any;
@@ -398,7 +401,13 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("purchaseOrder", "completed");
       notifySuccess(`Purchase Order "${purchaseOrder.purchase_order_number}" created successfully`);
 
-      notifySuccess("All seed data created successfully!");
+      notifySuccess("All seed data created successfully! Redirecting to workspace...");
+
+      // Show redirecting state and redirect to the newly created workspace after a short delay
+      setIsRedirecting(true);
+      setTimeout(() => {
+        router.push(`/app/${workspace.id}`);
+      }, 2000);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
@@ -442,13 +451,14 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
   };
 
   const handleClose = () => {
-    if (!isRunning) {
+    if (!isRunning && !isRedirecting) {
       setDialogOpen(false);
       // Reset state when closing
       setSteps((prev) =>
         prev.map((step) => ({ ...step, status: "pending", errorMessage: undefined })),
       );
       setCreatedData({});
+      setIsRedirecting(false);
     }
   };
 
@@ -480,7 +490,35 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
               <Typography variant="h6">Seed Data Generator</Typography>
             </Box>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ position: "relative" }}>
+            {/* Redirecting Overlay */}
+            {isRedirecting && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.95)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 1000,
+                  gap: 2,
+                }}
+              >
+                <CircularProgress size={48} color="primary" />
+                <Typography variant="h6" color="primary">
+                  Redirecting to new workspace...
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Please wait while we take you to your new workspace
+                </Typography>
+              </Box>
+            )}
+
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               This will create sample data including a workspace, business contact, employee,
               project, price book, sales order, and purchase order.
@@ -562,6 +600,15 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             <Button onClick={handleClose} disabled={isRunning}>
               Close
             </Button>
+            {createdData.workspace && !isRunning && (
+              <Button
+                variant="outlined"
+                onClick={() => router.push(`/app/${createdData.workspace.id}`)}
+                color="primary"
+              >
+                Go to Workspace
+              </Button>
+            )}
             <Button variant="contained" onClick={runSeedData} disabled={isRunning} color="warning">
               {isRunning ? "Creating..." : "Create Seed Data"}
             </Button>
