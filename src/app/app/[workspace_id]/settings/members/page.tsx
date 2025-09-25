@@ -3,7 +3,7 @@
 import { graphql } from "@/graphql";
 import { useListWorkspaceMembersQuery } from "@/graphql/hooks";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
-import { Group, Map, Warning } from "@mui/icons-material";
+import { Group, Map, PersonAdd, Warning } from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import InviteMemberDialog from "./components/InviteMemberDialog";
 import MembersMapDialog from "./components/MembersMapDialog";
 
 // Define the GraphQL query for listing workspace members
@@ -66,9 +67,10 @@ export default function WorkspaceMembersPage() {
   const currentWorkspace = useSelectedWorkspace();
   const { permissions, isLoadingPermissions } = useWorkspace();
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Fetch workspace members
-  const { data, loading, error } = useListWorkspaceMembersQuery({
+  const { data, loading, error, refetch } = useListWorkspaceMembersQuery({
     variables: {
       workspaceId: workspaceId || "",
     },
@@ -77,6 +79,9 @@ export default function WorkspaceMembersPage() {
   });
 
   const members = data?.listWorkspaceMembers?.items || [];
+
+  // Check if user can invite members
+  const canInvite = permissions?.permissionMap?.ERP_WORKSPACE_MANAGE;
 
   // Check if permissions are still loading
   if (isLoadingPermissions) {
@@ -183,14 +188,25 @@ export default function WorkspaceMembersPage() {
             </Typography>
           </Box>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<Map />}
-          onClick={() => setMapDialogOpen(true)}
-          disabled={members.length === 0}
-        >
-          View on Map
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {canInvite && (
+            <Button
+              variant="contained"
+              startIcon={<PersonAdd />}
+              onClick={() => setInviteDialogOpen(true)}
+            >
+              Invite Member
+            </Button>
+          )}
+          <Button
+            variant="outlined"
+            startIcon={<Map />}
+            onClick={() => setMapDialogOpen(true)}
+            disabled={members.length === 0}
+          >
+            View on Map
+          </Button>
+        </Box>
       </Box>
 
       <TableContainer component={Paper} elevation={1}>
@@ -304,6 +320,15 @@ export default function WorkspaceMembersPage() {
         open={mapDialogOpen}
         onClose={() => setMapDialogOpen(false)}
         members={members}
+      />
+
+      <InviteMemberDialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
+        workspaceId={workspaceId || ""}
+        onInviteSuccess={() => {
+          refetch();
+        }}
       />
     </Box>
   );
