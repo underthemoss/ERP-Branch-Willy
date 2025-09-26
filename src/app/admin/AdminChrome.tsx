@@ -5,6 +5,7 @@ import {
   AdminPanelSettingsOutlined,
   BugReportOutlined,
   BusinessOutlined,
+  CloudSyncOutlined,
   DashboardOutlined,
   GroupOutlined,
   HomeOutlined,
@@ -62,6 +63,12 @@ export const AdminChrome: React.FC<{ children: React.ReactNode }> = ({ children 
       href: "/admin/authz",
       icon: <PolicyOutlined />,
       selected: pathname.startsWith("/admin/authz"),
+    },
+    {
+      text: "Change Stream",
+      href: "/admin/change-stream",
+      icon: <CloudSyncOutlined />,
+      selected: pathname === "/admin/change-stream",
     },
     {
       text: "System",

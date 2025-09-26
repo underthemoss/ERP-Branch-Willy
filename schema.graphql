@@ -21,6 +21,14 @@ type AdminMutationNamespace {
     userId: String!
   ): Boolean
 
+  """
+  Touch all documents in a collection by adding/updating a _touch timestamp field. This triggers CDC for all documents.
+  """
+  collectionSnapshot(
+    """Name of the collection to snapshot"""
+    collectionName: String!
+  ): CollectionSnapshotResult!
+
   """Delete a specific SpiceDB relationship"""
   deleteRelationship(
     """Relation type (e.g., "member", "admin")"""
@@ -73,6 +81,11 @@ type AdminMutationNamespace {
 }
 
 type AdminQueryNamespace {
+  """
+  Get the CDC sync status for all MongoDB collections in the es-erp database
+  """
+  cdcCollectionStatus: CDCStatusResult!
+
   """Get a single Auth0 user by ID (Admin only)"""
   getUserById(
     """Auth0 user ID"""
@@ -494,6 +507,21 @@ input BusinessContactInput {
   workspaceId: String!
 }
 
+type CDCCollectionStatus {
+  collectionName: String!
+  isSynced: Boolean!
+
+  """Reason why collection is not synced (if applicable)"""
+  reason: String
+}
+
+type CDCStatusResult {
+  collections: [CDCCollectionStatus!]!
+  notSyncedCollections: Int!
+  syncedCollections: Int!
+  totalCollections: Int!
+}
+
 input CancelInvoiceInput {
   invoiceId: String!
 }
@@ -532,6 +560,14 @@ enum ChargeType {
   RENTAL
   SALE
   SERVICE
+}
+
+type CollectionSnapshotResult {
+  collectionName: String!
+  documentsUpdated: Int!
+  error: String
+  success: Boolean!
+  timestamp: String
 }
 
 type Comment {
