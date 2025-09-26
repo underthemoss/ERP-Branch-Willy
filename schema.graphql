@@ -950,17 +950,39 @@ input IntakeFormInput {
 }
 
 type IntakeFormLineItem {
+  customPriceName: String
+  deliveryLocation: String
+  deliveryMethod: DeliveryMethod!
+  deliveryNotes: String
   description: String!
   durationInDays: Int!
+  id: ID!
+  pimCategoryId: String!
+  priceId: String
   quantity: Int!
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
+  salesOrderId: String
+  salesOrderLineItemId: String
   startDate: DateTime!
   type: RequestType!
 }
 
 input IntakeFormLineItemInput {
+  customPriceName: String
+  deliveryLocation: String
+  deliveryMethod: DeliveryMethod!
+  deliveryNotes: String
   description: String!
   durationInDays: Int!
+  id: ID
+  pimCategoryId: String!
+  priceId: String
   quantity: Int!
+  rentalEndDate: String
+  rentalStartDate: String
+  salesOrderId: String
+  salesOrderLineItemId: String
   startDate: DateTime!
   type: RequestType!
 }
@@ -993,7 +1015,9 @@ type IntakeFormSubmission {
   name: String!
   phone: String
   purchaseOrderNumber: String
-  salesOrderId: ID
+  status: IntakeFormSubmissionStatus!
+  submittedAt: DateTime
+  userId: String
   workspaceId: ID!
 }
 
@@ -1001,10 +1025,10 @@ input IntakeFormSubmissionInput {
   companyName: String
   email: String!
   formId: ID!
-  lineItems: [IntakeFormLineItemInput!]
   name: String!
   phone: String
   purchaseOrderNumber: String
+  userId: String
   workspaceId: ID!
 }
 
@@ -1018,6 +1042,11 @@ type IntakeFormSubmissionPageInfo {
   size: Int!
   totalItems: Int!
   totalPages: Int!
+}
+
+enum IntakeFormSubmissionStatus {
+  DRAFT
+  SUBMITTED
 }
 
 type IntakeFormWorkspace {
@@ -1497,6 +1526,9 @@ type Mutation {
 
   """Create a new intake form submission"""
   createIntakeFormSubmission(input: IntakeFormSubmissionInput!): IntakeFormSubmission
+
+  """Create a new line item for an intake form submission"""
+  createIntakeFormSubmissionLineItem(input: IntakeFormLineItemInput!, submissionId: String!): IntakeFormLineItem
   createInventory(input: CreateInventoryInput!): Inventory!
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createNote(input: NoteInput!): Note
@@ -1526,6 +1558,9 @@ type Mutation {
 
   """Soft delete an intake form"""
   deleteIntakeForm(id: String!): IntakeForm
+
+  """Delete an intake form submission line item"""
+  deleteIntakeFormSubmissionLineItem(id: String!): Boolean
   deleteInventory(id: String!, input: DeleteInventoryInput!): Boolean!
   deleteInvoice(id: String!): Boolean!
   deleteNote(id: String!): Note
@@ -1564,6 +1599,11 @@ type Mutation {
   softDeletePurchaseOrderLineItem(id: String): PurchaseOrderLineItem
   softDeleteSalesOrder(id: String): SalesOrder
   softDeleteSalesOrderLineItem(id: String): SalesOrderLineItem
+
+  """
+  Submit an intake form submission (changes status from DRAFT to SUBMITTED)
+  """
+  submitIntakeFormSubmission(id: String!): IntakeFormSubmission
   submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
   touchAllContacts(batchSize: Int): TouchAllContactsResult
@@ -1578,8 +1618,14 @@ type Mutation {
   updateFulfilmentAssignee(assignedToId: ID, fulfilmentId: ID!): FulfilmentBase
   updateFulfilmentColumn(fulfilmentId: ID!, workflowColumnId: ID, workflowId: ID): FulfilmentBase
 
+  """Update an existing intake form"""
+  updateIntakeForm(id: String!, input: UpdateIntakeFormInput!): IntakeForm
+
   """Update an existing intake form submission"""
   updateIntakeFormSubmission(id: String!, input: UpdateIntakeFormSubmissionInput!): IntakeFormSubmission
+
+  """Update an existing intake form submission line item"""
+  updateIntakeFormSubmissionLineItem(id: String!, input: IntakeFormLineItemInput!): IntakeFormLineItem
   updateInventoryActualReturnDate(actualReturnDate: DateTime!, id: String!): Inventory
   updateInventoryExpectedReturnDate(expectedReturnDate: DateTime!, id: String!): Inventory
   updateInventorySerialisedId(id: String!, input: UpdateInventorySerialisedIdInput!): Inventory
@@ -2066,6 +2112,12 @@ type Query {
 
   """Get a single intake form by ID"""
   getIntakeFormById(id: String!): IntakeForm
+
+  """Get a single intake form submission by ID"""
+  getIntakeFormSubmissionById(id: String!): IntakeFormSubmission
+
+  """Get a single intake form submission line item by ID"""
+  getIntakeFormSubmissionLineItem(id: String!): IntakeFormLineItem
   getInventoryReservationById(id: ID!): InventoryReservation
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
@@ -2091,6 +2143,9 @@ type Query {
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
   listFilesByEntityId(parent_entity_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter!, page: ListFulfilmentsPage): ListFulfilmentsResult
+
+  """List all line items for an intake form submission"""
+  listIntakeFormSubmissionLineItems(submissionId: String!): [IntakeFormLineItem!]!
 
   """List all intake form submissions for a workspace with pagination"""
   listIntakeFormSubmissions(limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
@@ -2841,10 +2896,17 @@ input UpdateBusinessContactInput {
   website: String
 }
 
+input UpdateIntakeFormInput {
+  isActive: Boolean
+  isPublic: Boolean
+  pricebookId: ID
+  projectId: ID
+  sharedWithEmails: [String!]
+}
+
 input UpdateIntakeFormSubmissionInput {
-  lineItems: [IntakeFormLineItemInput!]
   purchaseOrderNumber: String
-  salesOrderId: ID
+  userId: String
 }
 
 input UpdateInventorySerialisedIdInput {

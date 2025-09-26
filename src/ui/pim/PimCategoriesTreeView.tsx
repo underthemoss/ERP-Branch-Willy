@@ -604,7 +604,6 @@ export function PimCategoriesTreeView(props: {
               }}
             />
           </Box>
-          <Divider sx={{ my: 2 }} />
         </Box>
       )}
     </Stack>

@@ -40,7 +40,7 @@ export default function IntakeFormLanding({
         p: 2,
       }}
     >
-      <Container maxWidth="sm">
+      <Container maxWidth="md">
         <Paper
           elevation={0}
           sx={{
@@ -140,17 +140,6 @@ export default function IntakeFormLanding({
           >
             Create Request
           </Button>
-
-          {/* Footer */}
-          <Box sx={{ mt: 6, pt: 4, borderTop: "1px solid rgba(255, 255, 255, 0.2)" }}>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              This portal is managed by{" "}
-              <strong style={{ opacity: 1 }}>{companyName || "Your company"}</strong>. If you need
-              help,
-              <br />
-              Contact us at <strong style={{ opacity: 1 }}>[tenant.support.email@phone]</strong>
-            </Typography>
-          </Box>
         </Paper>
       </Container>
     </Box>

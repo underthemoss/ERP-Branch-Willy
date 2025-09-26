@@ -4,14 +4,10 @@ import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from "@mui/ico
 import {
   Box,
   Button,
+  Chip,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   IconButton,
-  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -24,48 +20,80 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import React, { useState } from "react";
-import { ContactInfo, FormData, LineItem } from "../page";
+import React, { useEffect, useState } from "react";
+import { ContactInfo, FormData, LineItem, NewLineItem } from "../page";
+import AddLineItemDialog from "./AddLineItemDialog/AddLineItemDialog";
+import IntakeFormHeader from "./IntakeFormHeader";
+
+// LocalStorage key for contact info
+const CONTACT_STORAGE_KEY = "intakeFormContactInfo";
 
 interface RequestFormProps {
   projectId: string;
   projectName?: string;
+  projectCode?: string;
   companyName: string;
+  workspaceLogo?: string | null;
   formData: FormData;
-  onSubmit: (contact: ContactInfo, lineItems: LineItem[]) => void;
+  onSubmit: (
+    contact: ContactInfo,
+    lineItems: LineItem[],
+    newLineItems?: NewLineItem[],
+  ) => Promise<void>;
   onBack: () => void;
+  workspaceId: string;
+  pricebookId?: string | null;
+  pricebookName?: string | null;
+  isSubmitting?: boolean;
 }
 
 export default function RequestForm({
   projectId,
   projectName,
+  projectCode,
   companyName,
+  workspaceLogo,
   formData,
   onSubmit,
   onBack,
+  workspaceId,
+  pricebookId,
+  pricebookName,
+  isSubmitting = false,
 }: RequestFormProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [currentSection, setCurrentSection] = useState<"contact" | "lineItems">("contact");
+  const [loading, setLoading] = useState(false);
 
-  const [contact, setContact] = useState<ContactInfo>(formData.contact);
-  const [lineItems, setLineItems] = useState<LineItem[]>(formData.lineItems);
+  // Initialize contact from localStorage if available, otherwise use formData
+  const [contact, setContact] = useState<ContactInfo>(() => {
+    if (typeof window !== "undefined") {
+      const savedContact = localStorage.getItem(CONTACT_STORAGE_KEY);
+      if (savedContact) {
+        try {
+          return JSON.parse(savedContact);
+        } catch (e) {
+          console.error("Failed to parse saved contact info:", e);
+        }
+      }
+    }
+    return formData.contact;
+  });
+
+  const [newLineItems, setNewLineItems] = useState<NewLineItem[]>(formData.newLineItems || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Line item dialog state
   const [lineItemDialogOpen, setLineItemDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [currentLineItem, setCurrentLineItem] = useState<LineItem>({
-    description: "",
-    startDate: new Date(),
-    type: "RENTAL",
-    durationInDays: 7,
-    quantity: 1,
-  });
-  const [lineItemErrors, setLineItemErrors] = useState<Record<string, string>>({});
+
+  // Save contact info to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(contact));
+    }
+  }, [contact]);
 
   const validateContact = () => {
     const newErrors: Record<string, string> = {};
@@ -84,13 +112,16 @@ export default function RequestForm({
     if (!contact.company.trim()) {
       newErrors.company = "Company name is required";
     }
+    if (!contact.purchaseOrderNumber?.trim()) {
+      newErrors.purchaseOrderNumber = "Purchase order number is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateLineItems = () => {
-    if (lineItems.length === 0) {
+    if (newLineItems.length === 0) {
       setErrors({ lineItems: "At least one line item is required" });
       return false;
     }
@@ -98,393 +129,379 @@ export default function RequestForm({
     return true;
   };
 
-  const validateLineItem = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!currentLineItem.description.trim()) {
-      newErrors.description = "Description is required";
-    }
-    if (currentLineItem.quantity <= 0) {
-      newErrors.quantity = "Quantity must be greater than 0";
-    }
-    if (currentLineItem.type === "RENTAL" && currentLineItem.durationInDays <= 0) {
-      newErrors.durationInDays = "Duration must be greater than 0";
-    }
-
-    setLineItemErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleContactContinue = () => {
+  const handleContactContinue = async () => {
     if (validateContact()) {
-      setCurrentSection("lineItems");
-      setErrors({});
+      setLoading(true);
+      try {
+        // Call onSubmit to create the submission and navigate
+        await onSubmit(contact, [], []);
+      } catch (error) {
+        console.error("Error creating submission:", error);
+        setLoading(false);
+      }
     }
   };
 
   const handleAddLineItem = () => {
     setEditingIndex(null);
-    setCurrentLineItem({
-      description: "",
-      startDate: new Date(),
-      type: "RENTAL",
-      durationInDays: 7,
-      quantity: 1,
-    });
-    setLineItemErrors({});
     setLineItemDialogOpen(true);
   };
 
   const handleEditLineItem = (index: number) => {
     setEditingIndex(index);
-    setCurrentLineItem({ ...lineItems[index] });
-    setLineItemErrors({});
     setLineItemDialogOpen(true);
   };
 
   const handleDeleteLineItem = (index: number) => {
-    const newLineItems = lineItems.filter((_, i) => i !== index);
-    setLineItems(newLineItems);
+    const updated = newLineItems.filter((_, i) => i !== index);
+    setNewLineItems(updated);
   };
 
-  const handleSaveLineItem = () => {
-    if (validateLineItem()) {
-      if (editingIndex !== null) {
-        const newLineItems = [...lineItems];
-        newLineItems[editingIndex] = currentLineItem;
-        setLineItems(newLineItems);
-      } else {
-        setLineItems([...lineItems, currentLineItem]);
-      }
-      setLineItemDialogOpen(false);
+  const handleSaveLineItem = (lineItem: NewLineItem) => {
+    if (editingIndex !== null) {
+      // Update existing
+      const updated = [...newLineItems];
+      updated[editingIndex] = lineItem;
+      setNewLineItems(updated);
+    } else {
+      // Add new
+      setNewLineItems([...newLineItems, lineItem]);
     }
+    setLineItemDialogOpen(false);
+    setEditingIndex(null);
   };
 
   const handleSubmit = () => {
     if (validateLineItems()) {
-      onSubmit(contact, lineItems);
+      // Pass empty array for old lineItems and new array for newLineItems
+      onSubmit(contact, [], newLineItems);
     }
   };
 
+  const formatPrice = (cents?: number) => {
+    if (!cents) return "-";
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  const getLineItemDescription = (item: NewLineItem) => {
+    if (item.isCustomProduct) {
+      return item.customProductName || "Custom Product";
+    }
+    return item.priceName || item.pimCategoryName || "Product";
+  };
+
+  const getRentalCostDisplay = (item: NewLineItem) => {
+    if (item.type !== "RENTAL") return "-";
+
+    // If it's a custom product, no pricing available
+    if (item.isCustomProduct) return "Custom pricing";
+
+    // Build the rate display
+    const rates: string[] = [];
+    if (item.pricePerDayInCents) {
+      rates.push(`$${(item.pricePerDayInCents / 100).toFixed(2)}/day`);
+    }
+    if (item.pricePerWeekInCents) {
+      rates.push(`$${(item.pricePerWeekInCents / 100).toFixed(2)}/week`);
+    }
+    if (item.pricePerMonthInCents) {
+      rates.push(`$${(item.pricePerMonthInCents / 100).toFixed(2)}/month`);
+    }
+
+    // Calculate estimated total if we have duration and a daily rate
+    let estimateText = "";
+    if (item.rentalDuration && item.pricePerDayInCents) {
+      const estimatedTotal = (item.pricePerDayInCents * item.rentalDuration * item.quantity) / 100;
+      estimateText = `Est. total: $${estimatedTotal.toFixed(2)}`;
+    }
+
+    if (rates.length === 0) return "No pricing";
+
+    return (
+      <>
+        <Typography variant="caption" display="block">
+          {rates.join(", ")}
+        </Typography>
+        {estimateText && (
+          <Typography variant="caption" display="block" color="primary">
+            {estimateText}
+          </Typography>
+        )}
+      </>
+    );
+  };
+
+  const getPurchaseCostDisplay = (item: NewLineItem) => {
+    if (item.type !== "PURCHASE") return "-";
+
+    // If it's a custom product, no pricing available
+    if (item.isCustomProduct) return "Custom pricing";
+
+    // Show unit cost if available
+    if (item.unitCostInCents) {
+      const totalCost = (item.unitCostInCents * item.quantity) / 100;
+      return (
+        <>
+          <Typography variant="caption" display="block">
+            ${(item.unitCostInCents / 100).toFixed(2)}/unit
+          </Typography>
+          <Typography variant="caption" display="block" color="primary">
+            Total: ${totalCost.toFixed(2)}
+          </Typography>
+        </>
+      );
+    }
+
+    return "No pricing";
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <>
+      {/* Header Section */}
+      <IntakeFormHeader companyName={companyName} workspaceLogo={workspaceLogo} />
+
       <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
-        <Paper elevation={1} sx={{ p: isMobile ? 2 : 4 }}>
-          {/* Header */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ mb: 1 }}>
-              Request Portal
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Project {projectName || projectId || "N/A"}
-            </Typography>
+        <Paper elevation={3} sx={{ overflow: "hidden" }}>
+          {/* Project Header */}
+          <Box
+            sx={{
+              bgcolor: "grey.50",
+              p: isMobile ? 2 : 3,
+              borderBottom: 1,
+              borderColor: "divider",
+            }}
+          >
+            <Box>
+              <Typography variant="h5" fontWeight="600" color="text.primary" gutterBottom>
+                Your Contact Details
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                We&apos;ll use these details to confirm your order.
+              </Typography>
+            </Box>
           </Box>
 
-          {currentSection === "contact" ? (
-            <>
-              {/* Contact Information Section */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Contact Information
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  We&apos;ll use these details to confirm your order.
-                </Typography>
+          <Box sx={{ p: isMobile ? 2 : 4 }}>
+            {currentSection === "contact" ? (
+              <>
+                {/* Contact Information Section */}
+                <Box mt={2}>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        label="Full Name"
+                        value={contact.fullName}
+                        onChange={(e) => setContact({ ...contact, fullName: e.target.value })}
+                        error={!!errors.fullName}
+                        helperText={errors.fullName}
+                        placeholder="John Smith"
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                        error={!!errors.email}
+                        helperText={errors.email}
+                        placeholder="john.smith@gmail.com"
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        label="Phone Number"
+                        value={contact.phoneNumber}
+                        onChange={(e) => setContact({ ...contact, phoneNumber: e.target.value })}
+                        error={!!errors.phoneNumber}
+                        helperText={errors.phoneNumber}
+                        placeholder="444 - 444 - 4444"
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        label="Company"
+                        value={contact.company}
+                        onChange={(e) => setContact({ ...contact, company: e.target.value })}
+                        error={!!errors.company}
+                        helperText={errors.company}
+                        placeholder="Company Name"
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth
+                        label="Purchase Order Number"
+                        value={contact.purchaseOrderNumber || ""}
+                        onChange={(e) =>
+                          setContact({ ...contact, purchaseOrderNumber: e.target.value })
+                        }
+                        error={!!errors.purchaseOrderNumber}
+                        helperText={errors.purchaseOrderNumber}
+                        placeholder="PO-12345"
+                        required
+                      />
+                    </Grid>
+                  </Grid>
 
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Full Name"
-                      value={contact.fullName}
-                      onChange={(e) => setContact({ ...contact, fullName: e.target.value })}
-                      error={!!errors.fullName}
-                      helperText={errors.fullName}
-                      placeholder="John Smith"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      type="email"
-                      value={contact.email}
-                      onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                      error={!!errors.email}
-                      helperText={errors.email}
-                      placeholder="john.smith@gmail.com"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Phone Number"
-                      value={contact.phoneNumber}
-                      onChange={(e) => setContact({ ...contact, phoneNumber: e.target.value })}
-                      error={!!errors.phoneNumber}
-                      helperText={errors.phoneNumber}
-                      placeholder="444 - 444 - 4444"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Company"
-                      value={contact.company}
-                      onChange={(e) => setContact({ ...contact, company: e.target.value })}
-                      error={!!errors.company}
-                      helperText={errors.company}
-                      placeholder="Company Name"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      fullWidth
-                      label="Purchase Order Number (Optional)"
-                      value={contact.purchaseOrderNumber || ""}
-                      onChange={(e) =>
-                        setContact({ ...contact, purchaseOrderNumber: e.target.value })
-                      }
-                      placeholder="PO-12345"
-                    />
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    onClick={handleContactContinue}
-                    sx={{
-                      bgcolor: "#4A90E2",
-                      "&:hover": {
-                        bgcolor: "#357ABD",
-                      },
-                    }}
-                  >
-                    Continue
-                  </Button>
+                  <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={handleContactContinue}
+                      disabled={loading || isSubmitting}
+                    >
+                      {loading || isSubmitting ? "Creating..." : "Continue"}
+                    </Button>
+                  </Box>
                 </Box>
-              </Box>
-            </>
-          ) : (
-            <>
-              {/* Line Items Section */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Request Details
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Add equipment items to your request.
-                </Typography>
-
-                {errors.lineItems && (
-                  <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-                    {errors.lineItems}
+              </>
+            ) : (
+              <>
+                {/* Line Items Section */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Request Details
                   </Typography>
-                )}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    {pricebookId
+                      ? "Select items from the price book or add custom products."
+                      : "Add items to your request."}
+                  </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddLineItem}
-                    sx={{
-                      bgcolor: "#4A90E2",
-                      "&:hover": {
-                        bgcolor: "#357ABD",
-                      },
-                    }}
-                  >
-                    Add Line Item
-                  </Button>
-                </Box>
+                  {errors.lineItems && (
+                    <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+                      {errors.lineItems}
+                    </Typography>
+                  )}
 
-                {lineItems.length > 0 && (
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Description</TableCell>
-                          <TableCell>Type</TableCell>
-                          <TableCell>Start Date</TableCell>
-                          <TableCell>Quantity</TableCell>
-                          <TableCell>Duration</TableCell>
-                          <TableCell>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {lineItems.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.description}</TableCell>
-                            <TableCell>{item.type}</TableCell>
-                            <TableCell>{new Date(item.startDate).toLocaleDateString()}</TableCell>
-                            <TableCell>{item.quantity}</TableCell>
-                            <TableCell>
-                              {item.type === "RENTAL" ? `${item.durationInDays} days` : "-"}
-                            </TableCell>
-                            <TableCell>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditLineItem(index)}
-                                title="Edit"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteLineItem(index)}
-                                title="Delete"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </TableCell>
+                  <Box sx={{ mb: 2 }}>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddLineItem}>
+                      Add Line Item
+                    </Button>
+                  </Box>
+
+                  {newLineItems.length > 0 && (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Description</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Qty</TableCell>
+                            <TableCell>Start Date</TableCell>
+                            <TableCell>End Date</TableCell>
+                            <TableCell>Cost</TableCell>
+                            <TableCell>Delivery</TableCell>
+                            <TableCell>Actions</TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
+                        </TableHead>
+                        <TableBody>
+                          {newLineItems.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2">
+                                    {getLineItemDescription(item)}
+                                  </Typography>
+                                  {item.isCustomProduct && (
+                                    <Chip
+                                      label="Custom"
+                                      size="small"
+                                      color="info"
+                                      sx={{ mt: 0.5 }}
+                                    />
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell>{item.type}</TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>
+                                {item.type === "RENTAL" && item.rentalStartDate
+                                  ? new Date(item.rentalStartDate).toLocaleDateString()
+                                  : item.type === "PURCHASE" && item.deliveryDate
+                                    ? new Date(item.deliveryDate).toLocaleDateString()
+                                    : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {item.type === "RENTAL" && item.rentalEndDate
+                                  ? new Date(item.rentalEndDate).toLocaleDateString()
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {item.type === "PURCHASE"
+                                  ? getPurchaseCostDisplay(item)
+                                  : getRentalCostDisplay(item)}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.deliveryMethod || "-"}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditLineItem(index)}
+                                  title="Edit"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteLineItem(index)}
+                                  title="Delete"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
 
-                <Box sx={{ mt: 4, display: "flex", justifyContent: "space-between" }}>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={() => setCurrentSection("contact")}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    onClick={handleSubmit}
-                    disabled={lineItems.length === 0}
-                    sx={{
-                      bgcolor: "#4A90E2",
-                      "&:hover": {
-                        bgcolor: "#357ABD",
-                      },
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Submit Request
-                  </Button>
+                  <Box sx={{ mt: 4, display: "flex", justifyContent: "space-between" }}>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={() => setCurrentSection("contact")}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={handleSubmit}
+                      disabled={newLineItems.length === 0}
+                    >
+                      Submit Request
+                    </Button>
+                  </Box>
                 </Box>
-              </Box>
-            </>
-          )}
-
-          {/* Footer */}
-          <Box sx={{ mt: 4, pt: 3, borderTop: "1px solid #e0e0e0" }}>
-            <Typography variant="caption" color="text.secondary">
-              This portal is managed by <strong>{companyName}</strong>.
-            </Typography>
+              </>
+            )}
           </Box>
         </Paper>
       </Container>
 
       {/* Line Item Dialog */}
-      <Dialog
+      <AddLineItemDialog
         open={lineItemDialogOpen}
-        onClose={() => setLineItemDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{editingIndex !== null ? "Edit Line Item" : "Add Line Item"}</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Description"
-                value={currentLineItem.description}
-                onChange={(e) =>
-                  setCurrentLineItem({ ...currentLineItem, description: e.target.value })
-                }
-                error={!!lineItemErrors.description}
-                helperText={lineItemErrors.description}
-                placeholder="e.g., Forklift with 8,000 lb lift capacity"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                select
-                label="Type"
-                value={currentLineItem.type}
-                onChange={(e) => {
-                  const newType = e.target.value as "RENTAL" | "PURCHASE";
-                  setCurrentLineItem({
-                    ...currentLineItem,
-                    type: newType,
-                    durationInDays: newType === "PURCHASE" ? 0 : currentLineItem.durationInDays,
-                  });
-                }}
-              >
-                <MenuItem value="RENTAL">Rental</MenuItem>
-                <MenuItem value="PURCHASE">Purchase</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <DatePicker
-                label="Start Date"
-                value={currentLineItem.startDate}
-                onChange={(newValue) =>
-                  setCurrentLineItem({
-                    ...currentLineItem,
-                    startDate: newValue ? new Date(newValue.toISOString()) : new Date(),
-                  })
-                }
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                  },
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <TextField
-                fullWidth
-                label="Quantity"
-                type="number"
-                value={currentLineItem.quantity}
-                onChange={(e) => {
-                  const quantity = parseInt(e.target.value) || 0;
-                  const newItem = { ...currentLineItem, quantity };
-                  setCurrentLineItem(newItem);
-                }}
-                error={!!lineItemErrors.quantity}
-                helperText={lineItemErrors.quantity}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            {currentLineItem.type === "RENTAL" && (
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Duration (days)"
-                  type="number"
-                  value={currentLineItem.durationInDays}
-                  onChange={(e) => {
-                    const durationInDays = parseInt(e.target.value) || 0;
-                    const newItem = { ...currentLineItem, durationInDays };
-                    setCurrentLineItem(newItem);
-                  }}
-                  error={!!lineItemErrors.durationInDays}
-                  helperText={lineItemErrors.durationInDays}
-                  inputProps={{ min: 1 }}
-                />
-              </Grid>
-            )}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLineItemDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSaveLineItem} variant="contained">
-            {editingIndex !== null ? "Update" : "Add"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </LocalizationProvider>
+        onClose={() => {
+          setLineItemDialogOpen(false);
+          setEditingIndex(null);
+        }}
+        onSave={handleSaveLineItem}
+        editingItem={editingIndex !== null ? newLineItems[editingIndex] : undefined}
+        editingIndex={editingIndex}
+        pricebookId={pricebookId}
+        workspaceId={workspaceId}
+      />
+    </>
   );
 }
