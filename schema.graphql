@@ -212,9 +212,11 @@ type AdminQueryNamespace {
     query: String
   ): [EmailActivity!]!
 
-  """Get email details including content (Admin only)"""
+  """
+  Get email details including content by SendGrid message ID (Admin only)
+  """
   sendGridEmailDetails(
-    """Message ID"""
+    """SendGrid Message ID"""
     msgId: String!
   ): EmailDetails
 }

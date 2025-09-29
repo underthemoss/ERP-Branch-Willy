@@ -3,7 +3,7 @@
 import { graphql } from "@/graphql";
 import { useSendGridEmailActivityQuery } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
-import { EmailOutlined, RefreshOutlined, SendOutlined } from "@mui/icons-material";
+import { EmailOutlined, RefreshOutlined, SearchOutlined, SendOutlined } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -11,6 +11,9 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Input,
+  Option,
+  Select,
   Table,
   Tooltip,
   Typography,
@@ -29,6 +32,11 @@ graphql(`
         event
         timestamp
         msgId
+        fromEmail
+        subject
+        status
+        clicks
+        opens
       }
     }
   }
@@ -45,6 +53,10 @@ export default function SendGridDashboard() {
   } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Simple search and limit
+  const [searchQuery, setSearchQuery] = useState("");
+  const [limitFilter, setLimitFilter] = useState<number>(50);
+
   // Fetch email activity
   const {
     data: activityData,
@@ -53,7 +65,8 @@ export default function SendGridDashboard() {
     error: activityError,
   } = useSendGridEmailActivityQuery({
     variables: {
-      limit: 50,
+      limit: limitFilter,
+      query: searchQuery || undefined,
     },
     fetchPolicy: "cache-and-network",
     onError: (error) => {
@@ -154,7 +167,7 @@ export default function SendGridDashboard() {
           <Typography level="title-lg">Recent Email Activity</Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Last {emailActivity.length} events
+              Showing {emailActivity.length} events
             </Typography>
             <Tooltip title="Refresh Email Activity">
               <IconButton
@@ -167,6 +180,39 @@ export default function SendGridDashboard() {
               </IconButton>
             </Tooltip>
           </Box>
+        </Box>
+
+        {/* Simple Filters */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            mb: 3,
+            alignItems: "center",
+          }}
+        >
+          {/* Search Input */}
+          <Input
+            placeholder="Search emails..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startDecorator={<SearchOutlined />}
+            sx={{ minWidth: 250 }}
+          />
+
+          {/* Limit Selector */}
+          <Select
+            value={limitFilter}
+            onChange={(_, value) => setLimitFilter(value as number)}
+            sx={{ minWidth: 120 }}
+            size="sm"
+          >
+            <Option value={25}>Last 25</Option>
+            <Option value={50}>Last 50</Option>
+            <Option value={100}>Last 100</Option>
+            <Option value={200}>Last 200</Option>
+            <Option value={500}>Last 500</Option>
+          </Select>
         </Box>
 
         {activityLoading ? (
@@ -196,10 +242,11 @@ export default function SendGridDashboard() {
               <thead>
                 <tr>
                   <th>Time</th>
-                  <th>Email</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Subject</th>
                   <th>Event</th>
-                  <th>Message ID</th>
-                  <th>Details</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,7 +263,28 @@ export default function SendGridDashboard() {
                         </Typography>
                       </td>
                       <td>
-                        <Typography level="body-sm">{activity.email}</Typography>
+                        <Typography
+                          level="body-xs"
+                          sx={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis" }}
+                        >
+                          {activity.fromEmail || "—"}
+                        </Typography>
+                      </td>
+                      <td>
+                        <Typography
+                          level="body-xs"
+                          sx={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis" }}
+                        >
+                          {activity.email}
+                        </Typography>
+                      </td>
+                      <td>
+                        <Typography
+                          level="body-xs"
+                          sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}
+                        >
+                          {activity.subject || "—"}
+                        </Typography>
                       </td>
                       <td>
                         <Chip size="sm" color={eventInfo.color} variant="soft">
@@ -224,14 +292,11 @@ export default function SendGridDashboard() {
                         </Chip>
                       </td>
                       <td>
-                        <Typography level="body-xs" sx={{ fontFamily: "monospace" }}>
-                          {activity.msgId.substring(0, 12)}...
-                        </Typography>
-                      </td>
-                      <td>
-                        <Typography level="body-xs" sx={{ color: "text.secondary" }}>
-                          {eventInfo.label}
-                        </Typography>
+                        {activity.status && (
+                          <Typography level="body-xs" sx={{ color: "text.secondary" }}>
+                            {activity.status}
+                          </Typography>
+                        )}
                       </td>
                     </tr>
                   );
