@@ -1,9 +1,16 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useSendGridEmailActivityQuery } from "@/graphql/hooks";
+import { useSendGridEmailActivityQuery, useSendGridEmailDetailsLazyQuery } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
-import { EmailOutlined, RefreshOutlined, SearchOutlined, SendOutlined } from "@mui/icons-material";
+import {
+  CreateOutlined,
+  EmailOutlined,
+  PreviewOutlined,
+  RefreshOutlined,
+  SearchOutlined,
+  SendOutlined,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -21,6 +28,7 @@ import {
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import EmailComposerDialog from "./EmailComposerDialog";
 import EmailDetailsDialog from "./EmailDetailsDialog";
 
 // GraphQL Query for Email Activity
@@ -42,9 +50,27 @@ graphql(`
   }
 `);
 
+// Reuse the existing query for email details
+graphql(`
+  query SendGridEmailDetails($msgId: String!) {
+    admin {
+      sendGridEmailDetails(msgId: $msgId) {
+        from
+        to
+        subject
+        htmlContent
+        plainContent
+        status
+        timestamp
+        msgId
+      }
+    }
+  }
+`);
+
 export default function SendGridDashboard() {
   const router = useRouter();
-  const { notifyError } = useNotification();
+  const { notifyError, notifyInfo } = useNotification();
   const [selectedEmail, setSelectedEmail] = useState<{
     msgId: string;
     email: string;
@@ -52,6 +78,7 @@ export default function SendGridDashboard() {
     timestamp: number;
   } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [composerDialogOpen, setComposerDialogOpen] = useState(false);
 
   // Simple search and limit
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,6 +166,13 @@ export default function SendGridDashboard() {
               <RefreshOutlined />
             </IconButton>
           </Tooltip>
+          <Button
+            variant="outlined"
+            startDecorator={<CreateOutlined />}
+            onClick={() => setComposerDialogOpen(true)}
+          >
+            Compose Email
+          </Button>
           <Button
             startDecorator={<SendOutlined />}
             onClick={() => router.push("/admin/sendgrid/test-email")}
@@ -314,6 +348,9 @@ export default function SendGridDashboard() {
         msgId={selectedEmail?.msgId || null}
         initialData={selectedEmail || undefined}
       />
+
+      {/* Email Composer Dialog */}
+      <EmailComposerDialog open={composerDialogOpen} onClose={() => setComposerDialogOpen(false)} />
     </Box>
   );
 }
