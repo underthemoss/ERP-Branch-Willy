@@ -234,7 +234,7 @@ export default function WorkspaceMembersPage() {
                 const fullName =
                   user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
-                    : user?.firstName || user?.lastName || "Unknown User";
+                    : user?.firstName || user?.lastName || user?.email || "Unknown User";
 
                 const location = user?.lastLoginLocation;
                 const locationDisplay =

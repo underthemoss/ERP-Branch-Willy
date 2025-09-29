@@ -308,6 +308,7 @@ export default function MembersMapDialog({ open, onClose, members }: MembersMapD
                           ? `${selectedMember.user.firstName} ${selectedMember.user.lastName}`
                           : selectedMember.user?.firstName ||
                             selectedMember.user?.lastName ||
+                            selectedMember.user?.email ||
                             "Unknown User"}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
