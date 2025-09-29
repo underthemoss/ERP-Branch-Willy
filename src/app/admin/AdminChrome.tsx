@@ -7,6 +7,7 @@ import {
   BusinessOutlined,
   CloudSyncOutlined,
   DashboardOutlined,
+  EmailOutlined,
   GroupOutlined,
   HomeOutlined,
   LogoutOutlined,
@@ -63,6 +64,12 @@ export const AdminChrome: React.FC<{ children: React.ReactNode }> = ({ children 
       href: "/admin/authz",
       icon: <PolicyOutlined />,
       selected: pathname.startsWith("/admin/authz"),
+    },
+    {
+      text: "SendGrid",
+      href: "/admin/sendgrid",
+      icon: <EmailOutlined />,
+      selected: pathname.startsWith("/admin/sendgrid"),
     },
     {
       text: "Change Stream",
