@@ -11,12 +11,14 @@ import {
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
 import {
+  AddPhotoAlternate,
   Business,
   CheckCircle,
   Domain,
   Facebook,
   Instagram,
   Language,
+  Link,
   LinkedIn,
   Lock,
   Public,
@@ -156,6 +158,8 @@ export default function WorkspaceSettingsPage() {
   const [selectedBannerUrl, setSelectedBannerUrl] = useState<string | null>(
     currentWorkspace?.bannerImageUrl || null,
   );
+  const [customLogoUrl, setCustomLogoUrl] = useState("");
+  const [customBannerUrl, setCustomBannerUrl] = useState("");
   const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -622,12 +626,173 @@ export default function WorkspaceSettingsPage() {
 
               {brandError && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Brand assets could not be loaded automatically. You can still upload custom
-                  images.
+                  Brand assets could not be loaded automatically. You can still upload custom images
+                  below.
                 </Alert>
               )}
 
-              <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+              {/* Custom URL Section */}
+              <Box sx={{ mt: 4, pt: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
+                <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 500 }}>
+                  Custom Media URLs
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Provide your own URLs for logo and banner images. Make sure the URLs are publicly
+                  accessible.
+                </Typography>
+
+                {/* Custom Banner URL */}
+                <Box sx={{ mb: 3 }}>
+                  <TextField
+                    fullWidth
+                    label="Custom Banner URL"
+                    value={customBannerUrl}
+                    onChange={(e) => setCustomBannerUrl(e.target.value)}
+                    placeholder="https://example.com/banner.jpg"
+                    helperText="Enter a URL for your banner image (recommended size: 1200x300px)"
+                    InputProps={{
+                      startAdornment: <Link sx={{ mr: 1, color: "text.secondary" }} />,
+                      endAdornment: customBannerUrl && (
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setSelectedBannerUrl(customBannerUrl);
+                            setCustomBannerUrl("");
+                          }}
+                          sx={{ ml: 1 }}
+                        >
+                          Apply
+                        </Button>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root.Mui-focused": {
+                        "& fieldset": { borderColor: primaryColor },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: primaryColor,
+                      },
+                    }}
+                  />
+                  {customBannerUrl && (
+                    <Box sx={{ mt: 1, p: 1, bgcolor: "background.default", borderRadius: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Preview:
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: 0.5,
+                          height: 60,
+                          backgroundImage: `url(${customBannerUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          borderRadius: 1,
+                          border: `1px solid ${theme.palette.divider}`,
+                        }}
+                        onError={() => {
+                          setErrorMessage(
+                            "Invalid banner URL. Please check the URL and try again.",
+                          );
+                          setShowError(true);
+                        }}
+                      />
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Custom Logo URL */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="Custom Logo URL"
+                    value={customLogoUrl}
+                    onChange={(e) => setCustomLogoUrl(e.target.value)}
+                    placeholder="https://example.com/logo.png"
+                    helperText="Enter a URL for your logo image (recommended size: 200x200px)"
+                    InputProps={{
+                      startAdornment: <Link sx={{ mr: 1, color: "text.secondary" }} />,
+                      endAdornment: customLogoUrl && (
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setSelectedLogoUrl(customLogoUrl);
+                            setCustomLogoUrl("");
+                          }}
+                          sx={{ ml: 1 }}
+                        >
+                          Apply
+                        </Button>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root.Mui-focused": {
+                        "& fieldset": { borderColor: primaryColor },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: primaryColor,
+                      },
+                    }}
+                  />
+                  {customLogoUrl && (
+                    <Box sx={{ mt: 1, p: 1, bgcolor: "background.default", borderRadius: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Preview:
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: 0.5,
+                          width: 60,
+                          height: 60,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          bgcolor: "background.paper",
+                          borderRadius: 1,
+                          border: `1px solid ${theme.palette.divider}`,
+                          p: 1,
+                        }}
+                      >
+                        <img
+                          src={customLogoUrl}
+                          alt="Logo preview"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            objectFit: "contain",
+                          }}
+                          onError={() => {
+                            setErrorMessage(
+                              "Invalid logo URL. Please check the URL and try again.",
+                            );
+                            setShowError(true);
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Clear Custom URLs Button */}
+                {(selectedLogoUrl || selectedBannerUrl) && (
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        setSelectedLogoUrl(null);
+                        setSelectedBannerUrl(null);
+                        setCustomLogoUrl("");
+                        setCustomBannerUrl("");
+                      }}
+                      startIcon={<AddPhotoAlternate />}
+                    >
+                      Clear All Media
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
                 <Button
                   variant="contained"
                   startIcon={isSavingSettings ? <CircularProgress size={16} /> : <Save />}
