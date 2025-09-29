@@ -1064,13 +1064,8 @@ input IntakeFormLineItemInput {
   pimCategoryId: String!
   priceId: String
   quantity: Int!
-<<<<<<< HEAD
   rentalEndDate: DateTime
   rentalStartDate: DateTime
-=======
-  rentalEndDate: String
-  rentalStartDate: String
->>>>>>> main
   salesOrderId: String
   salesOrderLineItemId: String
   startDate: DateTime!
