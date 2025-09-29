@@ -58,8 +58,14 @@ type AdminMutationNamespace {
 
   """Send an email using the professional HTML template (Admin only)"""
   sendTemplatedEmail(
+    """Optional URL for the banner background image"""
+    bannerImgUrl: String
+
     """HTML content for the email body"""
     content: String!
+
+    """Optional URL for the logo/icon image"""
+    iconUrl: String
 
     """Text for the primary call-to-action button"""
     primaryCtaText: String
@@ -178,6 +184,36 @@ type AdminQueryNamespace {
 
   """List all available Auth0 roles (Admin only)"""
   listRoles: [Auth0Role]
+
+  """Preview the HTML output of an email template without sending it"""
+  previewEmailTemplate(
+    """Optional URL for the banner background image"""
+    bannerImgUrl: String
+
+    """HTML content for the email body"""
+    content: String!
+
+    """Optional URL for the logo/icon image"""
+    iconUrl: String
+
+    """Text for the primary call-to-action button"""
+    primaryCtaText: String
+
+    """URL for the primary call-to-action button"""
+    primaryCtaUrl: String
+
+    """Text for the secondary call-to-action button"""
+    secondaryCtaText: String
+
+    """URL for the secondary call-to-action button"""
+    secondaryCtaUrl: String
+
+    """Optional subtitle displayed below the title"""
+    subtitle: String
+
+    """Title displayed in the email header"""
+    title: String!
+  ): EmailTemplatePreviewResult!
 
   """Returns the raw SpiceDB Zed schema from SpiceDB"""
   rawZedSchema: String!
@@ -891,6 +927,11 @@ type EmailDetails {
   subject: String!
   timestamp: Float!
   to: String!
+}
+
+type EmailTemplatePreviewResult {
+  """The generated HTML content of the email template"""
+  html: String!
 }
 
 type ExampleTicket {
