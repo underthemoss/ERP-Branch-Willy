@@ -68,6 +68,7 @@ export const RentalPriceFieldsFragment = graphql(`
     pricePerDayInCents
     pricePerWeekInCents
     pricePerMonthInCents
+    parentPriceId
     createdAt
     updatedAt
     priceBook {
@@ -87,6 +88,7 @@ export const SalePriceFieldsFragment = graphql(`
     pimCategoryName
     priceType
     unitCostInCents
+    parentPriceId
     createdAt
     updatedAt
     priceBook {

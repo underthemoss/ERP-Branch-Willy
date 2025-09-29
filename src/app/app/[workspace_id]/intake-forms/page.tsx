@@ -111,8 +111,11 @@ graphql(`
 `);
 
 graphql(`
-  query ListIntakeFormSubmissions($workspaceId: String!) {
-    listIntakeFormSubmissions(workspaceId: $workspaceId) {
+  query ListIntakeFormSubmissions($workspaceId: String!, $excludeWithSalesOrder: Boolean) {
+    listIntakeFormSubmissions(
+      workspaceId: $workspaceId
+      excludeWithSalesOrder: $excludeWithSalesOrder
+    ) {
       items {
         id
         formId
@@ -123,6 +126,8 @@ graphql(`
         phone
         companyName
         purchaseOrderNumber
+        salesOrderId
+        purchaseOrderId
         lineItems {
           description
           startDate
@@ -211,6 +216,7 @@ export default function IntakeFormsPage() {
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [usersPopoverAnchor, setUsersPopoverAnchor] = useState<HTMLElement | null>(null);
   const [popoverUsers, setPopoverUsers] = useState<{ id: string; email: string }[]>([]);
+  const [excludeConverted, setExcludeConverted] = useState(true);
 
   // Fetch intake forms
   const { data, loading, refetch } = useListIntakeFormsQuery({
@@ -219,8 +225,15 @@ export default function IntakeFormsPage() {
   });
 
   // Fetch submissions
-  const { data: submissionsData, loading: submissionsLoading } = useListIntakeFormSubmissionsQuery({
-    variables: { workspaceId },
+  const {
+    data: submissionsData,
+    loading: submissionsLoading,
+    refetch: refetchSubmissions,
+  } = useListIntakeFormSubmissionsQuery({
+    variables: {
+      workspaceId,
+      excludeWithSalesOrder: excludeConverted,
+    },
     fetchPolicy: "cache-and-network",
   });
 
@@ -796,15 +809,32 @@ export default function IntakeFormsPage() {
 
       {/* All Submissions Section */}
       <Box sx={{ mt: 6 }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-          All Form Submissions
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+          <Typography variant="h5">All Form Submissions</Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={excludeConverted}
+                onChange={(e) => {
+                  setExcludeConverted(e.target.checked);
+                  refetchSubmissions();
+                }}
+              />
+            }
+            label="Hide converted submissions"
+          />
+        </Box>
         <SubmissionsTable
           submissions={allSubmissions}
           loading={submissionsLoading}
           showFormId={true}
-          emptyStateTitle="No submissions yet"
-          emptyStateMessage="Submissions from all forms will appear here"
+          emptyStateTitle={excludeConverted ? "No unconverted submissions" : "No submissions yet"}
+          emptyStateMessage={
+            excludeConverted
+              ? "Submissions that haven't been converted to orders will appear here"
+              : "Submissions from all forms will appear here"
+          }
+          workspaceId={workspaceId}
         />
       </Box>
 

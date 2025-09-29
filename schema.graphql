@@ -1142,7 +1142,9 @@ type IntakeFormSubmission {
   lineItems: [IntakeFormLineItem!]
   name: String!
   phone: String
+  purchaseOrderId: String
   purchaseOrderNumber: String
+  salesOrderId: String
   status: IntakeFormSubmissionStatus!
   submittedAt: DateTime
   userId: String
@@ -2135,6 +2137,9 @@ type PurchaseOrder {
   fulfillmentProgress: PurchaseOrderFulfillmentProgress
   id: String!
 
+  """The intake form submission associated with this purchase order"""
+  intakeFormSubmission: IntakeFormSubmission
+
   """All inventory items associated with this purchase order"""
   inventory: [Inventory!]!
   line_items: [PurchaseOrderLineItem]
@@ -2244,6 +2249,12 @@ type Query {
   """Get a single intake form submission by ID"""
   getIntakeFormSubmissionById(id: String!): IntakeFormSubmission
 
+  """Get an intake form submission by purchase order ID"""
+  getIntakeFormSubmissionByPurchaseOrderId(purchaseOrderId: String!): IntakeFormSubmission
+
+  """Get an intake form submission by sales order ID"""
+  getIntakeFormSubmissionBySalesOrderId(salesOrderId: String!): IntakeFormSubmission
+
   """Get a single intake form submission line item by ID"""
   getIntakeFormSubmissionLineItem(id: String!): IntakeFormLineItem
   getInventoryReservationById(id: ID!): InventoryReservation
@@ -2276,7 +2287,7 @@ type Query {
   listIntakeFormSubmissionLineItems(submissionId: String!): [IntakeFormLineItem!]!
 
   """List all intake form submissions for a workspace with pagination"""
-  listIntakeFormSubmissions(limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
+  listIntakeFormSubmissions(excludeWithSalesOrder: Boolean, limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
 
   """List all intake forms for a workspace with pagination"""
   listIntakeForms(limit: Int, page: Int, workspaceId: String!): IntakeFormPage
@@ -2731,6 +2742,9 @@ type SalesOrder {
   created_by_user: User
   deleted_at: String
   id: String!
+
+  """The intake form submission associated with this sales order"""
+  intakeFormSubmission: IntakeFormSubmission
   line_items: [SalesOrderLineItem]
 
   """Pricing summary for the sales order"""
@@ -3045,7 +3059,9 @@ input UpdateIntakeFormInput {
 }
 
 input UpdateIntakeFormSubmissionInput {
+  purchaseOrderId: String
   purchaseOrderNumber: String
+  salesOrderId: String
   userId: String
 }
 

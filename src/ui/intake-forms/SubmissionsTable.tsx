@@ -1,6 +1,6 @@
 "use client";
 
-import { Visibility as VisibilityIcon } from "@mui/icons-material";
+import { Transform as TransformIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -34,6 +34,7 @@ import {
   GridToolbarQuickFilter,
 } from "@mui/x-data-grid-premium";
 import React, { useMemo, useState } from "react";
+import ConvertSubmissionDialog from "./ConvertSubmissionDialog";
 
 interface LineItem {
   description: string;
@@ -63,6 +64,7 @@ interface SubmissionsTableProps {
   emptyStateTitle?: string;
   emptyStateMessage?: string;
   onRefetch?: () => void;
+  workspaceId?: string;
 }
 
 // Custom toolbar component for DataGrid
@@ -86,13 +88,21 @@ export default function SubmissionsTable({
   onExportCSV,
   emptyStateTitle = "No submissions yet",
   emptyStateMessage = "Share the form link to start collecting submissions",
+  workspaceId,
 }: SubmissionsTableProps) {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [convertSubmissionId, setConvertSubmissionId] = useState<string | null>(null);
 
   const handleViewDetails = (submission: Submission) => {
     setSelectedSubmission(submission);
     setDetailsDialogOpen(true);
+  };
+
+  const handleConvertToOrder = (submission: Submission) => {
+    setConvertSubmissionId(submission.id);
+    setConvertDialogOpen(true);
   };
 
   // Define columns for DataGrid
@@ -174,14 +184,30 @@ export default function SubmissionsTable({
         type: "actions",
         headerName: "Actions",
         width: 100,
-        getActions: (params) => [
-          <GridActionsCellItem
-            key="view"
-            icon={<VisibilityIcon />}
-            label="View details"
-            onClick={() => handleViewDetails(params.row as Submission)}
-          />,
-        ],
+        getActions: (params) => {
+          const actions = [
+            <GridActionsCellItem
+              key="view"
+              icon={<VisibilityIcon />}
+              label="View details"
+              onClick={() => handleViewDetails(params.row as Submission)}
+            />,
+          ];
+
+          // Add convert button if workspaceId is provided
+          if (workspaceId) {
+            actions.push(
+              <GridActionsCellItem
+                key="convert"
+                icon={<TransformIcon />}
+                label="Convert to Order"
+                onClick={() => handleConvertToOrder(params.row as Submission)}
+              />,
+            );
+          }
+
+          return actions;
+        },
       },
     );
 
@@ -378,6 +404,19 @@ export default function SubmissionsTable({
           <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Convert to Order Dialog */}
+      {workspaceId && convertSubmissionId && (
+        <ConvertSubmissionDialog
+          open={convertDialogOpen}
+          onClose={() => {
+            setConvertDialogOpen(false);
+            setConvertSubmissionId(null);
+          }}
+          submissionId={convertSubmissionId}
+          workspaceId={workspaceId}
+        />
+      )}
     </>
   );
 }
