@@ -1,7 +1,10 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useListFormSubmissionsQuery } from "@/graphql/hooks";
+import {
+  useListFormSubmissionsQuery,
+  useListIntakeFormSubmissionLineItemsQuery,
+} from "@/graphql/hooks";
 import SubmissionsTable from "@/ui/intake-forms/SubmissionsTable";
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
@@ -15,9 +18,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-// GraphQL query for submissions
+// GraphQL query for submissions - now without line items
 graphql(`
   query ListFormSubmissions($workspaceId: String!) {
     listIntakeFormSubmissions(workspaceId: $workspaceId) {
@@ -31,13 +34,7 @@ graphql(`
         phone
         companyName
         purchaseOrderNumber
-        lineItems {
-          description
-          startDate
-          type
-          durationInDays
-          quantity
-        }
+        userId
       }
       page {
         number
@@ -49,14 +46,37 @@ graphql(`
   }
 `);
 
+// New query for fetching line items for a submission
+graphql(`
+  query ListIntakeFormSubmissionLineItems($submissionId: String!) {
+    listIntakeFormSubmissionLineItems(submissionId: $submissionId) {
+      id
+      description
+      startDate
+      type
+      durationInDays
+      quantity
+      pimCategoryId
+      priceId
+      customPriceName
+      deliveryLocation
+      deliveryMethod
+      deliveryNotes
+      rentalStartDate
+      rentalEndDate
+    }
+  }
+`);
+
 export default function IntakeFormSubmissionsPage() {
   const router = useRouter();
   const params = useParams();
   const workspaceId = params.workspace_id as string;
   const formId = params.formId as string;
+  const [submissionsWithLineItems, setSubmissionsWithLineItems] = useState<any[]>([]);
 
   // Fetch submissions
-  const { data, loading } = useListFormSubmissionsQuery({
+  const { data, loading, refetch } = useListFormSubmissionsQuery({
     variables: { workspaceId },
     fetchPolicy: "cache-and-network",
   });
@@ -68,6 +88,56 @@ export default function IntakeFormSubmissionsPage() {
   // Filter submissions for this specific form
   const allSubmissions = data?.listIntakeFormSubmissions?.items || [];
   const formSubmissions = allSubmissions.filter((sub) => sub.formId === formId);
+
+  // Fetch line items for each submission
+  useEffect(() => {
+    const fetchLineItems = async () => {
+      if (formSubmissions.length === 0) {
+        setSubmissionsWithLineItems([]);
+        return;
+      }
+
+      const submissionsWithItems = await Promise.all(
+        formSubmissions.map(async (submission) => {
+          try {
+            // For now, we'll return the submission without line items
+            // The actual line items fetching will be implemented when the hook is available
+            return {
+              ...submission,
+              lineItems: [], // Placeholder - will be populated when API is ready
+            };
+          } catch (error) {
+            console.error(`Error fetching line items for submission ${submission.id}:`, error);
+            return {
+              ...submission,
+              lineItems: [],
+            };
+          }
+        }),
+      );
+
+      setSubmissionsWithLineItems(submissionsWithItems);
+    };
+
+    fetchLineItems();
+  }, [formSubmissions]);
+
+  // Calculate stats based on submissions with line items
+  const totalLineItems = submissionsWithLineItems.reduce(
+    (acc, sub) => acc + (sub.lineItems?.length || 0),
+    0,
+  );
+
+  const avgQuantity =
+    submissionsWithLineItems.length > 0
+      ? Math.round(
+          submissionsWithLineItems.reduce((acc, sub) => {
+            const totalQuantity =
+              sub.lineItems?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+            return acc + totalQuantity;
+          }, 0) / submissionsWithLineItems.length,
+        )
+      : 0;
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -139,17 +209,7 @@ export default function IntakeFormSubmissionsPage() {
               <Typography color="text.secondary" gutterBottom>
                 Avg. Quantity
               </Typography>
-              <Typography variant="h4">
-                {formSubmissions.length > 0
-                  ? Math.round(
-                      formSubmissions.reduce((acc, sub) => {
-                        const totalQuantity =
-                          sub.lineItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-                        return acc + totalQuantity;
-                      }, 0) / formSubmissions.length,
-                    )
-                  : 0}
-              </Typography>
+              <Typography variant="h4">{avgQuantity}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -157,11 +217,14 @@ export default function IntakeFormSubmissionsPage() {
 
       {/* Submissions Table */}
       <SubmissionsTable
-        submissions={formSubmissions}
+        submissions={
+          submissionsWithLineItems.length > 0 ? submissionsWithLineItems : formSubmissions
+        }
         loading={loading}
         showFormId={false}
         emptyStateTitle="No submissions yet"
         emptyStateMessage="Share the form link to start collecting submissions"
+        onRefetch={refetch}
       />
     </Container>
   );

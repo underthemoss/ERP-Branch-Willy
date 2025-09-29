@@ -8,12 +8,14 @@ import {
   useDeleteIntakeFormMutation,
   useListIntakeFormsQuery,
   useListIntakeFormSubmissionsQuery,
+  useUpdateIntakeFormMutation,
 } from "@/graphql/hooks";
 import SubmissionsTable from "@/ui/intake-forms/SubmissionsTable";
 import { useListPriceBooksQuery } from "@/ui/prices/api";
 import ProjectSelector from "@/ui/ProjectSelector";
 import {
   Add as AddIcon,
+  Assignment as AssignmentIcon,
   ContentCopy as CopyIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -42,18 +44,14 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Popover,
   Stack,
   Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
 import { createFilterOptions } from "@mui/material/Autocomplete";
+import { DataGridPremium, GridColDef, GridRenderCellParams } from "@mui/x-data-grid-premium";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
 
@@ -76,9 +74,18 @@ graphql(`
           logoUrl
           bannerImageUrl
         }
+        pricebook {
+          id
+          name
+        }
         isActive
         createdAt
         updatedAt
+        isPublic
+        sharedWithUsers {
+          id
+          email
+        }
       }
       page {
         number
@@ -142,6 +149,24 @@ graphql(`
   }
 `);
 
+graphql(`
+  mutation UpdateIntakeForm($id: String!, $input: UpdateIntakeFormInput!) {
+    updateIntakeForm(id: $id, input: $input) {
+      id
+      workspaceId
+      projectId
+      isActive
+      createdAt
+      updatedAt
+      isPublic
+      sharedWithUsers {
+        id
+        email
+      }
+    }
+  }
+`);
+
 interface IntakeForm {
   id: string;
   projectId?: string | null;
@@ -152,7 +177,10 @@ interface IntakeForm {
     logoUrl?: string | null;
     bannerImageUrl?: string | null;
   } | null;
+  pricebook?: { id: string; name: string } | null;
   isActive: boolean;
+  isPublic?: boolean;
+  sharedWithUsers?: { id: string; email: string }[];
   createdAt: string;
   updatedAt: string;
   submissions?: number;
@@ -179,6 +207,10 @@ export default function IntakeFormsPage() {
   const [shareInputValue, setShareInputValue] = useState("");
   const [shareError, setShareError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingFormId, setEditingFormId] = useState<string | null>(null);
+  const [usersPopoverAnchor, setUsersPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [popoverUsers, setPopoverUsers] = useState<{ id: string; email: string }[]>([]);
 
   // Fetch intake forms
   const { data, loading, refetch } = useListIntakeFormsQuery({
@@ -225,7 +257,7 @@ export default function IntakeFormsPage() {
     stringify: (o) => `${o.name} ${o.email}`,
   });
 
-  const [createIntakeForm] = useCreateIntakeFormMutation({
+  const [createIntakeForm, { loading: createLoading }] = useCreateIntakeFormMutation({
     onCompleted: () => {
       setCreateDialogOpen(false);
       setNewFormName("");
@@ -244,6 +276,21 @@ export default function IntakeFormsPage() {
     onCompleted: () => {
       setDeleteDialogOpen(false);
       setSelectedForm(null);
+      refetch();
+    },
+  });
+
+  const [updateIntakeForm, { loading: updateLoading }] = useUpdateIntakeFormMutation({
+    onCompleted: () => {
+      setEditDialogOpen(false);
+      setEditingFormId(null);
+      setNewFormProjectId("");
+      setNewFormActive(true);
+      setNewFormPricebookId("");
+      setNewFormIsPublic(false);
+      setSharedEmails([]);
+      setShareSelected([]);
+      setShareInputValue("");
       refetch();
     },
   });
@@ -270,12 +317,28 @@ export default function IntakeFormsPage() {
           workspaceId,
           projectId: newFormProjectId || null,
           isActive: newFormActive,
+          isPublic: newFormIsPublic,
+          pricebookId: newFormPricebookId || null,
+          sharedWithEmails: newFormIsPublic ? [] : sharedEmails,
         },
-        // Extra top-level variables for planned API update
-        pricebookId: newFormPricebookId || null,
-        isPublic: newFormIsPublic,
-        sharedWithEmails: newFormIsPublic ? [] : sharedEmails,
-      } as any,
+      },
+    });
+  };
+
+  const handleUpdateForm = async () => {
+    if (!editingFormId) return;
+
+    await updateIntakeForm({
+      variables: {
+        id: editingFormId,
+        input: {
+          projectId: newFormProjectId || null,
+          isActive: newFormActive,
+          isPublic: newFormIsPublic,
+          pricebookId: newFormPricebookId || null,
+          sharedWithEmails: newFormIsPublic ? [] : sharedEmails,
+        },
+      },
     });
   };
 
@@ -295,6 +358,237 @@ export default function IntakeFormsPage() {
   );
 
   const allSubmissions = (submissionsData?.listIntakeFormSubmissions?.items as any[]) || [];
+
+  // Calculate submission counts per form
+  const submissionCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    allSubmissions.forEach((submission) => {
+      if (submission.formId) {
+        counts[submission.formId] = (counts[submission.formId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [allSubmissions]);
+
+  // Prepare rows for DataGrid
+  const rows = React.useMemo(() => {
+    return filteredForms.map((form) => ({
+      ...form,
+      submissions: submissionCounts[form.id] || 0,
+      projectName: form.project?.name || form.project?.projectCode || form.projectId || "-",
+      pricebookName: form.pricebook?.name || "-",
+    }));
+  }, [filteredForms, submissionCounts]);
+
+  // Define columns for DataGrid
+  const columns: GridColDef[] = [
+    {
+      field: "id",
+      headerName: "Form ID",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params: GridRenderCellParams) => (
+        <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+          <Typography variant="body2" fontFamily="monospace" sx={{ mr: 1 }}>
+            {params.value}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopyLink(params.value as string);
+            }}
+            title="Copy form link"
+            sx={{ padding: "4px" }}
+          >
+            <LinkIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
+    {
+      field: "projectName",
+      headerName: "Project",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params: GridRenderCellParams) => {
+        const form = params.row as IntakeForm;
+        if (!form.project) {
+          return <Typography variant="body2">-</Typography>;
+        }
+        return (
+          <Typography
+            variant="body2"
+            component="a"
+            href={`/app/${workspaceId}/projects/${form.project.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(`/app/${workspaceId}/projects/${form.project!.id}`);
+            }}
+            sx={{
+              color: "primary.main",
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            }}
+          >
+            {form.project.name || form.project.projectCode}
+          </Typography>
+        );
+      },
+    },
+    {
+      field: "pricebookName",
+      headerName: "Pricebook",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params: GridRenderCellParams) => {
+        const form = params.row as IntakeForm;
+        if (!form.pricebook) {
+          return <Typography variant="body2">-</Typography>;
+        }
+        return (
+          <Typography
+            variant="body2"
+            component="a"
+            href={`/app/${workspaceId}/prices/price-books/${form.pricebook.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(`/app/${workspaceId}/prices/price-books/${form.pricebook!.id}`);
+            }}
+            sx={{
+              color: "primary.main",
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            }}
+          >
+            {form.pricebook.name}
+          </Typography>
+        );
+      },
+    },
+    {
+      field: "isPublic",
+      headerName: "Visibility",
+      width: 100,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value ? "Public" : "Private"}
+          color={params.value ? "info" : "warning"}
+          size="small"
+        />
+      ),
+    },
+    {
+      field: "sharedWithUsers",
+      headerName: "Shared With",
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => {
+        const users = params.value as { id: string; email: string }[] | undefined;
+
+        const content = (() => {
+          if (!users || users.length === 0) {
+            return (
+              <Typography variant="body2" color="text.secondary">
+                -
+              </Typography>
+            );
+          }
+
+          const handlePopoverOpen = (event: React.MouseEvent<HTMLElement>) => {
+            setUsersPopoverAnchor(event.currentTarget);
+            setPopoverUsers(users);
+          };
+
+          const handlePopoverClose = () => {
+            setUsersPopoverAnchor(null);
+            setPopoverUsers([]);
+          };
+
+          if (users.length === 1) {
+            return <Chip label={users[0].email} size="small" sx={{ maxWidth: "140px" }} />;
+          }
+
+          return (
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Chip label={users[0].email} size="small" sx={{ maxWidth: "100px" }} />
+              <Chip
+                label={`+${users.length - 1}`}
+                size="small"
+                onMouseEnter={handlePopoverOpen}
+                onMouseLeave={handlePopoverClose}
+                sx={{ cursor: "pointer" }}
+              />
+            </Stack>
+          );
+        })();
+
+        return <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>{content}</Box>;
+      },
+    },
+    {
+      field: "isActive",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value ? "Active" : "Inactive"}
+          color={params.value ? "success" : "default"}
+          size="small"
+        />
+      ),
+    },
+    {
+      field: "submissions",
+      headerName: "Submissions",
+      width: 120,
+      type: "number",
+    },
+    {
+      field: "createdAt",
+      headerName: "Created",
+      width: 150,
+      valueFormatter: (value) => {
+        const date = new Date(value);
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      },
+    },
+    {
+      field: "updatedAt",
+      headerName: "Updated",
+      width: 150,
+      valueFormatter: (value) => {
+        const date = new Date(value);
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      },
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 80,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      align: "right",
+      headerAlign: "right",
+      renderCell: (params: GridRenderCellParams) => (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleMenuOpen(e, params.row as IntakeForm);
+          }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ];
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -374,101 +668,98 @@ export default function IntakeFormsPage() {
         </Button>
       </Box>
 
-      {/* Forms Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Form ID</TableCell>
-              <TableCell>Project</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Submissions</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            )}
-            {!loading && filteredForms.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  <Box sx={{ py: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                      No intake forms yet
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Create your first intake form to start collecting requests
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={() => setCreateDialogOpen(true)}
-                      sx={{ mt: 2 }}
-                    >
-                      Create Intake Form
-                    </Button>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            )}
-            {filteredForms.map((form: IntakeForm) => (
-              <TableRow key={form.id} hover>
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" fontFamily="monospace">
-                      {form.id}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleCopyLink(form.id)}
-                      title="Copy form link"
-                    >
-                      <LinkIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  {form.project?.name || form.project?.projectCode || form.projectId || "-"}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={form.isActive ? "Active" : "Inactive"}
-                    color={form.isActive ? "success" : "default"}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>{new Date(form.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>{new Date(form.updatedAt).toLocaleDateString()}</TableCell>
-                <TableCell align="right">
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewSubmissions(form.id)}
-                      title="View submissions"
-                    >
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, form as IntakeForm)}>
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Forms DataGrid */}
+      <Paper sx={{ height: 300, width: "100%" }}>
+        {!loading && rows.length === 0 ? (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              flexDirection: "column",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              No intake forms yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Create your first intake form to start collecting requests
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{ mt: 2 }}
+            >
+              Create Intake Form
+            </Button>
+          </Box>
+        ) : (
+          <DataGridPremium
+            rows={rows}
+            columns={columns}
+            loading={loading}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{
+              pagination: {
+                paginationModel: { pageSize: 25 },
+              },
+              columns: {
+                columnVisibilityModel: {
+                  isActive: false,
+                },
+              },
+            }}
+            disableRowSelectionOnClick
+            sx={{
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          />
+        )}
+      </Paper>
 
       {/* Actions Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        <MenuItem
+          onClick={() => {
+            handleMenuClose();
+            if (selectedForm) {
+              // Populate form fields with selected form data
+              setEditingFormId(selectedForm.id);
+              setNewFormProjectId(selectedForm.projectId || "");
+              setNewFormActive(selectedForm.isActive);
+              setNewFormPricebookId(selectedForm.pricebook?.id || "");
+              setNewFormIsPublic(selectedForm.isPublic || false);
+
+              // Set shared emails
+              const emails = selectedForm.sharedWithUsers?.map((u) => u.email) || [];
+              setSharedEmails(emails);
+              setShareSelected(emails);
+
+              setEditDialogOpen(true);
+            }
+          }}
+        >
+          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          Edit Form
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleMenuClose();
+            if (selectedForm) {
+              handleViewSubmissions(selectedForm.id);
+            }
+          }}
+        >
+          <AssignmentIcon fontSize="small" sx={{ mr: 1 }} />
+          View Submissions
+        </MenuItem>
         <MenuItem
           onClick={() => {
             handleMenuClose();
@@ -734,12 +1025,270 @@ export default function IntakeFormsPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreateForm} variant="contained">
-            Create Form
+          <Button onClick={() => setCreateDialogOpen(false)} disabled={createLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateForm} variant="contained" loading={createLoading}>
+            {createLoading ? "Creating..." : "Create Form"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit Form Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingFormId(null);
+          setNewFormProjectId("");
+          setNewFormActive(true);
+          setNewFormPricebookId("");
+          setNewFormIsPublic(false);
+          setSharedEmails([]);
+          setShareSelected([]);
+          setShareInputValue("");
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Update Intake Form</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Update the settings for this intake form. The form URL will remain the same.
+          </Alert>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Project (Optional)
+              </Typography>
+              <ProjectSelector
+                projectId={newFormProjectId}
+                onChange={(projectId) => setNewFormProjectId(projectId)}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: "block" }}
+              >
+                Associate this form with a specific project
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={newFormActive}
+                  onChange={(e) => setNewFormActive(e.target.checked)}
+                />
+              }
+              label="Active (Accept submissions)"
+            />
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Pricebook (Optional)
+              </Typography>
+              <Autocomplete
+                options={priceBooksData?.listPriceBooks?.items || []}
+                getOptionLabel={(option) => option?.name ?? ""}
+                loading={priceBooksLoading}
+                value={
+                  (priceBooksData?.listPriceBooks?.items || []).find(
+                    (pb) => pb.id === newFormPricebookId,
+                  ) || null
+                }
+                onChange={(_, newValue) => setNewFormPricebookId(newValue?.id || "")}
+                renderInput={(params) => <TextField {...params} placeholder="Select a pricebook" />}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: "block" }}
+              >
+                Choose a pricebook to drive pricing on this form
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Visibility
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={newFormIsPublic}
+                    onChange={(e) => setNewFormIsPublic(e.target.checked)}
+                  />
+                }
+                label={newFormIsPublic ? "Public (anyone with the link)" : "Private"}
+              />
+              {!newFormIsPublic && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Share with people
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    options={filteredPersonOptions}
+                    filterOptions={emailFilter}
+                    value={shareSelected}
+                    inputValue={shareInputValue}
+                    onInputChange={(_, val) => {
+                      setShareInputValue(val);
+                      if (shareError) setShareError(null);
+                    }}
+                    onChange={(_, newValue) => {
+                      const entries = newValue as (string | { email: string; name: string })[];
+                      const invalids = entries.filter(
+                        (v) => typeof v === "string" && !isValidEmail(v.trim()),
+                      ) as string[];
+                      const sanitized = entries.filter(
+                        (v) => !(typeof v === "string" && !isValidEmail(v.trim())),
+                      );
+                      setShareSelected(sanitized as any);
+                      const emails = sanitized
+                        .map((v) => (typeof v === "string" ? v.trim() : v.email))
+                        .filter((e) => e.length > 0);
+                      setSharedEmails(Array.from(new Set(emails)));
+                      if (invalids.length > 0) {
+                        setShareError("Enter a valid email address");
+                      } else {
+                        setShareError(null);
+                        setShareInputValue("");
+                      }
+                    }}
+                    getOptionLabel={(option) =>
+                      typeof option === "string" ? option : `${option.name} <${option.email}>`
+                    }
+                    renderTags={(value, getTagProps) =>
+                      value.map((v, index) => {
+                        const label = typeof v === "string" ? v : v.name ? `${v.name}` : v.email;
+                        return (
+                          <Chip
+                            {...getTagProps({ index })}
+                            key={typeof v === "string" ? v : v.email}
+                            label={label}
+                            size="small"
+                          />
+                        );
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="contact or email"
+                        error={!!shareError}
+                        helperText={shareError ?? undefined}
+                        onKeyDown={(e) => {
+                          if (!shareInputValue) return;
+                          if (e.key === "Enter" || e.key === "," || e.key === " ") {
+                            e.preventDefault();
+                            const tokens = shareInputValue
+                              .split(/[,\s]+/)
+                              .map((t) => t.trim())
+                              .filter(Boolean);
+                            if (tokens.length > 0) {
+                              const valid = tokens.filter((t) => isValidEmail(t));
+                              const invalid = tokens.filter((t) => !isValidEmail(t));
+                              const dedupedValid = valid.filter((t) => !sharedEmails.includes(t));
+                              if (dedupedValid.length > 0) {
+                                setShareSelected([
+                                  ...shareSelected,
+                                  ...dedupedValid,
+                                ] as unknown as any);
+                                setSharedEmails(
+                                  Array.from(new Set([...sharedEmails, ...dedupedValid])),
+                                );
+                              }
+                              if (invalid.length > 0) {
+                                setShareError("Enter a valid email address");
+                              } else {
+                                setShareError(null);
+                                setShareInputValue("");
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    )}
+                    isOptionEqualToValue={(opt, val) => {
+                      const oEmail = typeof opt === "string" ? opt : opt.email;
+                      const vEmail = typeof val === "string" ? val : val.email;
+                      return oEmail === vEmail;
+                    }}
+                    ListboxProps={{ style: { maxHeight: 300 } }}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 0.5, display: "block" }}
+                  >
+                    People selected from suggestions are added by email; custom entries are treated
+                    as emails.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEditDialogOpen(false);
+              setEditingFormId(null);
+              setNewFormProjectId("");
+              setNewFormActive(true);
+              setNewFormPricebookId("");
+              setNewFormIsPublic(false);
+              setSharedEmails([]);
+              setShareSelected([]);
+              setShareInputValue("");
+            }}
+            disabled={updateLoading}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleUpdateForm} variant="contained" loading={updateLoading}>
+            {updateLoading ? "Updating..." : "Update Form"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Users Popover */}
+      <Popover
+        open={Boolean(usersPopoverAnchor)}
+        anchorEl={usersPopoverAnchor}
+        onClose={() => {
+          setUsersPopoverAnchor(null);
+          setPopoverUsers([]);
+        }}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "left",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "left",
+        }}
+        sx={{
+          pointerEvents: "none",
+        }}
+      >
+        <Box sx={{ p: 2, maxWidth: 300 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Shared with {popoverUsers.length} users:
+          </Typography>
+          <Stack spacing={0.5}>
+            {popoverUsers.map((user) => (
+              <Chip
+                key={user.id}
+                label={user.email}
+                size="small"
+                sx={{ justifyContent: "flex-start" }}
+              />
+            ))}
+          </Stack>
+        </Box>
+      </Popover>
     </Container>
   );
 }

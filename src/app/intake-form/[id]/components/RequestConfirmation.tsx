@@ -1,8 +1,11 @@
 "use client";
 
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
+  Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Container,
   Divider,
@@ -20,15 +23,19 @@ import {
 } from "@mui/material";
 import React from "react";
 import { FormData } from "../page";
+import IntakeFormHeader from "./IntakeFormHeader";
 
 interface RequestConfirmationProps {
   projectId: string;
   projectName?: string;
   projectCode?: string;
   companyName?: string;
+  workspaceLogo?: string | null;
   formData: FormData;
+  submissionStatus?: "DRAFT" | "SUBMITTED";
   onConfirm: () => void;
   onNewRequest: () => void;
+  onBack?: () => void;
   isSubmitting: boolean;
 }
 
@@ -36,133 +43,304 @@ export default function RequestConfirmation({
   projectId,
   projectName,
   projectCode,
+  companyName,
+  workspaceLogo,
   formData,
+  submissionStatus = "DRAFT",
   onConfirm,
   onNewRequest,
+  onBack,
   isSubmitting,
 }: RequestConfirmationProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
-    <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
-      <Paper elevation={1} sx={{ p: isMobile ? 2 : 4 }}>
-        {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" sx={{ mb: 1 }}>
-            Request Confirmation
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Project {projectName || projectCode || projectId || "N/A"}
-          </Typography>
-        </Box>
+    <>
+      {/* Header Section */}
+      <IntakeFormHeader companyName={companyName || ""} workspaceLogo={workspaceLogo} />
 
-        {/* Contact Information */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Contact Information
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" color="text.secondary">
-                Name
-              </Typography>
-              <Typography variant="body1">{formData.contact.fullName}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" color="text.secondary">
-                Email
-              </Typography>
-              <Typography variant="body1">{formData.contact.email}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" color="text.secondary">
-                Phone
-              </Typography>
-              <Typography variant="body1">{formData.contact.phoneNumber}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" color="text.secondary">
-                Company
-              </Typography>
-              <Typography variant="body1">{formData.contact.company}</Typography>
-            </Grid>
-            {formData.contact.purchaseOrderNumber && (
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Purchase Order Number
-                </Typography>
-                <Typography variant="body1">{formData.contact.purchaseOrderNumber}</Typography>
-              </Grid>
-            )}
-          </Grid>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Line Items */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Request Items
-          </Typography>
-          <TableContainer component={Paper} variant="outlined">
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Start Date</TableCell>
-                  <TableCell align="center">Quantity</TableCell>
-                  <TableCell align="center">Duration</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {formData.lineItems.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.type}</TableCell>
-                    <TableCell>{new Date(item.startDate).toLocaleDateString()}</TableCell>
-                    <TableCell align="center">{item.quantity}</TableCell>
-                    <TableCell align="center">
-                      {item.type === "RENTAL" ? `${item.durationInDays} days` : "-"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-
-        {/* Action Buttons */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-          <Button variant="outlined" size="large" onClick={onNewRequest} disabled={isSubmitting}>
-            Start New Request
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={onConfirm}
-            disabled={isSubmitting}
+      <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
+        <Paper elevation={3} sx={{ overflow: "hidden" }}>
+          {/* Project Header */}
+          <Box
             sx={{
-              bgcolor: "#4A90E2",
-              "&:hover": {
-                bgcolor: "#357ABD",
-              },
-              minWidth: 150,
+              bgcolor: "grey.50",
+              p: isMobile ? 2 : 3,
+              borderBottom: 1,
+              borderColor: "divider",
             }}
           >
-            {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "Confirm Request"}
-          </Button>
-        </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography variant="h5" fontWeight="600" color="text.primary" gutterBottom>
+                  Request Confirmation
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Project:
+                  </Typography>
+                  <Typography variant="body1" fontWeight="500">
+                    {projectName || "Unnamed Project"}
+                  </Typography>
+                  {projectCode && (
+                    <Chip
+                      label={`Code: ${projectCode}`}
+                      size="small"
+                      variant="outlined"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Box>
+              </Box>
+              <Chip
+                label={submissionStatus === "SUBMITTED" ? "Submitted" : "Draft"}
+                color={submissionStatus === "SUBMITTED" ? "success" : "default"}
+                size="medium"
+                icon={submissionStatus === "SUBMITTED" ? <CheckCircleIcon /> : undefined}
+                sx={{
+                  fontWeight: 600,
+                  px: 2,
+                  height: 32,
+                }}
+              />
+            </Box>
+          </Box>
 
-        {/* Footer */}
-        <Box sx={{ mt: 4, pt: 3, borderTop: "1px solid #e0e0e0" }}>
-          <Typography variant="caption" color="text.secondary">
-            By confirming this request, you agree to the terms and conditions. A confirmation email
-            will be sent to {formData.contact.email}.
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+          <Box sx={{ p: isMobile ? 2 : 4 }}>
+            {/* Status Alert */}
+            {submissionStatus === "SUBMITTED" ? (
+              <Alert severity="success" sx={{ mb: 3 }}>
+                Your request has been successfully submitted! A confirmation email has been sent to{" "}
+                {formData.contact.email}.
+              </Alert>
+            ) : (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Please review your request details below. Once you confirm, your request will be
+                submitted for processing.
+              </Alert>
+            )}
+
+            {/* Contact Information */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Your Contact Details
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Name
+                  </Typography>
+                  <Typography variant="body1">{formData.contact.fullName}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1">{formData.contact.email}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Phone
+                  </Typography>
+                  <Typography variant="body1">{formData.contact.phoneNumber}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Company
+                  </Typography>
+                  <Typography variant="body1">{formData.contact.company}</Typography>
+                </Grid>
+                {formData.contact.purchaseOrderNumber && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Purchase Order Number
+                    </Typography>
+                    <Typography variant="body1">{formData.contact.purchaseOrderNumber}</Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Line Items */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Request Items
+              </Typography>
+              <TableContainer component={Paper} variant="outlined">
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Description</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Start Date</TableCell>
+                      <TableCell>End Date</TableCell>
+                      <TableCell align="center">Quantity</TableCell>
+                      <TableCell>Delivery</TableCell>
+                      <TableCell>Cost</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {/* Display new line items if available, otherwise fall back to old format */}
+                    {(formData.newLineItems && formData.newLineItems.length > 0
+                      ? formData.newLineItems
+                      : formData.lineItems
+                    ).map((item, index) => {
+                      // Check if it's a new line item format
+                      if ("pimCategoryId" in item) {
+                        const newItem = item as any; // NewLineItem type
+                        const description = newItem.isCustomProduct
+                          ? newItem.customProductName || "Custom Product"
+                          : newItem.priceName || newItem.pimCategoryName || "Product";
+
+                        const startDate =
+                          newItem.type === "RENTAL"
+                            ? newItem.rentalStartDate
+                            : newItem.deliveryDate;
+
+                        const endDate = newItem.type === "RENTAL" ? newItem.rentalEndDate : null;
+
+                        const getCostDisplay = () => {
+                          if (newItem.isCustomProduct) return "Custom pricing";
+
+                          if (newItem.type === "PURCHASE" && newItem.unitCostInCents) {
+                            const total = (newItem.unitCostInCents * newItem.quantity) / 100;
+                            return `$${total.toFixed(2)}`;
+                          }
+
+                          if (
+                            newItem.type === "RENTAL" &&
+                            newItem.rentalDuration &&
+                            newItem.pricePerDayInCents
+                          ) {
+                            const total =
+                              (newItem.pricePerDayInCents *
+                                newItem.rentalDuration *
+                                newItem.quantity) /
+                              100;
+                            return `$${total.toFixed(2)} (est.)`;
+                          }
+
+                          return "-";
+                        };
+
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>
+                              {description}
+                              {newItem.isCustomProduct && (
+                                <Typography variant="caption" display="block" color="info.main">
+                                  Custom Product
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>{newItem.type}</TableCell>
+                            <TableCell>
+                              {startDate ? new Date(startDate).toLocaleDateString() : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {endDate ? new Date(endDate).toLocaleDateString() : "-"}
+                            </TableCell>
+                            <TableCell align="center">{newItem.quantity}</TableCell>
+                            <TableCell>{newItem.deliveryMethod || "-"}</TableCell>
+                            <TableCell>{getCostDisplay()}</TableCell>
+                          </TableRow>
+                        );
+                      } else {
+                        // Old line item format
+                        const oldItem = item as any;
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{oldItem.description}</TableCell>
+                            <TableCell>{oldItem.type}</TableCell>
+                            <TableCell>
+                              {new Date(oldItem.startDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>-</TableCell>
+                            <TableCell align="center">{oldItem.quantity}</TableCell>
+                            <TableCell>-</TableCell>
+                            <TableCell>
+                              {oldItem.type === "RENTAL" ? `${oldItem.durationInDays} days` : "-"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+              {submissionStatus === "DRAFT" ? (
+                <>
+                  {onBack && (
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={onBack}
+                      disabled={isSubmitting}
+                    >
+                      Back to Edit
+                    </Button>
+                  )}
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={onConfirm}
+                    disabled={isSubmitting}
+                    sx={{
+                      minWidth: 150,
+                      ml: onBack ? 0 : "auto",
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      "Submit Request"
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outlined" size="large" onClick={onNewRequest}>
+                    Start New Request
+                  </Button>
+                  <Typography
+                    variant="body2"
+                    color="success.main"
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                    Request Successfully Submitted
+                  </Typography>
+                </>
+              )}
+            </Box>
+
+            {/* Footer */}
+            {submissionStatus === "DRAFT" && (
+              <Box sx={{ mt: 4, pt: 3, borderTop: "1px solid #e0e0e0" }}>
+                <Typography variant="caption" color="text.secondary">
+                  By submitting this request, you agree to the terms and conditions. A confirmation
+                  email will be sent to {formData.contact.email}.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      </Container>
+    </>
   );
 }

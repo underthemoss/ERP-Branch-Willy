@@ -62,6 +62,7 @@ interface SubmissionsTableProps {
   onExportCSV?: () => void;
   emptyStateTitle?: string;
   emptyStateMessage?: string;
+  onRefetch?: () => void;
 }
 
 // Custom toolbar component for DataGrid

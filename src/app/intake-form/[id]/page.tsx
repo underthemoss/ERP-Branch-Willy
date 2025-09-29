@@ -8,19 +8,14 @@ import {
   CircularProgress,
   Container,
   Paper,
-  Step,
-  StepLabel,
-  Stepper,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import React, { useState } from "react";
 import IntakeFormLanding from "./components/IntakeFormLanding";
-import RequestConfirmation from "./components/RequestConfirmation";
 import RequestForm from "./components/RequestForm";
-import ThankYou from "./components/ThankYou";
 
 const steps = ["Portal Landing", "Request Form", "Request Confirmation", "Request Landing"];
 
@@ -40,9 +35,43 @@ export interface LineItem {
   quantity: number;
 }
 
+// New line item type with pricebook support
+export interface NewLineItem {
+  // Core fields
+  type: "RENTAL" | "PURCHASE";
+  pimCategoryId: string;
+  pimCategoryName?: string; // Store for display
+  priceId?: string;
+  priceName?: string; // Store for display
+  priceBookName?: string; // Store for display
+  unitCostInCents?: number; // Store for display (purchase)
+
+  // Rental pricing fields
+  pricePerDayInCents?: number;
+  pricePerWeekInCents?: number;
+  pricePerMonthInCents?: number;
+
+  // Custom product (when no price selected)
+  isCustomProduct?: boolean;
+  customProductName?: string;
+
+  // Quantity and delivery
+  quantity: number;
+  deliveryDate?: Date;
+  deliveryLocation?: string;
+  deliveryMethod?: "DELIVERY" | "PICKUP";
+  deliveryNotes?: string;
+
+  // Rental specific
+  rentalDuration?: number; // days
+  rentalStartDate?: Date;
+  rentalEndDate?: Date;
+}
+
 export interface FormData {
   contact: ContactInfo;
   lineItems: LineItem[];
+  newLineItems?: NewLineItem[]; // New line items with pricebook support
   requestNumber?: string;
   submittedDate?: Date;
 }
@@ -61,6 +90,11 @@ graphql(`
       isActive
       createdAt
       updatedAt
+      pricebook {
+        id
+        name
+      }
+      pricebookId
       workspace {
         id
         name
@@ -69,6 +103,7 @@ graphql(`
       }
     }
   }
+
   mutation CreateIntakeFormSubmission($input: IntakeFormSubmissionInput!) {
     createIntakeFormSubmission(input: $input) {
       id
@@ -80,19 +115,36 @@ graphql(`
       phone
       companyName
       purchaseOrderNumber
-      lineItems {
-        description
-        startDate
-        type
-        durationInDays
-        quantity
-      }
+      userId
+    }
+  }
+
+  mutation CreateIntakeFormSubmissionLineItem(
+    $submissionId: String!
+    $input: IntakeFormLineItemInput!
+  ) {
+    createIntakeFormSubmissionLineItem(submissionId: $submissionId, input: $input) {
+      id
+      description
+      startDate
+      type
+      durationInDays
+      quantity
+      pimCategoryId
+      priceId
+      customPriceName
+      deliveryLocation
+      deliveryMethod
+      deliveryNotes
+      rentalStartDate
+      rentalEndDate
     }
   }
 `);
 
 export default function IntakeFormPage() {
   const params = useParams();
+  const router = useRouter();
   const formId = params.id as string; // This is the intake form ID from the URL
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -107,6 +159,7 @@ export default function IntakeFormPage() {
       purchaseOrderNumber: "",
     },
     lineItems: [],
+    newLineItems: [], // Initialize new line items array
   });
 
   // Query to get the intake form by ID
@@ -128,6 +181,8 @@ export default function IntakeFormPage() {
   const intakeForm = intakeFormData?.getIntakeFormById;
   const workspaceId = intakeForm?.workspaceId;
   const projectId = intakeForm?.projectId;
+  const pricebookId = intakeForm?.pricebookId;
+  const pricebookName = intakeForm?.pricebook?.name;
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -137,12 +192,8 @@ export default function IntakeFormPage() {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleFormSubmit = (contact: ContactInfo, lineItems: LineItem[]) => {
-    setFormData({ ...formData, contact, lineItems });
-    handleNext();
-  };
-
-  const handleConfirm = async () => {
+  const handleFormSubmit = async (contact: ContactInfo) => {
+    // Create the submission after contact info is gathered
     if (!intakeForm || !workspaceId) {
       console.error("Missing form or workspace information");
       return;
@@ -154,53 +205,23 @@ export default function IntakeFormPage() {
           input: {
             formId: formId,
             workspaceId: workspaceId,
-            name: formData.contact.fullName,
-            email: formData.contact.email,
-            phone: formData.contact.phoneNumber || undefined,
-            companyName: formData.contact.company || undefined,
-            purchaseOrderNumber: formData.contact.purchaseOrderNumber || undefined,
-            lineItems: formData.lineItems.map((item) => ({
-              description: item.description,
-              startDate: item.startDate.toISOString(),
-              type: item.type === "RENTAL" ? RequestType.Rental : RequestType.Purchase,
-              durationInDays: item.durationInDays,
-              quantity: item.quantity,
-            })),
+            name: contact.fullName,
+            email: contact.email,
+            phone: contact.phoneNumber || undefined,
+            companyName: contact.company || undefined,
+            purchaseOrderNumber: contact.purchaseOrderNumber || undefined,
           },
         },
       });
 
       if (result.data?.createIntakeFormSubmission) {
         const submission = result.data.createIntakeFormSubmission;
-        setFormData((prev) => ({
-          ...prev,
-          requestNumber: submission.id,
-          submittedDate: new Date(submission.createdAt),
-        }));
-        handleNext();
+        // Navigate to the new URL with submission ID
+        router.push(`/intake-form/${formId}/${submission.id}`);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      // In production, you'd want to show an error message to the user
+      console.error("Error creating submission:", error);
     }
-  };
-
-  const handleNewRequest = () => {
-    setFormData({
-      contact: {
-        fullName: "",
-        email: "",
-        phoneNumber: "",
-        company: "",
-        purchaseOrderNumber: "",
-      },
-      lineItems: [],
-    });
-    setActiveStep(1); // Skip landing page for new request
-  };
-
-  const handlePortalHome = () => {
-    setActiveStep(0);
   };
 
   const renderStepContent = () => {
@@ -265,32 +286,10 @@ export default function IntakeFormPage() {
             formData={formData}
             onSubmit={handleFormSubmit}
             onBack={handleBack}
-          />
-        );
-      case 2:
-        return (
-          <RequestConfirmation
-            projectId={projectId || ""}
-            projectName={intakeForm?.project?.name || ""}
-            projectCode={intakeForm?.project?.projectCode || ""}
-            companyName={intakeForm?.workspace?.name || ""}
-            formData={formData}
-            onConfirm={handleConfirm}
-            onNewRequest={handleNewRequest}
+            workspaceId={workspaceId || ""}
+            pricebookId={pricebookId}
+            pricebookName={pricebookName}
             isSubmitting={submitting}
-          />
-        );
-      case 3:
-        return (
-          <ThankYou
-            projectId={projectId || ""}
-            projectName={intakeForm?.project?.name || ""}
-            projectCode={intakeForm?.project?.projectCode || ""}
-            companyName={intakeForm?.workspace?.name || ""}
-            logoUrl={intakeForm?.workspace?.logoUrl || ""}
-            bannerImageUrl={intakeForm?.workspace?.bannerImageUrl || ""}
-            requestNumber={formData.requestNumber}
-            onPortalHome={handlePortalHome}
           />
         );
       default:
@@ -298,20 +297,5 @@ export default function IntakeFormPage() {
     }
   };
 
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      {!isMobile && activeStep > 0 && activeStep < 3 && (
-        <Container maxWidth="lg" sx={{ pt: 4 }}>
-          <Stepper activeStep={activeStep - 1} sx={{ mb: 4 }}>
-            {steps.slice(1, -1).map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Container>
-      )}
-      {renderStepContent()}
-    </Box>
-  );
+  return <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>{renderStepContent()}</Box>;
 }
