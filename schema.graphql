@@ -56,6 +56,51 @@ type AdminMutationNamespace {
     userId: String!
   ): Boolean
 
+  """Send an email using the professional HTML template (Admin only)"""
+  sendTemplatedEmail(
+    """HTML content for the email body"""
+    content: String!
+
+    """Text for the primary call-to-action button"""
+    primaryCtaText: String
+
+    """URL for the primary call-to-action button"""
+    primaryCtaUrl: String
+
+    """Optional reply-to email address"""
+    replyTo: String
+
+    """Text for the secondary call-to-action button"""
+    secondaryCtaText: String
+
+    """URL for the secondary call-to-action button"""
+    secondaryCtaUrl: String
+
+    """Subject of the email"""
+    subject: String!
+
+    """Optional subtitle displayed below the title"""
+    subtitle: String
+
+    """Title displayed in the email header"""
+    title: String!
+
+    """Email address to send the email to"""
+    to: String!
+  ): SendTemplatedEmailResult!
+
+  """Send a test email to verify email configuration (Admin only)"""
+  sendTestEmail(
+    """Optional custom message for the email body"""
+    message: String
+
+    """Subject of the test email"""
+    subject: String = "Test Email from ES ERP API"
+
+    """Email address to send the test email to"""
+    to: String!
+  ): SendTestEmailResult!
+
   """Create or update a SpiceDB relationship"""
   writeRelationship(
     """Relation type (e.g., "member", "admin")"""
@@ -157,6 +202,21 @@ type AdminQueryNamespace {
     """Sort field and order"""
     sort: String
   ): Auth0UsersSearchResult
+
+  """Get recent SendGrid email activity (Admin only)"""
+  sendGridEmailActivity(
+    """Maximum number of results"""
+    limit: Int = 50
+
+    """Query string for filtering"""
+    query: String
+  ): [EmailActivity!]!
+
+  """Get email details including content (Admin only)"""
+  sendGridEmailDetails(
+    """Message ID"""
+    msgId: String!
+  ): EmailDetails
 }
 
 type Asset {
@@ -806,6 +866,31 @@ enum DeliveryMethod {
   PICKUP
 }
 
+type EmailActivity {
+  clicks: Int
+  email: String!
+  event: String!
+  fromEmail: String
+  htmlContent: String
+  msgId: String!
+  opens: Int
+  plainContent: String
+  status: String
+  subject: String
+  timestamp: Float!
+}
+
+type EmailDetails {
+  from: String!
+  htmlContent: String
+  msgId: String!
+  plainContent: String
+  status: String!
+  subject: String!
+  timestamp: Float!
+  to: String!
+}
+
 type ExampleTicket {
   description: String!
   title: String!
@@ -979,8 +1064,8 @@ input IntakeFormLineItemInput {
   pimCategoryId: String!
   priceId: String
   quantity: Int!
-  rentalEndDate: String
-  rentalStartDate: String
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
   salesOrderId: String
   salesOrderLineItemId: String
   startDate: DateTime!
@@ -2698,6 +2783,18 @@ enum ScopeOfWorkEnum {
   SPECIALTY_SYSTEMS
   STRUCTURAL_FRAME
   WARRANTY_SERVICES
+}
+
+type SendTemplatedEmailResult {
+  error: String
+  message: String
+  success: Boolean!
+}
+
+type SendTestEmailResult {
+  error: String
+  message: String
+  success: Boolean!
 }
 
 type SequenceNumber {
