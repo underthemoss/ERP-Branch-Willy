@@ -6,22 +6,16 @@ import { Topbar } from "@/ui/Topbar";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { NavBar } from "./NavBar";
-import { Sidebar } from "./sidebar/Sidebar";
-import { useSidebar } from "./sidebar/useSidebar";
 
 const DashboardMainSection: React.FC<{
   children: React.ReactNode;
   onMobileNavToggle: () => void;
 }> = ({ children, onMobileNavToggle }) => {
-  const { getSidebarState } = useSidebar();
-  const sidebarState = getSidebarState();
-  const isSidebarOpen = sidebarState !== null;
-
   return (
     <Box
       sx={{
         display: "flex",
-        minWidth: isSidebarOpen ? 0 : { xs: 0, md: "900px" },
+        minWidth: { xs: 0, md: "900px" },
         height: "100%",
         marginRight: -1,
       }}
@@ -55,8 +49,6 @@ const DashboardMainSection: React.FC<{
           {children}
         </Box>
       </Box>
-      {/* Right panel */}
-      <Sidebar />
     </Box>
   );
 };

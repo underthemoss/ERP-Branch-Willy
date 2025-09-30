@@ -3,7 +3,6 @@
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import SearchIcon from "@mui/icons-material/Search";
-import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 import {
   Box,
   Breadcrumbs,
@@ -17,16 +16,14 @@ import {
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { NextLink } from "./NextLink";
-import { useSidebar } from "./sidebar/useSidebar";
 
 const SHORTCUT = "⌘ /";
 
 interface ToolbarActionsProps {
-  toggleSideBar: () => void;
   toggleMobileNav?: () => void;
 }
 
-const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleSideBar, toggleMobileNav }) => {
+const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -66,9 +63,6 @@ const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleSideBar, toggleMo
       <IconButton size="small" aria-label="notifications">
         <NotificationsNoneOutlinedIcon fontSize="small" />
       </IconButton>
-      <IconButton size="small" aria-label="layout switcher" onClick={toggleSideBar}>
-        <ViewSidebarOutlinedIcon fontSize="small" />
-      </IconButton>
     </Box>
   );
 };
@@ -78,7 +72,6 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onMobileNavToggle }) => {
-  const { closeSidebar } = useSidebar();
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -170,7 +163,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileNavToggle }) => {
       </Box>
 
       <Box sx={{ flexShrink: 0 }}>
-        <ToolbarActions toggleSideBar={closeSidebar} toggleMobileNav={onMobileNavToggle} />
+        <ToolbarActions toggleMobileNav={onMobileNavToggle} />
       </Box>
     </Box>
   );
