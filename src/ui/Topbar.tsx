@@ -7,7 +7,6 @@ import {
   Box,
   Breadcrumbs,
   IconButton,
-  InputBase,
   Paper,
   Typography,
   useMediaQuery,
@@ -16,14 +15,16 @@ import {
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { NextLink } from "./NextLink";
+import { SearchDialog } from "./SearchDialog";
 
 const SHORTCUT = "⌘ /";
 
 interface ToolbarActionsProps {
   toggleMobileNav?: () => void;
+  onSearchClick: () => void;
 }
 
-const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav }) => {
+const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav, onSearchClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -31,8 +32,8 @@ const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav }) => {
     <Box display="flex" gap={2} alignItems="center">
       {/* Search pill - hide on very small screens */}
       <Paper
-        component="form"
         elevation={0}
+        onClick={onSearchClick}
         sx={{
           px: 1.5,
           py: 0.5,
@@ -41,19 +42,24 @@ const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav }) => {
           width: 220,
           borderRadius: 50,
           bgcolor: (theme) => theme.palette.action.hover,
+          cursor: "pointer",
+          transition: "background-color 0.2s",
+          "&:hover": {
+            bgcolor: (theme) => theme.palette.action.selected,
+          },
         }}
       >
         <SearchIcon sx={{ mr: 1, fontSize: 20, color: "text.disabled" }} />
-        <InputBase
-          placeholder="Search"
-          inputProps={{ "aria-label": "search" }}
+        <Typography
           sx={{
             flex: 1,
             fontSize: 14,
-            height: "20px",
-            "::placeholder": { color: "text.secondary", opacity: 1 },
+            color: "text.disabled",
+            userSelect: "none",
           }}
-        />
+        >
+          Search
+        </Typography>
         <Typography variant="caption" sx={{ ml: 1, color: "text.disabled", userSelect: "none" }}>
           {SHORTCUT}
         </Typography>
@@ -75,6 +81,20 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileNavToggle }) => {
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
+  // Global keyboard shortcut for search (⌘/ or Ctrl/)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Split, filter out empty segments, then slice to ignore /app/id
   const pathSegments = pathname.split("/").filter(Boolean);
@@ -163,8 +183,13 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileNavToggle }) => {
       </Box>
 
       <Box sx={{ flexShrink: 0 }}>
-        <ToolbarActions toggleMobileNav={onMobileNavToggle} />
+        <ToolbarActions
+          toggleMobileNav={onMobileNavToggle}
+          onSearchClick={() => setSearchOpen(true)}
+        />
       </Box>
+
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
     </Box>
   );
 };

@@ -1667,6 +1667,7 @@ input MarkInvoiceAsSentInput {
 type Mutation {
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
+  addSearchRecent(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
 
   """Admin mutations (Admin only)"""
@@ -1675,6 +1676,7 @@ type Mutation {
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
   clearInvoiceTaxes(invoiceId: ID!): Invoice!
+  clearSearchRecents(workspaceId: String!): SearchUserState!
   createAssetSchedule(input: AssetScheduleInput): AssetSchedule
   createBusinessContact(input: BusinessContactInput!): BusinessContact
   createCharge(input: CreateChargeInput!): Charge
@@ -1737,6 +1739,7 @@ type Mutation {
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   refreshBrand(brandId: String!): Brand
   removeFileFromEntity(file_id: String!): File!
+  removeSearchRecent(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
   removeUserFromWorkspace(userId: String!, workspaceId: String!): Boolean
   renameFile(file_id: String!, new_file_name: String!): File!
@@ -1765,6 +1768,7 @@ type Mutation {
   submitIntakeFormSubmission(id: String!): IntakeFormSubmission
   submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
+  toggleSearchFavorite(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   touchAllContacts(batchSize: Int): TouchAllContactsResult
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
@@ -2267,6 +2271,7 @@ type Query {
   getBrandByDomain(domain: String!): Brand
   getBrandById(brandId: String!): Brand
   getBrandsByIds(brandIds: [String!]!): [Brand]
+  getBulkSearchDocumentsById(ids: [String!]!): [SearchDocument]!
   getContactById(id: ID!): Contact
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
   getDefaultTemplates: [ReferenceNumberTemplate!]!
@@ -2299,6 +2304,8 @@ type Query {
   getResourceMapEntry(id: String!): ResourceMapResource
   getSalesOrderById(id: String): SalesOrder
   getSalesOrderLineItemById(id: String): SalesOrderLineItem
+  getSearchDocumentById(id: String!): SearchDocument
+  getSearchUserState(workspaceId: String!): SearchUserState
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
   getUsersById(userIds: [String!]!): [User]
   getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
@@ -2371,6 +2378,7 @@ type Query {
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
   searchBrands(query: String!): [BrandSearchResult]
+  searchDocuments(collections: [SearchableCollectionType!], page: Int = 1, pageSize: Int = 20, searchText: String, workspaceId: String!): SearchDocumentsResult!
   usersSearch(searchTerm: String): [User]
   validEnterpriseDomain(domain: String!): ValidEnterpriseDomainResult!
 }
@@ -2869,6 +2877,56 @@ enum ScopeOfWorkEnum {
   SPECIALTY_SYSTEMS
   STRUCTURAL_FRAME
   WARRANTY_SERVICES
+}
+
+type SearchDocument {
+  collection: SearchableCollectionType!
+  createdAt: String!
+  documentId: String!
+  documentType: String!
+  id: ID!
+  metadata: JSON!
+  subtitle: String
+  title: String!
+  updatedAt: String!
+  workspaceId: String!
+}
+
+type SearchDocumentsResult {
+  documents: [SearchDocument!]!
+  page: PaginationInfo!
+  total: Int!
+}
+
+type SearchUserState {
+  createdAt: String!
+  favorites: [SearchUserStateFavorite!]!
+  id: ID!
+  recents: [SearchUserStateRecent!]!
+  updatedAt: String!
+  userId: String!
+  workspaceId: String!
+}
+
+type SearchUserStateFavorite {
+  addedAt: String!
+  searchDocument: SearchDocument
+  searchDocumentId: String!
+}
+
+type SearchUserStateRecent {
+  accessedAt: String!
+  searchDocument: SearchDocument
+  searchDocumentId: String!
+}
+
+"""Collections that can be searched"""
+enum SearchableCollectionType {
+  contacts
+  invoices
+  projects
+  purchase_orders
+  sales_orders
 }
 
 type SendTemplatedEmailResult {
