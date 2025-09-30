@@ -72,10 +72,16 @@ export const AdminChrome: React.FC<{ children: React.ReactNode }> = ({ children 
       selected: pathname.startsWith("/admin/sendgrid"),
     },
     {
-      text: "Change Stream",
+      text: "CDC Status",
       href: "/admin/change-stream",
       icon: <CloudSyncOutlined />,
       selected: pathname === "/admin/change-stream",
+    },
+    {
+      text: "CDC Live Feed",
+      href: "/admin/change-stream/live",
+      icon: <StorageOutlined />,
+      selected: pathname === "/admin/change-stream/live",
     },
     {
       text: "System",

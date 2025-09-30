@@ -1,8 +1,11 @@
 "use client";
 
-import { ApolloClient, ApolloProvider, createHttpLink, InMemoryCache } from "@apollo/client";
+import { ApolloClient, ApolloProvider, createHttpLink, InMemoryCache, split } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
+import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
+import { getMainDefinition } from "@apollo/client/utilities";
 import { useAuth0 } from "@auth0/auth0-react";
+import { createClient } from "graphql-ws";
 import React, { useMemo } from "react";
 import introspectionResult from "../graphql/hooks";
 import { useJwtOverride } from "./JwtOverrideContext";
@@ -34,8 +37,34 @@ export const ApolloClientProvider: React.FC<{
       };
     });
 
+    // Create WebSocket link for subscriptions
+    const wsUrl = api.replace(/^http/, "ws");
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: wsUrl,
+        connectionParams: async () => {
+          const token = jwtOverride
+            ? jwtOverride
+            : await getAccessTokenSilently({ cacheMode: "on" });
+          return {
+            Authorization: token ? `Bearer ${token}` : "",
+          };
+        },
+      }),
+    );
+
+    // Split based on operation type
+    const splitLink = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return definition.kind === "OperationDefinition" && definition.operation === "subscription";
+      },
+      wsLink,
+      authLink.concat(httpLink),
+    );
+
     return new ApolloClient({
-      link: authLink.concat(httpLink),
+      link: splitLink,
       cache: new InMemoryCache({
         possibleTypes: introspectionResult.possibleTypes,
       }),
