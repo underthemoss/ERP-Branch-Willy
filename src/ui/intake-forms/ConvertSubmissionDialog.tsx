@@ -262,6 +262,27 @@ export default function ConvertSubmissionDialog({
   // Track vendor contact source for helper text
   const [vendorContactSource, setVendorContactSource] = useState<string>("");
 
+  // Navigation dialog state
+  const [showNavigationDialog, setShowNavigationDialog] = useState(false);
+  const [createdOrderIds, setCreatedOrderIds] = useState<{
+    salesOrderId?: string;
+    purchaseOrderId?: string;
+    hasRentalItems: boolean;
+  }>({ hasRentalItems: false });
+
+  // Progress tracking state
+  const [creationProgress, setCreationProgress] = useState<{
+    salesOrderCreated: boolean;
+    purchaseOrderCreated: boolean;
+    inventoryAssigned: boolean;
+    salesOrderNumber?: string;
+    purchaseOrderNumber?: string;
+  }>({
+    salesOrderCreated: false,
+    purchaseOrderCreated: false,
+    inventoryAssigned: false,
+  });
+
   // Fetch submission data
   const { data: submissionData, loading: loadingSubmission } =
     useGetIntakeFormSubmissionByIdForConversionQuery({
@@ -565,6 +586,18 @@ export default function ConvertSubmissionDialog({
       return;
     }
 
+    // Reset progress state
+    setCreationProgress({
+      salesOrderCreated: false,
+      purchaseOrderCreated: false,
+      inventoryAssigned: false,
+    });
+
+    // Show the dialog immediately in loading state for SO+PO
+    if (conversionType === "SO_AND_PO") {
+      setShowNavigationDialog(true);
+    }
+
     try {
       // Step 1: Create Sales Order
       const salesOrderResult = await createSalesOrder({
@@ -579,9 +612,17 @@ export default function ConvertSubmissionDialog({
       });
 
       const salesOrderId = salesOrderResult.data?.createSalesOrder?.id;
+      const salesOrderNumber = salesOrderResult.data?.createSalesOrder?.sales_order_number;
       if (!salesOrderId) {
         throw new Error("Failed to create sales order");
       }
+
+      // Update progress - Sales Order created
+      setCreationProgress((prev) => ({
+        ...prev,
+        salesOrderCreated: true,
+        salesOrderNumber: salesOrderNumber || salesOrderId,
+      }));
 
       // Step 2: Create Sales Order Line Items
       const updatedMappings = [...lineItemMappings];
@@ -641,8 +682,6 @@ export default function ConvertSubmissionDialog({
 
       // Step 3: Submit Sales Order if SO_ONLY mode
       if (conversionType === "SO_ONLY") {
-        notifyInfo("Submitting sales order...");
-
         await submitSalesOrder({
           variables: { id: salesOrderId },
         });
@@ -663,9 +702,18 @@ export default function ConvertSubmissionDialog({
         });
 
         purchaseOrderId = purchaseOrderResult.data?.createPurchaseOrder?.id;
+        const purchaseOrderNumber =
+          purchaseOrderResult.data?.createPurchaseOrder?.purchase_order_number;
         if (!purchaseOrderId) {
           throw new Error("Failed to create purchase order");
         }
+
+        // Update progress - Purchase Order created
+        setCreationProgress((prev) => ({
+          ...prev,
+          purchaseOrderCreated: true,
+          purchaseOrderNumber: purchaseOrderNumber || purchaseOrderId,
+        }));
 
         // Step 4: Create Purchase Order Line Items (only for items marked for inclusion)
         for (let i = 0; i < updatedMappings.length; i++) {
@@ -725,9 +773,6 @@ export default function ConvertSubmissionDialog({
           }
         }
 
-        // Step 5: Submit both orders to generate fulfilments and inventory
-        notifyInfo("Submitting orders...");
-
         await submitSalesOrder({
           variables: { id: salesOrderId },
         });
@@ -735,9 +780,6 @@ export default function ConvertSubmissionDialog({
         await submitPurchaseOrder({
           variables: { id: purchaseOrderId },
         });
-
-        // Step 6: Query for fulfilments and inventory
-        notifyInfo("Retrieving fulfilments and inventory...");
 
         const { data: fulfilmentsData } = await getListRentalFulfilments({
           variables: {
@@ -770,8 +812,6 @@ export default function ConvertSubmissionDialog({
         const fulfilments = fulfilmentsData?.listRentalFulfilments?.items || [];
         const inventory = inventoryData?.listInventory?.items || [];
 
-        notifyInfo("Assigning inventory to fulfilments...");
-
         for (const mapping of updatedMappings) {
           if (
             mapping.submissionLineItem.type === "RENTAL" &&
@@ -798,7 +838,6 @@ export default function ConvertSubmissionDialog({
                     allowOverlappingReservations: false,
                   },
                 });
-                notifySuccess(`Assigned inventory for ${mapping.submissionLineItem.description}`);
               } catch (error) {
                 console.error(
                   `Failed to assign inventory for ${mapping.submissionLineItem.description}:`,
@@ -819,10 +858,13 @@ export default function ConvertSubmissionDialog({
             }
           }
         }
-      }
 
-      // Step 8: Update the intake form submission with the order IDs
-      notifyInfo("Updating submission with order references...");
+        // Update progress - Inventory assigned
+        setCreationProgress((prev) => ({
+          ...prev,
+          inventoryAssigned: true,
+        }));
+      }
 
       try {
         await updateIntakeFormSubmission({
@@ -842,19 +884,30 @@ export default function ConvertSubmissionDialog({
         );
       }
 
-      // Success!
-      notifySuccess(
-        conversionType === "SO_AND_PO"
-          ? "Sales Order and Purchase Order created successfully!"
-          : "Sales Order created successfully!",
+      // Check if there are rental items
+      const hasRentalItems = lineItemMappings.some(
+        (mapping) => mapping.submissionLineItem.type === "RENTAL",
       );
 
-      // Redirect to the sales order
-      router.push(`/app/${workspaceId}/sales-orders/${salesOrderId}`);
-      onClose();
+      // Update the created order IDs
+      setCreatedOrderIds({
+        salesOrderId,
+        purchaseOrderId,
+        hasRentalItems,
+      });
+
+      if (conversionType === "SO_AND_PO") {
+        // Dialog is already showing, just update to completed state
+        setIsCreatingOrders(false);
+      } else {
+        // For SO only, redirect directly to the sales order
+        router.push(`/app/${workspaceId}/sales-orders/${salesOrderId}`);
+        onClose();
+      }
     } catch (error: any) {
       notifyError(`Failed to create orders: ${error.message}`);
       setIsCreatingOrders(false);
+      setShowNavigationDialog(false);
     }
   };
 
@@ -1547,9 +1600,30 @@ export default function ConvertSubmissionDialog({
     }
   };
 
+  const handleNavigationChoice = (
+    destination: "sales-order" | "purchase-order" | "rental-fulfillments",
+  ) => {
+    const { salesOrderId, purchaseOrderId } = createdOrderIds;
+
+    switch (destination) {
+      case "sales-order":
+        router.push(`/app/${workspaceId}/sales-orders/${salesOrderId}`);
+        break;
+      case "purchase-order":
+        router.push(`/app/${workspaceId}/purchase-orders/${purchaseOrderId}`);
+        break;
+      case "rental-fulfillments":
+        router.push(`/app/${workspaceId}/rental-fulfillments?salesOrderId=${salesOrderId}`);
+        break;
+    }
+
+    setShowNavigationDialog(false);
+    onClose();
+  };
+
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <Dialog open={open && !showNavigationDialog} onClose={onClose} maxWidth="lg" fullWidth>
         <DialogTitle>Convert Submission to Order</DialogTitle>
         <DialogContent>
           {loadingSubmission ? (
@@ -1647,6 +1721,279 @@ export default function ConvertSubmissionDialog({
             : undefined
         }
       />
+
+      {/* Progress and Navigation Dialog */}
+      <Dialog
+        open={showNavigationDialog}
+        onClose={() => {
+          if (!isCreatingOrders) {
+            setShowNavigationDialog(false);
+            onClose();
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+        disableEscapeKeyDown={isCreatingOrders}
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {isCreatingOrders ? (
+              <>
+                <Typography variant="h6">Creating Orders...</Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h6">Orders Created Successfully!</Typography>
+              </>
+            )}
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {isCreatingOrders ? (
+            // Loading state - show progress with same card layout
+            <>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body1" gutterBottom>
+                  Creating your orders and assigning inventory...
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Please wait while we process your request:
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    opacity: creationProgress.salesOrderCreated ? 1 : 0.7,
+                    transition: "all 0.3s",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {creationProgress.salesOrderCreated ? (
+                      <CheckCircleIcon sx={{ color: "success.main" }} />
+                    ) : (
+                      <CircularProgress size={24} />
+                    )}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1">
+                        Sales Order
+                        {creationProgress.salesOrderNumber && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="primary"
+                            sx={{ ml: 1 }}
+                          >
+                            #{creationProgress.salesOrderNumber}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {creationProgress.salesOrderCreated
+                          ? "Sales order created successfully"
+                          : "Creating sales order..."}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Paper>
+
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    opacity: creationProgress.purchaseOrderCreated ? 1 : 0.7,
+                    transition: "all 0.3s",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {creationProgress.purchaseOrderCreated ? (
+                      <CheckCircleIcon sx={{ color: "success.main" }} />
+                    ) : (
+                      <CircularProgress size={24} />
+                    )}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1">
+                        Purchase Order
+                        {creationProgress.purchaseOrderNumber && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="primary"
+                            sx={{ ml: 1 }}
+                          >
+                            #{creationProgress.purchaseOrderNumber}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {creationProgress.purchaseOrderCreated
+                          ? "Purchase order created successfully"
+                          : "Creating purchase order..."}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Paper>
+
+                {lineItemMappings.some(
+                  (mapping) => mapping.submissionLineItem.type === "RENTAL",
+                ) && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      opacity: creationProgress.purchaseOrderCreated ? 1 : 0.7,
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {creationProgress.inventoryAssigned ? (
+                        <CheckCircleIcon sx={{ color: "success.main" }} />
+                      ) : (
+                        <CircularProgress size={24} sx={{ color: "primary.main" }} />
+                      )}
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1">Rental Fulfillments</Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            opacity: creationProgress.inventoryAssigned ? 0.9 : 1,
+                          }}
+                        >
+                          {creationProgress.inventoryAssigned
+                            ? "Inventory assigned successfully"
+                            : "Assigning inventory to fulfillments..."}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                )}
+              </Box>
+            </>
+          ) : (
+            // Completed state - show navigation options
+            <>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body1" gutterBottom>
+                  All orders have been created and inventory has been assigned successfully.
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                  onClick={() => handleNavigationChoice("sales-order")}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircleIcon sx={{ color: "success.main" }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1">
+                        Sales Order
+                        {creationProgress.salesOrderNumber && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="primary"
+                            sx={{ ml: 1 }}
+                          >
+                            #{creationProgress.salesOrderNumber}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Review the sales order details and line items
+                      </Typography>
+                    </Box>
+                    <ArrowForwardIcon sx={{ color: "action.active" }} />
+                  </Box>
+                </Paper>
+
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                  onClick={() => handleNavigationChoice("purchase-order")}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <CheckCircleIcon sx={{ color: "success.main" }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1">
+                        Purchase Order
+                        {creationProgress.purchaseOrderNumber && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="primary"
+                            sx={{ ml: 1 }}
+                          >
+                            #{creationProgress.purchaseOrderNumber}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Review the purchase order details and vendor items
+                      </Typography>
+                    </Box>
+                    <ArrowForwardIcon sx={{ color: "action.active" }} />
+                  </Box>
+                </Paper>
+
+                {createdOrderIds.hasRentalItems && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        backgroundColor: "action.hover",
+                      },
+                    }}
+                    onClick={() => handleNavigationChoice("rental-fulfillments")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <CheckCircleIcon sx={{ color: "success.main" }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1">Rental Fulfillments Assigned</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          New inventory has been assigned to rental fulfillments
+                        </Typography>
+                      </Box>
+                      <ArrowForwardIcon sx={{ color: "action.active" }} />
+                    </Box>
+                  </Paper>
+                )}
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowNavigationDialog(false);
+              onClose();
+            }}
+            disabled={isCreatingOrders}
+          >
+            {isCreatingOrders ? "Processing..." : "Close"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

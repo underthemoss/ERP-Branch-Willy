@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import IntakeFormHeader from "../components/IntakeFormHeader";
 import RequestConfirmation from "../components/RequestConfirmation";
 import RequestFormWithLineItems from "./components/RequestFormWithLineItems";
 
@@ -523,5 +524,19 @@ export default function IntakeFormSubmissionPage() {
     }
   };
 
-  return <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>{renderStepContent()}</Box>;
+  return (
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+      {/* Render consistent header at page level */}
+      {intakeForm && (
+        <IntakeFormHeader
+          companyName={intakeForm.workspace?.name || ""}
+          workspaceLogo={intakeForm.workspace?.logoUrl}
+          workspaceBanner={intakeForm.workspace?.bannerImageUrl}
+        />
+      )}
+
+      {/* Then render the step content */}
+      {renderStepContent()}
+    </Box>
+  );
 }

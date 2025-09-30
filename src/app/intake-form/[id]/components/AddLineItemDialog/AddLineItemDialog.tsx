@@ -16,6 +16,7 @@ interface AddLineItemDialogProps {
   editingIndex?: number | null;
   pricebookId?: string | null;
   workspaceId: string;
+  loading?: boolean;
 }
 
 export type StepFooterComponent = React.FC<{
@@ -41,6 +42,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
   editingIndex,
   pricebookId,
   workspaceId,
+  loading = false,
 }) => {
   const [step, setStep] = useState(1);
   const [lineItem, setLineItem] = useState<Partial<NewLineItem>>(DEFAULT_LINE_ITEM);
@@ -137,7 +139,6 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
       pricePerMonthInCents: lineItem.pricePerMonthInCents,
     };
     onSave(completeLineItem);
-    onClose();
   };
 
   const Footer: StepFooterComponent = ({
@@ -174,7 +175,8 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
           <Button
             variant="contained"
             color="primary"
-            disabled={!nextEnabled || loading}
+            loading={loading}
+            disabled={!nextEnabled}
             onClick={onNext}
           >
             {isLastStep ? "Save" : "Continue"}
@@ -237,7 +239,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
           <LineItemDeliveryStep
             lineItem={lineItem}
             onUpdate={handleUpdateLineItem}
-            Footer={(props: any) => <Footer {...props} isLastStep={true} />}
+            Footer={(props: any) => <Footer {...props} isLastStep={true} loading={loading} />}
             onNext={handleNext}
             onBack={handleBack}
             onClose={onClose}

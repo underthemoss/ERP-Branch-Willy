@@ -99,22 +99,24 @@ const LineItemDeliveryStep: React.FC<LineItemDeliveryStepProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <DialogTitle>Delivery Information</DialogTitle>
+      <DialogTitle>Fufillment Information</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {/* Quantity and Dates Row */}
-            <Grid size={{ xs: 12, sm: isRental ? 4 : 6 }}>
-              <TextField
-                fullWidth
-                label="Quantity"
-                type="number"
-                value={lineItem.quantity || 1}
-                onChange={(e) => handleQuantityChange(e.target.value)}
-                inputProps={{ min: 1 }}
-                size="small"
-              />
-            </Grid>
+            {!isRental && (
+              <Grid size={{ xs: 12, sm: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Quantity"
+                  type="number"
+                  value={lineItem.quantity || 1}
+                  onChange={(e) => handleQuantityChange(e.target.value)}
+                  inputProps={{ min: 1 }}
+                  size="small"
+                />
+              </Grid>
+            )}
 
             {/* Delivery/Start Date */}
             <Grid size={{ xs: 12, sm: isRental ? 4 : 6 }}>
@@ -135,7 +137,7 @@ const LineItemDeliveryStep: React.FC<LineItemDeliveryStepProps> = ({
             {isRental && (
               <Grid size={{ xs: 12, sm: 4 }}>
                 <DatePicker
-                  label="Return Date"
+                  label="End Date (Est.)"
                   value={lineItem.rentalEndDate || null}
                   onChange={handleRentalEndDateChange}
                   minDate={
@@ -191,22 +193,24 @@ const LineItemDeliveryStep: React.FC<LineItemDeliveryStepProps> = ({
             </Grid>
 
             {/* Delivery Location with Address Validation */}
-            <Grid size={{ xs: 12 }}>
-              <AddressValidationField
-                value={lineItem.deliveryLocation || ""}
-                onChange={(value) => onUpdate({ deliveryLocation: value })}
-                onLocationChange={(lat, lng, placeId) => setLocationData({ lat, lng, placeId })}
-                label="Delivery Location"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-            </Grid>
+            {lineItem.deliveryMethod === "DELIVERY" && (
+              <Grid size={{ xs: 12 }}>
+                <AddressValidationField
+                  value={lineItem.deliveryLocation || ""}
+                  onChange={(value) => onUpdate({ deliveryLocation: value })}
+                  onLocationChange={(lat, lng, placeId) => setLocationData({ lat, lng, placeId })}
+                  label="Delivery Location"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+              </Grid>
+            )}
 
             {/* Delivery Notes */}
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                label="Additional Notes (Optional)"
+                label="Additional Notes"
                 value={lineItem.deliveryNotes || ""}
                 onChange={(e) => onUpdate({ deliveryNotes: e.target.value })}
                 placeholder="Special instructions, access codes, etc."

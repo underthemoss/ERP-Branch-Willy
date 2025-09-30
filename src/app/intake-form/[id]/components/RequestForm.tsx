@@ -34,6 +34,7 @@ interface RequestFormProps {
   projectCode?: string;
   companyName: string;
   workspaceLogo?: string | null;
+  workspaceBanner?: string | null;
   formData: FormData;
   onSubmit: (
     contact: ContactInfo,
@@ -53,6 +54,7 @@ export default function RequestForm({
   projectCode,
   companyName,
   workspaceLogo,
+  workspaceBanner,
   formData,
   onSubmit,
   onBack,
@@ -258,7 +260,11 @@ export default function RequestForm({
   return (
     <>
       {/* Header Section */}
-      <IntakeFormHeader companyName={companyName} workspaceLogo={workspaceLogo} />
+      <IntakeFormHeader
+        companyName={companyName}
+        workspaceLogo={workspaceLogo}
+        workspaceBanner={workspaceBanner}
+      />
 
       <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
         <Paper elevation={3} sx={{ overflow: "hidden" }}>

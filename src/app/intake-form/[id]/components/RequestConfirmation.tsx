@@ -23,7 +23,6 @@ import {
 } from "@mui/material";
 import React from "react";
 import { FormData } from "../page";
-import IntakeFormHeader from "./IntakeFormHeader";
 
 interface RequestConfirmationProps {
   projectId: string;
@@ -57,9 +56,6 @@ export default function RequestConfirmation({
 
   return (
     <>
-      {/* Header Section */}
-      <IntakeFormHeader companyName={companyName || ""} workspaceLogo={workspaceLogo} />
-
       <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
         <Paper elevation={3} sx={{ overflow: "hidden" }}>
           {/* Project Header */}

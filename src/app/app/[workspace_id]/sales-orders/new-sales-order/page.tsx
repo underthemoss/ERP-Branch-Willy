@@ -34,6 +34,7 @@ const CREATE_SALES_ORDER = graphql(`
       buyer_id
       project_id
       purchase_order_number
+      sales_order_number
       company_id
       created_at
       updated_at

@@ -294,7 +294,7 @@ const LineItemPriceStep: React.FC<LineItemPriceStepProps> = ({
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6">Select Pricing</Typography>
+            <Typography variant="h6">Select Product</Typography>
             <Typography variant="caption" color="text.secondary">
               {lineItem.pimCategoryName || "Category"}
             </Typography>
@@ -305,17 +305,13 @@ const LineItemPriceStep: React.FC<LineItemPriceStepProps> = ({
             onClick={handleCustomProductToggle}
             sx={{ mt: 1 }}
           >
-            {showCustomProduct ? "Browse Prices" : "New Product"}
+            {showCustomProduct ? "Browse Products" : "New Product"}
           </Button>
         </Box>
       </DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         {showCustomProduct ? (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Enter the name of the custom product
-            </Typography>
-
             <TextField
               fullWidth
               label="Product Name"

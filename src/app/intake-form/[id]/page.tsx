@@ -282,7 +282,10 @@ export default function IntakeFormPage() {
           <RequestForm
             projectId={projectId || ""}
             projectName={intakeForm?.project?.name || ""}
+            projectCode={intakeForm?.project?.projectCode || ""}
             companyName={intakeForm?.workspace?.name || ""}
+            workspaceLogo={intakeForm?.workspace?.logoUrl}
+            workspaceBanner={intakeForm?.workspace?.bannerImageUrl}
             formData={formData}
             onSubmit={handleFormSubmit}
             onBack={handleBack}

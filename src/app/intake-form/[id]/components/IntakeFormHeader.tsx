@@ -6,9 +6,14 @@ import React from "react";
 interface IntakeFormHeaderProps {
   companyName: string;
   workspaceLogo?: string | null;
+  workspaceBanner?: string | null;
 }
 
-export default function IntakeFormHeader({ companyName, workspaceLogo }: IntakeFormHeaderProps) {
+export default function IntakeFormHeader({
+  companyName,
+  workspaceLogo,
+  workspaceBanner,
+}: IntakeFormHeaderProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -19,9 +24,29 @@ export default function IntakeFormHeader({ companyName, workspaceLogo }: IntakeF
         bgcolor: "primary.main",
         color: "primary.contrastText",
         py: isMobile ? 3 : 4,
+        position: "relative",
+        backgroundImage: workspaceBanner ? `url(${workspaceBanner})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
-      <Container maxWidth="md">
+      {/* Overlay for better text readability when banner is present */}
+      {workspaceBanner && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 1,
+          }}
+        />
+      )}
+
+      <Container maxWidth="md" sx={{ position: "relative", zIndex: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
           {workspaceLogo && (
             <Box

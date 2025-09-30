@@ -209,45 +209,6 @@ export default function RequestFormWithLineItems({
 
   return (
     <>
-      {/* Header Section */}
-      <Box
-        sx={{
-          width: "100%",
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
-          py: isMobile ? 3 : 4,
-        }}
-      >
-        <Container maxWidth="md">
-          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-            {workspaceLogo && (
-              <Box
-                component="img"
-                src={workspaceLogo}
-                alt={companyName}
-                sx={{
-                  height: isMobile ? 48 : 64,
-                  width: "auto",
-                  maxWidth: 200,
-                  objectFit: "contain",
-                  backgroundColor: "white",
-                  borderRadius: 1,
-                  p: 1,
-                }}
-              />
-            )}
-            <Box>
-              <Typography variant={isMobile ? "h5" : "h4"} fontWeight="medium">
-                {companyName}
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Equipment Request Portal
-              </Typography>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
-
       <Container maxWidth="md" sx={{ py: isMobile ? 2 : 4 }}>
         <Paper elevation={3} sx={{ overflow: "hidden" }}>
           {/* Project Header */}
@@ -483,6 +444,7 @@ export default function RequestFormWithLineItems({
         editingIndex={editingIndex}
         pricebookId={pricebookId}
         workspaceId={workspaceId}
+        loading={isProcessing}
       />
     </>
   );

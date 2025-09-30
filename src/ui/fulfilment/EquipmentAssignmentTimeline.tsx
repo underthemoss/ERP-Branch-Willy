@@ -150,8 +150,9 @@ export default function EquipmentAssignmentTimeline() {
   const [tempEndDate, setTempEndDate] = useState<Date | null>(addDays(new Date(), 13));
   const [draggedEquipment, setDraggedEquipment] = useState<InventoryItem | null>(null);
 
-  // Get selected fulfilment ID from URL
+  // Get selected fulfilment ID and sales order ID from URL
   const selectedFulfilmentId = searchParams.get("fulfilmentId") || "";
+  const selectedSalesOrderId = searchParams.get("salesOrderId") || "";
 
   // Calculate days to show based on view mode
   const daysToShow =
@@ -169,7 +170,7 @@ export default function EquipmentAssignmentTimeline() {
     }
   }, [viewMode]);
 
-  // Fetch rental fulfilments with optional customer filter and date range
+  // Fetch rental fulfilments with optional customer filter, sales order filter, and date range
   const { data, loading, error } = useListRentalFulfilmentsQuery({
     variables: {
       filter: {
@@ -178,6 +179,7 @@ export default function EquipmentAssignmentTimeline() {
         timelineStartDate: startDate,
         timelineEndDate: endDate,
         ...(selectedCustomerId && { contactId: selectedCustomerId }),
+        ...(selectedSalesOrderId && { salesOrderId: selectedSalesOrderId }),
       },
       page: {
         size: 100,
@@ -260,6 +262,13 @@ export default function EquipmentAssignmentTimeline() {
       // Select new fulfilment
       newParams.set("fulfilmentId", fulfilmentId);
     }
+    router.push(`?${newParams.toString()}`);
+  };
+
+  // Handle clearing sales order filter
+  const handleClearSalesOrderFilter = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete("salesOrderId");
     router.push(`?${newParams.toString()}`);
   };
 
@@ -356,6 +365,41 @@ export default function EquipmentAssignmentTimeline() {
                 workspaceId={workspaceId}
               />
             </Box>
+
+            {/* Sales Order Filter Display */}
+            {selectedSalesOrderId && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  px: 2,
+                  py: 0.5,
+                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                  borderRadius: 1,
+                  border: "1px solid rgba(25, 118, 210, 0.2)",
+                }}
+              >
+                <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                <Typography variant="body2" color="primary.main">
+                  Sales Order: {selectedSalesOrderId}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={handleClearSalesOrderFilter}
+                  sx={{
+                    minWidth: "auto",
+                    p: 0.5,
+                    color: "primary.main",
+                    "&:hover": {
+                      backgroundColor: "rgba(25, 118, 210, 0.08)",
+                    },
+                  }}
+                >
+                  <ClearIcon sx={{ fontSize: 18 }} />
+                </Button>
+              </Box>
+            )}
 
             {/* Date Range Display */}
             <Typography variant="body2" color="text.secondary">
