@@ -104,6 +104,16 @@ export function PriceSelectionDialog({
     unitCostInCents: "",
   });
 
+  // Update newPriceType when priceType prop changes
+  useEffect(() => {
+    if (priceType === "SALE") {
+      setNewPriceType("SALE");
+    } else if (priceType === "RENTAL") {
+      setNewPriceType("RENTAL");
+    }
+    // For "BOTH", keep the current selection
+  }, [priceType]);
+
   // Fetch prices
   const {
     data: pricesData,
@@ -395,6 +405,13 @@ export function PriceSelectionDialog({
       pricePerMonthInCents: "",
       unitCostInCents: "",
     });
+    // Reset price type based on the dialog's priceType prop
+    if (priceType === "SALE") {
+      setNewPriceType("SALE");
+    } else if (priceType === "RENTAL") {
+      setNewPriceType("RENTAL");
+    }
+    // For "BOTH", keep the current selection
   };
 
   const handleConfirm = () => {

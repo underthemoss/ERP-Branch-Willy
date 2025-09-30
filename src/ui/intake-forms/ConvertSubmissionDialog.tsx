@@ -26,9 +26,11 @@ import ContactSelector from "@/ui/ContactSelector";
 import ProjectSelector from "@/ui/ProjectSelector";
 import { gql, useQuery } from "@apollo/client";
 import {
+  Add as AddIcon,
   ArrowForward as ArrowForwardIcon,
   CheckCircle as CheckCircleIcon,
   Check as CheckIcon,
+  Close as CloseIcon,
   Error as ErrorIcon,
   TrendingDown as TrendingDownIcon,
   TrendingUp as TrendingUpIcon,
@@ -68,6 +70,7 @@ import {
   Typography,
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
+import { DataGridPremium, GridColDef, GridRenderCellParams } from "@mui/x-data-grid-premium";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { PriceSelectionDialog } from "../prices/PriceSelectionDialog";
@@ -956,6 +959,592 @@ export default function ConvertSubmissionDialog({
     const submission = submissionData?.getIntakeFormSubmissionById;
     const intakeForm = intakeFormData?.getIntakeFormById;
 
+    // Split line items by type
+    const rentalItems = lineItemMappings.filter(
+      (mapping) => mapping.submissionLineItem.type === "RENTAL",
+    );
+    const saleItems = lineItemMappings.filter(
+      (mapping) => mapping.submissionLineItem.type === "PURCHASE",
+    );
+
+    // Create expanded rows for rental items (one row for SO, one for PO if needed)
+    const rentalRows = rentalItems.flatMap((mapping, index) => {
+      const rows: any[] = [
+        {
+          id: `${mapping.submissionLineItem.id}-SO`,
+          type: "SO",
+          mapping,
+          originalIndex: lineItemMappings.findIndex((m) => m === mapping),
+        },
+      ];
+
+      if (conversionType === "SO_AND_PO") {
+        rows.push({
+          id: `${mapping.submissionLineItem.id}-PO`,
+          type: "PO",
+          mapping,
+          originalIndex: lineItemMappings.findIndex((m) => m === mapping),
+        });
+      }
+
+      return rows;
+    });
+
+    // Rental Items DataGrid Columns
+    const rentalColumns: GridColDef[] = [
+      {
+        field: "product",
+        headerName: "Product",
+        flex: 1,
+        minWidth: 160,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+          const item = mapping.submissionLineItem;
+
+          // Only show product name in SO row
+          if (row.type === "SO") {
+            return (
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {item.customPriceName || item.description}
+                </Typography>
+              </Box>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        field: "quantity",
+        headerName: "Qty",
+        width: 80,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          // Only show quantity in SO row
+          if (row.type === "SO") {
+            return mapping.submissionLineItem.quantity;
+          }
+          return null;
+        },
+      },
+      {
+        field: "orderType",
+        headerName: "Order Type",
+        width: 150,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+
+          if (row.type === "SO") {
+            return (
+              <Chip
+                label="Sales Order"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 500 }}
+              />
+            );
+          } else {
+            return (
+              <Chip
+                label="Purchase Order"
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{ fontWeight: 500 }}
+              />
+            );
+          }
+        },
+      },
+      {
+        field: "day",
+        headerName: "Day",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const soPrice = getPriceDetails(mapping.priceId);
+            return soPrice && soPrice.type === "RENTAL" ? formatPrice(soPrice.dayPrice) : "-";
+          } else {
+            if (!mapping.includeInPO) return <Typography variant="body2">-</Typography>;
+            const soPrice = getPriceDetails(mapping.priceId);
+            const poPrice = getPriceDetails(mapping.vendorPriceId);
+            const margin =
+              soPrice && poPrice && soPrice.type === "RENTAL" && poPrice.type === "RENTAL"
+                ? calculateMargin(soPrice.dayPrice || 0, poPrice.dayPrice || 0)
+                : null;
+
+            return (
+              <Box>
+                <Typography variant="body2">
+                  {poPrice && poPrice.type === "RENTAL" ? formatPrice(poPrice.dayPrice) : "-"}
+                </Typography>
+                {margin !== null && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: margin >= 0 ? "success.main" : "error.main",
+                      fontWeight: "bold",
+                      display: "block",
+                      textAlign: "right",
+                    }}
+                  >
+                    {margin >= 0 ? "+" : ""}
+                    {margin.toFixed(1)}%
+                  </Typography>
+                )}
+              </Box>
+            );
+          }
+        },
+      },
+      {
+        field: "week",
+        headerName: "Week",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const soPrice = getPriceDetails(mapping.priceId);
+            return (
+              <Typography variant="body2">
+                {soPrice && soPrice.type === "RENTAL" ? formatPrice(soPrice.weekPrice) : "-"}
+              </Typography>
+            );
+          } else {
+            if (!mapping.includeInPO) return <Typography variant="body2">-</Typography>;
+            const soPrice = getPriceDetails(mapping.priceId);
+            const poPrice = getPriceDetails(mapping.vendorPriceId);
+            const margin =
+              soPrice && poPrice && soPrice.type === "RENTAL" && poPrice.type === "RENTAL"
+                ? calculateMargin(soPrice.weekPrice || 0, poPrice.weekPrice || 0)
+                : null;
+            return (
+              <Box>
+                <Typography variant="body2">
+                  {poPrice && poPrice.type === "RENTAL" ? formatPrice(poPrice.weekPrice) : "-"}
+                </Typography>
+                {margin !== null && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: margin >= 0 ? "success.main" : "error.main",
+                      fontWeight: "bold",
+                      display: "block",
+                      textAlign: "right",
+                    }}
+                  >
+                    {margin >= 0 ? "+" : ""}
+                    {margin.toFixed(1)}%
+                  </Typography>
+                )}
+              </Box>
+            );
+          }
+        },
+      },
+      {
+        field: "month",
+        headerName: "4 Weeks",
+        width: 130,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const soPrice = getPriceDetails(mapping.priceId);
+            return (
+              <Typography variant="body2">
+                {soPrice && soPrice.type === "RENTAL" ? formatPrice(soPrice.monthPrice) : "-"}
+              </Typography>
+            );
+          } else {
+            if (!mapping.includeInPO) return <Typography variant="body2">-</Typography>;
+            const soPrice = getPriceDetails(mapping.priceId);
+            const poPrice = getPriceDetails(mapping.vendorPriceId);
+            const margin =
+              soPrice && poPrice && soPrice.type === "RENTAL" && poPrice.type === "RENTAL"
+                ? calculateMargin(soPrice.monthPrice || 0, poPrice.monthPrice || 0)
+                : null;
+            return (
+              <Box>
+                <Typography variant="body2">
+                  {poPrice && poPrice.type === "RENTAL" ? formatPrice(poPrice.monthPrice) : "-"}
+                </Typography>
+                {margin !== null && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: margin >= 0 ? "success.main" : "error.main",
+                      fontWeight: "bold",
+                      display: "block",
+                      textAlign: "right",
+                    }}
+                  >
+                    {margin >= 0 ? "+" : ""}
+                    {margin.toFixed(1)}%
+                  </Typography>
+                )}
+              </Box>
+            );
+          }
+        },
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 160,
+        align: "left",
+        headerAlign: "center",
+        sortable: false,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const hasPrice = !!mapping.priceId;
+            return (
+              <Button
+                size="small"
+                variant={hasPrice ? "outlined" : "contained"}
+                onClick={() => openPriceSelection(row.originalIndex, "SO")}
+              >
+                {hasPrice ? "Change" : "Set Price"}
+              </Button>
+            );
+          } else {
+            // PO row - show Include/Exclude button and price button
+            const isIncluded = mapping.includeInPO !== false;
+
+            if (!isIncluded) {
+              return (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => {
+                    const newMappings = [...lineItemMappings];
+                    newMappings[row.originalIndex] = {
+                      ...newMappings[row.originalIndex],
+                      includeInPO: true,
+                    };
+                    setLineItemMappings(newMappings);
+                  }}
+                  sx={{ minWidth: "auto", px: 1 }}
+                >
+                  <AddIcon fontSize="small" />
+                </Button>
+              );
+            }
+
+            if (!vendorContactId) {
+              return (
+                <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                    Select vendor first
+                  </Typography>
+                </Box>
+              );
+            }
+
+            const hasVendorPrice = !!mapping.vendorPriceId;
+            return (
+              <Box sx={{ display: "flex", gap: 0.5 }}>
+                <Button
+                  size="small"
+                  variant={hasVendorPrice ? "outlined" : "contained"}
+                  onClick={() => openPriceSelection(row.originalIndex, "PO")}
+                >
+                  {hasVendorPrice ? "Change" : "Set Price"}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    const newMappings = [...lineItemMappings];
+                    newMappings[row.originalIndex] = {
+                      ...newMappings[row.originalIndex],
+                      includeInPO: false,
+                    };
+                    setLineItemMappings(newMappings);
+                  }}
+                  sx={{ minWidth: "auto", px: 1 }}
+                >
+                  <CloseIcon fontSize="small" />
+                </Button>
+              </Box>
+            );
+          }
+        },
+      },
+    ];
+
+    // Create expanded rows for sale items (one row for SO, one for PO if needed)
+    const saleRows = saleItems.flatMap((mapping, index) => {
+      const rows: any[] = [
+        {
+          id: `${mapping.submissionLineItem.id}-SO`,
+          type: "SO",
+          mapping,
+          originalIndex: lineItemMappings.findIndex((m) => m === mapping),
+        },
+      ];
+
+      if (conversionType === "SO_AND_PO") {
+        rows.push({
+          id: `${mapping.submissionLineItem.id}-PO`,
+          type: "PO",
+          mapping,
+          originalIndex: lineItemMappings.findIndex((m) => m === mapping),
+        });
+      }
+
+      return rows;
+    });
+
+    // Sale Items DataGrid Columns
+    const saleColumns: GridColDef[] = [
+      {
+        field: "product",
+        headerName: "Product",
+        flex: 1,
+        minWidth: 200,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+          const item = mapping.submissionLineItem;
+
+          // Only show product name in SO row
+          if (row.type === "SO") {
+            return (
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {item.customPriceName || item.description}
+                </Typography>
+              </Box>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        field: "quantity",
+        headerName: "Qty",
+        width: 80,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          // Only show quantity in SO row
+          if (row.type === "SO") {
+            return mapping.submissionLineItem.quantity;
+          }
+          return null;
+        },
+      },
+      {
+        field: "orderType",
+        headerName: "Order Type",
+        width: 130,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+
+          if (row.type === "SO") {
+            return (
+              <Chip
+                label="Sales Order"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 500 }}
+              />
+            );
+          } else {
+            return (
+              <Chip
+                label="Purchase Order"
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{ fontWeight: 500 }}
+              />
+            );
+          }
+        },
+      },
+      {
+        field: "unitCost",
+        headerName: "Unit Cost",
+        width: 130,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const soPrice = getPriceDetails(mapping.priceId);
+            const hasPrice = !!mapping.priceId;
+            return (
+              <Box
+                sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.5 }}
+              >
+                <Typography variant="body2">
+                  {soPrice && soPrice.type === "SALE" ? formatPrice(soPrice.unitCost) : "-"}
+                </Typography>
+              </Box>
+            );
+          } else {
+            if (!mapping.includeInPO) return <Typography variant="body2">-</Typography>;
+            const soPrice = getPriceDetails(mapping.priceId);
+            const poPrice = getPriceDetails(mapping.vendorPriceId);
+            const hasVendorPrice = !!mapping.vendorPriceId;
+            const margin =
+              soPrice && poPrice && soPrice.type === "SALE" && poPrice.type === "SALE"
+                ? calculateMargin(soPrice.unitCost || 0, poPrice.unitCost || 0)
+                : null;
+            return (
+              <Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    gap: 0.5,
+                  }}
+                >
+                  <Typography variant="body2">
+                    {poPrice && poPrice.type === "SALE" ? formatPrice(poPrice.unitCost) : "-"}
+                  </Typography>
+                </Box>
+                {margin !== null && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: margin >= 0 ? "success.main" : "error.main",
+                      fontWeight: "bold",
+                      display: "block",
+                      textAlign: "right",
+                    }}
+                  >
+                    {margin >= 0 ? "+" : ""}
+                    {margin.toFixed(1)}%
+                  </Typography>
+                )}
+              </Box>
+            );
+          }
+        },
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        width: 160,
+        align: "left",
+        headerAlign: "center",
+        sortable: false,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row;
+          const mapping = row.mapping as LineItemMapping;
+
+          if (row.type === "SO") {
+            const hasPrice = !!mapping.priceId;
+            return (
+              <Button
+                size="small"
+                variant={hasPrice ? "outlined" : "contained"}
+                onClick={() => openPriceSelection(row.originalIndex, "SO")}
+              >
+                {hasPrice ? "Change" : "Set Price"}
+              </Button>
+            );
+          } else {
+            // PO row - show Include/Exclude button and price button
+            const isIncluded = mapping.includeInPO !== false;
+
+            if (!isIncluded) {
+              return (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => {
+                    const newMappings = [...lineItemMappings];
+                    newMappings[row.originalIndex] = {
+                      ...newMappings[row.originalIndex],
+                      includeInPO: true,
+                    };
+                    setLineItemMappings(newMappings);
+                  }}
+                  sx={{ minWidth: "auto", px: 1 }}
+                >
+                  <AddIcon fontSize="small" />
+                </Button>
+              );
+            }
+
+            if (!vendorContactId) {
+              return (
+                <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                    Select vendor first
+                  </Typography>
+                </Box>
+              );
+            }
+
+            const hasVendorPrice = !!mapping.vendorPriceId;
+            return (
+              <Box sx={{ display: "flex", gap: 0.5 }}>
+                <Button
+                  size="small"
+                  variant={hasVendorPrice ? "outlined" : "contained"}
+                  onClick={() => openPriceSelection(row.originalIndex, "PO")}
+                >
+                  {hasVendorPrice ? "Change" : "Set Price"}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    const newMappings = [...lineItemMappings];
+                    newMappings[row.originalIndex] = {
+                      ...newMappings[row.originalIndex],
+                      includeInPO: false,
+                    };
+                    setLineItemMappings(newMappings);
+                  }}
+                  sx={{ minWidth: "auto", px: 1 }}
+                >
+                  <CloseIcon fontSize="small" />
+                </Button>
+              </Box>
+            );
+          }
+        },
+      },
+    ];
+
     return (
       <Box sx={{ mt: 2 }}>
         <Typography variant="h6" gutterBottom>
@@ -1036,398 +1625,55 @@ export default function ConvertSubmissionDialog({
           </Grid>
         </Paper>
 
-        {/* Line Items Price Validation */}
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Line Items
-          </Typography>
-          <List>
-            {lineItemMappings.map((mapping, index) => {
-              const item = mapping.submissionLineItem;
-              const hasPrice = !!mapping.priceId;
-              const hasVendorPrice = conversionType === "SO_ONLY" || !!mapping.vendorPriceId;
+        {/* Rental Items DataGrid */}
+        {rentalItems.length > 0 && (
+          <Paper sx={{ p: 2, mb: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Rental Items ({rentalItems.length})
+            </Typography>
+            <Box sx={{ width: "100%" }}>
+              <DataGridPremium
+                rows={rentalRows}
+                columns={rentalColumns}
+                density="standard"
+                hideFooter
+                disableRowSelectionOnClick
+                getRowId={(row) => row.id}
+                sx={{
+                  "& .MuiDataGrid-cell": {
+                    display: "flex",
+                    alignItems: "center", // vertical center
+                  },
+                }}
+              />
+            </Box>
+          </Paper>
+        )}
 
-              return (
-                <ListItem key={index} divider sx={{ display: "block", py: 2 }}>
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                    {/* Type and Quantity Info - Fixed width */}
-                    <Box sx={{ width: 250, flexShrink: 0, pt: 1 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        {item.customPriceName || item.description}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Type: <strong>{item.type}</strong>
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Qty: <strong>{item.quantity}</strong>
-                      </Typography>
-                    </Box>
-
-                    {/* Price Table */}
-                    <Box sx={{ flex: 1 }}>
-                      {(() => {
-                        const soPrice = getPriceDetails(mapping.priceId);
-                        const poPrice =
-                          conversionType === "SO_AND_PO"
-                            ? getPriceDetails(mapping.vendorPriceId)
-                            : null;
-
-                        // For rental items
-                        if (item.type === "RENTAL") {
-                          const dayMargin =
-                            soPrice &&
-                            poPrice &&
-                            soPrice.type === "RENTAL" &&
-                            poPrice.type === "RENTAL"
-                              ? calculateMargin(soPrice.dayPrice || 0, poPrice.dayPrice || 0)
-                              : null;
-                          const weekMargin =
-                            soPrice &&
-                            poPrice &&
-                            soPrice.type === "RENTAL" &&
-                            poPrice.type === "RENTAL"
-                              ? calculateMargin(soPrice.weekPrice || 0, poPrice.weekPrice || 0)
-                              : null;
-                          const monthMargin =
-                            soPrice &&
-                            poPrice &&
-                            soPrice.type === "RENTAL" &&
-                            poPrice.type === "RENTAL"
-                              ? calculateMargin(soPrice.monthPrice || 0, poPrice.monthPrice || 0)
-                              : null;
-
-                          return (
-                            <TableContainer>
-                              <Table size="small" sx={{ minWidth: 400 }}>
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell sx={{ fontWeight: "bold", width: 150 }}>
-                                      Price
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      Day
-                                      {dayMargin !== null && (
-                                        <Typography
-                                          component="span"
-                                          variant="caption"
-                                          sx={{
-                                            ml: 1,
-                                            color: dayMargin >= 0 ? "success.main" : "error.main",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          ({dayMargin >= 0 ? "+" : ""}
-                                          {dayMargin.toFixed(1)}%)
-                                        </Typography>
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      Week
-                                      {weekMargin !== null && (
-                                        <Typography
-                                          component="span"
-                                          variant="caption"
-                                          sx={{
-                                            ml: 1,
-                                            color: weekMargin >= 0 ? "success.main" : "error.main",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          ({weekMargin >= 0 ? "+" : ""}
-                                          {weekMargin.toFixed(1)}%)
-                                        </Typography>
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      4 Weeks
-                                      {monthMargin !== null && (
-                                        <Typography
-                                          component="span"
-                                          variant="caption"
-                                          sx={{
-                                            ml: 1,
-                                            color: monthMargin >= 0 ? "success.main" : "error.main",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          ({monthMargin >= 0 ? "+" : ""}
-                                          {monthMargin.toFixed(1)}%)
-                                        </Typography>
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="center" sx={{ width: 120 }}>
-                                      Actions
-                                    </TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  <TableRow>
-                                    <TableCell component="th" scope="row">
-                                      Sales Order
-                                      {hasPrice ? (
-                                        <CheckIcon
-                                          sx={{ fontSize: 14, color: "success.main", ml: 0.5 }}
-                                        />
-                                      ) : (
-                                        <WarningIcon
-                                          sx={{ fontSize: 14, color: "warning.main", ml: 0.5 }}
-                                        />
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      {soPrice && soPrice.type === "RENTAL"
-                                        ? formatPrice(soPrice.dayPrice)
-                                        : "-"}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      {soPrice && soPrice.type === "RENTAL"
-                                        ? formatPrice(soPrice.weekPrice)
-                                        : "-"}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      {soPrice && soPrice.type === "RENTAL"
-                                        ? formatPrice(soPrice.monthPrice)
-                                        : "-"}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      <Button
-                                        size="small"
-                                        variant={hasPrice ? "text" : "contained"}
-                                        onClick={() => openPriceSelection(index, "SO")}
-                                      >
-                                        {hasPrice ? "Change" : "Set price"}
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                  {conversionType === "SO_AND_PO" && (
-                                    <TableRow>
-                                      <TableCell component="th" scope="row">
-                                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                                          <Checkbox
-                                            size="small"
-                                            checked={mapping.includeInPO !== false}
-                                            onChange={(e) => {
-                                              const newMappings = [...lineItemMappings];
-                                              newMappings[index] = {
-                                                ...newMappings[index],
-                                                includeInPO: e.target.checked,
-                                              };
-                                              setLineItemMappings(newMappings);
-                                            }}
-                                            sx={{ p: 0, mr: 0.5 }}
-                                          />
-                                          Purchase Order
-                                          {mapping.includeInPO &&
-                                            (hasVendorPrice ? (
-                                              <CheckIcon
-                                                sx={{
-                                                  fontSize: 14,
-                                                  color: "success.main",
-                                                  ml: 0.5,
-                                                }}
-                                              />
-                                            ) : (
-                                              <WarningIcon
-                                                sx={{
-                                                  fontSize: 14,
-                                                  color: "warning.main",
-                                                  ml: 0.5,
-                                                }}
-                                              />
-                                            ))}
-                                        </Box>
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        {poPrice && poPrice.type === "RENTAL"
-                                          ? formatPrice(poPrice.dayPrice)
-                                          : "-"}
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        {poPrice && poPrice.type === "RENTAL"
-                                          ? formatPrice(poPrice.weekPrice)
-                                          : "-"}
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        {poPrice && poPrice.type === "RENTAL"
-                                          ? formatPrice(poPrice.monthPrice)
-                                          : "-"}
-                                      </TableCell>
-                                      <TableCell align="center">
-                                        {mapping.includeInPO ? (
-                                          vendorContactId ? (
-                                            <Button
-                                              size="small"
-                                              variant={hasVendorPrice ? "text" : "contained"}
-                                              onClick={() => openPriceSelection(index, "PO")}
-                                            >
-                                              {hasVendorPrice ? "Change" : "Set price"}
-                                            </Button>
-                                          ) : (
-                                            <Typography variant="caption" color="text.secondary">
-                                              Select vendor first
-                                            </Typography>
-                                          )
-                                        ) : (
-                                          <Typography variant="caption" color="text.secondary">
-                                            Not included
-                                          </Typography>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          );
-                        }
-
-                        // For sale items
-                        if (item.type === "SALE") {
-                          const unitMargin =
-                            soPrice && poPrice && soPrice.type === "SALE" && poPrice.type === "SALE"
-                              ? calculateMargin(soPrice.unitCost || 0, poPrice.unitCost || 0)
-                              : null;
-
-                          return (
-                            <TableContainer>
-                              <Table size="small" sx={{ minWidth: 300 }}>
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell sx={{ fontWeight: "bold", width: 150 }}>
-                                      Price
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      Unit Cost
-                                      {unitMargin !== null && (
-                                        <Typography
-                                          component="span"
-                                          variant="caption"
-                                          sx={{
-                                            ml: 1,
-                                            color: unitMargin >= 0 ? "success.main" : "error.main",
-                                            fontWeight: "bold",
-                                          }}
-                                        >
-                                          ({unitMargin >= 0 ? "+" : ""}
-                                          {unitMargin.toFixed(1)}%)
-                                        </Typography>
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="center" sx={{ width: 120 }}>
-                                      Actions
-                                    </TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  <TableRow>
-                                    <TableCell component="th" scope="row">
-                                      Sales Order
-                                      {hasPrice ? (
-                                        <CheckIcon
-                                          sx={{ fontSize: 14, color: "success.main", ml: 0.5 }}
-                                        />
-                                      ) : (
-                                        <WarningIcon
-                                          sx={{ fontSize: 14, color: "warning.main", ml: 0.5 }}
-                                        />
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      {soPrice && soPrice.type === "SALE"
-                                        ? formatPrice(soPrice.unitCost)
-                                        : "-"}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      <Button
-                                        size="small"
-                                        variant={hasPrice ? "text" : "contained"}
-                                        onClick={() => openPriceSelection(index, "SO")}
-                                      >
-                                        {hasPrice ? "Change" : "Set price"}
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                  {conversionType === "SO_AND_PO" && (
-                                    <TableRow>
-                                      <TableCell component="th" scope="row">
-                                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                                          <Checkbox
-                                            size="small"
-                                            checked={mapping.includeInPO !== false}
-                                            onChange={(e) => {
-                                              const newMappings = [...lineItemMappings];
-                                              newMappings[index] = {
-                                                ...newMappings[index],
-                                                includeInPO: e.target.checked,
-                                              };
-                                              setLineItemMappings(newMappings);
-                                            }}
-                                            sx={{ p: 0, mr: 0.5 }}
-                                          />
-                                          Purchase Order
-                                          {mapping.includeInPO &&
-                                            (hasVendorPrice ? (
-                                              <CheckIcon
-                                                sx={{
-                                                  fontSize: 14,
-                                                  color: "success.main",
-                                                  ml: 0.5,
-                                                }}
-                                              />
-                                            ) : (
-                                              <WarningIcon
-                                                sx={{
-                                                  fontSize: 14,
-                                                  color: "warning.main",
-                                                  ml: 0.5,
-                                                }}
-                                              />
-                                            ))}
-                                        </Box>
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        {poPrice && poPrice.type === "SALE"
-                                          ? formatPrice(poPrice.unitCost)
-                                          : "-"}
-                                      </TableCell>
-                                      <TableCell align="center">
-                                        {mapping.includeInPO ? (
-                                          vendorContactId ? (
-                                            <Button
-                                              size="small"
-                                              variant={hasVendorPrice ? "text" : "contained"}
-                                              onClick={() => openPriceSelection(index, "PO")}
-                                            >
-                                              {hasVendorPrice ? "Change" : "Set price"}
-                                            </Button>
-                                          ) : (
-                                            <Typography variant="caption" color="text.secondary">
-                                              Select vendor first
-                                            </Typography>
-                                          )
-                                        ) : (
-                                          <Typography variant="caption" color="text.secondary">
-                                            Not included
-                                          </Typography>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          );
-                        }
-
-                        return null;
-                      })()}
-                    </Box>
-                  </Box>
-                </ListItem>
-              );
-            })}
-          </List>
-        </Paper>
+        {/* Sale Items DataGrid */}
+        {saleItems.length > 0 && (
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Sale Items ({saleItems.length})
+            </Typography>
+            <Box sx={{ width: "100%" }}>
+              <DataGridPremium
+                rows={saleRows}
+                columns={saleColumns}
+                density="standard"
+                hideFooter
+                disableRowSelectionOnClick
+                getRowId={(row) => row.id}
+                sx={{
+                  "& .MuiDataGrid-cell": {
+                    display: "flex",
+                    alignItems: "center", // vertical center
+                  },
+                }}
+              />
+            </Box>
+          </Paper>
+        )}
       </Box>
     );
   };

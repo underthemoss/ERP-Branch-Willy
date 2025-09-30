@@ -336,7 +336,7 @@ const LineItemPriceStep: React.FC<LineItemPriceStepProps> = ({
                 height="100%"
               >
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  No prices found for this category
+                  No products found for this category
                 </Typography>
                 <Button variant="outlined" onClick={handleCustomProductToggle}>
                   Add New Product
