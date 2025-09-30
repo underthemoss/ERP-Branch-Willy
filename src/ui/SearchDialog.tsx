@@ -315,6 +315,8 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
             searchDocumentId,
           },
         });
+        // Refocus input to maintain keyboard navigation
+        inputRef.current?.focus();
       } catch (error) {
         console.error("Failed to toggle favorite:", error);
       }
@@ -334,6 +336,8 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
             searchDocumentId,
           },
         });
+        // Refocus input to maintain keyboard navigation
+        inputRef.current?.focus();
       } catch (error) {
         console.error("Failed to remove from recent searches:", error);
       }
