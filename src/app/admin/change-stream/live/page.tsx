@@ -34,6 +34,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/joy";
+import * as Diff from "diff";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // GraphQL subscription
@@ -44,7 +45,9 @@ const ADMIN_CDC_EVENTS_SUBSCRIPTION = graphql(`
       database
       documentKey
       fullDocument
+      fullDocumentBeforeChange
       operationType
+      rawEvent
       timestamp
       updateDescription
     }
@@ -56,7 +59,9 @@ interface CDCEvent {
   database: string;
   documentKey: any;
   fullDocument: any;
+  fullDocumentBeforeChange: any;
   operationType: string;
+  rawEvent: any;
   timestamp: string;
   updateDescription: any;
 }
@@ -451,7 +456,15 @@ export default function LiveCDCFeedPage() {
 
       {/* Document Details Modal */}
       <Modal open={!!selectedEvent} onClose={() => setSelectedEvent(null)}>
-        <ModalDialog sx={{ width: "90vw", maxWidth: 1200, maxHeight: "90vh", overflow: "hidden" }}>
+        <ModalDialog
+          sx={{
+            width: "90vw",
+            maxWidth: 1400,
+            height: "90vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <ModalClose />
           {selectedEvent && (
             <>
@@ -460,7 +473,7 @@ export default function LiveCDCFeedPage() {
               </Typography>
 
               {/* Event Metadata */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 2, flexShrink: 0 }}>
                 <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
                   <Chip
                     size="lg"
@@ -498,81 +511,239 @@ export default function LiveCDCFeedPage() {
                   flexDirection: "column",
                   gap: 2,
                   flex: 1,
-                  overflow: "hidden",
+                  overflow: "auto",
+                  pr: 1,
                 }}
               >
-                {selectedEvent.operationType === "update" && selectedEvent.updateDescription && (
-                  <Card variant="soft" color="primary" sx={{ p: 2 }}>
-                    <Typography level="title-sm" sx={{ mb: 1 }}>
-                      Update Description
-                    </Typography>
-                    {selectedEvent.updateDescription.updatedFields && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography level="body-sm" sx={{ fontWeight: 600, color: "primary.600" }}>
-                          Updated Fields:
-                        </Typography>
-                        <Typography
-                          level="body-xs"
-                          sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap" }}
-                        >
-                          {JSON.stringify(selectedEvent.updateDescription.updatedFields, null, 2)}
-                        </Typography>
-                      </Box>
-                    )}
-                    {selectedEvent.updateDescription.removedFields && (
-                      <Box>
-                        <Typography level="body-sm" sx={{ fontWeight: 600, color: "danger.600" }}>
-                          Removed Fields:
-                        </Typography>
-                        <Typography
-                          level="body-xs"
-                          sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap" }}
-                        >
-                          {JSON.stringify(selectedEvent.updateDescription.removedFields, null, 2)}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Card>
-                )}
+                {selectedEvent.fullDocumentBeforeChange &&
+                  selectedEvent.fullDocument &&
+                  (() => {
+                    const beforeStr = JSON.stringify(
+                      selectedEvent.fullDocumentBeforeChange,
+                      null,
+                      2,
+                    );
+                    const afterStr = JSON.stringify(selectedEvent.fullDocument, null, 2);
+                    const beforeLines = beforeStr.split("\n");
+                    const afterLines = afterStr.split("\n");
+                    const diffs = Diff.diffLines(beforeStr, afterStr);
 
-                <Card
-                  variant="outlined"
-                  sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
-                >
-                  <Typography level="title-sm" sx={{ mb: 1 }}>
-                    Full Document
-                  </Typography>
-                  <Sheet
-                    variant="soft"
-                    sx={{
-                      flex: 1,
-                      overflow: "auto",
-                      p: 2,
-                      borderRadius: "sm",
-                      fontFamily: "monospace",
-                      fontSize: "12px",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                      {selectedEvent.fullDocument
-                        ? JSON.stringify(selectedEvent.fullDocument, null, 2)
-                        : "No document data available"}
-                    </pre>
-                  </Sheet>
-                </Card>
+                    // Build side-by-side line mapping
+                    let beforeIdx = 0;
+                    let afterIdx = 0;
+                    const rows: Array<{
+                      before: {
+                        line: string;
+                        lineNum: number;
+                        type: "unchanged" | "removed" | "empty";
+                      };
+                      after: {
+                        line: string;
+                        lineNum: number;
+                        type: "unchanged" | "added" | "empty";
+                      };
+                    }> = [];
 
-                <Card
-                  variant="outlined"
-                  sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
-                >
+                    diffs.forEach((part) => {
+                      const lines = part.value.split("\n");
+                      // Remove empty last line if exists
+                      if (lines[lines.length - 1] === "") lines.pop();
+
+                      if (!part.added && !part.removed) {
+                        // Unchanged lines
+                        lines.forEach((line) => {
+                          rows.push({
+                            before: { line, lineNum: beforeIdx + 1, type: "unchanged" },
+                            after: { line, lineNum: afterIdx + 1, type: "unchanged" },
+                          });
+                          beforeIdx++;
+                          afterIdx++;
+                        });
+                      } else if (part.removed) {
+                        // Removed lines (only on left)
+                        lines.forEach((line) => {
+                          rows.push({
+                            before: { line, lineNum: beforeIdx + 1, type: "removed" },
+                            after: { line: "", lineNum: 0, type: "empty" },
+                          });
+                          beforeIdx++;
+                        });
+                      } else if (part.added) {
+                        // Added lines (only on right)
+                        lines.forEach((line) => {
+                          rows.push({
+                            before: { line: "", lineNum: 0, type: "empty" },
+                            after: { line, lineNum: afterIdx + 1, type: "added" },
+                          });
+                          afterIdx++;
+                        });
+                      }
+                    });
+
+                    return (
+                      <Card variant="outlined" sx={{ p: 2 }}>
+                        <Typography level="title-sm" sx={{ mb: 1 }}>
+                          Side-by-Side Diff
+                        </Typography>
+                        <Sheet
+                          variant="soft"
+                          sx={{
+                            maxHeight: 500,
+                            overflow: "auto",
+                            borderRadius: "sm",
+                            bgcolor: "neutral.50",
+                          }}
+                        >
+                          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+                            {/* Left side - Before */}
+                            <Box
+                              sx={{
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                bgcolor: "#fff5f5",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  position: "sticky",
+                                  top: 0,
+                                  bgcolor: "danger.100",
+                                  p: 1,
+                                  borderBottom: "1px solid",
+                                  borderColor: "divider",
+                                  zIndex: 1,
+                                }}
+                              >
+                                <Typography
+                                  level="body-xs"
+                                  sx={{ fontWeight: 600, color: "danger.700" }}
+                                >
+                                  Before
+                                </Typography>
+                              </Box>
+                              {rows.map((row, idx) => (
+                                <Box
+                                  key={`before-${idx}`}
+                                  sx={{
+                                    display: "flex",
+                                    fontFamily: "monospace",
+                                    fontSize: "11px",
+                                    lineHeight: 1.5,
+                                    bgcolor:
+                                      row.before.type === "removed"
+                                        ? "#ffeef0"
+                                        : row.before.type === "empty"
+                                          ? "#fafafa"
+                                          : "transparent",
+                                    borderLeft:
+                                      row.before.type === "removed" ? "3px solid #d73a4a" : "none",
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      minWidth: "40px",
+                                      px: 1,
+                                      textAlign: "right",
+                                      color: "text.tertiary",
+                                      bgcolor: row.before.type === "empty" ? "#fafafa" : "#f6f8fa",
+                                      userSelect: "none",
+                                    }}
+                                  >
+                                    {row.before.lineNum > 0 ? row.before.lineNum : ""}
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      px: 1,
+                                      flex: 1,
+                                      whiteSpace: "pre-wrap",
+                                      wordBreak: "break-all",
+                                      maxWidth: "600px",
+                                    }}
+                                  >
+                                    {row.before.line || " "}
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+
+                            {/* Right side - After */}
+                            <Box sx={{ bgcolor: "#f0fff4" }}>
+                              <Box
+                                sx={{
+                                  position: "sticky",
+                                  top: 0,
+                                  bgcolor: "success.100",
+                                  p: 1,
+                                  borderBottom: "1px solid",
+                                  borderColor: "divider",
+                                  zIndex: 1,
+                                }}
+                              >
+                                <Typography
+                                  level="body-xs"
+                                  sx={{ fontWeight: 600, color: "success.700" }}
+                                >
+                                  After
+                                </Typography>
+                              </Box>
+                              {rows.map((row, idx) => (
+                                <Box
+                                  key={`after-${idx}`}
+                                  sx={{
+                                    display: "flex",
+                                    fontFamily: "monospace",
+                                    fontSize: "11px",
+                                    lineHeight: 1.5,
+                                    bgcolor:
+                                      row.after.type === "added"
+                                        ? "#e6ffec"
+                                        : row.after.type === "empty"
+                                          ? "#fafafa"
+                                          : "transparent",
+                                    borderLeft:
+                                      row.after.type === "added" ? "3px solid #28a745" : "none",
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      minWidth: "40px",
+                                      px: 1,
+                                      textAlign: "right",
+                                      color: "text.tertiary",
+                                      bgcolor: row.after.type === "empty" ? "#fafafa" : "#f6f8fa",
+                                      userSelect: "none",
+                                    }}
+                                  >
+                                    {row.after.lineNum > 0 ? row.after.lineNum : ""}
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      px: 1,
+                                      flex: 1,
+                                      whiteSpace: "pre-wrap",
+                                      wordBreak: "break-all",
+                                      maxWidth: "600px",
+                                    }}
+                                  >
+                                    {row.after.line || " "}
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+                          </Box>
+                        </Sheet>
+                      </Card>
+                    );
+                  })()}
+
+                <Card variant="outlined" sx={{ p: 2 }}>
                   <Typography level="title-sm" sx={{ mb: 1 }}>
                     Raw CDC Event
                   </Typography>
                   <Sheet
                     variant="soft"
                     sx={{
-                      flex: 1,
+                      maxHeight: 600,
                       overflow: "auto",
                       p: 2,
                       borderRadius: "sm",

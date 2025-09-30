@@ -10,6 +10,7 @@ import {
   EmailOutlined,
   GroupOutlined,
   HomeOutlined,
+  LiveTvOutlined,
   LogoutOutlined,
   PolicyOutlined,
   SecurityOutlined,
@@ -80,7 +81,7 @@ export const AdminChrome: React.FC<{ children: React.ReactNode }> = ({ children 
     {
       text: "CDC Live Feed",
       href: "/admin/change-stream/live",
-      icon: <StorageOutlined />,
+      icon: <LiveTvOutlined />,
       selected: pathname === "/admin/change-stream/live",
     },
     {

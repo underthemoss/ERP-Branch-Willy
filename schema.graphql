@@ -626,6 +626,9 @@ type CDCEvent {
   """The full document after the change"""
   fullDocument: JSON
 
+  """The full document before the change (when available)"""
+  fullDocumentBeforeChange: JSON
+
   """The type of operation (insert, update, replace, delete)"""
   operationType: String!
 
