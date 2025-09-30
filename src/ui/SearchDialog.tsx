@@ -67,6 +67,50 @@ const SEARCH_DOCUMENTS_QUERY = graphql(`
   }
 `);
 
+const GET_SEARCH_USER_STATE_QUERY = graphql(`
+  query GetSearchUserState($workspaceId: String!) {
+    getSearchUserState(workspaceId: $workspaceId) {
+      id
+      userId
+      workspaceId
+      favorites {
+        searchDocumentId
+        addedAt
+        searchDocument {
+          id
+          documentId
+          collection
+          documentType
+          title
+          subtitle
+          metadata
+          createdAt
+          updatedAt
+          workspaceId
+        }
+      }
+      recents {
+        searchDocumentId
+        accessedAt
+        searchDocument {
+          id
+          documentId
+          collection
+          documentType
+          title
+          subtitle
+          metadata
+          createdAt
+          updatedAt
+          workspaceId
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
 const TOGGLE_SEARCH_FAVORITE_MUTATION = graphql(`
   mutation ToggleSearchFavorite($workspaceId: String!, $searchDocumentId: String!) {
     toggleSearchFavorite(workspaceId: $workspaceId, searchDocumentId: $searchDocumentId) {
@@ -648,10 +692,10 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
                   </Typography>
                   {allItems
                     .filter((item) => item.type === "recent")
-                    .map((item, index) => {
-                      // Calculate the actual index accounting for favorites before it
-                      const favCount = allItems.filter((i) => i.type === "favorite").length;
-                      return renderItem(item, favCount + index);
+                    .map((item) => {
+                      // Find the actual index in allItems array
+                      const actualIndex = allItems.findIndex((i) => i.id === item.id);
+                      return renderItem(item, actualIndex);
                     })}
                 </Box>
               )}
