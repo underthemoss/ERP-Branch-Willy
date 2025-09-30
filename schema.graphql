@@ -613,6 +613,32 @@ type CDCCollectionStatus {
   reason: String
 }
 
+type CDCEvent {
+  """The collection where the change occurred"""
+  collection: String!
+
+  """The database where the change occurred"""
+  database: String!
+
+  """The document key that was affected"""
+  documentKey: JSON
+
+  """The full document after the change"""
+  fullDocument: JSON
+
+  """The type of operation (insert, update, replace, delete)"""
+  operationType: String!
+
+  """The complete raw CDC event data"""
+  rawEvent: JSON
+
+  """When the change occurred"""
+  timestamp: String!
+
+  """Details about what was updated (for update operations)"""
+  updateDescription: JSON
+}
+
 type CDCStatusResult {
   collections: [CDCCollectionStatus!]!
   notSyncedCollections: Int!
@@ -2959,6 +2985,26 @@ type SpiceDBSubjectReference {
   id: String!
   relation: String
   type: String!
+}
+
+type Subscription {
+  """Subscribe to all CDC events (Platform Admin only)"""
+  adminCdcEvents: CDCEvent
+
+  """
+  Subscribe to CDC events for a specific collection (Platform Admin only)
+  """
+  adminCdcEventsByCollection(collection: String!): CDCEvent
+
+  """
+  Subscribe to CDC events for a specific collection and operation (Platform Admin only)
+  """
+  adminCdcEventsByCollectionAndOperation(collection: String!, operationType: String!): CDCEvent
+
+  """
+  Subscribe to CDC events for a specific operation type (Platform Admin only)
+  """
+  adminCdcEventsByOperation(operationType: String!): CDCEvent
 }
 
 enum SupportedContentType {
