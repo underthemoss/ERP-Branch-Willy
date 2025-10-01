@@ -559,7 +559,7 @@ export default function InvoiceDisplayPage() {
 
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={invoice.id} />
+              <NotesSection entityId={invoice.id} workspaceId={workspaceId} />
             </Paper>
           </Grid>
 

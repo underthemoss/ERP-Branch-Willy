@@ -577,7 +577,7 @@ export default function PurchaseOrderDetailPage() {
 
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={purchaseOrder.id} />
+              <NotesSection entityId={purchaseOrder.id} workspaceId={workspace_id} />
             </Paper>
           </Grid>
 

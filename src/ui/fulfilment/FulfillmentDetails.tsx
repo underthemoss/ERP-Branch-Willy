@@ -253,7 +253,7 @@ export function FulfillmentDetails({ fulfillmentId }: FulfillmentDetailsProps) {
         </div>
         {/* Notes Section */}
         <div style={{ marginTop: 40, maxWidth: 600 }}>
-          <NotesSection entityId={fulfillmentId} />
+          <NotesSection entityId={fulfillmentId} workspaceId={workspace_id} />
         </div>
       </div>
       {/* Sidebar */}

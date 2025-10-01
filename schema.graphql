@@ -1839,11 +1839,13 @@ type Note {
   updated_at: DateTime!
   updated_by: String!
   value: JSON!
+  workspace_id: String!
 }
 
 input NoteInput {
   parent_entity_id: String!
   value: JSON!
+  workspace_id: String!
 }
 
 input NoteUpdateInput {
@@ -2924,6 +2926,7 @@ type SearchUserStateRecent {
 enum SearchableCollectionType {
   contacts
   invoices
+  notes
   projects
   purchase_orders
   sales_orders

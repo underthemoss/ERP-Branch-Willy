@@ -523,7 +523,7 @@ export default function ProjectDetailAltPage() {
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={project.id} />
+              <NotesSection entityId={project.id} workspaceId={workspace_id} />
             </Paper>
           </Grid>
 
