@@ -36,9 +36,10 @@ import NoteWithSubmit from "./NoteWithSubmit";
 
 interface NotesSectionProps {
   entityId: string;
+  workspaceId: string;
 }
 
-const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
+const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -145,6 +146,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
         variables: {
           input: {
             parent_entity_id: noteId,
+            workspace_id: workspaceId,
             value: { reaction: emoji },
           },
         },
@@ -211,6 +213,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
         variables: {
           input: {
             parent_entity_id: entityId,
+            workspace_id: workspaceId,
             value: { plainText: trimmedText },
           },
         },
@@ -235,6 +238,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId }) => {
         variables: {
           input: {
             parent_entity_id: noteId, // Use the note ID directly
+            workspace_id: workspaceId,
             value: { plainText: trimmedText },
           },
         },

@@ -169,15 +169,20 @@ const COLLECTION_LABELS: Record<string, string> = {
   contacts: "Contact",
   inventory: "Inventory",
   invoices: "Invoice",
+  notes: "Note",
   projects: "Project",
   purchase_orders: "PO",
   sales_orders: "SO",
 };
 
-const COLLECTION_ROUTES: Record<string, (workspaceId: string, id: string) => string> = {
+const COLLECTION_ROUTES: Record<
+  string,
+  (workspaceId: string, id: string, metadata?: any) => string
+> = {
   contacts: (workspaceId, id) => `/app/${workspaceId}/contacts/${id}`,
   inventory: (workspaceId, id) => `/app/${workspaceId}/inventory/${id}`,
   invoices: (workspaceId, id) => `/app/${workspaceId}/invoices/${id}`,
+  notes: (workspaceId, id) => `/app/${workspaceId}/notes/${id}`,
   projects: (workspaceId, id) => `/app/${workspaceId}/projects/${id}`,
   purchase_orders: (workspaceId, id) => `/app/${workspaceId}/purchase-orders/${id}`,
   sales_orders: (workspaceId, id) => `/app/${workspaceId}/sales-orders/${id}`,
@@ -279,7 +284,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
   }, [favoriteDocuments, recentDocuments]);
 
   const handleResultClick = useCallback(
-    async (searchDocumentId: string, documentId: string, collection: string) => {
+    async (searchDocumentId: string, documentId: string, collection: string, metadata?: any) => {
       const routeFn = COLLECTION_ROUTES[collection];
       if (routeFn && workspaceId) {
         // Add to recent searches (backend handles deduplication)
@@ -295,7 +300,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
         }
 
         // Navigate
-        const route = routeFn(workspaceId, documentId);
+        const route = routeFn(workspaceId, documentId, metadata);
         router.push(route);
         onClose();
       }
@@ -363,6 +368,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
         collection: r.collection,
         title: r.title,
         subtitle: r.subtitle || undefined,
+        metadata: r.metadata,
         type: "search" as const,
       }));
     } else {
@@ -377,6 +383,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
                 collection: doc.collection,
                 title: doc.title,
                 subtitle: doc.subtitle || undefined,
+                metadata: doc.metadata,
                 type: "favorite" as const,
               }
             : null;
@@ -393,6 +400,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
                 collection: doc.collection,
                 title: doc.title,
                 subtitle: doc.subtitle || undefined,
+                metadata: doc.metadata,
                 type: "recent" as const,
               }
             : null;
@@ -405,6 +413,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
         collection: string;
         title: string;
         subtitle?: string;
+        metadata?: any;
         type: "favorite" | "recent";
       }>;
     }
@@ -424,7 +433,12 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
         e.preventDefault();
         const selected = allItems[selectedIndex];
         if (selected) {
-          handleResultClick(selected.id, selected.documentId, selected.collection);
+          handleResultClick(
+            selected.id,
+            selected.documentId,
+            selected.collection,
+            selected.metadata,
+          );
         }
       }
     },
@@ -456,7 +470,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({ open, onClose }) => 
       <Box
         key={`${item.type}_${item.id}`}
         data-index={index}
-        onClick={() => handleResultClick(item.id, item.documentId, item.collection)}
+        onClick={() => handleResultClick(item.id, item.documentId, item.collection, item.metadata)}
         sx={{
           display: "flex",
           alignItems: "center",

@@ -83,6 +83,14 @@ graphql(`
 `);
 
 graphql(`
+  query GetNoteById($id: String!) {
+    getNoteById(id: $id) {
+      ...NoteFields
+    }
+  }
+`);
+
+graphql(`
   query CurrentUser {
     currentUser {
       es_user_id

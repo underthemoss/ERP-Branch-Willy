@@ -1839,11 +1839,13 @@ type Note {
   updated_at: DateTime!
   updated_by: String!
   value: JSON!
+  workspace_id: String!
 }
 
 input NoteInput {
   parent_entity_id: String!
   value: JSON!
+  workspace_id: String!
 }
 
 input NoteUpdateInput {
@@ -2292,6 +2294,7 @@ type Query {
   """Get a single intake form submission line item by ID"""
   getIntakeFormSubmissionLineItem(id: String!): IntakeFormLineItem
   getInventoryReservationById(id: ID!): InventoryReservation
+  getNoteById(id: String!): Note
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
   getPriceBookById(id: ID!): PriceBook
@@ -2304,6 +2307,7 @@ type Query {
   getResourceMapEntry(id: String!): ResourceMapResource
   getSalesOrderById(id: String): SalesOrder
   getSalesOrderLineItemById(id: String): SalesOrderLineItem
+  getSearchDocumentByDocumentId(documentId: String!): SearchDocument
   getSearchDocumentById(id: String!): SearchDocument
   getSearchUserState(workspaceId: String!): SearchUserState
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
@@ -2924,6 +2928,7 @@ type SearchUserStateRecent {
 enum SearchableCollectionType {
   contacts
   invoices
+  notes
   projects
   purchase_orders
   sales_orders
