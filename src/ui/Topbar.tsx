@@ -29,8 +29,22 @@ const ToolbarActions: React.FC<ToolbarActionsProps> = ({ toggleMobileNav, onSear
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
-    <Box display="flex" gap={2} alignItems="center">
-      {/* Search pill - hide on very small screens */}
+    <Box display="flex" gap={{ xs: 0.5, sm: 2 }} alignItems="center">
+      {/* Mobile search icon - show only on mobile */}
+      <IconButton
+        size="small"
+        aria-label="search"
+        onClick={onSearchClick}
+        sx={{
+          display: { xs: "flex", sm: "none" },
+          mt: { xs: 0.4, sm: 0 },
+          mr: { xs: 0.5, sm: 0 },
+        }}
+      >
+        <SearchIcon fontSize="small" />
+      </IconButton>
+
+      {/* Desktop search pill - hide on mobile */}
       <Paper
         elevation={0}
         onClick={onSearchClick}
