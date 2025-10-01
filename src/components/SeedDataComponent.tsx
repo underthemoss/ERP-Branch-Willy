@@ -283,8 +283,6 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
     pimCategory?: any;
     rentalPrice?: any;
     purchaseOrderLineItem?: any;
-    pimCategorySkidSteer?: any;
-    rentalPriceSkidSteer?: any;
     salesOrderLineItem?: any;
     workflowConfiguration?: any;
   }>({});
@@ -297,12 +295,10 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
     { id: "priceBook", label: "Create Price Book", status: "pending" },
     { id: "salesOrder", label: "Create Sales Order", status: "pending" },
     { id: "purchaseOrder", label: "Create Purchase Order", status: "pending" },
-    { id: "pimCategory", label: "Create PIM Category", status: "pending" },
-    { id: "rentalPrice", label: "Create Rental Price", status: "pending" },
+    { id: "pimCategory", label: "Create Skid Steer PIM Category", status: "pending" },
+    { id: "rentalPrice", label: "Create Skid Steer Rental Price", status: "pending" },
     { id: "poLineItem", label: "Add Rental Line Item to PO", status: "pending" },
     { id: "submitPO", label: "Submit Purchase Order", status: "pending" },
-    { id: "pimCategorySkidSteer", label: "Create Skid Steer PIM Category", status: "pending" },
-    { id: "rentalPriceSkidSteer", label: "Create Skid Steer Rental Price", status: "pending" },
     { id: "soLineItem", label: "Add Rental Line Item to SO", status: "pending" },
     { id: "submitSO", label: "Submit Sales Order", status: "pending" },
     { id: "workflow", label: "Create Workflow Configuration", status: "pending" },
@@ -530,7 +526,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("purchaseOrder", "completed");
       notifySuccess(`Purchase Order "${purchaseOrder.purchase_order_number}" created successfully`);
 
-      // Step 8: Create PIM Category
+      // Step 8: Create Skid Steer PIM Category
       updateStepStatus("pimCategory", "loading");
       await delay(500);
 
@@ -538,18 +534,18 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const pimCategoryResult = await upsertPimCategory({
         variables: {
           input: {
-            id: `demo-category-${timestamp}`,
-            name: "Construction Equipment",
-            description: "Demo construction equipment category for seed data",
-            path: "/construction-equipment",
-            platform_id: `demo-platform-${timestamp}`,
+            id: `demo-skid-steer-${timestamp}`,
+            name: "Skid Steer Loaders",
+            description: "Demo skid steer loader category for seed data",
+            path: "|Categories|Equipment|Skid Steers|",
+            platform_id: `demo-platform-skid-${timestamp}`,
             has_products: false,
           },
         },
       });
 
       if (!pimCategoryResult.data?.upsertPimCategory) {
-        throw new Error("Failed to create PIM category");
+        throw new Error("Failed to create skid steer PIM category");
       }
 
       const pimCategory = pimCategoryResult.data.upsertPimCategory;
@@ -557,26 +553,26 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("pimCategory", "completed");
       notifySuccess(`PIM Category "${pimCategory.name}" created successfully`);
 
-      // Step 9: Create Rental Price
+      // Step 9: Create Skid Steer Rental Price
       updateStepStatus("rentalPrice", "loading");
       await delay(500);
 
       const rentalPriceResult = await createRentalPrice({
         variables: {
           input: {
-            name: "Standard Equipment Rental",
+            name: "Skid Steer Loader Rental",
             pimCategoryId: pimCategory.id,
             priceBookId: priceBook.id,
-            pricePerDayInCents: 15000, // $150/day
-            pricePerWeekInCents: 90000, // $900/week
-            pricePerMonthInCents: 300000, // $3000/month
+            pricePerDayInCents: 25000, // $250/day
+            pricePerWeekInCents: 150000, // $1500/week
+            pricePerMonthInCents: 500000, // $5000/month
             workspaceId: workspace.id,
           },
         },
       });
 
       if (!rentalPriceResult.data?.createRentalPrice) {
-        throw new Error("Failed to create rental price");
+        throw new Error("Failed to create skid steer rental price");
       }
 
       const rentalPrice = rentalPriceResult.data.createRentalPrice;
@@ -598,14 +594,14 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             purchase_order_id: purchaseOrder.id,
             price_id: rentalPrice.id,
             po_pim_id: pimCategory.id,
-            po_quantity: 1,
+            po_quantity: 2,
             lineitem_status: PoLineItemStatus.Confirmed,
             off_rent_date: offRentDate.toISOString(),
             delivery_method: DeliveryMethod.Delivery,
             delivery_date: deliveryDate.toISOString(),
             delivery_location: "Demo Construction Site",
-            delivery_charge_in_cents: 5000, // $50 delivery
-            deliveryNotes: "Demo rental line item created by seed data script",
+            delivery_charge_in_cents: 7500, // $75 delivery
+            deliveryNotes: "Demo skid steer rental line item created by seed data script",
           },
         },
       });
@@ -617,7 +613,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const purchaseOrderLineItem = poLineItemResult.data.createRentalPurchaseOrderLineItem;
       setCreatedData((prev) => ({ ...prev, purchaseOrderLineItem }));
       updateStepStatus("poLineItem", "completed");
-      notifySuccess(`Rental line item added to Purchase Order successfully`);
+      notifySuccess(`Skid steer rental line item added to Purchase Order successfully`);
 
       // Step 11: Submit Purchase Order
       updateStepStatus("submitPO", "loading");
@@ -639,61 +635,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("submitPO", "completed");
       notifySuccess(`Purchase Order "${submittedPO.purchase_order_number}" submitted successfully`);
 
-      // Step 12: Create Skid Steer PIM Category
-      updateStepStatus("pimCategorySkidSteer", "loading");
-      await delay(500);
-
-      const timestamp2 = Date.now();
-      const pimCategorySkidSteerResult = await upsertPimCategory({
-        variables: {
-          input: {
-            id: `demo-skid-steer-${timestamp2}`,
-            name: "Skid Steer Loaders",
-            description: "Demo skid steer loader category for seed data",
-            path: "/skid-steer-loaders",
-            platform_id: `demo-platform-skid-${timestamp2}`,
-            has_products: false,
-          },
-        },
-      });
-
-      if (!pimCategorySkidSteerResult.data?.upsertPimCategory) {
-        throw new Error("Failed to create skid steer PIM category");
-      }
-
-      const pimCategorySkidSteer = pimCategorySkidSteerResult.data.upsertPimCategory;
-      setCreatedData((prev) => ({ ...prev, pimCategorySkidSteer }));
-      updateStepStatus("pimCategorySkidSteer", "completed");
-      notifySuccess(`PIM Category "${pimCategorySkidSteer.name}" created successfully`);
-
-      // Step 13: Create Skid Steer Rental Price
-      updateStepStatus("rentalPriceSkidSteer", "loading");
-      await delay(500);
-
-      const rentalPriceSkidSteerResult = await createRentalPrice({
-        variables: {
-          input: {
-            name: "Skid Steer Loader Rental",
-            pimCategoryId: pimCategorySkidSteer.id,
-            priceBookId: priceBook.id,
-            pricePerDayInCents: 25000, // $250/day
-            pricePerWeekInCents: 150000, // $1500/week
-            pricePerMonthInCents: 500000, // $5000/month
-            workspaceId: workspace.id,
-          },
-        },
-      });
-
-      if (!rentalPriceSkidSteerResult.data?.createRentalPrice) {
-        throw new Error("Failed to create skid steer rental price");
-      }
-
-      const rentalPriceSkidSteer = rentalPriceSkidSteerResult.data.createRentalPrice;
-      setCreatedData((prev) => ({ ...prev, rentalPriceSkidSteer }));
-      updateStepStatus("rentalPriceSkidSteer", "completed");
-      notifySuccess(`Rental Price "${rentalPriceSkidSteer.name}" created successfully`);
-
-      // Step 14: Add Rental Line Item to Sales Order
+      // Step 12: Add Rental Line Item to Sales Order
       updateStepStatus("soLineItem", "loading");
       await delay(500);
 
@@ -705,8 +647,8 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
         variables: {
           input: {
             sales_order_id: salesOrder.id,
-            price_id: rentalPriceSkidSteer.id,
-            so_pim_id: pimCategorySkidSteer.id,
+            price_id: rentalPrice.id,
+            so_pim_id: pimCategory.id,
             so_quantity: 1,
             lineitem_status: LineItemStatus.Confirmed,
             off_rent_date: soOffRentDate.toISOString(),
@@ -748,7 +690,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("submitSO", "completed");
       notifySuccess(`Sales Order "${submittedSO.sales_order_number}" submitted successfully`);
 
-      // Step 16: Create Workflow Configuration
+      // Step 14: Create Workflow Configuration
       updateStepStatus("workflow", "loading");
       await delay(500);
 
@@ -993,34 +935,20 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
                 )}
                 {createdData.pimCategory && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
+                    <strong>Skid Steer PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
                     {createdData.pimCategory.id})
                   </Alert>
                 )}
                 {createdData.rentalPrice && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
+                    <strong>Skid Steer Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
                     {createdData.rentalPrice.id})
                   </Alert>
                 )}
                 {createdData.purchaseOrderLineItem && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>PO Line Item:</strong> Rental item added (ID:{" "}
+                    <strong>PO Line Item:</strong> Skid steer rental item added (ID:{" "}
                     {createdData.purchaseOrderLineItem.id})
-                  </Alert>
-                )}
-                {createdData.pimCategorySkidSteer && (
-                  <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Skid Steer PIM Category:</strong>{" "}
-                    {createdData.pimCategorySkidSteer.name} (ID:{" "}
-                    {createdData.pimCategorySkidSteer.id})
-                  </Alert>
-                )}
-                {createdData.rentalPriceSkidSteer && (
-                  <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Skid Steer Rental Price:</strong>{" "}
-                    {createdData.rentalPriceSkidSteer.name} (ID:{" "}
-                    {createdData.rentalPriceSkidSteer.id})
                   </Alert>
                 )}
                 {createdData.salesOrderLineItem && (
@@ -1164,32 +1092,20 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
           )}
           {createdData.pimCategory && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
+              <strong>Skid Steer PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
               {createdData.pimCategory.id})
             </Alert>
           )}
           {createdData.rentalPrice && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
+              <strong>Skid Steer Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
               {createdData.rentalPrice.id})
             </Alert>
           )}
           {createdData.purchaseOrderLineItem && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>PO Line Item:</strong> Rental item added (ID:{" "}
+              <strong>PO Line Item:</strong> Skid steer rental item added (ID:{" "}
               {createdData.purchaseOrderLineItem.id})
-            </Alert>
-          )}
-          {createdData.pimCategorySkidSteer && (
-            <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Skid Steer PIM Category:</strong> {createdData.pimCategorySkidSteer.name} (ID:{" "}
-              {createdData.pimCategorySkidSteer.id})
-            </Alert>
-          )}
-          {createdData.rentalPriceSkidSteer && (
-            <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Skid Steer Rental Price:</strong> {createdData.rentalPriceSkidSteer.name} (ID:{" "}
-              {createdData.rentalPriceSkidSteer.id})
             </Alert>
           )}
           {createdData.salesOrderLineItem && (

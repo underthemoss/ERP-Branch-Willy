@@ -36,6 +36,9 @@ graphql(`
   }
 `);
 
+// Export the generated hooks
+export { useGetDefaultTemplatesQuery, useListReferenceNumberTemplatesQuery } from "@/graphql/hooks";
+
 graphql(`
   mutation createReferenceNumberTemplate($input: CreateReferenceNumberTemplateInput!) {
     createReferenceNumberTemplate(input: $input) {

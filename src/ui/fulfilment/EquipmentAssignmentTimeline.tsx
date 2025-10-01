@@ -7,7 +7,6 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Box,
@@ -17,25 +16,15 @@ import {
   DialogContent,
   DialogTitle,
   Paper,
-  Skeleton,
   Typography,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import {
-  addDays,
-  differenceInCalendarDays,
-  differenceInMonths,
-  differenceInWeeks,
-  format,
-} from "date-fns";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ContactSelector from "../ContactSelector";
-import {
-  InventoryFieldsFragment as InventoryItem,
-  useListInventoryItemsQuery,
-} from "../inventory/api";
+import { InventoryFieldsFragment as InventoryItem } from "../inventory/api";
 import {
   FulfilmentType,
   InventoryAssignment_RentalFulFulfilment,
@@ -43,6 +32,7 @@ import {
   useListRentalFulfilmentsQuery,
   useUnassignInventoryFromRentalFulfilmentMutation,
 } from "./api";
+import { SourcingPanel } from "./SourcingPanel";
 
 const RentalFulfilmentFieldsFragment = graphql(`
   fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
@@ -65,6 +55,18 @@ const RentalFulfilmentFieldsFragment = graphql(`
       project_code
     }
     purchaseOrderNumber
+    purchaseOrderLineItemId
+    purchaseOrderLineItem {
+      __typename
+      ... on RentalPurchaseOrderLineItem {
+        id
+        purchase_order_id
+      }
+      ... on SalePurchaseOrderLineItem {
+        id
+        purchase_order_id
+      }
+    }
     salesOrderId
     salesOrderPONumber
     inventory {
@@ -223,34 +225,8 @@ export default function EquipmentAssignmentTimeline() {
   const fulfilments: InventoryAssignment_RentalFulFulfilment[] =
     data?.listRentalFulfilments?.items || [];
 
-  // Find the selected fulfilment to get its pimCategoryId
+  // Find the selected fulfilment
   const selectedFulfilment = fulfilments.find((f) => f.id === selectedFulfilmentId);
-  const selectedPimCategoryId = selectedFulfilment?.pimCategoryId;
-
-  // Modify inventory query to filter by pimCategoryId when a fulfilment is selected
-  const { data: inventoryData, loading: inventoryLoading } = useListInventoryItemsQuery({
-    variables: {
-      query: {
-        filter: selectedPimCategoryId ? { pimCategoryId: selectedPimCategoryId } : {},
-        page: {
-          size: 100,
-        },
-      },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Sort inventory to put assigned item first if a fulfilment is selected
-  let inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
-
-  if (selectedFulfilmentId && selectedFulfilment?.inventoryId) {
-    inventory = [...inventory].sort((a, b) => {
-      // Put the assigned inventory item first
-      if (a.id === selectedFulfilment.inventoryId) return -1;
-      if (b.id === selectedFulfilment.inventoryId) return 1;
-      return 0;
-    });
-  }
 
   // Handle fulfilment selection
   const handleFulfilmentSelect = (fulfilmentId: string) => {
@@ -281,7 +257,7 @@ export default function EquipmentAssignmentTimeline() {
       variables: {
         fulfilmentId: fulfilment.id,
         inventoryId: inventoryItem.id,
-        allowOverlappingReservations: true, // Adjust based on your requirements
+        allowOverlappingReservations: true,
       },
       refetchQueries: ["ListRentalFulfilments", "ListInventoryItems"],
     });
@@ -410,29 +386,13 @@ export default function EquipmentAssignmentTimeline() {
         </Box>
 
         <Box sx={{ display: "flex", gap: 2, maxHeight: "70vh" }}>
-          {/* Left Panel - InventoryItem List */}
+          {/* Left Panel - Sourcing Panel */}
           <Box sx={{ width: "300px", flexShrink: 0, overflowY: "auto" }}>
-            {/* Available InventoryItem Section */}
-            <AvailableEquipmentSection
-              inventory={inventory}
-              isLoading={inventoryLoading}
-              onDragStart={setDraggedEquipment}
-              selectedFulfilmentId={selectedFulfilmentId}
+            <SourcingPanel
+              key={selectedFulfilment?.id}
               selectedFulfilment={selectedFulfilment}
-              onAssign={async (inventoryItem) => {
-                if (selectedFulfilment) {
-                  await handleEquipmentAssignment(inventoryItem, selectedFulfilment);
-                }
-              }}
-              onUnassign={async () => {
-                if (selectedFulfilmentId) {
-                  await handleEquipmentUnassignment(selectedFulfilmentId);
-                }
-              }}
+              onDragStart={setDraggedEquipment}
             />
-
-            {/* Assigned InventoryItem Section */}
-            {/* <AssignedEquipmentSection onDragStart={setDraggedEquipment} /> */}
           </Box>
 
           {/* Right Panel - Timeline */}
@@ -502,272 +462,6 @@ export default function EquipmentAssignmentTimeline() {
         </Dialog>
       </Box>
     </LocalizationProvider>
-  );
-}
-
-function AvailableEquipmentSection(props: {
-  inventory: InventoryItem[];
-  isLoading?: boolean;
-  onDragStart: (inventoryItem: InventoryItem | null) => void;
-  selectedFulfilmentId?: string;
-  selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
-  onAssign?: (inventoryItem: InventoryItem) => void;
-  onUnassign?: () => void;
-}) {
-  const {
-    inventory = [],
-    isLoading = false,
-    onDragStart,
-    selectedFulfilmentId,
-    selectedFulfilment,
-    onAssign,
-    onUnassign,
-  } = props;
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const handleClearFilter = () => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.delete("fulfilmentId");
-    router.push(`?${newParams.toString()}`);
-  };
-
-  return (
-    <Paper sx={{ p: 2, mb: 2 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          Inventory
-        </Typography>
-        {selectedFulfilmentId && (
-          <Button
-            size="small"
-            startIcon={<ClearIcon />}
-            onClick={handleClearFilter}
-            sx={{ textTransform: "none" }}
-          >
-            Clear Filter
-          </Button>
-        )}
-      </Box>
-
-      {selectedFulfilmentId && selectedFulfilment && (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            mb: 2,
-            p: 1,
-            backgroundColor: "rgba(25, 118, 210, 0.08)",
-            borderRadius: 1,
-            border: "1px solid rgba(25, 118, 210, 0.2)",
-          }}
-        >
-          <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
-          <Typography variant="caption" color="primary.main">
-            Filtered by: {selectedFulfilment.pimCategoryName || "Selected fulfillment category"}
-          </Typography>
-        </Box>
-      )}
-
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-        {selectedFulfilmentId
-          ? "Click to assign/unassign or drag to assign"
-          : "Drag to assign to rentals"}
-      </Typography>
-
-      {isLoading ? (
-        // Skeleton loading view
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {[1, 2, 3, 4].map((index) => (
-            <Paper
-              key={index}
-              sx={{
-                p: 1.5,
-                border: "1px solid #e0e0e0",
-                borderRadius: 1,
-              }}
-            >
-              <Box>
-                <Skeleton variant="text" width="60%" height={20} sx={{ mb: 0.5 }} />
-                <Skeleton variant="text" width="80%" height={16} sx={{ mb: 0.5 }} />
-                <Skeleton variant="text" width="70%" height={16} />
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
-                <Skeleton variant="circular" width={14} height={14} />
-                <Skeleton variant="text" width="40%" height={14} />
-              </Box>
-              {selectedFulfilmentId && (
-                <Box sx={{ mt: 1.5 }}>
-                  <Skeleton
-                    variant="rectangular"
-                    width="100%"
-                    height={32}
-                    sx={{ borderRadius: 0.5 }}
-                  />
-                </Box>
-              )}
-            </Paper>
-          ))}
-        </Box>
-      ) : inventory.length === 0 && selectedFulfilmentId ? (
-        <Box
-          sx={{
-            textAlign: "center",
-            py: 4,
-            px: 2,
-            backgroundColor: "#f5f5f5",
-            borderRadius: 1,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            No inventory items found for this category
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {selectedFulfilment?.pimCategoryName || ""}
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {inventory.map((inventoryItem) => (
-            <EquipmentCard
-              key={inventoryItem.id}
-              inventoryItem={inventoryItem}
-              onDragStart={onDragStart}
-              selectedFulfilmentId={selectedFulfilmentId}
-              selectedFulfilment={selectedFulfilment}
-              onAssign={onAssign}
-              onUnassign={onUnassign}
-            />
-          ))}
-        </Box>
-      )}
-    </Paper>
-  );
-}
-
-function EquipmentCard({
-  inventoryItem,
-  onDragStart,
-  selectedFulfilmentId,
-  selectedFulfilment,
-  onAssign,
-  onUnassign,
-}: {
-  inventoryItem: InventoryItem;
-  onDragStart: (inventoryItem: InventoryItem | null) => void;
-  selectedFulfilmentId?: string;
-  selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
-  onAssign?: (inventoryItem: InventoryItem) => void;
-  onUnassign?: () => void;
-}) {
-  const handleDragStart = (e: React.DragEvent) => {
-    onDragStart(inventoryItem);
-    // Store inventoryItem data in dataTransfer for fallback
-    e.dataTransfer.setData("inventoryItem", JSON.stringify(inventoryItem));
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragEnd = () => {
-    onDragStart(null);
-  };
-
-  const handleAssignClick = () => {
-    if (onAssign) {
-      onAssign(inventoryItem);
-    }
-  };
-
-  const handleUnassignClick = () => {
-    if (onUnassign) {
-      onUnassign();
-    }
-  };
-
-  // Check if this inventory item is assigned to the selected fulfilment
-  const isAssignedToSelectedFulfilment =
-    selectedFulfilmentId && selectedFulfilment?.inventoryId === inventoryItem.id;
-
-  // Show button only when a fulfilment is selected
-  const showButton = selectedFulfilmentId;
-
-  return (
-    <Paper
-      sx={{
-        p: 1.5,
-        border: "1px solid #e0e0e0",
-        borderRadius: 1,
-        cursor: inventoryItem.fulfilmentId ? "default" : "grab",
-        "&:hover": {
-          backgroundColor: inventoryItem.fulfilmentId ? "#f5f5f5" : "transparent",
-        },
-        "&:active": {
-          cursor: inventoryItem.fulfilmentId ? "default" : "grabbing",
-        },
-      }}
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {inventoryItem.pimCategoryName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-            {inventoryItem.asset?.name || inventoryItem.asset?.pim_product_model || "Unknown Model"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {inventoryItem.pimCategoryPath}
-          </Typography>
-        </Box>
-      </Box>
-
-      {inventoryItem.resourceMapId && (
-        <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 0.5 }}>
-          <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-          <Typography variant="caption" color="text.secondary">
-            {inventoryItem.resourceMapId}
-          </Typography>
-        </Box>
-      )}
-
-      {inventoryItem.fulfilmentId && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-          {inventoryItem.fulfilmentId}
-        </Typography>
-      )}
-
-      {showButton && (
-        <Box sx={{ mt: 1.5 }}>
-          {isAssignedToSelectedFulfilment ? (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              fullWidth
-              onClick={handleUnassignClick}
-            >
-              Unassign
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              fullWidth
-              onClick={handleAssignClick}
-              disabled={
-                inventoryItem.fulfilmentId !== null && inventoryItem.fulfilmentId !== undefined
-              }
-            >
-              Assign
-            </Button>
-          )}
-        </Box>
-      )}
-    </Paper>
   );
 }
 
@@ -920,6 +614,7 @@ function CustomerInfoRow({
   onSelect: () => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+
   const assignmentStart = new Date(fulfilment.rentalStartDate);
   const assignmentEnd = new Date(
     fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
@@ -1083,6 +778,9 @@ function TimelineRow({
   ) => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const params = useParams();
+  const workspaceId = params?.workspace_id as string;
+
   const fulfilmentStart = new Date(fulfilment.rentalStartDate);
   const fulfilmentEnd = new Date(
     fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(fulfilmentStart, 14),
@@ -1106,6 +804,21 @@ function TimelineRow({
 
   // Determine if fulfilment is within visible range
   const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
+
+  // Determine color based on priority: inventory (green) > PO line item (amber) > neither (red)
+  const hasInventory = !!fulfilment.inventoryId;
+  const hasPOLineItem = !!fulfilment.purchaseOrderLineItemId;
+
+  // Extract purchase order ID
+  const purchaseOrderId =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchase_order_id
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchase_order_id
+        : null;
+
+  const barColor = hasInventory ? "#66bb6a" : hasPOLineItem ? "#fbc02d" : "#ef5350";
+  const backgroundColor = hasInventory ? "#e8f5e9" : hasPOLineItem ? "#fff8e1" : "#ffebee";
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -1137,64 +850,114 @@ function TimelineRow({
     }
   };
 
+  if (!isVisible) {
+    return (
+      <Box
+        sx={{
+          height: rowHeight,
+          borderBottom: "1px solid #f0f0f0",
+          position: "relative",
+          width: dates.length * cellWidth,
+        }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      />
+    );
+  }
+
   return (
     <Box
       sx={{
+        height: rowHeight,
+        borderBottom: "1px solid #f0f0f0",
         position: "relative",
         width: dates.length * cellWidth,
-        height: rowHeight,
-        borderBottom: "1px dashed #d7d7d7",
-        display: "flex",
-        alignItems: "center",
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Fulfilment Bar */}
-      {isVisible && barWidth > 0 && (
+      <Box
+        sx={{
+          position: "absolute",
+          left: barLeft + 4,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: Math.max(barWidth, 30),
+          height: 48,
+          backgroundColor: backgroundColor,
+          border: `2px solid ${barColor}`,
+          borderRadius: "4px",
+          borderLeft: showLeftBorder ? `2px solid ${barColor}` : "none",
+          borderRight: showRightBorder ? `2px solid ${barColor}` : "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 1,
+          cursor: purchaseOrderId ? "pointer" : "default",
+          transition: "all 0.2s",
+          "&:hover": purchaseOrderId
+            ? {
+                transform: "translateY(-50%) scale(1.02)",
+                boxShadow: 2,
+              }
+            : {},
+        }}
+        onClick={(e) => {
+          if (purchaseOrderId) {
+            e.stopPropagation();
+            window.open(`/app/${workspaceId}/purchase-orders/${purchaseOrderId}`, "_blank");
+          }
+        }}
+      >
         <Box
-          className="fulfilment-bar"
           sx={{
-            position: "absolute",
-            left: barLeft + 4,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: barWidth,
-            height: 40,
-            backgroundColor: fulfilment.inventory ? "#e8f5e9" : "#ffebee",
-            borderTop: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
-            borderBottom: `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`,
-            borderLeft: showLeftBorder
-              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
-              : "none",
-            borderRight: showRightBorder
-              ? `2px solid ${fulfilment.inventory ? "#66bb6a" : "#ef5350"}`
-              : "none",
-            borderRadius: showLeftBorder && showRightBorder ? 1 : 0,
-            borderTopLeftRadius: showLeftBorder ? 4 : 0,
-            borderBottomLeftRadius: showLeftBorder ? 4 : 0,
-            borderTopRightRadius: showRightBorder ? 4 : 0,
-            borderBottomRightRadius: showRightBorder ? 4 : 0,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 1,
-            outline: isDragOver ? "2px solid #42a5f5" : "none",
-            outlineOffset: 2,
-            transition: "outline 0.2s",
+            gap: 0.5,
+            minWidth: 0,
+            flex: 1,
           }}
         >
-          {fulfilment.inventoryId ? (
-            <CheckCircleIcon sx={{ color: "#66bb6a", fontSize: 20 }} />
+          {hasInventory ? (
+            <CheckCircleIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
+          ) : hasPOLineItem ? (
+            <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           ) : (
-            <WarningAmberIcon sx={{ color: "#ef5350", fontSize: 20 }} />
+            <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           )}
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            {formatDurationShorthand(fulfilmentStart, fulfilmentEnd)}
+
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 500,
+              color: barColor,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {hasInventory
+              ? `Inv: ${fulfilment.inventoryId}`
+              : hasPOLineItem
+                ? `PO: ${fulfilment.purchaseOrderNumber || "..."}`
+                : "Not Sourced"}
           </Typography>
         </Box>
-      )}
+
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            color: barColor,
+            flexShrink: 0,
+            ml: 1,
+          }}
+        >
+          {formatDurationShorthand(fulfilmentStart, fulfilmentEnd)}
+        </Typography>
+      </Box>
     </Box>
   );
 }

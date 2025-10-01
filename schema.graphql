@@ -1008,6 +1008,8 @@ interface FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   salesOrder: SalesOrder
   salesOrderId: ID!
@@ -1747,6 +1749,7 @@ type Mutation {
   runNightlyRentalChargesJob: [RentalFulfilment!]!
   runNightlyRentalChargesJobAsync: Boolean
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
+  setFulfilmentPurchaseOrderLineItemId(fulfilmentId: ID!, purchaseOrderLineItemId: ID): FulfilmentBase
 
   """Set the active status of an intake form"""
   setIntakeFormActive(id: String!, isActive: Boolean!): IntakeForm
@@ -2457,6 +2460,8 @@ type RentalFulfilment implements FulfilmentBase {
   pricePerWeekInCents: Int!
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   rentalEndDate: DateTime
   rentalStartDate: DateTime
@@ -2522,6 +2527,7 @@ type RentalPurchaseOrderLineItem {
   po_quantity: Int
   price: Price
   price_id: String
+  purchaseOrder: PurchaseOrder
   purchase_order_id: String!
   so_pim_category: PimCategory
   so_pim_product: PimProduct
@@ -2659,6 +2665,8 @@ type SaleFulfilment implements FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   quantity: Int!
   salePrice: Float
@@ -2719,6 +2727,7 @@ type SalePurchaseOrderLineItem {
   po_quantity: Int
   price: Price
   price_id: String
+  purchaseOrder: PurchaseOrder
   purchase_order_id: String!
   so_pim_category: PimCategory
   so_pim_product: PimProduct
@@ -2979,6 +2988,8 @@ type ServiceFulfilment implements FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   salesOrder: SalesOrder
   salesOrderId: ID!

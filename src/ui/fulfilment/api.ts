@@ -23,6 +23,11 @@ export {
   useListRentalFulfilmentsQuery,
   useAssignInventoryToRentalFulfilmentMutation,
   useUnassignInventoryFromRentalFulfilmentMutation,
+  useCreatePurchaseOrderForFulfilmentMutation,
+  useCreateRentalPurchaseOrderLineItemForFulfilmentMutation,
+  useGeneratePurchaseOrderReferenceNumberMutation,
+  useSetFulfilmentPurchaseOrderLineItemIdMutationMutation,
+  useSubmitPurchaseOrderForFulfilmentMutation,
 } from "@/graphql/hooks";
 
 export const RentalFulfilmentPriceFields = graphql(`
@@ -283,6 +288,61 @@ export const ListRentalFulfilments = graphql(`
       items {
         ...InventoryAssignment_RentalFulFulfilmentFields
       }
+    }
+  }
+`);
+
+// Purchase Order Mutations for CreatePurchaseOrderDialog
+export const CreatePurchaseOrderForFulfilment = graphql(`
+  mutation CreatePurchaseOrderForFulfilment($input: PurchaseOrderInput) {
+    createPurchaseOrder(input: $input) {
+      id
+      purchase_order_number
+      status
+    }
+  }
+`);
+
+export const CreateRentalPurchaseOrderLineItemForFulfilment = graphql(`
+  mutation CreateRentalPurchaseOrderLineItemForFulfilment(
+    $input: CreateRentalPurchaseOrderLineItemInput
+  ) {
+    createRentalPurchaseOrderLineItem(input: $input) {
+      id
+      purchase_order_id
+      lineitem_status
+    }
+  }
+`);
+
+export const SetFulfilmentPurchaseOrderLineItemIdMutation = graphql(`
+  mutation SetFulfilmentPurchaseOrderLineItemIdMutation(
+    $fulfilmentId: ID!
+    $purchaseOrderLineItemId: ID
+  ) {
+    setFulfilmentPurchaseOrderLineItemId(
+      fulfilmentId: $fulfilmentId
+      purchaseOrderLineItemId: $purchaseOrderLineItemId
+    ) {
+      id
+      purchaseOrderLineItemId
+    }
+  }
+`);
+
+export const SubmitPurchaseOrderForFulfilment = graphql(`
+  mutation SubmitPurchaseOrderForFulfilment($id: ID!) {
+    submitPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`);
+
+export const GeneratePurchaseOrderReferenceNumber = graphql(`
+  mutation GeneratePurchaseOrderReferenceNumber($input: GenerateReferenceNumberInput!) {
+    generateReferenceNumber(input: $input) {
+      referenceNumber
     }
   }
 `);
