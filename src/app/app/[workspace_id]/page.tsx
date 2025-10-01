@@ -498,11 +498,15 @@ export default function DashboardMainSection() {
                               <TableCell>{project.name}</TableCell>
                               <TableCell>{project.project_code}</TableCell>
                               <TableCell>
-                                <Chip
-                                  label={project.status}
-                                  size="small"
-                                  sx={{ height: 20, fontSize: "0.7rem" }}
-                                />
+                                {project.status ? (
+                                  <Chip
+                                    label={project.status}
+                                    size="small"
+                                    sx={{ height: 20, fontSize: "0.7rem" }}
+                                  />
+                                ) : (
+                                  "-"
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
