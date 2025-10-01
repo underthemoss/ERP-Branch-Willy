@@ -392,10 +392,13 @@ export default function ProjectDetailAltPage() {
                 <Typography sx={{ whiteSpace: "pre-wrap" }}>
                   <strong>Description:</strong> {project.description || "—"}
                 </Typography>
-                <Typography>
-                  <strong>Scope of Work:</strong>{" "}
-                  {project.scope_of_work && project.scope_of_work.length > 0
-                    ? project.scope_of_work.filter(Boolean).map((code) => (
+                <Box>
+                  <Typography sx={{ mb: 1 }}>
+                    <strong>Scope of Work:</strong>
+                  </Typography>
+                  {project.scope_of_work && project.scope_of_work.length > 0 ? (
+                    <Box display="flex" flexWrap="wrap" gap={1}>
+                      {project.scope_of_work.filter(Boolean).map((code) => (
                         <Tooltip
                           key={code as string}
                           title={scopeOfWorkDescMap[code as string] || ""}
@@ -410,13 +413,17 @@ export default function ProjectDetailAltPage() {
                               bgcolor: "primary.light",
                               color: "primary.contrastText",
                               letterSpacing: 0.5,
-                              mr: 0.5,
                             }}
                           />
                         </Tooltip>
-                      ))
-                    : "—"}
-                </Typography>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      —
+                    </Typography>
+                  )}
+                </Box>
                 <Typography>
                   <strong>Project Contacts:</strong>
                 </Typography>
@@ -462,7 +469,8 @@ export default function ProjectDetailAltPage() {
                             sx={{
                               fontFamily: "monospace",
                               fontWeight: 600,
-                              ml: 2,
+                              ml: { xs: 0, sm: 2 },
+                              mt: { xs: 0.5, sm: 0 },
                             }}
                           />
                         </Box>
@@ -743,56 +751,83 @@ function AddSubProjectCard({ workspaceId, parentId }: { workspaceId: string; par
       tabIndex={0}
     >
       <Paper
-        elevation={2}
+        elevation={4}
         sx={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minWidth: 180,
-          maxWidth: 220,
-          p: 1.2,
+          minWidth: 260,
+          maxWidth: 340,
+          p: 2.5,
           borderRadius: 3,
+          boxShadow: "0 4px 24px 0 rgba(30, 34, 40, 0.10)",
           border: "2px dashed #1976d2",
+          position: "relative",
           bgcolor: "#f5faff",
-          color: "#1976d2",
-          cursor: "pointer",
-          boxShadow: "0 2px 8px 0 rgba(30, 34, 40, 0.08)",
+          overflow: "hidden",
           transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
+          cursor: "pointer",
           "&:hover, &:focus": {
+            boxShadow: "0 8px 32px 0 rgba(30, 34, 40, 0.16)",
             borderColor: "#1565c0",
             background: "#e3f2fd",
-            boxShadow: "0 4px 16px 0 rgba(30, 34, 40, 0.12)",
           },
         }}
       >
+        {/* Left accent bar */}
         <Box
           sx={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: "#1976d2",
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 6,
+            bgcolor: "#1976d2",
+            borderTopLeftRadius: 12,
+            borderBottomLeftRadius: 12,
+          }}
+        />
+        <Box
+          sx={{
+            pl: 2,
+            pr: 0.5,
+            pt: 0.5,
+            pb: 0.5,
+            position: "relative",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            bgcolor: "#e3f2fd",
-            mb: 0.5,
+            minHeight: 140,
           }}
         >
-          +
+          <Box
+            sx={{
+              fontSize: 40,
+              fontWeight: 700,
+              color: "#1976d2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              bgcolor: "#e3f2fd",
+              mb: 1.5,
+            }}
+          >
+            +
+          </Box>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: 17, mb: 0.5 }}>
+            Add Sub Project
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: 14, textAlign: "center", px: 1 }}
+          >
+            Create a new sub project
+          </Typography>
         </Box>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.2, fontSize: 16 }}>
-          Add Sub Project
-        </Typography>
-        <Typography
-          variant="body2"
-          color="inherit"
-          sx={{ opacity: 0.8, fontSize: 13, textAlign: "center" }}
-        >
-          Create a new sub project under this project
-        </Typography>
       </Paper>
     </Link>
   );
