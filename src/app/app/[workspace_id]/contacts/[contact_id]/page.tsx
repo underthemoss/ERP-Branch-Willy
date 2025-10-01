@@ -491,7 +491,7 @@ export default function ContactDisplayPage() {
 
               {/* Notes Section */}
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                <NotesSection entityId={contact.id} />
+                <NotesSection entityId={contact.id} workspaceId={workspace_id} />
               </Paper>
             </Grid>
 
