@@ -219,6 +219,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
             onBack={handleBack}
             onClose={onClose}
             workspaceId={workspaceId}
+            pricebookId={pricebookId}
           />
         );
       case 3:

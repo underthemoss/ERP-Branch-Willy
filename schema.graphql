@@ -1532,6 +1532,7 @@ type ListPersonContactsResult {
 input ListPimCategoriesFilter {
   parentId: ID
   path: String
+  priceBookId: ID
   searchTerm: String
 }
 

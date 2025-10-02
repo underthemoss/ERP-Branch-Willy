@@ -263,6 +263,7 @@ export function PimCategoriesTreeView(props: {
   includeProducts?: boolean;
   selectedItemId?: string;
   disabled?: boolean;
+  pricebookId?: string;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
@@ -366,7 +367,9 @@ export function PimCategoriesTreeView(props: {
         const parentCategoryId = opts.parentCategoryId || "";
         const { error, data } = await listCategoriesQuery({
           variables: {
-            filter: parentCategoryId ? { parentId: parentCategoryId } : { path: "" },
+            filter: parentCategoryId
+              ? { parentId: parentCategoryId, priceBookId: props.pricebookId }
+              : { path: "", priceBookId: props.pricebookId },
             page: {
               size: item?.childrenCount ?? 500,
             },
@@ -454,6 +457,7 @@ export function PimCategoriesTreeView(props: {
           variables: {
             filter: {
               searchTerm,
+              priceBookId: props.pricebookId,
             },
             page: {
               size: 500,

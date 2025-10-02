@@ -14,6 +14,7 @@ interface LineItemCategoryStepProps {
   onBack: () => void;
   onClose: () => void;
   workspaceId: string;
+  pricebookId?: string | null;
 }
 
 const LineItemCategoryStep: React.FC<LineItemCategoryStepProps> = ({
@@ -24,6 +25,7 @@ const LineItemCategoryStep: React.FC<LineItemCategoryStepProps> = ({
   onBack,
   onClose,
   workspaceId,
+  pricebookId,
 }) => {
   const handleCategorySelect = (item: any) => {
     onUpdate({
@@ -50,6 +52,7 @@ const LineItemCategoryStep: React.FC<LineItemCategoryStepProps> = ({
             selectedItemId={lineItem.pimCategoryId || undefined}
             onItemSelected={handleCategorySelect}
             includeProducts={false}
+            pricebookId={pricebookId || undefined}
           />
         </Box>
       </DialogContent>
