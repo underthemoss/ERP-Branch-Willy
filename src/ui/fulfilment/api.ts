@@ -194,6 +194,82 @@ export const ServiceFulfilmentFields = graphql(`
   }
 `);
 
+export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
+  fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
+    id
+    contactId
+    contact {
+      __typename
+      ... on BusinessContact {
+        id
+        name
+      }
+      ... on PersonContact {
+        id
+        name
+      }
+    }
+    project {
+      id
+      name
+      project_code
+    }
+    purchaseOrderNumber
+    purchaseOrderLineItemId
+    purchaseOrderLineItem {
+      __typename
+      ... on RentalPurchaseOrderLineItem {
+        id
+        purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+          status
+        }
+      }
+      ... on SalePurchaseOrderLineItem {
+        id
+        purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+          status
+        }
+      }
+    }
+    salesOrderId
+    salesOrder {
+      id
+      sales_order_number
+      purchase_order_number
+      status
+      buyer {
+        __typename
+        ... on BusinessContact {
+          id
+          name
+        }
+        ... on PersonContact {
+          id
+          name
+        }
+      }
+    }
+    salesOrderPONumber
+    inventory {
+      id
+    }
+    rentalStartDate
+    expectedRentalEndDate
+    rentalEndDate
+    pimCategoryId
+    pimCategoryName
+    pimCategoryPath
+    priceName
+    inventoryId
+  }
+`);
+
 export const GetFulfilmentById = graphql(`
   query GetFulfilmentById($id: ID!) {
     getFulfilmentById(id: $id) {

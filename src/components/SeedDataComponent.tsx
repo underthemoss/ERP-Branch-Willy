@@ -280,10 +280,10 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
     priceBook?: any;
     salesOrder?: any;
     purchaseOrder?: any;
-    pimCategory?: any;
-    rentalPrice?: any;
-    purchaseOrderLineItem?: any;
-    salesOrderLineItem?: any;
+    pimCategories?: any[];
+    rentalPrices?: any[];
+    purchaseOrderLineItems?: any[];
+    salesOrderLineItems?: any[];
     workflowConfiguration?: any;
   }>({});
 
@@ -295,11 +295,10 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
     { id: "priceBook", label: "Create Price Book", status: "pending" },
     { id: "salesOrder", label: "Create Sales Order", status: "pending" },
     { id: "purchaseOrder", label: "Create Purchase Order", status: "pending" },
-    { id: "pimCategory", label: "Create Skid Steer PIM Category", status: "pending" },
-    { id: "rentalPrice", label: "Create Skid Steer Rental Price", status: "pending" },
-    { id: "poLineItem", label: "Add Rental Line Item to PO", status: "pending" },
+    { id: "pimCategories", label: "Create PIM Categories & Prices", status: "pending" },
+    { id: "poLineItems", label: "Add Multiple Line Items to PO", status: "pending" },
     { id: "submitPO", label: "Submit Purchase Order", status: "pending" },
-    { id: "soLineItem", label: "Add Rental Line Item to SO", status: "pending" },
+    { id: "soLineItems", label: "Add Multiple Line Items to SO", status: "pending" },
     { id: "submitSO", label: "Submit Sales Order", status: "pending" },
     { id: "workflow", label: "Create Workflow Configuration", status: "pending" },
   ]);
@@ -528,96 +527,219 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("purchaseOrder", "completed");
       notifySuccess(`Purchase Order "${purchaseOrder.purchase_order_number}" created successfully`);
 
-      // Step 8: Create Skid Steer PIM Category
-      updateStepStatus("pimCategory", "loading");
+      // Step 8: Create Multiple PIM Categories and Prices
+      updateStepStatus("pimCategories", "loading");
       await delay(500);
 
       const timestamp = Date.now();
-      const pimCategoryResult = await upsertPimCategory({
-        variables: {
-          input: {
-            id: `skid-steer-${timestamp}`,
-            name: "Skid Steer Loaders",
-            description:
-              "Compact tracked loaders for construction, landscaping, and material handling",
-            path: "|Categories|Equipment|Skid Steers|",
-            platform_id: `platform-skid-${timestamp}`,
-            has_products: false,
-          },
+      const equipmentTypes = [
+        {
+          id: `skid-steer-${timestamp}`,
+          name: "Skid Steer Loaders",
+          description:
+            "Compact tracked loaders for construction, landscaping, and material handling",
+          path: "|Categories|Equipment|Skid Steers|",
+          platform_id: `platform-skid-${timestamp}`,
+          pricePerDay: 25000, // $250/day
+          pricePerWeek: 150000, // $1500/week
+          pricePerMonth: 500000, // $5000/month
         },
-      });
+        {
+          id: `excavator-${timestamp}`,
+          name: "Mini Excavators",
+          description: "Compact excavators ideal for tight spaces and urban construction projects",
+          path: "|Categories|Equipment|Excavators|Mini|",
+          platform_id: `platform-excavator-${timestamp}`,
+          pricePerDay: 35000, // $350/day
+          pricePerWeek: 210000, // $2100/week
+          pricePerMonth: 700000, // $7000/month
+        },
+        {
+          id: `forklift-${timestamp}`,
+          name: "Forklifts",
+          description: "Industrial forklifts for material handling and warehouse operations",
+          path: "|Categories|Equipment|Material Handling|Forklifts|",
+          platform_id: `platform-forklift-${timestamp}`,
+          pricePerDay: 20000, // $200/day
+          pricePerWeek: 120000, // $1200/week
+          pricePerMonth: 400000, // $4000/month
+        },
+        {
+          id: `aerial-lift-${timestamp}`,
+          name: "Aerial Lifts",
+          description: "Boom lifts and scissor lifts for elevated work access",
+          path: "|Categories|Equipment|Access Equipment|Aerial Lifts|",
+          platform_id: `platform-aerial-${timestamp}`,
+          pricePerDay: 30000, // $300/day
+          pricePerWeek: 180000, // $1800/week
+          pricePerMonth: 600000, // $6000/month
+        },
+        {
+          id: `telehandler-${timestamp}`,
+          name: "Telehandlers",
+          description: "Telescopic handlers for lifting materials to height with extended reach",
+          path: "|Categories|Equipment|Material Handling|Telehandlers|",
+          platform_id: `platform-telehandler-${timestamp}`,
+          pricePerDay: 40000, // $400/day
+          pricePerWeek: 240000, // $2400/week
+          pricePerMonth: 800000, // $8000/month
+        },
+      ];
 
-      if (!pimCategoryResult.data?.upsertPimCategory) {
-        throw new Error("Failed to create skid steer PIM category");
+      const pimCategories: any[] = [];
+      const rentalPrices: any[] = [];
+
+      for (const equipment of equipmentTypes) {
+        // Create PIM category
+        const pimCategoryResult = await upsertPimCategory({
+          variables: {
+            input: {
+              id: equipment.id,
+              name: equipment.name,
+              description: equipment.description,
+              path: equipment.path,
+              platform_id: equipment.platform_id,
+              has_products: false,
+            },
+          },
+        });
+
+        if (!pimCategoryResult.data?.upsertPimCategory) {
+          throw new Error(`Failed to create ${equipment.name} PIM category`);
+        }
+
+        const pimCategory = pimCategoryResult.data.upsertPimCategory;
+        pimCategories.push(pimCategory);
+
+        // Create rental price for this category
+        const rentalPriceResult = await createRentalPrice({
+          variables: {
+            input: {
+              name: `${equipment.name} Rental`,
+              pimCategoryId: pimCategory.id,
+              priceBookId: priceBook.id,
+              pricePerDayInCents: equipment.pricePerDay,
+              pricePerWeekInCents: equipment.pricePerWeek,
+              pricePerMonthInCents: equipment.pricePerMonth,
+              workspaceId: workspace.id,
+            },
+          },
+        });
+
+        if (!rentalPriceResult.data?.createRentalPrice) {
+          throw new Error(`Failed to create ${equipment.name} rental price`);
+        }
+
+        const rentalPrice = rentalPriceResult.data.createRentalPrice;
+        rentalPrices.push(rentalPrice);
+
+        await delay(200);
       }
 
-      const pimCategory = pimCategoryResult.data.upsertPimCategory;
-      setCreatedData((prev) => ({ ...prev, pimCategory }));
-      updateStepStatus("pimCategory", "completed");
-      notifySuccess(`PIM Category "${pimCategory.name}" created successfully`);
+      setCreatedData((prev) => ({ ...prev, pimCategories, rentalPrices }));
+      updateStepStatus("pimCategories", "completed");
+      notifySuccess(
+        `Created ${pimCategories.length} PIM categories and rental prices successfully`,
+      );
 
-      // Step 9: Create Skid Steer Rental Price
-      updateStepStatus("rentalPrice", "loading");
+      // Step 9: Add Multiple Rental Line Items to Purchase Order
+      updateStepStatus("poLineItems", "loading");
       await delay(500);
 
-      const rentalPriceResult = await createRentalPrice({
-        variables: {
-          input: {
-            name: "Skid Steer Loader Rental",
-            pimCategoryId: pimCategory.id,
-            priceBookId: priceBook.id,
-            pricePerDayInCents: 25000, // $250/day
-            pricePerWeekInCents: 150000, // $1500/week
-            pricePerMonthInCents: 500000, // $5000/month
-            workspaceId: workspace.id,
-          },
-        },
-      });
+      const purchaseOrderLineItems: any[] = [];
 
-      if (!rentalPriceResult.data?.createRentalPrice) {
-        throw new Error("Failed to create skid steer rental price");
+      // Create 6 PO line items with different equipment (rental items must have quantity of 1)
+      const poLineItemsData = [
+        {
+          priceIndex: 0, // Skid Steer #1
+          quantity: 1,
+          deliveryDays: 2,
+          rentalDays: 14,
+          deliveryCharge: 7500,
+          notes:
+            "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
+        },
+        {
+          priceIndex: 0, // Skid Steer #2
+          quantity: 1,
+          deliveryDays: 2,
+          rentalDays: 14,
+          deliveryCharge: 7500,
+          notes:
+            "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Second unit for foundation work.",
+        },
+        {
+          priceIndex: 1, // Mini Excavator
+          quantity: 1,
+          deliveryDays: 3,
+          rentalDays: 21,
+          deliveryCharge: 10000,
+          notes: "Deliver to east staging area. Required for underground utility work.",
+        },
+        {
+          priceIndex: 2, // Forklift
+          quantity: 1,
+          deliveryDays: 1,
+          rentalDays: 30,
+          deliveryCharge: 5000,
+          notes:
+            "Deliver to loading dock. Needed for material handling throughout project duration.",
+        },
+        {
+          priceIndex: 3, // Aerial Lift #1
+          quantity: 1,
+          deliveryDays: 5,
+          rentalDays: 10,
+          deliveryCharge: 8500,
+          notes: "Deliver to north side of building. Required for MEP installation at height.",
+        },
+        {
+          priceIndex: 3, // Aerial Lift #2
+          quantity: 1,
+          deliveryDays: 5,
+          rentalDays: 10,
+          deliveryCharge: 8500,
+          notes: "Deliver to north side of building. Second unit for MEP installation at height.",
+        },
+      ];
+
+      for (const lineItemData of poLineItemsData) {
+        const deliveryDate = new Date(Date.now() + lineItemData.deliveryDays * 24 * 60 * 60 * 1000);
+        const offRentDate = new Date(
+          deliveryDate.getTime() + lineItemData.rentalDays * 24 * 60 * 60 * 1000,
+        );
+
+        const poLineItemResult = await createRentalPOLineItem({
+          variables: {
+            input: {
+              purchase_order_id: purchaseOrder.id,
+              price_id: rentalPrices[lineItemData.priceIndex].id,
+              po_pim_id: pimCategories[lineItemData.priceIndex].id,
+              po_quantity: lineItemData.quantity,
+              lineitem_status: PoLineItemStatus.Confirmed,
+              off_rent_date: offRentDate.toISOString(),
+              delivery_method: DeliveryMethod.Delivery,
+              delivery_date: deliveryDate.toISOString(),
+              delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
+              delivery_charge_in_cents: lineItemData.deliveryCharge,
+              deliveryNotes: lineItemData.notes,
+            },
+          },
+        });
+
+        if (!poLineItemResult.data?.createRentalPurchaseOrderLineItem) {
+          throw new Error("Failed to create purchase order line item");
+        }
+
+        purchaseOrderLineItems.push(poLineItemResult.data.createRentalPurchaseOrderLineItem);
+        await delay(200);
       }
 
-      const rentalPrice = rentalPriceResult.data.createRentalPrice;
-      setCreatedData((prev) => ({ ...prev, rentalPrice }));
-      updateStepStatus("rentalPrice", "completed");
-      notifySuccess(`Rental Price "${rentalPrice.name}" created successfully`);
-
-      // Step 10: Add Rental Line Item to Purchase Order
-      updateStepStatus("poLineItem", "loading");
-      await delay(500);
-
-      // Calculate dates: delivery in 2 days, return in 14 days
-      const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-      const offRentDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-
-      const poLineItemResult = await createRentalPOLineItem({
-        variables: {
-          input: {
-            purchase_order_id: purchaseOrder.id,
-            price_id: rentalPrice.id,
-            po_pim_id: pimCategory.id,
-            po_quantity: 1,
-            lineitem_status: PoLineItemStatus.Confirmed,
-            off_rent_date: offRentDate.toISOString(),
-            delivery_method: DeliveryMethod.Delivery,
-            delivery_date: deliveryDate.toISOString(),
-            delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
-            delivery_charge_in_cents: 7500, // $75 delivery
-            deliveryNotes:
-              "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
-          },
-        },
-      });
-
-      if (!poLineItemResult.data?.createRentalPurchaseOrderLineItem) {
-        throw new Error("Failed to create purchase order line item");
-      }
-
-      const purchaseOrderLineItem = poLineItemResult.data.createRentalPurchaseOrderLineItem;
-      setCreatedData((prev) => ({ ...prev, purchaseOrderLineItem }));
-      updateStepStatus("poLineItem", "completed");
-      notifySuccess(`Skid steer rental line item added to Purchase Order successfully`);
+      setCreatedData((prev) => ({ ...prev, purchaseOrderLineItems }));
+      updateStepStatus("poLineItems", "completed");
+      notifySuccess(
+        `Added ${purchaseOrderLineItems.length} rental line items to Purchase Order successfully`,
+      );
 
       // Step 11: Submit Purchase Order
       updateStepStatus("submitPO", "loading");
@@ -639,41 +761,105 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("submitPO", "completed");
       notifySuccess(`Purchase Order "${submittedPO.purchase_order_number}" submitted successfully`);
 
-      // Step 12: Add Rental Line Item to Sales Order
-      updateStepStatus("soLineItem", "loading");
+      // Step 12: Add Multiple Rental Line Items to Sales Order
+      updateStepStatus("soLineItems", "loading");
       await delay(500);
 
-      // Calculate dates: delivery in 2 days, return in 14 days (same as PO)
-      const soDeliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-      const soOffRentDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      const salesOrderLineItems: any[] = [];
 
-      const soLineItemResult = await createRentalSOLineItem({
-        variables: {
-          input: {
-            sales_order_id: salesOrder.id,
-            price_id: rentalPrice.id,
-            so_pim_id: pimCategory.id,
-            so_quantity: 1,
-            lineitem_status: LineItemStatus.Confirmed,
-            off_rent_date: soOffRentDate.toISOString(),
-            delivery_method: DeliveryMethod.Delivery,
-            delivery_date: soDeliveryDate.toISOString(),
-            delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
-            delivery_charge_in_cents: 7500, // $75 delivery
-            deliveryNotes:
-              "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
-          },
+      // Create 6 SO line items (rental items must have quantity of 1)
+      const soLineItemsData = [
+        {
+          priceIndex: 0, // Skid Steer #1
+          quantity: 1,
+          deliveryDays: 2,
+          rentalDays: 14,
+          deliveryCharge: 7500,
+          notes:
+            "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
         },
-      });
+        {
+          priceIndex: 0, // Skid Steer #2
+          quantity: 1,
+          deliveryDays: 2,
+          rentalDays: 14,
+          deliveryCharge: 7500,
+          notes:
+            "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Second unit for foundation work.",
+        },
+        {
+          priceIndex: 1, // Mini Excavator
+          quantity: 1,
+          deliveryDays: 3,
+          rentalDays: 21,
+          deliveryCharge: 10000,
+          notes: "Deliver to east staging area. Required for underground utility work.",
+        },
+        {
+          priceIndex: 2, // Forklift
+          quantity: 1,
+          deliveryDays: 1,
+          rentalDays: 30,
+          deliveryCharge: 5000,
+          notes:
+            "Deliver to loading dock. Needed for material handling throughout project duration.",
+        },
+        {
+          priceIndex: 4, // Telehandler #1
+          quantity: 1,
+          deliveryDays: 7,
+          rentalDays: 14,
+          deliveryCharge: 9500,
+          notes: "Deliver to south construction yard. Needed for material placement at height.",
+        },
+        {
+          priceIndex: 4, // Telehandler #2
+          quantity: 1,
+          deliveryDays: 7,
+          rentalDays: 14,
+          deliveryCharge: 9500,
+          notes:
+            "Deliver to south construction yard. Second unit for material placement at height.",
+        },
+      ];
 
-      if (!soLineItemResult.data?.createRentalSalesOrderLineItem) {
-        throw new Error("Failed to create sales order line item");
+      for (const lineItemData of soLineItemsData) {
+        const deliveryDate = new Date(Date.now() + lineItemData.deliveryDays * 24 * 60 * 60 * 1000);
+        const offRentDate = new Date(
+          deliveryDate.getTime() + lineItemData.rentalDays * 24 * 60 * 60 * 1000,
+        );
+
+        const soLineItemResult = await createRentalSOLineItem({
+          variables: {
+            input: {
+              sales_order_id: salesOrder.id,
+              price_id: rentalPrices[lineItemData.priceIndex].id,
+              so_pim_id: pimCategories[lineItemData.priceIndex].id,
+              so_quantity: lineItemData.quantity,
+              lineitem_status: LineItemStatus.Confirmed,
+              off_rent_date: offRentDate.toISOString(),
+              delivery_method: DeliveryMethod.Delivery,
+              delivery_date: deliveryDate.toISOString(),
+              delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
+              delivery_charge_in_cents: lineItemData.deliveryCharge,
+              deliveryNotes: lineItemData.notes,
+            },
+          },
+        });
+
+        if (!soLineItemResult.data?.createRentalSalesOrderLineItem) {
+          throw new Error("Failed to create sales order line item");
+        }
+
+        salesOrderLineItems.push(soLineItemResult.data.createRentalSalesOrderLineItem);
+        await delay(200);
       }
 
-      const salesOrderLineItem = soLineItemResult.data.createRentalSalesOrderLineItem;
-      setCreatedData((prev) => ({ ...prev, salesOrderLineItem }));
-      updateStepStatus("soLineItem", "completed");
-      notifySuccess(`Rental line item added to Sales Order successfully`);
+      setCreatedData((prev) => ({ ...prev, salesOrderLineItems }));
+      updateStepStatus("soLineItems", "completed");
+      notifySuccess(
+        `Added ${salesOrderLineItems.length} rental line items to Sales Order successfully`,
+      );
 
       // Step 15: Submit Sales Order
       updateStepStatus("submitSO", "loading");
@@ -938,28 +1124,36 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
                     )}
                   </Alert>
                 )}
-                {createdData.pimCategory && (
+                {createdData.pimCategories && createdData.pimCategories.length > 0 && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Skid Steer PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
-                    {createdData.pimCategory.id})
+                    <strong>PIM Categories:</strong> Created {createdData.pimCategories.length}{" "}
+                    equipment categories
+                    <br />
+                    {createdData.pimCategories.map((cat, idx) => (
+                      <span key={cat.id}>
+                        • {cat.name}
+                        {idx < (createdData.pimCategories?.length ?? 0) - 1 ? ", " : ""}
+                      </span>
+                    ))}
                   </Alert>
                 )}
-                {createdData.rentalPrice && (
+                {createdData.rentalPrices && createdData.rentalPrices.length > 0 && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Skid Steer Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
-                    {createdData.rentalPrice.id})
+                    <strong>Rental Prices:</strong> Created {createdData.rentalPrices.length} rental
+                    price entries
                   </Alert>
                 )}
-                {createdData.purchaseOrderLineItem && (
+                {createdData.purchaseOrderLineItems &&
+                  createdData.purchaseOrderLineItems.length > 0 && (
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                      <strong>PO Line Items:</strong> Added{" "}
+                      {createdData.purchaseOrderLineItems.length} rental items to Purchase Order
+                    </Alert>
+                  )}
+                {createdData.salesOrderLineItems && createdData.salesOrderLineItems.length > 0 && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>PO Line Item:</strong> Skid steer rental item added (ID:{" "}
-                    {createdData.purchaseOrderLineItem.id})
-                  </Alert>
-                )}
-                {createdData.salesOrderLineItem && (
-                  <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>SO Line Item:</strong> Skid steer rental item added (ID:{" "}
-                    {createdData.salesOrderLineItem.id})
+                    <strong>SO Line Items:</strong> Added {createdData.salesOrderLineItems.length}{" "}
+                    rental items to Sales Order
                   </Alert>
                 )}
                 {createdData.workflowConfiguration && (
@@ -1095,28 +1289,35 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
               )}
             </Alert>
           )}
-          {createdData.pimCategory && (
+          {createdData.pimCategories && createdData.pimCategories.length > 0 && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Skid Steer PIM Category:</strong> {createdData.pimCategory.name} (ID:{" "}
-              {createdData.pimCategory.id})
+              <strong>PIM Categories:</strong> Created {createdData.pimCategories.length} equipment
+              categories
+              <br />
+              {createdData.pimCategories.map((cat, idx) => (
+                <span key={cat.id}>
+                  • {cat.name}
+                  {idx < (createdData.pimCategories?.length ?? 0) - 1 ? ", " : ""}
+                </span>
+              ))}
             </Alert>
           )}
-          {createdData.rentalPrice && (
+          {createdData.rentalPrices && createdData.rentalPrices.length > 0 && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Skid Steer Rental Price:</strong> {createdData.rentalPrice.name} (ID:{" "}
-              {createdData.rentalPrice.id})
+              <strong>Rental Prices:</strong> Created {createdData.rentalPrices.length} rental price
+              entries
             </Alert>
           )}
-          {createdData.purchaseOrderLineItem && (
+          {createdData.purchaseOrderLineItems && createdData.purchaseOrderLineItems.length > 0 && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>PO Line Item:</strong> Skid steer rental item added (ID:{" "}
-              {createdData.purchaseOrderLineItem.id})
+              <strong>PO Line Items:</strong> Added {createdData.purchaseOrderLineItems.length}{" "}
+              rental items to Purchase Order
             </Alert>
           )}
-          {createdData.salesOrderLineItem && (
+          {createdData.salesOrderLineItems && createdData.salesOrderLineItems.length > 0 && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>SO Line Item:</strong> Skid steer rental item added (ID:{" "}
-              {createdData.salesOrderLineItem.id})
+              <strong>SO Line Items:</strong> Added {createdData.salesOrderLineItems.length} rental
+              items to Sales Order
             </Alert>
           )}
           {createdData.workflowConfiguration && (

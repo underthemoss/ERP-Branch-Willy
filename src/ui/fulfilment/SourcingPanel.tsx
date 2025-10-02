@@ -1,14 +1,17 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { useSourcingPanelListInventoryQuery } from "@/graphql/hooks";
+import { useGetInventoryByIdQuery, useSourcingPanelListInventoryQuery } from "@/graphql/hooks";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import ClearIcon from "@mui/icons-material/Clear";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ReceiptIcon from "@mui/icons-material/Receipt";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import {
   Accordion,
@@ -22,7 +25,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
-import { addDays, format } from "date-fns";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { InventoryFieldsFragment as InventoryItem } from "../inventory/api";
@@ -59,6 +62,29 @@ const SourcingPanelListInventory = graphql(`
   }
 `);
 
+// GraphQL query to get a single inventory item by ID
+const GetInventoryById = graphql(`
+  query GetInventoryById($id: String!) {
+    inventoryById(id: $id) {
+      id
+      status
+      fulfilmentId
+      purchaseOrderId
+      assetId
+      asset {
+        id
+        name
+        pim_product_model
+      }
+      resourceMapId
+      pimCategoryId
+      pimCategoryName
+      pimCategoryPath
+      isThirdPartyRental
+    }
+  }
+`);
+
 const SourcingPanelFulfilmentFragment = graphql(`
   fragment SourcingPanel_RentalFulfilmentFields on RentalFulfilment {
     id
@@ -86,13 +112,38 @@ const SourcingPanelFulfilmentFragment = graphql(`
       ... on RentalPurchaseOrderLineItem {
         id
         purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+        }
       }
       ... on SalePurchaseOrderLineItem {
         id
         purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+        }
       }
     }
     salesOrderId
+    salesOrder {
+      id
+      sales_order_number
+      purchase_order_number
+      status
+      buyer {
+        __typename
+        ... on BusinessContact {
+          id
+          name
+        }
+        ... on PersonContact {
+          id
+          name
+        }
+      }
+    }
     salesOrderPONumber
     inventory {
       id
@@ -111,28 +162,47 @@ const SourcingPanelFulfilmentFragment = graphql(`
 interface SourcingPanelProps {
   selectedFulfilment: InventoryAssignment_RentalFulFulfilment | undefined;
   onDragStart: (inventoryItem: InventoryItem | null) => void;
+  workspaceId: string;
 }
 
-export function SourcingPanel({ selectedFulfilment, onDragStart }: SourcingPanelProps) {
+export function SourcingPanel({
+  selectedFulfilment,
+  onDragStart,
+  workspaceId,
+}: SourcingPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [inventoryFilterActive, setInventoryFilterActive] = useState(true);
+  const [salesOrderExpanded, setSalesOrderExpanded] = useState(false);
   const [procurementExpanded, setProcurementExpanded] = useState(false);
   const [inventoryExpanded, setInventoryExpanded] = useState(true);
 
-  // Fetch inventory items based on filter state
+  // Fetch assigned inventory item by ID if it exists
+  const { data: assignedInventoryData, loading: assignedInventoryLoading } =
+    useGetInventoryByIdQuery({
+      variables: {
+        id: selectedFulfilment?.inventoryId || "",
+      },
+      skip: !selectedFulfilment?.inventoryId,
+      fetchPolicy: "cache-and-network",
+    });
+
+  // Fetch inventory items based on filter state (only when no inventory is assigned)
   const { data: inventoryData, loading: inventoryLoading } = useSourcingPanelListInventoryQuery({
     variables: {
       query: {
-        filter:
-          selectedFulfilment?.pimCategoryId && inventoryFilterActive
+        filter: {
+          workspaceId: workspaceId,
+          ...(selectedFulfilment?.pimCategoryId && inventoryFilterActive
             ? { pimCategoryId: selectedFulfilment.pimCategoryId }
-            : {},
+            : {}),
+        },
         page: {
           size: 100,
         },
       },
     },
+    skip: !!selectedFulfilment?.inventoryId,
     fetchPolicy: "cache-and-network",
   });
 
@@ -207,6 +277,9 @@ export function SourcingPanel({ selectedFulfilment, onDragStart }: SourcingPanel
     );
   }
 
+  // Check if there's a purchase order
+  const hasPurchaseOrder = !!selectedFulfilment.purchaseOrderLineItemId;
+
   // Show Sourcing panel with collapsible sections
   return (
     <Paper sx={{ mb: 2 }}>
@@ -216,58 +289,45 @@ export function SourcingPanel({ selectedFulfilment, onDragStart }: SourcingPanel
         </Typography>
         <Button
           size="small"
-          startIcon={<ClearIcon />}
+          startIcon={<ArrowBackIcon />}
           onClick={handleClearFilter}
           sx={{ textTransform: "none" }}
         >
-          Clear
+          Collapse
         </Button>
       </Box>
 
-      {/* Product Demand Details */}
+      {/* Combined Fulfilment Details and Rental Duration Card */}
       <Box sx={{ px: 2, pb: 2 }}>
-        <Box
+        <FulfilmentDetailsCard fulfilment={selectedFulfilment} />
+      </Box>
+
+      {/* Sales Order Section */}
+      {selectedFulfilment.salesOrderId && (
+        <Accordion
+          expanded={salesOrderExpanded}
+          onChange={() => setSalesOrderExpanded(!salesOrderExpanded)}
+          disableGutters
+          elevation={0}
           sx={{
-            p: 1.5,
-            backgroundColor: "#f9f9f9",
-            borderRadius: 1,
-            border: "1px solid #e0e0e0",
+            "&:before": { display: "none" },
+            borderTop: "1px solid rgba(0, 0, 0, 0.12)",
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-            {selectedFulfilment.pimCategoryName}
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <ContactPageOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-              <Typography variant="caption" color="text.secondary">
-                {selectedFulfilment.contact?.name}
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <ReceiptIcon sx={{ fontSize: 20, color: "text.secondary" }} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Sales Order
               </Typography>
+              <Badge badgeContent={1} color="primary" sx={{ ml: 1 }} />
             </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <CalendarMonthIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-              <Typography variant="caption" color="text.secondary">
-                {format(new Date(selectedFulfilment.rentalStartDate), "dd/MM/yyyy")} -{" "}
-                {format(
-                  new Date(
-                    selectedFulfilment.rentalEndDate ||
-                      selectedFulfilment.expectedRentalEndDate ||
-                      addDays(new Date(selectedFulfilment.rentalStartDate), 14),
-                  ),
-                  "dd/MM/yyyy",
-                )}
-              </Typography>
-            </Box>
-            {selectedFulfilment.project && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Project: {selectedFulfilment.project.name}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <SalesOrderCard fulfilment={selectedFulfilment} workspaceId={workspaceId} />
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       {/* Procurement Section */}
       <Accordion
@@ -286,10 +346,16 @@ export function SourcingPanel({ selectedFulfilment, onDragStart }: SourcingPanel
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Procurement
             </Typography>
+            {hasPurchaseOrder && <Badge badgeContent={1} color="primary" sx={{ ml: 1 }} />}
           </Box>
         </AccordionSummary>
         <AccordionDetails>
-          <ProcurementSection fulfilment={selectedFulfilment} />
+          {hasPurchaseOrder && (
+            <Box sx={{ mb: 2 }}>
+              <PurchaseOrderCard fulfilment={selectedFulfilment} workspaceId={workspaceId} />
+            </Box>
+          )}
+          <ProcurementSection fulfilment={selectedFulfilment} hasPurchaseOrder={hasPurchaseOrder} />
         </AccordionDetails>
       </Accordion>
 
@@ -314,56 +380,503 @@ export function SourcingPanel({ selectedFulfilment, onDragStart }: SourcingPanel
           </Box>
         </AccordionSummary>
         <AccordionDetails>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 1,
-              mb: 2,
-              p: 1,
-              backgroundColor: "rgba(25, 118, 210, 0.08)",
-              borderRadius: 1,
-              border: "1px solid rgba(25, 118, 210, 0.2)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
-              <Typography variant="caption" color="primary.main">
-                Filtered by: {selectedFulfilment.pimCategoryName || "Selected category"}
+          {selectedFulfilment.inventoryId ? (
+            // Show only the assigned inventory item (fetched separately by ID)
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Assigned Inventory
+              </Typography>
+              <InventoryList
+                inventory={
+                  assignedInventoryData?.inventoryById ? [assignedInventoryData.inventoryById] : []
+                }
+                isLoading={assignedInventoryLoading}
+                onDragStart={onDragStart}
+                selectedFulfilmentId={selectedFulfilment.id}
+                selectedFulfilment={selectedFulfilment}
+                onAssign={handleAssign}
+                onUnassign={handleUnassign}
+              />
+            </>
+          ) : hasPurchaseOrder ? (
+            // Show waiting message if PO exists but no inventory assigned yet
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 4,
+                px: 2,
+                backgroundColor: "#fff8e1",
+                borderRadius: 1,
+                border: "1px solid #fbc02d",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Inventory will be associated once the purchase order is submitted
               </Typography>
             </Box>
-            <Switch
-              checked={inventoryFilterActive}
-              onChange={() => setInventoryFilterActive(!inventoryFilterActive)}
-              size="small"
-              color="primary"
-            />
-          </Box>
+          ) : (
+            // Show full inventory list for assignment
+            <>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  mb: 2,
+                  p: 1,
+                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                  borderRadius: 1,
+                  border: "1px solid rgba(25, 118, 210, 0.2)",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <FilterListIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                  <Typography variant="caption" color="primary.main">
+                    Filtered by: {selectedFulfilment.pimCategoryName || "Selected category"}
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={inventoryFilterActive}
+                  onChange={() => setInventoryFilterActive(!inventoryFilterActive)}
+                  size="small"
+                  color="primary"
+                />
+              </Box>
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-            Click to assign/unassign or drag to assign
-          </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                Click to assign/unassign or drag to assign
+              </Typography>
 
-          <InventoryList
-            inventory={inventory}
-            isLoading={inventoryLoading}
-            onDragStart={onDragStart}
-            selectedFulfilmentId={selectedFulfilment.id}
-            selectedFulfilment={selectedFulfilment}
-            onAssign={handleAssign}
-            onUnassign={handleUnassign}
-          />
+              <InventoryList
+                inventory={inventory}
+                isLoading={inventoryLoading}
+                onDragStart={onDragStart}
+                selectedFulfilmentId={selectedFulfilment.id}
+                selectedFulfilment={selectedFulfilment}
+                onAssign={handleAssign}
+                onUnassign={handleUnassign}
+              />
+            </>
+          )}
         </AccordionDetails>
       </Accordion>
     </Paper>
   );
 }
 
-function ProcurementSection({
+function FulfilmentDetailsCard({
   fulfilment,
 }: {
   fulfilment: InventoryAssignment_RentalFulFulfilment;
+}) {
+  const assignmentStart = new Date(fulfilment.rentalStartDate);
+  const assignmentEnd = new Date(
+    fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
+  );
+  const duration = differenceInCalendarDays(assignmentEnd, assignmentStart);
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        backgroundColor: "#f9f9f9",
+        borderRadius: 1,
+        border: "1px solid #e0e0e0",
+      }}
+    >
+      {/* Product and Customer Info */}
+      <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5 }}>
+        {fulfilment.pimCategoryName}
+      </Typography>
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <ContactPageOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+          <Typography variant="caption" color="text.secondary">
+            {fulfilment.contact?.name}
+          </Typography>
+        </Box>
+        {fulfilment.project && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Project: {fulfilment.project.name}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
+      {/* Rental Duration Section */}
+      <Box
+        sx={{
+          p: 1.5,
+          backgroundColor: "#e3f2fd",
+          borderRadius: 1,
+          border: "1px solid #90caf9",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <CalendarMonthIcon sx={{ fontSize: 18, color: "#1976d2" }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "#1976d2" }}>
+              Rental Duration
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: "#1976d2" }}>
+            {duration} {duration === 1 ? "day" : "days"}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.25 }}
+            >
+              Start
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {format(assignmentStart, "MMM dd, yyyy")}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", px: 1 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 2,
+                backgroundColor: "#1976d2",
+                position: "relative",
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  right: -4,
+                  top: -3,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "8px solid #1976d2",
+                  borderTop: "4px solid transparent",
+                  borderBottom: "4px solid transparent",
+                },
+              }}
+            />
+          </Box>
+
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.25 }}
+            >
+              End
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {format(assignmentEnd, "MMM dd, yyyy")}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function SalesOrderCard({
+  fulfilment,
+  workspaceId,
+}: {
+  fulfilment: InventoryAssignment_RentalFulFulfilment;
+  workspaceId: string;
+}) {
+  const salesOrder = fulfilment.salesOrder;
+
+  if (!salesOrder) {
+    return null;
+  }
+
+  const handleOpenSO = () => {
+    window.open(`/app/${workspaceId}/sales-orders/${salesOrder.id}`, "_blank");
+  };
+
+  // Determine status color
+  const getStatusColor = (status: string | null | undefined) => {
+    switch (status) {
+      case "DRAFT":
+        return "#9e9e9e";
+      case "SUBMITTED":
+        return "#1976d2";
+      case "APPROVED":
+        return "#2e7d32";
+      case "CANCELLED":
+        return "#d32f2f";
+      default:
+        return "#f57c00";
+    }
+  };
+
+  const statusColor = getStatusColor(salesOrder.status);
+
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        backgroundColor: "#e8f5e9",
+        borderRadius: 1,
+        border: "1px solid #4caf50",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        "&:hover": {
+          backgroundColor: "#c8e6c9",
+          transform: "translateY(-1px)",
+          boxShadow: 1,
+        },
+      }}
+      onClick={handleOpenSO}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <CheckCircleIcon sx={{ fontSize: 18, color: "#4caf50" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#4caf50" }}>
+            Sales Order
+          </Typography>
+        </Box>
+        <OpenInNewIcon sx={{ fontSize: 16, color: "#4caf50" }} />
+      </Box>
+
+      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+        SO #{salesOrder.sales_order_number || salesOrder.id}
+      </Typography>
+
+      {salesOrder.purchase_order_number && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+          Customer PO: {salesOrder.purchase_order_number}
+        </Typography>
+      )}
+
+      {salesOrder.buyer && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+          Buyer: {salesOrder.buyer.name}
+        </Typography>
+      )}
+
+      {salesOrder.status && (
+        <Box
+          sx={{
+            display: "inline-block",
+            px: 1,
+            py: 0.25,
+            borderRadius: 0.5,
+            backgroundColor: `${statusColor}20`,
+            border: `1px solid ${statusColor}`,
+            mb: 0.5,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
+          >
+            {salesOrder.status}
+          </Typography>
+        </Box>
+      )}
+
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+        Click to view sales order details
+      </Typography>
+    </Box>
+  );
+}
+
+function PurchaseOrderCard({
+  fulfilment,
+  workspaceId,
+}: {
+  fulfilment: InventoryAssignment_RentalFulFulfilment;
+  workspaceId: string;
+}) {
+  const purchaseOrderId =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchase_order_id
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchase_order_id
+        : null;
+
+  const purchaseOrderNumber =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchaseOrder?.purchase_order_number
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchaseOrder?.purchase_order_number
+        : null;
+
+  const purchaseOrderStatus =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+        : null;
+
+  if (!purchaseOrderId) {
+    return null;
+  }
+
+  const handleOpenPO = () => {
+    window.open(`/app/${workspaceId}/purchase-orders/${purchaseOrderId}`, "_blank");
+  };
+
+  // Determine status color
+  const getStatusColor = (status: string | null | undefined) => {
+    switch (status) {
+      case "DRAFT":
+        return "#9e9e9e";
+      case "SUBMITTED":
+        return "#1976d2";
+      case "APPROVED":
+        return "#2e7d32";
+      case "RECEIVED":
+        return "#66bb6a";
+      case "CANCELLED":
+        return "#d32f2f";
+      default:
+        return "#f57c00";
+    }
+  };
+
+  const statusColor = getStatusColor(purchaseOrderStatus);
+
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        backgroundColor: "#fff8e1",
+        borderRadius: 1,
+        border: "1px solid #fbc02d",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        "&:hover": {
+          backgroundColor: "#fff59d",
+          transform: "translateY(-1px)",
+          boxShadow: 1,
+        },
+      }}
+      onClick={handleOpenPO}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <CheckCircleIcon sx={{ fontSize: 18, color: "#f57c00" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#f57c00" }}>
+            Purchase Order
+          </Typography>
+        </Box>
+        <OpenInNewIcon sx={{ fontSize: 16, color: "#f57c00" }} />
+      </Box>
+
+      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+        PO #{purchaseOrderNumber || purchaseOrderId}
+      </Typography>
+
+      {purchaseOrderStatus && (
+        <Box
+          sx={{
+            display: "inline-block",
+            px: 1,
+            py: 0.25,
+            borderRadius: 0.5,
+            backgroundColor: `${statusColor}20`,
+            border: `1px solid ${statusColor}`,
+            mb: 0.5,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
+          >
+            {purchaseOrderStatus}
+          </Typography>
+        </Box>
+      )}
+
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+        Click to view purchase order details
+      </Typography>
+    </Box>
+  );
+}
+
+function RentalDurationCalendar({ startDate, endDate }: { startDate: Date; endDate: Date }) {
+  const duration = differenceInCalendarDays(endDate, startDate);
+
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        backgroundColor: "#e3f2fd",
+        borderRadius: 1,
+        border: "1px solid #90caf9",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <CalendarMonthIcon sx={{ fontSize: 18, color: "#1976d2" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#1976d2" }}>
+            Rental Duration
+          </Typography>
+        </Box>
+        <Typography variant="caption" sx={{ fontWeight: 600, color: "#1976d2" }}>
+          {duration} {duration === 1 ? "day" : "days"}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.25 }}>
+            Start
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {format(startDate, "MMM dd, yyyy")}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", px: 1 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 2,
+              backgroundColor: "#1976d2",
+              position: "relative",
+              "&::after": {
+                content: '""',
+                position: "absolute",
+                right: -4,
+                top: -3,
+                width: 0,
+                height: 0,
+                borderLeft: "8px solid #1976d2",
+                borderTop: "4px solid transparent",
+                borderBottom: "4px solid transparent",
+              },
+            }}
+          />
+        </Box>
+
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.25 }}>
+            End
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {format(endDate, "MMM dd, yyyy")}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function ProcurementSection({
+  fulfilment,
+  hasPurchaseOrder,
+}: {
+  fulfilment: InventoryAssignment_RentalFulFulfilment;
+  hasPurchaseOrder: boolean;
 }) {
   const [createPODialogOpen, setCreatePODialogOpen] = useState(false);
   const [addToExistingPODialogOpen, setAddToExistingPODialogOpen] = useState(false);
@@ -375,53 +888,61 @@ function ProcurementSection({
 
   return (
     <Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Create or adjust purchase orders for this fulfilment
-      </Typography>
-
-      {/* Fulfilment Details */}
-      <Box sx={{ mb: 2, p: 1.5, backgroundColor: "#f5f5f5", borderRadius: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
-          {fulfilment.pimCategoryName}
+      {hasPurchaseOrder ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          This fulfilment already has a purchase order associated with it
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-          {format(assignmentStart, "dd/MM/yyyy")} - {format(assignmentEnd, "dd/MM/yyyy")}
-        </Typography>
-      </Box>
+      ) : (
+        <>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Create or adjust purchase orders for this fulfilment
+          </Typography>
 
-      {/* Action Buttons */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={() => setCreatePODialogOpen(true)}
-          sx={{
-            textTransform: "uppercase",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            py: 1,
-            letterSpacing: "0.5px",
-          }}
-        >
-          Create New Purchase Order
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          fullWidth
-          onClick={() => setAddToExistingPODialogOpen(true)}
-          sx={{
-            textTransform: "uppercase",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            py: 1,
-            letterSpacing: "0.5px",
-          }}
-        >
-          Add to Existing Purchase Order
-        </Button>
-      </Box>
+          {/* Fulfilment Details */}
+          <Box sx={{ mb: 2, p: 1.5, backgroundColor: "#f5f5f5", borderRadius: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+              {fulfilment.pimCategoryName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+              {format(assignmentStart, "dd/MM/yyyy")} - {format(assignmentEnd, "dd/MM/yyyy")}
+            </Typography>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => setCreatePODialogOpen(true)}
+              sx={{
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                py: 1,
+                letterSpacing: "0.5px",
+              }}
+            >
+              Create New Purchase Order
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              fullWidth
+              onClick={() => setAddToExistingPODialogOpen(true)}
+              sx={{
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                py: 1,
+                letterSpacing: "0.5px",
+              }}
+            >
+              Add to Existing Purchase Order
+            </Button>
+          </Box>
+        </>
+      )}
 
       <CreatePurchaseOrderDialog
         open={createPODialogOpen}

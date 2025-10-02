@@ -34,57 +34,6 @@ import {
 } from "./api";
 import { SourcingPanel } from "./SourcingPanel";
 
-const RentalFulfilmentFieldsFragment = graphql(`
-  fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
-    id
-    contactId
-    contact {
-      __typename
-      ... on BusinessContact {
-        id
-        name
-      }
-      ... on PersonContact {
-        id
-        name
-      }
-    }
-    project {
-      id
-      name
-      project_code
-    }
-    purchaseOrderNumber
-    purchaseOrderLineItemId
-    purchaseOrderLineItem {
-      __typename
-      ... on RentalPurchaseOrderLineItem {
-        id
-        purchase_order_id
-      }
-      ... on SalePurchaseOrderLineItem {
-        id
-        purchase_order_id
-      }
-    }
-    salesOrderId
-    salesOrderPONumber
-    inventory {
-      id
-    }
-    rentalStartDate
-    expectedRentalEndDate
-    rentalEndDate
-    pimCategoryId
-    pimCategoryName
-    pimCategoryPath
-    priceName
-    inventoryId
-  }
-`);
-
-type t = typeof RentalFulfilmentFieldsFragment;
-
 type ViewMode = "30days" | "60days" | "90days" | "custom";
 
 const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
@@ -385,29 +334,42 @@ export default function EquipmentAssignmentTimeline() {
           </Box>
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2, maxHeight: "70vh" }}>
-          {/* Left Panel - Sourcing Panel */}
-          <Box sx={{ width: "300px", flexShrink: 0, overflowY: "auto" }}>
-            <SourcingPanel
-              key={selectedFulfilment?.id}
-              selectedFulfilment={selectedFulfilment}
-              onDragStart={setDraggedEquipment}
-            />
+        {/* Main Content Area with Animated Sourcing Panel */}
+        <Box sx={{ display: "flex", gap: 2, maxHeight: "70vh", overflow: "hidden" }}>
+          {/* Animated Sourcing Panel on Left */}
+          <Box
+            sx={{
+              width: selectedFulfilmentId ? 450 : 0,
+              flexShrink: 0,
+              overflowY: selectedFulfilmentId ? "auto" : "hidden",
+              overflowX: "hidden",
+              transition: "width 0.3s ease-in-out",
+              opacity: selectedFulfilmentId ? 1 : 0,
+            }}
+          >
+            {selectedFulfilmentId && (
+              <Box sx={{ width: 450 }}>
+                <SourcingPanel
+                  key={selectedFulfilment?.id}
+                  selectedFulfilment={selectedFulfilment}
+                  onDragStart={setDraggedEquipment}
+                  workspaceId={workspaceId}
+                />
+              </Box>
+            )}
           </Box>
 
-          {/* Right Panel - Timeline */}
-          <Box sx={{ overflowX: "auto", minWidth: 0 }}>
-            <Box className="brrr" sx={{ flex: 1, overflowX: "auto" }}>
-              <TimelineView
-                dates={dates}
-                startDate={startDate}
-                fulfilments={fulfilments}
-                draggedEquipment={draggedEquipment}
-                onEquipmentDrop={handleEquipmentAssignment}
-                selectedFulfilmentId={selectedFulfilmentId}
-                onFulfilmentSelect={handleFulfilmentSelect}
-              />
-            </Box>
+          {/* Timeline View */}
+          <Box sx={{ overflowX: "auto", minWidth: 0, flex: 1 }}>
+            <TimelineView
+              dates={dates}
+              startDate={startDate}
+              fulfilments={fulfilments}
+              draggedEquipment={draggedEquipment}
+              onEquipmentDrop={handleEquipmentAssignment}
+              selectedFulfilmentId={selectedFulfilmentId}
+              onFulfilmentSelect={handleFulfilmentSelect}
+            />
           </Box>
         </Box>
 

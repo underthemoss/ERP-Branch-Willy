@@ -748,6 +748,7 @@ input CreateInventoryInput {
   purchaseOrderId: String
   purchaseOrderLineItemId: String
   status: InventoryStatus!
+  workspaceId: String
 }
 
 input CreateInvoiceInput {
@@ -1251,6 +1252,7 @@ type Inventory {
   updatedAt: DateTime!
   updatedBy: String!
   updatedByUser: User
+  workspaceId: String
 }
 
 enum InventoryCondition {
@@ -1489,6 +1491,7 @@ input ListInventoryFilter {
   purchaseOrderId: String
   startDate: DateTime
   status: InventoryStatus
+  workspaceId: String
 }
 
 input ListInventoryPage {
@@ -1534,6 +1537,7 @@ type ListPersonContactsResult {
 input ListPimCategoriesFilter {
   parentId: ID
   path: String
+  priceBookId: ID
   searchTerm: String
 }
 
@@ -1579,10 +1583,12 @@ type ListPriceBooksResult {
 }
 
 input ListPricesFilter {
+  businessContactId: String
   name: String
   pimCategoryId: String
   priceBookId: String
   priceType: PriceType
+  projectId: String
   workspaceId: ID!
 }
 
