@@ -54,6 +54,7 @@ export interface NewLineItem {
   // Custom product (when no price selected)
   isCustomProduct?: boolean;
   customProductName?: string;
+  isNewProduct?: boolean; // Flag for new product creation flow
 
   // Quantity and delivery
   quantity: number;

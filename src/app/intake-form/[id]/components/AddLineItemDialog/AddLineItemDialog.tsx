@@ -17,6 +17,7 @@ interface AddLineItemDialogProps {
   pricebookId?: string | null;
   workspaceId: string;
   loading?: boolean;
+  lastLineItem?: NewLineItem; // For reusing fulfillment details
 }
 
 export type StepFooterComponent = React.FC<{
@@ -43,6 +44,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
   pricebookId,
   workspaceId,
   loading = false,
+  lastLineItem,
 }) => {
   const [step, setStep] = useState(1);
   const [lineItem, setLineItem] = useState<Partial<NewLineItem>>(DEFAULT_LINE_ITEM);
@@ -65,12 +67,29 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
           setStep(2);
         }
       } else {
-        // Reset for new item
-        setLineItem({ ...DEFAULT_LINE_ITEM });
+        // Reset for new item, but reuse fulfillment details from last item if available
+        const initialData = { ...DEFAULT_LINE_ITEM };
+
+        // If we have a last line item, reuse its fulfillment details
+        if (lastLineItem) {
+          initialData.deliveryDate = lastLineItem.deliveryDate;
+          initialData.deliveryLocation = lastLineItem.deliveryLocation;
+          initialData.deliveryMethod = lastLineItem.deliveryMethod;
+          initialData.deliveryNotes = lastLineItem.deliveryNotes;
+
+          // For rentals, also copy rental dates
+          if (lastLineItem.type === "RENTAL") {
+            initialData.rentalStartDate = lastLineItem.rentalStartDate;
+            initialData.rentalEndDate = lastLineItem.rentalEndDate;
+            initialData.rentalDuration = lastLineItem.rentalDuration;
+          }
+        }
+
+        setLineItem(initialData);
         setStep(1);
       }
     }
-  }, [open, editingItem]);
+  }, [open, editingItem, lastLineItem]);
 
   const handleUpdateLineItem = (updates: Partial<NewLineItem>) => {
     setLineItem((prev) => ({ ...prev, ...updates }));
@@ -83,9 +102,15 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
       return;
     }
 
-    // Skip category step if custom product
+    // Skip category step if custom product (from type selection)
     if (step === 1 && lineItem.isCustomProduct) {
       setStep(3); // Go directly to price/custom product step
+    } else if (step === 2 && lineItem.isNewProduct) {
+      // Skip price step for new products selected in category step
+      setStep(4);
+    } else if (step === 3 && lineItem.isCustomProduct && lineItem.customProductName) {
+      // Skip to delivery for custom products selected in price step
+      setStep(4);
     } else {
       setStep((prev) => prev + 1);
     }
@@ -106,8 +131,15 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
       }
     } else {
       // When creating new, handle normal back navigation
-      if (step === 3 && lineItem.isCustomProduct) {
-        setStep(1); // Go back to type step
+      if (step === 3 && lineItem.isCustomProduct && !lineItem.pimCategoryId) {
+        // Custom product from type selection - go back to type step
+        setStep(1);
+      } else if (step === 4 && lineItem.isNewProduct) {
+        // When in delivery step for new product from category step, go back to category step
+        setStep(2);
+      } else if (step === 4 && lineItem.isCustomProduct && lineItem.pimCategoryId) {
+        // When in delivery step for custom product from price step, go back to price step
+        setStep(3);
       } else {
         setStep((prev) => prev - 1);
       }

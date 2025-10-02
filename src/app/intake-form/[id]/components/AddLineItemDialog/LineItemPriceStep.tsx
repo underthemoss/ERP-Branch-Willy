@@ -258,7 +258,7 @@ const LineItemPriceStep: React.FC<LineItemPriceStepProps> = ({
 
   const isNextEnabled = showCustomProduct ? !!customProductName.trim() : !!selectedPrice;
 
-  // If this is a custom product from the start, show custom product form
+  // If this is a custom product from the start (no category), show custom product form
   if (lineItem.isCustomProduct && !lineItem.pimCategoryId) {
     return (
       <>
@@ -288,6 +288,8 @@ const LineItemPriceStep: React.FC<LineItemPriceStepProps> = ({
       </>
     );
   }
+
+  // Note: New product flow now skips this step entirely and goes directly to delivery
 
   return (
     <>

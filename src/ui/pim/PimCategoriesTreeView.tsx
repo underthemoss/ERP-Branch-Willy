@@ -264,11 +264,12 @@ export function PimCategoriesTreeView(props: {
   selectedItemId?: string;
   disabled?: boolean;
   pricebookId?: string;
+  initialSearchValue?: string;
 }) {
   const [pimSearch, setPimSearch] = React.useState<string | undefined>();
   const [searchResults, setSearchResults] = React.useState<PimCategoryTreeViewItem[]>([]);
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
-  const [searchInput, setSearchInput] = React.useState<string>("");
+  const [searchInput, setSearchInput] = React.useState<string>(props.initialSearchValue || "");
   const [selectedItem, setSelectedItem] = React.useState<
     PimCategoryFields | PimProductFields | null
   >(null);
@@ -437,6 +438,13 @@ export function PimCategoriesTreeView(props: {
     },
     [props, apiRef],
   );
+
+  // Handle initial search value changes
+  React.useEffect(() => {
+    if (props.initialSearchValue && props.initialSearchValue !== searchInput) {
+      setSearchInput(props.initialSearchValue);
+    }
+  }, [props.initialSearchValue]);
 
   // Debounce search input and update pimSearch only if >= 3 chars
   React.useEffect(() => {

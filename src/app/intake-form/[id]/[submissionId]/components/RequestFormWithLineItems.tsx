@@ -445,6 +445,7 @@ export default function RequestFormWithLineItems({
         pricebookId={pricebookId}
         workspaceId={workspaceId}
         loading={isProcessing}
+        lastLineItem={lineItems.length > 0 ? lineItems[lineItems.length - 1] : undefined}
       />
     </>
   );
