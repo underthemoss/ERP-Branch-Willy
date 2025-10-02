@@ -344,9 +344,9 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
 
       const workspaceResult = await createWorkspace({
         variables: {
-          name: `Demo Workspace ${Date.now()}`,
+          name: `Summit Construction Group`,
           accessType: WorkspaceAccessType.SameDomain,
-          description: "A demo workspace created by seed data script",
+          description: "General contractor specializing in commercial and residential projects",
           archived: false,
         },
       });
@@ -367,12 +367,13 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const businessResult = await createBusinessContact({
         variables: {
           input: {
-            name: `Demo Construction Company ${Date.now()}`,
+            name: "Riverside Equipment Rentals",
             workspaceId: workspace.id,
-            address: "123 Main Street, Demo City, DC 12345",
-            phone: "+1 (555) 123-4567",
-            website: "https://demo-construction.com",
-            notes: "Demo business contact created by seed data script",
+            address: "4850 Industrial Parkway, Austin, TX 78741",
+            phone: "+1 (512) 555-0198",
+            website: "https://riversideequipment.com",
+            notes:
+              "Full-service equipment rental company specializing in construction and industrial equipment",
           },
         },
       });
@@ -393,13 +394,13 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const employeeResult = await createPersonContact({
         variables: {
           input: {
-            name: "John Demo Manager",
-            email: `john.demo.${Date.now()}@demo-construction.com`,
+            name: "Michael Chen",
+            email: `mchen${Date.now().toString().slice(-4)}@summitconstruction.com`,
             businessId: business.id,
             workspaceId: workspace.id,
-            phone: "+1 (555) 123-4568",
-            role: "Project Manager",
-            notes: "Demo employee contact created by seed data script",
+            phone: "+1 (512) 555-0142",
+            role: "Senior Project Manager",
+            notes: "Experienced project manager with expertise in commercial construction",
           },
         },
       });
@@ -420,9 +421,10 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const projectResult = await createProject({
         variables: {
           input: {
-            name: `Demo Construction Project ${Date.now()}`,
-            project_code: `DEMO-${Date.now().toString().slice(-6)}`,
-            description: "A demo construction project created by seed data script",
+            name: "Riverside Medical Center Expansion",
+            project_code: `RMC-${Date.now().toString().slice(-6)}`,
+            description:
+              "45,000 sq ft medical office building expansion including parking structure and site improvements",
             workspaceId: workspace.id,
             deleted: false,
             status: ProjectStatusEnum.ActiveConstruction,
@@ -457,12 +459,12 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const priceBookResult = await createPriceBook({
         variables: {
           input: {
-            name: `Demo Price Book ${Date.now()}`,
+            name: "Austin Metro Rental Rates",
             workspaceId: workspace.id,
             businessContactId: business.id,
             projectId: project.id,
-            location: "Demo City, DC",
-            notes: "Demo price book created by seed data script",
+            location: "Austin, TX",
+            notes: "Standard equipment rental pricing for Austin metro area projects",
             isDefault: true,
           },
         },
@@ -534,11 +536,12 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const pimCategoryResult = await upsertPimCategory({
         variables: {
           input: {
-            id: `demo-skid-steer-${timestamp}`,
+            id: `skid-steer-${timestamp}`,
             name: "Skid Steer Loaders",
-            description: "Demo skid steer loader category for seed data",
+            description:
+              "Compact tracked loaders for construction, landscaping, and material handling",
             path: "|Categories|Equipment|Skid Steers|",
-            platform_id: `demo-platform-skid-${timestamp}`,
+            platform_id: `platform-skid-${timestamp}`,
             has_products: false,
           },
         },
@@ -594,14 +597,15 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             purchase_order_id: purchaseOrder.id,
             price_id: rentalPrice.id,
             po_pim_id: pimCategory.id,
-            po_quantity: 2,
+            po_quantity: 1,
             lineitem_status: PoLineItemStatus.Confirmed,
             off_rent_date: offRentDate.toISOString(),
             delivery_method: DeliveryMethod.Delivery,
             delivery_date: deliveryDate.toISOString(),
-            delivery_location: "Demo Construction Site",
+            delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
             delivery_charge_in_cents: 7500, // $75 delivery
-            deliveryNotes: "Demo skid steer rental line item created by seed data script",
+            deliveryNotes:
+              "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
           },
         },
       });
@@ -654,9 +658,10 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             off_rent_date: soOffRentDate.toISOString(),
             delivery_method: DeliveryMethod.Delivery,
             delivery_date: soDeliveryDate.toISOString(),
-            delivery_location: "Demo Construction Site",
+            delivery_location: "5200 Medical Parkway, Building A Site Office, Austin, TX 78756",
             delivery_charge_in_cents: 7500, // $75 delivery
-            deliveryNotes: "Demo skid steer rental line item created by seed data script",
+            deliveryNotes:
+              "Deliver to main site entrance, contact Michael Chen at 512-555-0142 upon arrival. Equipment needed for foundation work.",
           },
         },
       });
