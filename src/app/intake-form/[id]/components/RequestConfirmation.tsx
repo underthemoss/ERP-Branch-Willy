@@ -21,6 +21,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { differenceInDays } from "date-fns";
 import React from "react";
 import { FormData } from "../page";
 
@@ -266,7 +267,11 @@ export default function RequestConfirmation({
                             <TableCell align="center">{oldItem.quantity}</TableCell>
                             <TableCell>-</TableCell>
                             <TableCell>
-                              {oldItem.type === "RENTAL" ? `${oldItem.durationInDays} days` : "-"}
+                              {oldItem.type === "RENTAL" &&
+                              oldItem.rentalStartDate &&
+                              oldItem.rentalEndDate
+                                ? `${differenceInDays(new Date(oldItem.rentalEndDate), new Date(oldItem.rentalStartDate))} days`
+                                : "-"}
                             </TableCell>
                           </TableRow>
                         );

@@ -33,6 +33,7 @@ import {
   GridToolbarFilterButton,
   GridToolbarQuickFilter,
 } from "@mui/x-data-grid-premium";
+import { differenceInDays } from "date-fns";
 import React, { useMemo, useState } from "react";
 import ConvertSubmissionDialog from "./ConvertSubmissionDialog";
 
@@ -40,8 +41,9 @@ interface LineItem {
   description: string;
   startDate: string;
   type: string;
-  durationInDays: number;
   quantity: number;
+  rentalStartDate?: string;
+  rentalEndDate?: string;
 }
 
 interface Submission {
@@ -388,7 +390,9 @@ export default function SubmissionsTable({
                             <TableCell>{new Date(item.startDate).toLocaleDateString()}</TableCell>
                             <TableCell align="center">{item.quantity}</TableCell>
                             <TableCell align="center">
-                              {item.type === "RENTAL" ? `${item.durationInDays} days` : "-"}
+                              {item.type === "RENTAL" && item.rentalStartDate && item.rentalEndDate
+                                ? `${differenceInDays(new Date(item.rentalEndDate), new Date(item.rentalStartDate))} days`
+                                : "-"}
                             </TableCell>
                           </TableRow>
                         ))}

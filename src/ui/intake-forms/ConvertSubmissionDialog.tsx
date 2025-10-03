@@ -3,7 +3,7 @@
 import { graphql } from "@/graphql";
 import { ContactType, DeliveryMethod, LineItemStatus, PoLineItemStatus } from "@/graphql/graphql";
 import {
-  useAssignInventoryToRentalFulfilmentForConversionMutation,
+  useAssignInventoryToRentalFulfilmentMutation,
   useContactSelectorListQuery,
   useCreatePurchaseOrderMutation,
   useCreateRentalPriceMutation,
@@ -13,13 +13,12 @@ import {
   useCreateSalePurchaseOrderLineItemMutation,
   useCreateSaleSalesOrderLineItemMutation,
   useCreateSalesOrderMutation,
-  useGetIntakeFormSubmissionByIdForConversionQuery,
-  useListInventoryForConversionLazyQuery,
+  useGetIntakeFormSubmissionByIdQuery,
+  useListInventoryItemsLazyQuery,
   useListPricesQuery,
-  useListRentalFulfilmentsForConversionLazyQuery,
-  useSubmitPurchaseOrderForConversionMutation,
+  useListRentalFulfilmentsLazyQuery,
+  useSubmitPurchaseOrderMutation,
   useSubmitSalesOrderForConversionMutation,
-  useUpdateIntakeFormSubmissionForConversionMutation,
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import ContactSelector from "@/ui/ContactSelector";
@@ -32,6 +31,7 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Error as ErrorIcon,
+  PersonAdd as PersonAddIcon,
   TrendingDown as TrendingDownIcon,
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
@@ -72,8 +72,9 @@ import {
 import Checkbox from "@mui/material/Checkbox";
 import { DataGridPremium, GridColDef, GridRenderCellParams } from "@mui/x-data-grid-premium";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PriceSelectionDialog } from "../prices/PriceSelectionDialog";
+import { CreateContactDialog } from "./CreateContactDialog";
 
 // GraphQL Queries and Mutations
 graphql(`
@@ -201,7 +202,6 @@ const GET_SUBMISSION_LINE_ITEMS = gql`
       type
       quantity
       startDate
-      durationInDays
       priceId
       pimCategoryId
       customPriceName
@@ -257,9 +257,20 @@ export default function ConvertSubmissionDialog({
   const [priceSelectionIndex, setPriceSelectionIndex] = useState<number | null>(null);
   const [priceSelectionType, setPriceSelectionType] = useState<"SO" | "PO">("SO");
 
+  // Contact creation dialog state
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [contactDialogType, setContactDialogType] = useState<"buyer" | "vendor">("buyer");
+  const [contactMatchAttempted, setContactMatchAttempted] = useState(false);
+  const [noContactMatchFound, setNoContactMatchFound] = useState(false);
+
   // Track manually selected prices to preserve them during re-renders
   const [manuallySelectedPrices, setManuallySelectedPrices] = useState<{
     [lineItemId: string]: { priceId?: string; vendorPriceId?: string };
+  }>({});
+
+  // Track PO inclusion state to preserve it during re-renders
+  const [poInclusionState, setPoInclusionState] = useState<{
+    [lineItemId: string]: boolean;
   }>({});
 
   // Track vendor contact source for helper text
@@ -287,12 +298,11 @@ export default function ConvertSubmissionDialog({
   });
 
   // Fetch submission data
-  const { data: submissionData, loading: loadingSubmission } =
-    useGetIntakeFormSubmissionByIdForConversionQuery({
-      variables: { id: submissionId },
-      skip: !open,
-      fetchPolicy: "cache-and-network",
-    });
+  const { data: submissionData, loading: loadingSubmission } = useGetIntakeFormSubmissionByIdQuery({
+    variables: { id: submissionId },
+    skip: !open,
+    fetchPolicy: "cache-and-network",
+  });
 
   // Fetch intake form data
   const { data: intakeFormData } = useQuery(GET_INTAKE_FORM_FOR_SUBMISSION, {
@@ -349,12 +359,11 @@ export default function ConvertSubmissionDialog({
   const [createSalePurchaseOrderLineItem] = useCreateSalePurchaseOrderLineItemMutation();
   const [createRentalPrice] = useCreateRentalPriceMutation();
   const [createSalePrice] = useCreateSalePriceMutation();
-  const [assignInventoryToFulfilment] = useAssignInventoryToRentalFulfilmentForConversionMutation();
+  const [assignInventoryToFulfilment] = useAssignInventoryToRentalFulfilmentMutation();
+  const [submitPurchaseOrder] = useSubmitPurchaseOrderMutation();
   const [submitSalesOrder] = useSubmitSalesOrderForConversionMutation();
-  const [submitPurchaseOrder] = useSubmitPurchaseOrderForConversionMutation();
-  const [getListRentalFulfilments] = useListRentalFulfilmentsForConversionLazyQuery();
-  const [getListInventory] = useListInventoryForConversionLazyQuery();
-  const [updateIntakeFormSubmission] = useUpdateIntakeFormSubmissionForConversionMutation();
+  const [getListRentalFulfilments] = useListRentalFulfilmentsLazyQuery();
+  const [getListInventory] = useListInventoryItemsLazyQuery();
 
   // Auto-set vendor contact when conversion type changes to SO_AND_PO
   useEffect(() => {
@@ -399,14 +408,19 @@ export default function ConvertSubmissionDialog({
       }
 
       // Try to match buyer contact
-      if (submission?.email && contactsData) {
+      if (submission?.email && contactsData && !contactMatchAttempted) {
         const matchedContact = contactsData.listContacts?.items?.find(
           (contact: any) =>
             contact.__typename === "PersonContact" && contact.email === submission.email,
         );
         if (matchedContact) {
           setBuyerContactId(matchedContact.id);
+          setNoContactMatchFound(false);
+        } else {
+          // No match found - set flag to show warning
+          setNoContactMatchFound(true);
         }
+        setContactMatchAttempted(true);
       }
 
       // Initialize line item mappings
@@ -438,6 +452,10 @@ export default function ConvertSubmissionDialog({
             }
           }
 
+          // Check if we have a saved PO inclusion state for this item
+          const includeInPO =
+            poInclusionState[item.id] !== undefined ? poInclusionState[item.id] : true; // Default to including in PO
+
           return {
             submissionLineItem: item,
             priceId: finalPriceId,
@@ -445,7 +463,7 @@ export default function ConvertSubmissionDialog({
             needsPriceCreation: !finalPriceId,
             needsVendorPriceCreation: conversionType === "SO_AND_PO" && !vendorPriceId,
             customPriceName: item.customPriceName,
-            includeInPO: true, // Default to including in PO
+            includeInPO,
           };
         });
         setLineItemMappings(mappings);
@@ -459,6 +477,9 @@ export default function ConvertSubmissionDialog({
     pricesData,
     conversionType,
     manuallySelectedPrices,
+    poInclusionState,
+    contactMatchAttempted,
+    buyerContactId,
   ]);
 
   // Check if we can proceed to next step
@@ -683,12 +704,10 @@ export default function ConvertSubmissionDialog({
         }
       }
 
-      // Step 3: Submit Sales Order if SO_ONLY mode
-      if (conversionType === "SO_ONLY") {
-        await submitSalesOrder({
-          variables: { id: salesOrderId },
-        });
-      }
+      // Step 3: Submit Sales Order
+      await submitSalesOrder({
+        variables: { id: salesOrderId },
+      });
 
       // Step 4: Create Purchase Order if needed
       let purchaseOrderId: string | undefined;
@@ -776,10 +795,7 @@ export default function ConvertSubmissionDialog({
           }
         }
 
-        await submitSalesOrder({
-          variables: { id: salesOrderId },
-        });
-
+        // Submit the Purchase Order
         await submitPurchaseOrder({
           variables: { id: purchaseOrderId },
         });
@@ -869,24 +885,6 @@ export default function ConvertSubmissionDialog({
         }));
       }
 
-      try {
-        await updateIntakeFormSubmission({
-          variables: {
-            id: submissionId,
-            input: {
-              salesOrderId: salesOrderId,
-              purchaseOrderId: purchaseOrderId || undefined,
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Failed to update submission with order IDs:", error);
-        // Don't fail the whole process if this update fails
-        notifyWarning(
-          "Could not update submission with order references, but orders were created successfully",
-        );
-      }
-
       // Check if there are rental items
       const hasRentalItems = lineItemMappings.some(
         (mapping) => mapping.submissionLineItem.type === "RENTAL",
@@ -923,34 +921,31 @@ export default function ConvertSubmissionDialog({
         value={conversionType}
         onChange={(e) => setConversionType(e.target.value as ConversionType)}
       >
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <FormControlLabel
-            value="SO_ONLY"
-            control={<Radio />}
-            label={
-              <Box>
-                <Typography variant="subtitle1">Sales Order Only</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Create a sales order from the intake form submission
-                </Typography>
-              </Box>
-            }
-          />
-        </Paper>
-        <Paper sx={{ p: 2 }}>
-          <FormControlLabel
-            value="SO_AND_PO"
-            control={<Radio />}
-            label={
-              <Box>
-                <Typography variant="subtitle1">Sales Order + Purchase Order</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Create both a sales order and a corresponding purchase order
-                </Typography>
-              </Box>
-            }
-          />
-        </Paper>
+        <FormControlLabel
+          value="SO_ONLY"
+          control={<Radio />}
+          label={
+            <Box>
+              <Typography variant="subtitle1">Sales Order Only</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Create a sales order from the intake form submission
+              </Typography>
+            </Box>
+          }
+          sx={{ mb: 2 }}
+        />
+        <FormControlLabel
+          value="SO_AND_PO"
+          control={<Radio />}
+          label={
+            <Box>
+              <Typography variant="subtitle1">Sales Order + Purchase Order</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Create both a sales order and a corresponding purchase order
+              </Typography>
+            </Box>
+          }
+        />
       </RadioGroup>
     </Box>
   );
@@ -1239,6 +1234,13 @@ export default function ConvertSubmissionDialog({
                   variant="outlined"
                   color="primary"
                   onClick={() => {
+                    const lineItemId = row.mapping.submissionLineItem.id;
+                    // Update the PO inclusion state
+                    setPoInclusionState((prev) => ({
+                      ...prev,
+                      [lineItemId]: true,
+                    }));
+                    // Update the mappings
                     const newMappings = [...lineItemMappings];
                     newMappings[row.originalIndex] = {
                       ...newMappings[row.originalIndex],
@@ -1278,6 +1280,13 @@ export default function ConvertSubmissionDialog({
                   variant="outlined"
                   color="error"
                   onClick={() => {
+                    const lineItemId = row.mapping.submissionLineItem.id;
+                    // Update the PO inclusion state
+                    setPoInclusionState((prev) => ({
+                      ...prev,
+                      [lineItemId]: false,
+                    }));
+                    // Update the mappings
                     const newMappings = [...lineItemMappings];
                     newMappings[row.originalIndex] = {
                       ...newMappings[row.originalIndex],
@@ -1488,6 +1497,13 @@ export default function ConvertSubmissionDialog({
                   variant="outlined"
                   color="primary"
                   onClick={() => {
+                    const lineItemId = row.mapping.submissionLineItem.id;
+                    // Update the PO inclusion state
+                    setPoInclusionState((prev) => ({
+                      ...prev,
+                      [lineItemId]: true,
+                    }));
+                    // Update the mappings
                     const newMappings = [...lineItemMappings];
                     newMappings[row.originalIndex] = {
                       ...newMappings[row.originalIndex],
@@ -1527,6 +1543,13 @@ export default function ConvertSubmissionDialog({
                   variant="outlined"
                   color="error"
                   onClick={() => {
+                    const lineItemId = row.mapping.submissionLineItem.id;
+                    // Update the PO inclusion state
+                    setPoInclusionState((prev) => ({
+                      ...prev,
+                      [lineItemId]: false,
+                    }));
+                    // Update the mappings
                     const newMappings = [...lineItemMappings];
                     newMappings[row.originalIndex] = {
                       ...newMappings[row.originalIndex],
@@ -1559,21 +1582,55 @@ export default function ConvertSubmissionDialog({
               <Typography variant="subtitle1" gutterBottom>
                 Buyer Contact
               </Typography>
-              <ContactSelector
-                workspaceId={workspaceId}
-                contactId={buyerContactId}
-                onChange={setBuyerContactId}
-                type="any"
-              />
-              {submission?.email && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, display: "block" }}
-                >
-                  Submission email: {submission.email}
-                </Typography>
+              {noContactMatchFound && !buyerContactId && (
+                <Alert severity="warning" sx={{ mb: 1 }}>
+                  <Typography variant="body2">
+                    No existing contact found with email: <strong>{submission?.email}</strong>
+                  </Typography>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                    Please select an existing contact or create a new one.
+                  </Typography>
+                </Alert>
               )}
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                <Box sx={{ flex: 1 }}>
+                  <ContactSelector
+                    workspaceId={workspaceId}
+                    contactId={buyerContactId}
+                    onChange={(newContactId) => {
+                      setBuyerContactId(newContactId);
+                      // Clear the warning when a contact is selected
+                      if (newContactId) {
+                        setNoContactMatchFound(false);
+                      }
+                    }}
+                    type="any"
+                  />
+                  {submission?.email && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 1, display: "block" }}
+                    >
+                      Submission email: {submission.email}
+                    </Typography>
+                  )}
+                </Box>
+                {!buyerContactId && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<PersonAddIcon />}
+                    onClick={() => {
+                      setContactDialogType("buyer");
+                      setShowContactDialog(true);
+                    }}
+                    sx={{ mt: 0.5 }}
+                  >
+                    New
+                  </Button>
+                )}
+              </Box>
             </Grid>
 
             {/* Project */}
@@ -1866,6 +1923,22 @@ export default function ConvertSubmissionDialog({
     setShowNavigationDialog(false);
     onClose();
   };
+
+  // Handle contact creation
+  const handleContactCreated = useCallback(
+    (contactId: string) => {
+      if (contactDialogType === "buyer") {
+        setBuyerContactId(contactId);
+        setNoContactMatchFound(false);
+      } else {
+        setVendorContactId(contactId);
+        setVendorContactSource("Manually created");
+      }
+      setShowContactDialog(false);
+      notifySuccess("Contact created and selected successfully");
+    },
+    [contactDialogType, notifySuccess],
+  );
 
   return (
     <>
@@ -2240,6 +2313,21 @@ export default function ConvertSubmissionDialog({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Create Contact Dialog */}
+      <CreateContactDialog
+        open={showContactDialog}
+        onClose={() => setShowContactDialog(false)}
+        onContactCreated={handleContactCreated}
+        workspaceId={workspaceId}
+        initialData={{
+          name: submissionData?.getIntakeFormSubmissionById?.name || "",
+          email: submissionData?.getIntakeFormSubmissionById?.email || "",
+          phone: submissionData?.getIntakeFormSubmissionById?.phone || "",
+          companyName: submissionData?.getIntakeFormSubmissionById?.companyName || "",
+        }}
+        type={contactDialogType}
+      />
     </>
   );
 }

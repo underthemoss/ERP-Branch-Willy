@@ -134,6 +134,8 @@ graphql(`
           type
           durationInDays
           quantity
+          rentalStartDate
+          rentalEndDate
         }
       }
       page {

@@ -66,6 +66,7 @@ const RentalFulfilmentFieldsFragment = graphql(`
     }
     purchaseOrderNumber
     salesOrderId
+    salesOrderLineItemId
     salesOrderPONumber
     inventory {
       id
@@ -220,8 +221,7 @@ export default function EquipmentAssignmentTimeline() {
     setTempEndDate(endDate);
   };
 
-  const fulfilments: InventoryAssignment_RentalFulFulfilment[] =
-    data?.listRentalFulfilments?.items || [];
+  const fulfilments = data?.listRentalFulfilments?.items || [];
 
   // Find the selected fulfilment to get its pimCategoryId
   const selectedFulfilment = fulfilments.find((f) => f.id === selectedFulfilmentId);
