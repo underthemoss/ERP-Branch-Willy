@@ -507,6 +507,7 @@ export default function RequestForm({
         editingIndex={editingIndex}
         pricebookId={pricebookId}
         workspaceId={workspaceId}
+        lastLineItem={newLineItems.length > 0 ? newLineItems[newLineItems.length - 1] : undefined}
       />
     </>
   );
