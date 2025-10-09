@@ -131,6 +131,7 @@ export default function RentalReceiveDialog({
   const [conditionNotes, setConditionNotes] = useState("");
   const [receiptNotes, setReceiptNotes] = useState("");
   const [expectedReturnDate, setExpectedReturnDate] = useState<string>("");
+  const [assetId, setAssetId] = useState("");
 
   // Fetch inventory items for this purchase order
   const { data, loading, error } = useRentalLineItemInventoryQuery({
@@ -228,16 +229,24 @@ export default function RentalReceiveDialog({
     const itemsToReceive = items.slice(0, quantityToReceive).map((item: any) => item.id);
 
     try {
+      // Prepare the input for the mutation
+      const input: any = {
+        ids: itemsToReceive,
+        conditionOnReceipt,
+        conditionNotes,
+        receiptNotes,
+        receivedAt: new Date(receivedAt).toISOString(),
+      };
+
+      // Only include assetId if receiving exactly 1 item and user provided it
+      if (quantityToReceive === 1 && assetId.trim()) {
+        input.assetId = assetId.trim();
+      }
+
       // First, mark items as received
       const result = await bulkMarkReceived({
         variables: {
-          input: {
-            ids: itemsToReceive,
-            conditionOnReceipt,
-            conditionNotes,
-            receiptNotes,
-            receivedAt: new Date(receivedAt).toISOString(),
-          },
+          input,
         },
         refetchQueries: [
           "ReceiveInventoryEnhanced",
@@ -273,6 +282,7 @@ export default function RentalReceiveDialog({
     setConditionNotes("");
     setReceiptNotes("");
     setExpectedReturnDate("");
+    setAssetId("");
     onClose();
   };
 
@@ -467,6 +477,19 @@ export default function RentalReceiveDialog({
                   onChange={(e) => setExpectedReturnDate(e.target.value)}
                   helperText="When do you expect this rental equipment to be returned?"
                 />
+
+                {/* Asset ID - only show when receiving exactly 1 item */}
+                {quantityToReceive === 1 && (
+                  <TextField
+                    label="Asset ID (Optional)"
+                    size="small"
+                    fullWidth
+                    value={assetId}
+                    onChange={(e) => setAssetId(e.target.value)}
+                    placeholder="Enter unique asset identifier..."
+                    helperText="Unique identifier for this specific piece of equipment"
+                  />
+                )}
               </Stack>
             </Box>
 

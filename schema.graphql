@@ -549,6 +549,7 @@ type BrandSearchResult {
 }
 
 input BulkMarkInventoryReceivedInput {
+  assetId: String
   conditionNotes: String
   conditionOnReceipt: InventoryCondition
   ids: [String!]!
@@ -658,7 +659,7 @@ type Charge {
   billingPeriodEnd: DateTime
   billingPeriodStart: DateTime
   chargeType: ChargeType!
-  companyId: ID!
+  companyId: ID @deprecated(reason: "No longer used")
   contact: Contact
   contactId: ID!
   createdAt: DateTime!
@@ -993,7 +994,7 @@ union Fulfilment = RentalFulfilment | SaleFulfilment | ServiceFulfilment
 interface FulfilmentBase {
   assignedTo: User
   assignedToId: ID
-  companyId: ID!
+  companyId: ID @deprecated(reason: "CompanyId is deprecated and will be removed in future versions. Use workspaceId instead.")
   contact: Contact
   contactId: ID
   createdAt: DateTime!
@@ -1910,6 +1911,7 @@ enum PermissionType {
   ERP_INTAKE_FORM_UPDATE_SUBMISSIONS
   ERP_INVOICE_READ
   ERP_INVOICE_UPDATE
+  ERP_PLATFORM_IS_ADMIN
   ERP_PRICEBOOK_PRICE_READ
   ERP_PRICEBOOK_PRICE_UPDATE
   ERP_PRICEBOOK_READ
@@ -1941,6 +1943,7 @@ enum PermissionType {
   ERP_WORKSPACE_CREATE_INTAKE_FORM
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION
   ERP_WORKSPACE_CREATE_PRICE_BOOK
+  ERP_WORKSPACE_IS_ADMIN
   ERP_WORKSPACE_MANAGE
   ERP_WORKSPACE_READ
   ERP_WORKSPACE_READ_INTAKE_FORMS
@@ -2443,7 +2446,7 @@ input RemoveTaxLineItemInput {
 type RentalFulfilment implements FulfilmentBase {
   assignedTo: User
   assignedToId: ID
-  companyId: ID!
+  companyId: ID @deprecated(reason: "CompanyId is deprecated and will be removed in future versions. Use workspaceId instead.")
   contact: Contact
   contactId: ID
   createdAt: DateTime!
@@ -2643,11 +2646,13 @@ enum ResourceType {
   ERP_INTAKE_FORM
   ERP_INTAKE_FORM_SUBMISSION
   ERP_INVOICE
+  ERP_PLATFORM
   ERP_PRICEBOOK
   ERP_PRICEBOOK_PRICE
   ERP_PROJECT
   ERP_PURCHASE_ORDER
   ERP_SALES_ORDER
+  ERP_SERVICE_ACCOUNT
   ERP_USER
   ERP_WORKSPACE
 }
@@ -2655,7 +2660,7 @@ enum ResourceType {
 type SaleFulfilment implements FulfilmentBase {
   assignedTo: User
   assignedToId: ID
-  companyId: ID!
+  companyId: ID @deprecated(reason: "CompanyId is deprecated and will be removed in future versions. Use workspaceId instead.")
   contact: Contact
   contactId: ID
   createdAt: DateTime!
@@ -2978,7 +2983,7 @@ type SequenceNumber {
 type ServiceFulfilment implements FulfilmentBase {
   assignedTo: User
   assignedToId: ID
-  companyId: ID!
+  companyId: ID @deprecated(reason: "CompanyId is deprecated and will be removed in future versions. Use workspaceId instead.")
   contact: Contact
   contactId: ID
   createdAt: DateTime!
@@ -3410,6 +3415,7 @@ type UserPermissionMap {
   ERP_INTAKE_FORM_UPDATE_SUBMISSIONS: Boolean
   ERP_INVOICE_READ: Boolean
   ERP_INVOICE_UPDATE: Boolean
+  ERP_PLATFORM_IS_ADMIN: Boolean
   ERP_PRICEBOOK_PRICE_READ: Boolean
   ERP_PRICEBOOK_PRICE_UPDATE: Boolean
   ERP_PRICEBOOK_READ: Boolean
@@ -3441,6 +3447,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM_SUBMISSION: Boolean
   ERP_WORKSPACE_CREATE_PRICE_BOOK: Boolean
+  ERP_WORKSPACE_IS_ADMIN: Boolean
   ERP_WORKSPACE_MANAGE: Boolean
   ERP_WORKSPACE_READ: Boolean
   ERP_WORKSPACE_READ_INTAKE_FORMS: Boolean
