@@ -20,6 +20,8 @@ import {
   useListPimProductsLazyQuery,
 } from "./api";
 
+const DEV_TEST_CATEGORY_ID = "e2299185-e836-475d-bdf7-337be6c8f2e3";
+
 type TreeViewNode = Record<
   string,
   {
@@ -382,16 +384,18 @@ export function PimCategoriesTreeView(props: {
         }
 
         const categoryItems = data?.listPimCategories?.items || [];
-        const treeItems: PimCategoryTreeViewItem[] = categoryItems.map((category) => ({
-          id: category.id,
-          label: category.name ?? "",
-          nodeType: "category",
-          path: category.path,
-          children: [],
-          childrenCount: category.childrenCount ?? 0,
-          productCount: category.productCount ?? 0,
-          pimItem: category,
-        }));
+        const treeItems: PimCategoryTreeViewItem[] = categoryItems
+          .filter((category) => category.id !== DEV_TEST_CATEGORY_ID)
+          .map((category) => ({
+            id: category.id,
+            label: category.name.replace("(Do not touch)", "").replace("Experiment", "") ?? "",
+            nodeType: "category",
+            path: category.path,
+            children: [],
+            childrenCount: category.childrenCount ?? 0,
+            productCount: category.productCount ?? 0,
+            pimItem: category,
+          }));
 
         if (item?.productCount && props.includeProducts) {
           // inject a product tree item
@@ -599,10 +603,6 @@ export function PimCategoriesTreeView(props: {
                         }
                       },
                       getTreeItems: async (parentCategoryId) => {
-                        const item = parentCategoryId
-                          ? apiRef.current?.getItem(parentCategoryId)
-                          : null;
-
                         const items = await getItemsForParent({ parentCategoryId });
                         return items;
                       },

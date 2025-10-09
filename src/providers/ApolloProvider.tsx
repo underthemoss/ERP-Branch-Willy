@@ -28,13 +28,17 @@ export const ApolloClientProvider: React.FC<{
     });
 
     const authLink = setContext(async (_, { headers }) => {
-      const token = jwtOverride ? jwtOverride : await getAccessTokenSilently({ cacheMode: "on" });
-      return {
-        headers: {
-          ...headers,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      };
+      try {
+        const token = jwtOverride ? jwtOverride : await getAccessTokenSilently({ cacheMode: "on" });
+        return {
+          headers: {
+            ...headers,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        };
+      } catch (error) {
+        console.error("Error getting access token:", error);
+      }
     });
 
     // Create WebSocket link for subscriptions
@@ -43,12 +47,16 @@ export const ApolloClientProvider: React.FC<{
       createClient({
         url: wsUrl,
         connectionParams: async () => {
-          const token = jwtOverride
-            ? jwtOverride
-            : await getAccessTokenSilently({ cacheMode: "on" });
-          return {
-            Authorization: token ? `Bearer ${token}` : "",
-          };
+          try {
+            const token = jwtOverride
+              ? jwtOverride
+              : await getAccessTokenSilently({ cacheMode: "on" });
+            return {
+              Authorization: token ? `Bearer ${token}` : "",
+            };
+          } catch (error) {
+            console.error("Error getting access token:", error);
+          }
         },
       }),
     );
