@@ -102,6 +102,7 @@ export const FulfilmentBaseFields = graphql(`
     }
     purchaseOrderNumber
     salesOrderId
+    salesOrderLineItemId
     salesOrderPONumber
     salesOrderType
     workflowId
@@ -260,6 +261,7 @@ export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
       }
     }
     salesOrderId
+    salesOrderLineItemId
     salesOrder {
       id
       sales_order_number
