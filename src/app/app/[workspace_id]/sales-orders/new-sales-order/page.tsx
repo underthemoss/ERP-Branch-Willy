@@ -54,7 +54,6 @@ export default function NewSalesOrderPage() {
   const [errors, setErrors] = React.useState<{
     buyerId?: string;
     projectId?: string;
-    purchaseOrderNumber?: string;
   }>({});
 
   // GQL mutation for creating a new sales order
@@ -65,11 +64,9 @@ export default function NewSalesOrderPage() {
 
   // Submit handler
   const handleSubmit = async () => {
-    const newErrors: { buyerId?: string; projectId?: string; purchaseOrderNumber?: string } = {};
+    const newErrors: { buyerId?: string; projectId?: string } = {};
     if (!buyerId) newErrors.buyerId = "Buyer is required";
     if (!projectId) newErrors.projectId = "Project is required";
-    if (!purchaseOrderNumber.trim())
-      newErrors.purchaseOrderNumber = "Purchase order number is required";
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
@@ -79,7 +76,9 @@ export default function NewSalesOrderPage() {
             workspace_id: workspace_id,
             buyer_id: buyerId!,
             project_id: projectId!,
-            purchase_order_number: purchaseOrderNumber.trim(),
+            ...(purchaseOrderNumber.trim() && {
+              purchase_order_number: purchaseOrderNumber.trim(),
+            }),
           },
         },
       });
@@ -114,7 +113,7 @@ export default function NewSalesOrderPage() {
           </Box>
           <Box sx={{ maxWidth: 400 }}>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-              Purchase Order Number
+              Purchase Order Number (optional)
             </Typography>
             <TextField
               size="small"
@@ -123,10 +122,8 @@ export default function NewSalesOrderPage() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setPurchaseOrderNumber(e.target.value)
               }
-              placeholder="Enter purchase order number"
+              placeholder="Enter purchase order number (optional)"
               inputProps={{ "data-testid": "purchase-order-number" }}
-              error={!!errors.purchaseOrderNumber}
-              helperText={errors.purchaseOrderNumber}
             />
           </Box>
         </Box>

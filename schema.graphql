@@ -2812,7 +2812,7 @@ type SalesOrder {
   pricing: SalesOrderPricing
   project: Project
   project_id: String
-  purchase_order_number: String!
+  purchase_order_number: String
   sales_order_number: String!
 
   """Status of the sales order"""
@@ -2826,7 +2826,7 @@ type SalesOrder {
 input SalesOrderInput {
   buyer_id: String!
   project_id: String
-  purchase_order_number: String!
+  purchase_order_number: String
   sales_order_number: String
   workspace_id: String!
 }
