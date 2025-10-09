@@ -272,6 +272,7 @@ export function SourcingPanel({
           selectedFulfilment={undefined}
           onAssign={handleAssign}
           onUnassign={handleUnassign}
+          workspaceId={workspaceId}
         />
       </Paper>
     );
@@ -396,6 +397,7 @@ export function SourcingPanel({
                 selectedFulfilment={selectedFulfilment}
                 onAssign={handleAssign}
                 onUnassign={handleUnassign}
+                workspaceId={workspaceId}
               />
             </>
           ) : hasPurchaseOrder ? (
@@ -456,6 +458,7 @@ export function SourcingPanel({
                 selectedFulfilment={selectedFulfilment}
                 onAssign={handleAssign}
                 onUnassign={handleUnassign}
+                workspaceId={workspaceId}
               />
             </>
           )}
@@ -620,13 +623,13 @@ function SalesOrderCard({
     <Box
       sx={{
         p: 1.5,
-        backgroundColor: "#e8f5e9",
+        backgroundColor: "#f5f5f5",
         borderRadius: 1,
-        border: "1px solid #4caf50",
+        border: "1px solid #bdbdbd",
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          backgroundColor: "#c8e6c9",
+          backgroundColor: "#e0e0e0",
           transform: "translateY(-1px)",
           boxShadow: 1,
         },
@@ -634,13 +637,38 @@ function SalesOrderCard({
       onClick={handleOpenSO}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 18, color: "#4caf50" }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#4caf50" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <CheckCircleIcon sx={{ fontSize: 18, color: "#757575" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#757575" }}>
             Sales Order
           </Typography>
+          {salesOrder.status && (
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 0.25,
+                backgroundColor: `${statusColor}15`,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 500,
+                  color: statusColor,
+                  textTransform: "uppercase",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {salesOrder.status}
+              </Typography>
+            </Box>
+          )}
         </Box>
-        <OpenInNewIcon sx={{ fontSize: 16, color: "#4caf50" }} />
+        <OpenInNewIcon sx={{ fontSize: 16, color: "#757575" }} />
       </Box>
 
       <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -657,27 +685,6 @@ function SalesOrderCard({
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
           Buyer: {salesOrder.buyer.name}
         </Typography>
-      )}
-
-      {salesOrder.status && (
-        <Box
-          sx={{
-            display: "inline-block",
-            px: 1,
-            py: 0.25,
-            borderRadius: 0.5,
-            backgroundColor: `${statusColor}20`,
-            border: `1px solid ${statusColor}`,
-            mb: 0.5,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
-          >
-            {salesOrder.status}
-          </Typography>
-        </Box>
       )}
 
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
@@ -747,13 +754,13 @@ function PurchaseOrderCard({
     <Box
       sx={{
         p: 1.5,
-        backgroundColor: "#fff8e1",
+        backgroundColor: "#f5f5f5",
         borderRadius: 1,
-        border: "1px solid #fbc02d",
+        border: "1px solid #bdbdbd",
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          backgroundColor: "#fff59d",
+          backgroundColor: "#e0e0e0",
           transform: "translateY(-1px)",
           boxShadow: 1,
         },
@@ -761,39 +768,43 @@ function PurchaseOrderCard({
       onClick={handleOpenPO}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 18, color: "#f57c00" }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#f57c00" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <CheckCircleIcon sx={{ fontSize: 18, color: "#757575" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#757575" }}>
             Purchase Order
           </Typography>
+          {purchaseOrderStatus && (
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 0.25,
+                backgroundColor: `${statusColor}15`,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 500,
+                  color: statusColor,
+                  textTransform: "uppercase",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {purchaseOrderStatus}
+              </Typography>
+            </Box>
+          )}
         </Box>
-        <OpenInNewIcon sx={{ fontSize: 16, color: "#f57c00" }} />
+        <OpenInNewIcon sx={{ fontSize: 16, color: "#757575" }} />
       </Box>
 
       <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
         PO #{purchaseOrderNumber || purchaseOrderId}
       </Typography>
-
-      {purchaseOrderStatus && (
-        <Box
-          sx={{
-            display: "inline-block",
-            px: 1,
-            py: 0.25,
-            borderRadius: 0.5,
-            backgroundColor: `${statusColor}20`,
-            border: `1px solid ${statusColor}`,
-            mb: 0.5,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
-          >
-            {purchaseOrderStatus}
-          </Typography>
-        </Box>
-      )}
 
       <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
         Click to view purchase order details
@@ -967,6 +978,7 @@ function InventoryList({
   selectedFulfilment,
   onAssign,
   onUnassign,
+  workspaceId,
 }: {
   inventory: InventoryItem[];
   isLoading?: boolean;
@@ -975,6 +987,7 @@ function InventoryList({
   selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
   onAssign?: (inventoryItem: InventoryItem) => void;
   onUnassign?: () => void;
+  workspaceId: string;
 }) {
   if (isLoading) {
     return (
@@ -1045,6 +1058,7 @@ function InventoryList({
           selectedFulfilment={selectedFulfilment}
           onAssign={onAssign}
           onUnassign={onUnassign}
+          workspaceId={workspaceId}
         />
       ))}
     </Box>
@@ -1058,6 +1072,7 @@ function EquipmentCard({
   selectedFulfilment,
   onAssign,
   onUnassign,
+  workspaceId,
 }: {
   inventoryItem: InventoryItem;
   onDragStart: (inventoryItem: InventoryItem | null) => void;
@@ -1065,7 +1080,10 @@ function EquipmentCard({
   selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
   onAssign?: (inventoryItem: InventoryItem) => void;
   onUnassign?: () => void;
+  workspaceId: string;
 }) {
+  const router = useRouter();
+
   const handleDragStart = (e: React.DragEvent) => {
     onDragStart(inventoryItem);
     e.dataTransfer.setData("inventoryItem", JSON.stringify(inventoryItem));
@@ -1088,10 +1106,17 @@ function EquipmentCard({
     }
   };
 
+  const handleReceiveClick = () => {
+    if (inventoryItem.purchaseOrderId && workspaceId) {
+      router.push(`/app/${workspaceId}/purchase-orders/${inventoryItem.purchaseOrderId}/receive`);
+    }
+  };
+
   const isAssignedToSelectedFulfilment =
     selectedFulfilmentId && selectedFulfilment?.inventoryId === inventoryItem.id;
 
   const showButton = selectedFulfilmentId;
+  const isOnOrder = inventoryItem.status?.toUpperCase() === "ON_ORDER";
 
   return (
     <Paper
@@ -1140,8 +1165,35 @@ function EquipmentCard({
         </Typography>
       )}
 
+      {isOnOrder && (
+        <Box
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            px: 0.75,
+            py: 0.25,
+            borderRadius: 0.25,
+            backgroundColor: "#f57c0015",
+            mt: 1,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 500,
+              color: "#f57c00",
+              textTransform: "uppercase",
+              fontSize: "0.65rem",
+              letterSpacing: "0.5px",
+            }}
+          >
+            On Order
+          </Typography>
+        </Box>
+      )}
+
       {showButton && (
-        <Box sx={{ mt: 1.5 }}>
+        <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
           {isAssignedToSelectedFulfilment ? (
             <Button
               variant="outlined"
@@ -1164,6 +1216,17 @@ function EquipmentCard({
               }
             >
               Assign
+            </Button>
+          )}
+          {isOnOrder && inventoryItem.purchaseOrderId && workspaceId && (
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              fullWidth
+              onClick={handleReceiveClick}
+            >
+              Receive Item
             </Button>
           )}
         </Box>
