@@ -3,7 +3,8 @@
 import FulfillmentStatsBar from "@/ui/FulfillmentStatsBar";
 import { Box, Button, Chip, LinearProgress, Paper, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowParams } from "@mui/x-data-grid";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import BaseReceiveInventoryDialog from "./BaseReceiveInventoryDialog";
 import { groupInventoryByLineItem } from "./utils";
 
@@ -22,8 +23,12 @@ export default function InventoryReceiveTable({
   workspaceId,
   onReceiveSuccess,
 }: InventoryReceiveTableProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedLineItemId, setSelectedLineItemId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read dialog state from query params - dialog is open if lineItemId is present
+  const selectedLineItemId = searchParams.get("lineItemId");
+  const dialogOpen = !!selectedLineItemId;
 
   // Group items by line item ID and separate by type
   const { salesGroups, rentalGroups } = useMemo(() => {
@@ -47,13 +52,25 @@ export default function InventoryReceiveTable({
   }, [items]);
 
   const handleReceiveClick = (lineItemId: string) => {
-    setSelectedLineItemId(lineItemId);
-    setDialogOpen(true);
+    // Update URL with lineItemId to open dialog
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("lineItemId", lineItemId);
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   const handleDialogClose = () => {
-    setDialogOpen(false);
-    setSelectedLineItemId(null);
+    // Check if returnPath is present
+    const returnPath = searchParams.get("returnPath");
+
+    if (returnPath) {
+      // Navigate to the return path
+      router.push(returnPath);
+    } else {
+      // Remove lineItemId to close dialog
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("lineItemId");
+      router.push(`?${params.toString()}`, { scroll: false });
+    }
   };
 
   const handleReceiveSuccess = () => {

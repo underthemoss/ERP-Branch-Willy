@@ -7,6 +7,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Box,
@@ -15,12 +16,17 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Paper,
+  Popover,
+  Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ContactSelector from "../ContactSelector";
@@ -234,7 +240,7 @@ export default function EquipmentAssignmentTimeline() {
                 Inventory Assignment Timeline
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Drag inventory from the pool to assign to rental fulfillments
+                Drag inventory from the pool to reserve for rental fulfillments
               </Typography>
             </Box>
 
@@ -575,12 +581,25 @@ function CustomerInfoRow({
   onSelect: () => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const params = useParams();
+  const workspaceId = params?.workspace_id as string;
 
   const assignmentStart = new Date(fulfilment.rentalStartDate);
   const assignmentEnd = new Date(
     fulfilment.rentalEndDate || fulfilment.expectedRentalEndDate || addDays(assignmentStart, 14),
   );
   const duration = differenceInCalendarDays(assignmentEnd, assignmentStart);
+
+  const handlePopoverOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -613,108 +632,287 @@ function CustomerInfoRow({
   };
 
   return (
-    <Box
-      sx={{
-        height: rowHeight,
-        borderBottom: "1px solid #f0f0f0",
-        p: 2,
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: isDragOver
-          ? "rgba(66, 165, 245, 0.1)"
-          : isSelected
-            ? "rgba(25, 118, 210, 0.08)"
-            : "transparent",
-        transition: "background-color 0.2s",
-        position: "relative",
-        cursor: "pointer",
-        borderLeft: isSelected ? "3px solid #1976d2" : "3px solid transparent",
-        "&:hover": {
+    <>
+      <Box
+        sx={{
+          height: rowHeight,
+          borderBottom: "1px solid #f0f0f0",
+          p: 2,
+          display: "flex",
+          alignItems: "center",
           backgroundColor: isDragOver
             ? "rgba(66, 165, 245, 0.1)"
             : isSelected
-              ? "rgba(25, 118, 210, 0.12)"
-              : "rgba(0, 0, 0, 0.04)",
-        },
-        "&::after": isDragOver
-          ? {
-              content: '""',
-              position: "absolute",
-              inset: 0,
-              border: "2px dashed #42a5f5",
-              borderRadius: 1,
-              pointerEvents: "none",
-            }
-          : {},
-      }}
-      onClick={onSelect}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <Box sx={{ width: "100%", position: "relative" }}>
-        {/* Checked icon in top right if inventory is assigned */}
-        {fulfilment.inventoryId && (
-          <CheckCircleIcon
-            sx={{
-              position: "absolute",
-              top: 0,
-              right: -8,
-              fontSize: 20,
-              color: "#66bb6a",
-              backgroundColor: "white",
-              borderRadius: "50%",
-            }}
-          />
-        )}
+              ? "rgba(25, 118, 210, 0.08)"
+              : "transparent",
+          transition: "background-color 0.2s",
+          position: "relative",
+          cursor: "pointer",
+          borderLeft: isSelected ? "3px solid #1976d2" : "3px solid transparent",
+          "&:hover": {
+            backgroundColor: isDragOver
+              ? "rgba(66, 165, 245, 0.1)"
+              : isSelected
+                ? "rgba(25, 118, 210, 0.12)"
+                : "rgba(0, 0, 0, 0.04)",
+          },
+          "&::after": isDragOver
+            ? {
+                content: '""',
+                position: "absolute",
+                inset: 0,
+                border: "2px dashed #42a5f5",
+                borderRadius: 1,
+                pointerEvents: "none",
+              }
+            : {},
+        }}
+        onClick={onSelect}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onMouseEnter={handlePopoverOpen}
+        onMouseLeave={handlePopoverClose}
+      >
+        <Box sx={{ width: "100%", position: "relative" }}>
+          {/* Checked icon in top right if inventory is assigned */}
+          {fulfilment.inventoryId && (
+            <CheckCircleIcon
+              sx={{
+                position: "absolute",
+                top: 0,
+                right: -8,
+                fontSize: 20,
+                color: "#66bb6a",
+                backgroundColor: "white",
+                borderRadius: "50%",
+              }}
+            />
+          )}
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-          <ContactPageOutlinedIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+            <ContactPageOutlinedIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+            {fulfilment.contact?.id ? (
+              <Link
+                href={`/app/${workspaceId}/contacts/${fulfilment.contact.id}`}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  flex: 1,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    "&:hover": {
+                      color: "primary.main",
+                      textDecoration: "underline",
+                    },
+                  }}
+                >
+                  {fulfilment.contact?.name}
+                </Typography>
+              </Link>
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {fulfilment.contact?.name}
+              </Typography>
+            )}
+          </Box>
           <Typography
-            variant="body2"
+            variant="caption"
+            color="text.secondary"
             sx={{
-              fontWeight: 500,
+              display: "block",
+              wordBreak: "break-word",
+              lineHeight: 1.3,
+              mb: 0.5,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
-            title={fulfilment.contact?.name}
           >
-            {fulfilment.contact?.name}
+            {fulfilment.pimCategoryName}
           </Typography>
-        </Box>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            display: "block",
-            wordBreak: "break-word",
-            lineHeight: 1.3,
-            mb: 0.5,
-          }}
-          title={fulfilment.pimCategoryName || ""}
-        >
-          {fulfilment.pimCategoryName}
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              {format(assignmentStart, "dd/MM/yyyy")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {" - "}
-              {format(assignmentEnd, "dd/MM/yyyy")}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
-            <AccessTimeIcon sx={{ fontSize: "0.75rem", color: "text.secondary" }} />
-            <Typography variant="caption" color="text.secondary">
-              {duration}d
-            </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                {format(assignmentStart, "dd/MM/yyyy")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {" - "}
+                {format(assignmentEnd, "dd/MM/yyyy")}
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+              <AccessTimeIcon sx={{ fontSize: "0.75rem", color: "text.secondary" }} />
+              <Typography variant="caption" color="text.secondary">
+                {duration}d
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
+
+      {/* Rich Popover with Fulfillment Details */}
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handlePopoverClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "left",
+        }}
+        disableRestoreFocus
+        sx={{
+          pointerEvents: "none",
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              pointerEvents: "auto",
+              p: 2,
+              maxWidth: 400,
+              boxShadow: 6,
+            },
+            onMouseEnter: handlePopoverOpen,
+            onMouseLeave: handlePopoverClose,
+          },
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          Fulfillment Details
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+
+        <Stack spacing={1.5}>
+          {/* Customer Info */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              CUSTOMER
+            </Typography>
+            <Typography variant="body2">{fulfilment.contact?.name || "N/A"}</Typography>
+          </Box>
+
+          {/* Product/Category */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              REQUEST TYPE
+            </Typography>
+            <Typography variant="body2">{fulfilment.pimCategoryName || "N/A"}</Typography>
+          </Box>
+
+          {/* Rental Period */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              RENTAL PERIOD
+            </Typography>
+            <Typography variant="body2">
+              {format(assignmentStart, "MMM dd, yyyy")} - {format(assignmentEnd, "MMM dd, yyyy")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Duration: {duration} days
+            </Typography>
+          </Box>
+
+          {/* Status */}
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              STATUS
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+              {fulfilment.inventoryId ? (
+                <>
+                  <CheckCircleIcon sx={{ fontSize: 16, color: "#66bb6a" }} />
+                  <Typography variant="body2" color="#66bb6a" fontWeight={500}>
+                    Inventory Assigned
+                  </Typography>
+                </>
+              ) : fulfilment.purchaseOrderLineItemId ? (
+                <>
+                  <WarningAmberIcon sx={{ fontSize: 16, color: "#fbc02d" }} />
+                  <Typography variant="body2" color="#fbc02d" fontWeight={500}>
+                    PO Created
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <WarningAmberIcon sx={{ fontSize: 16, color: "#ef5350" }} />
+                  <Typography variant="body2" color="#ef5350" fontWeight={500}>
+                    Not Sourced
+                  </Typography>
+                </>
+              )}
+            </Box>
+          </Box>
+
+          {/* Additional Details */}
+          {fulfilment.inventoryId && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                INVENTORY ID
+              </Typography>
+              <Typography variant="body2" fontFamily="monospace">
+                {fulfilment.inventoryId}
+              </Typography>
+            </Box>
+          )}
+
+          {fulfilment.purchaseOrderLineItem && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                PURCHASE ORDER
+              </Typography>
+              <Typography variant="body2">
+                {fulfilment.purchaseOrderLineItem.__typename === "RentalPurchaseOrderLineItem" ||
+                fulfilment.purchaseOrderLineItem.__typename === "SalePurchaseOrderLineItem"
+                  ? fulfilment.purchaseOrderLineItem.purchaseOrder?.purchase_order_number ||
+                    fulfilment.purchaseOrderNumber
+                  : fulfilment.purchaseOrderNumber}
+              </Typography>
+              {(fulfilment.purchaseOrderLineItem.__typename === "RentalPurchaseOrderLineItem" ||
+                fulfilment.purchaseOrderLineItem.__typename === "SalePurchaseOrderLineItem") &&
+                fulfilment.purchaseOrderLineItem.purchaseOrder?.seller && (
+                  <Typography variant="caption" color="text.secondary">
+                    Vendor: {fulfilment.purchaseOrderLineItem.purchaseOrder.seller.name}
+                  </Typography>
+                )}
+            </Box>
+          )}
+
+          {fulfilment.salesOrder && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                SALES ORDER
+              </Typography>
+              <Typography variant="body2">
+                {fulfilment.salesOrder.sales_order_number || fulfilment.salesOrderId}
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+      </Popover>
+    </>
   );
 }
 
@@ -766,11 +964,11 @@ function TimelineRow({
   // Determine if fulfilment is within visible range
   const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
 
-  // Determine color based on priority: inventory (green) > PO line item (amber) > neither (red)
+  // Enhanced state determination logic
   const hasInventory = !!fulfilment.inventoryId;
   const hasPOLineItem = !!fulfilment.purchaseOrderLineItemId;
 
-  // Extract purchase order ID
+  // Extract purchase order details
   const purchaseOrderId =
     fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
       ? fulfilment.purchaseOrderLineItem.purchase_order_id
@@ -778,8 +976,70 @@ function TimelineRow({
         ? fulfilment.purchaseOrderLineItem.purchase_order_id
         : null;
 
-  const barColor = hasInventory ? "#66bb6a" : hasPOLineItem ? "#fbc02d" : "#ef5350";
-  const backgroundColor = hasInventory ? "#e8f5e9" : hasPOLineItem ? "#fff8e1" : "#ffebee";
+  const purchaseOrderStatus =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+        : null;
+
+  // Determine state based on priority hierarchy
+  let barColor: string;
+  let backgroundColor: string;
+  let statusLabel: string;
+  let statusIcon: "check" | "shipping" | "assignment" | "warning" | "error";
+
+  // Priority 1: Inventory status (if inventory is assigned)
+  if (hasInventory) {
+    const inventoryStatus = fulfilment.inventory?.status;
+
+    if (inventoryStatus === "RECEIVED") {
+      // Green - Inventory received and ready
+      barColor = "#66bb6a";
+      backgroundColor = "#e8f5e9";
+      statusIcon = "check";
+      statusLabel = `Inv: ${fulfilment.inventoryId}`;
+    } else if (inventoryStatus === "ON_ORDER") {
+      // Blue - Inventory on order, awaiting delivery
+      barColor = "#42a5f5";
+      backgroundColor = "#e3f2fd";
+      statusIcon = "shipping";
+      statusLabel = `On Order: ${fulfilment.inventoryId}`;
+    } else {
+      // Fallback for unknown inventory status - treat as received
+      barColor = "#66bb6a";
+      backgroundColor = "#e8f5e9";
+      statusIcon = "check";
+      statusLabel = `Inv: ${fulfilment.inventoryId}`;
+    }
+  }
+  // Priority 2: PO Status (if PO exists but no inventory)
+  else if (hasPOLineItem && purchaseOrderStatus) {
+    if (purchaseOrderStatus === "SUBMITTED") {
+      barColor = "#fbc02d";
+      backgroundColor = "#fff8e1";
+      statusIcon = "assignment";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."} (Submitted)`;
+    } else if (purchaseOrderStatus === "DRAFT") {
+      barColor = "#ff9800";
+      backgroundColor = "#fff3e0";
+      statusIcon = "warning";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."} (Draft)`;
+    } else {
+      // Fallback for unknown PO status
+      barColor = "#fbc02d";
+      backgroundColor = "#fff8e1";
+      statusIcon = "warning";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."}`;
+    }
+  }
+  // Priority 3: No inventory, no PO
+  else {
+    barColor = "#ef5350";
+    backgroundColor = "#ffebee";
+    statusIcon = "error";
+    statusLabel = "Not Sourced";
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -881,10 +1141,10 @@ function TimelineRow({
             flex: 1,
           }}
         >
-          {hasInventory ? (
+          {statusIcon === "check" ? (
             <CheckCircleIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
-          ) : hasPOLineItem ? (
-            <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
+          ) : statusIcon === "shipping" ? (
+            <LocalShippingIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           ) : (
             <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           )}
@@ -899,11 +1159,7 @@ function TimelineRow({
               whiteSpace: "nowrap",
             }}
           >
-            {hasInventory
-              ? `Inv: ${fulfilment.inventoryId}`
-              : hasPOLineItem
-                ? `PO: ${fulfilment.purchaseOrderNumber || "..."}`
-                : "Not Sourced"}
+            {statusLabel}
           </Typography>
         </Box>
 

@@ -9,6 +9,7 @@ import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ReceiptIcon from "@mui/icons-material/Receipt";
@@ -20,9 +21,15 @@ import {
   Badge,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Paper,
   Skeleton,
   Switch,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
@@ -33,6 +40,7 @@ import { AddToExistingPurchaseOrderDialog } from "./AddToExistingPurchaseOrderDi
 import {
   InventoryAssignment_RentalFulFulfilment,
   useAssignInventoryToRentalFulfilmentMutation,
+  useSetFulfilmentPurchaseOrderLineItemIdMutationMutation,
   useUnassignInventoryFromRentalFulfilmentMutation,
 } from "./api";
 import { CreatePurchaseOrderDialog } from "./CreatePurchaseOrderDialog";
@@ -46,6 +54,7 @@ const SourcingPanelListInventory = graphql(`
         status
         fulfilmentId
         purchaseOrderId
+        purchaseOrderLineItemId
         assetId
         asset {
           id
@@ -70,6 +79,7 @@ const GetInventoryById = graphql(`
       status
       fulfilmentId
       purchaseOrderId
+      purchaseOrderLineItemId
       assetId
       asset {
         id
@@ -208,6 +218,7 @@ export function SourcingPanel({
 
   const [assignInventory] = useAssignInventoryToRentalFulfilmentMutation();
   const [unassignInventory] = useUnassignInventoryFromRentalFulfilmentMutation();
+  const [setFulfilmentPOLineItem] = useSetFulfilmentPurchaseOrderLineItemIdMutationMutation();
 
   // Sort inventory to put assigned item first
   let inventory: InventoryItem[] = inventoryData?.listInventory?.items || [];
@@ -242,12 +253,24 @@ export function SourcingPanel({
   const handleUnassign = async () => {
     if (!selectedFulfilment) return;
 
+    // Unassign inventory
     await unassignInventory({
       variables: {
         fulfilmentId: selectedFulfilment.id,
       },
       refetchQueries: ["ListRentalFulfilments", "SourcingPanelListInventory"],
     });
+
+    // Also disconnect PO if one exists
+    if (selectedFulfilment.purchaseOrderLineItemId) {
+      await setFulfilmentPOLineItem({
+        variables: {
+          fulfilmentId: selectedFulfilment.id,
+          purchaseOrderLineItemId: null,
+        },
+        refetchQueries: ["ListRentalFulfilments"],
+      });
+    }
   };
 
   // Show simple inventory view when no fulfilment is selected
@@ -261,7 +284,7 @@ export function SourcingPanel({
         </Box>
 
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-          Drag to assign to rentals
+          Drag to reserve for rentals
         </Typography>
 
         <InventoryList
@@ -272,6 +295,7 @@ export function SourcingPanel({
           selectedFulfilment={undefined}
           onAssign={handleAssign}
           onUnassign={handleUnassign}
+          workspaceId={workspaceId}
         />
       </Paper>
     );
@@ -329,7 +353,7 @@ export function SourcingPanel({
         </Accordion>
       )}
 
-      {/* Procurement Section */}
+      {/* Purchase Order Section */}
       <Accordion
         expanded={procurementExpanded}
         onChange={() => setProcurementExpanded(!procurementExpanded)}
@@ -344,7 +368,7 @@ export function SourcingPanel({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <ShoppingCartIcon sx={{ fontSize: 20, color: "text.secondary" }} />
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              Procurement
+              Purchase Order
             </Typography>
             {hasPurchaseOrder && <Badge badgeContent={1} color="primary" sx={{ ml: 1 }} />}
           </Box>
@@ -396,6 +420,7 @@ export function SourcingPanel({
                 selectedFulfilment={selectedFulfilment}
                 onAssign={handleAssign}
                 onUnassign={handleUnassign}
+                workspaceId={workspaceId}
               />
             </>
           ) : hasPurchaseOrder ? (
@@ -411,7 +436,37 @@ export function SourcingPanel({
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Inventory will be associated once the purchase order is submitted
+                Inventory will be associated once the{" "}
+                <Box
+                  component="span"
+                  onClick={() => {
+                    const purchaseOrderId =
+                      selectedFulfilment.purchaseOrderLineItem?.__typename ===
+                      "RentalPurchaseOrderLineItem"
+                        ? selectedFulfilment.purchaseOrderLineItem.purchase_order_id
+                        : selectedFulfilment.purchaseOrderLineItem?.__typename ===
+                            "SalePurchaseOrderLineItem"
+                          ? selectedFulfilment.purchaseOrderLineItem.purchase_order_id
+                          : null;
+                    if (purchaseOrderId) {
+                      window.open(
+                        `/app/${workspaceId}/purchase-orders/${purchaseOrderId}`,
+                        "_blank",
+                      );
+                    }
+                  }}
+                  sx={{
+                    color: "primary.main",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    "&:hover": {
+                      textDecoration: "none",
+                    },
+                  }}
+                >
+                  purchase order
+                </Box>{" "}
+                is submitted
               </Typography>
             </Box>
           ) : (
@@ -445,7 +500,7 @@ export function SourcingPanel({
               </Box>
 
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-                Click to assign/unassign or drag to assign
+                Click to reserve/release or drag to reserve
               </Typography>
 
               <InventoryList
@@ -456,6 +511,7 @@ export function SourcingPanel({
                 selectedFulfilment={selectedFulfilment}
                 onAssign={handleAssign}
                 onUnassign={handleUnassign}
+                workspaceId={workspaceId}
               />
             </>
           )}
@@ -620,13 +676,13 @@ function SalesOrderCard({
     <Box
       sx={{
         p: 1.5,
-        backgroundColor: "#e8f5e9",
+        backgroundColor: "#f5f5f5",
         borderRadius: 1,
-        border: "1px solid #4caf50",
+        border: "1px solid #bdbdbd",
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          backgroundColor: "#c8e6c9",
+          backgroundColor: "#e0e0e0",
           transform: "translateY(-1px)",
           boxShadow: 1,
         },
@@ -634,13 +690,38 @@ function SalesOrderCard({
       onClick={handleOpenSO}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 18, color: "#4caf50" }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#4caf50" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <CheckCircleIcon sx={{ fontSize: 18, color: "#757575" }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#757575" }}>
             Sales Order
           </Typography>
+          {salesOrder.status && (
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 0.25,
+                backgroundColor: `${statusColor}15`,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 500,
+                  color: statusColor,
+                  textTransform: "uppercase",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {salesOrder.status}
+              </Typography>
+            </Box>
+          )}
         </Box>
-        <OpenInNewIcon sx={{ fontSize: 16, color: "#4caf50" }} />
+        <OpenInNewIcon sx={{ fontSize: 16, color: "#757575" }} />
       </Box>
 
       <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -659,27 +740,6 @@ function SalesOrderCard({
         </Typography>
       )}
 
-      {salesOrder.status && (
-        <Box
-          sx={{
-            display: "inline-block",
-            px: 1,
-            py: 0.25,
-            borderRadius: 0.5,
-            backgroundColor: `${statusColor}20`,
-            border: `1px solid ${statusColor}`,
-            mb: 0.5,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
-          >
-            {salesOrder.status}
-          </Typography>
-        </Box>
-      )}
-
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
         Click to view sales order details
       </Typography>
@@ -694,6 +754,9 @@ function PurchaseOrderCard({
   fulfilment: InventoryAssignment_RentalFulFulfilment;
   workspaceId: string;
 }) {
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [setFulfilmentPOLineItem] = useSetFulfilmentPurchaseOrderLineItemIdMutationMutation();
+
   const purchaseOrderId =
     fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
       ? fulfilment.purchaseOrderLineItem.purchase_order_id
@@ -723,6 +786,26 @@ function PurchaseOrderCard({
     window.open(`/app/${workspaceId}/purchase-orders/${purchaseOrderId}`, "_blank");
   };
 
+  const handleDisconnectClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDisconnect = async () => {
+    await setFulfilmentPOLineItem({
+      variables: {
+        fulfilmentId: fulfilment.id,
+        purchaseOrderLineItemId: null,
+      },
+      refetchQueries: ["ListRentalFulfilments"],
+    });
+    setConfirmDialogOpen(false);
+  };
+
+  const handleCancelDisconnect = () => {
+    setConfirmDialogOpen(false);
+  };
+
   // Determine status color
   const getStatusColor = (status: string | null | undefined) => {
     switch (status) {
@@ -742,63 +825,114 @@ function PurchaseOrderCard({
   };
 
   const statusColor = getStatusColor(purchaseOrderStatus);
+  const hasInventory = !!fulfilment.inventoryId;
 
   return (
-    <Box
-      sx={{
-        p: 1.5,
-        backgroundColor: "#fff8e1",
-        borderRadius: 1,
-        border: "1px solid #fbc02d",
-        cursor: "pointer",
-        transition: "all 0.2s",
-        "&:hover": {
-          backgroundColor: "#fff59d",
-          transform: "translateY(-1px)",
-          boxShadow: 1,
-        },
-      }}
-      onClick={handleOpenPO}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 18, color: "#f57c00" }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#f57c00" }}>
-            Purchase Order
-          </Typography>
+    <>
+      <Box
+        sx={{
+          p: 1.5,
+          backgroundColor: "#f5f5f5",
+          borderRadius: 1,
+          border: "1px solid #bdbdbd",
+          cursor: "pointer",
+          transition: "all 0.2s",
+          "&:hover": {
+            backgroundColor: "#e0e0e0",
+            transform: "translateY(-1px)",
+            boxShadow: 1,
+          },
+        }}
+        onClick={handleOpenPO}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <CheckCircleIcon sx={{ fontSize: 18, color: "#757575" }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "#757575" }}>
+              Purchase Order
+            </Typography>
+            {purchaseOrderStatus && (
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: 0.25,
+                  backgroundColor: `${statusColor}15`,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 500,
+                    color: statusColor,
+                    textTransform: "uppercase",
+                    fontSize: "0.65rem",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {purchaseOrderStatus}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Tooltip
+              title={
+                hasInventory
+                  ? "Cannot disconnect: Inventory is assigned"
+                  : "Disconnect purchase order from fulfillment"
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleDisconnectClick}
+                  disabled={hasInventory}
+                  sx={{
+                    p: 0.5,
+                    color: hasInventory ? "#bdbdbd" : "#ef5350",
+                  }}
+                >
+                  <LinkOffIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <OpenInNewIcon sx={{ fontSize: 16, color: "#757575" }} />
+          </Box>
         </Box>
-        <OpenInNewIcon sx={{ fontSize: 16, color: "#f57c00" }} />
+
+        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+          PO #{purchaseOrderNumber || purchaseOrderId}
+        </Typography>
+
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+          Click to view purchase order details
+        </Typography>
       </Box>
 
-      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-        PO #{purchaseOrderNumber || purchaseOrderId}
-      </Typography>
-
-      {purchaseOrderStatus && (
-        <Box
-          sx={{
-            display: "inline-block",
-            px: 1,
-            py: 0.25,
-            borderRadius: 0.5,
-            backgroundColor: `${statusColor}20`,
-            border: `1px solid ${statusColor}`,
-            mb: 0.5,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 600, color: statusColor, textTransform: "uppercase" }}
-          >
-            {purchaseOrderStatus}
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={handleCancelDisconnect}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogTitle>Disconnect Purchase Order?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to disconnect PO #{purchaseOrderNumber || purchaseOrderId} from
+            this fulfillment? This action will remove the purchase order association.
           </Typography>
-        </Box>
-      )}
-
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-        Click to view purchase order details
-      </Typography>
-    </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDisconnect}>Cancel</Button>
+          <Button onClick={handleConfirmDisconnect} color="error" variant="contained">
+            Disconnect
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
@@ -967,6 +1101,7 @@ function InventoryList({
   selectedFulfilment,
   onAssign,
   onUnassign,
+  workspaceId,
 }: {
   inventory: InventoryItem[];
   isLoading?: boolean;
@@ -975,6 +1110,7 @@ function InventoryList({
   selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
   onAssign?: (inventoryItem: InventoryItem) => void;
   onUnassign?: () => void;
+  workspaceId: string;
 }) {
   if (isLoading) {
     return (
@@ -1045,6 +1181,7 @@ function InventoryList({
           selectedFulfilment={selectedFulfilment}
           onAssign={onAssign}
           onUnassign={onUnassign}
+          workspaceId={workspaceId}
         />
       ))}
     </Box>
@@ -1058,6 +1195,7 @@ function EquipmentCard({
   selectedFulfilment,
   onAssign,
   onUnassign,
+  workspaceId,
 }: {
   inventoryItem: InventoryItem;
   onDragStart: (inventoryItem: InventoryItem | null) => void;
@@ -1065,7 +1203,11 @@ function EquipmentCard({
   selectedFulfilment?: InventoryAssignment_RentalFulFulfilment;
   onAssign?: (inventoryItem: InventoryItem) => void;
   onUnassign?: () => void;
+  workspaceId: string;
 }) {
+  const router = useRouter();
+  const [releaseConfirmDialogOpen, setReleaseConfirmDialogOpen] = useState(false);
+
   const handleDragStart = (e: React.DragEvent) => {
     onDragStart(inventoryItem);
     e.dataTransfer.setData("inventoryItem", JSON.stringify(inventoryItem));
@@ -1082,9 +1224,37 @@ function EquipmentCard({
     }
   };
 
-  const handleUnassignClick = () => {
+  const handleReleaseClick = () => {
+    setReleaseConfirmDialogOpen(true);
+  };
+
+  const handleConfirmRelease = () => {
     if (onUnassign) {
       onUnassign();
+    }
+    setReleaseConfirmDialogOpen(false);
+  };
+
+  const handleCancelRelease = () => {
+    setReleaseConfirmDialogOpen(false);
+  };
+
+  const handleReceiveClick = () => {
+    if (inventoryItem.purchaseOrderId && workspaceId) {
+      const baseUrl = `/app/${workspaceId}/purchase-orders/${inventoryItem.purchaseOrderId}/receive`;
+
+      // If we have a line item ID, add it to query params to auto-open the receive dialog
+      if (inventoryItem.purchaseOrderLineItemId) {
+        // Include returnPath so user can be returned to this page after receiving
+        const currentPath = window.location.pathname + window.location.search;
+        const params = new URLSearchParams({
+          lineItemId: inventoryItem.purchaseOrderLineItemId,
+          returnPath: currentPath,
+        });
+        router.push(`${baseUrl}?${params.toString()}`);
+      } else {
+        router.push(baseUrl);
+      }
     }
   };
 
@@ -1092,6 +1262,7 @@ function EquipmentCard({
     selectedFulfilmentId && selectedFulfilment?.inventoryId === inventoryItem.id;
 
   const showButton = selectedFulfilmentId;
+  const isOnOrder = inventoryItem.status?.toUpperCase() === "ON_ORDER";
 
   return (
     <Paper
@@ -1140,18 +1311,90 @@ function EquipmentCard({
         </Typography>
       )}
 
-      {showButton && (
-        <Box sx={{ mt: 1.5 }}>
-          {isAssignedToSelectedFulfilment ? (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              fullWidth
-              onClick={handleUnassignClick}
+      {isOnOrder && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            mt: 1,
+          }}
+        >
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 0.25,
+              backgroundColor: "#f57c0015",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 500,
+                color: "#f57c00",
+                textTransform: "uppercase",
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+              }}
             >
-              Unassign
+              On Order
+            </Typography>
+          </Box>
+          {inventoryItem.purchaseOrderId && workspaceId && (
+            <Button
+              variant="text"
+              color="primary"
+              size="small"
+              onClick={handleReceiveClick}
+              sx={{
+                minWidth: "auto",
+                padding: "2px 8px",
+                fontSize: "0.75rem",
+                textTransform: "none",
+              }}
+            >
+              Receive Item
             </Button>
+          )}
+        </Box>
+      )}
+
+      {showButton && (
+        <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
+          {isAssignedToSelectedFulfilment ? (
+            <>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                fullWidth
+                onClick={handleReleaseClick}
+              >
+                Release
+              </Button>
+
+              {/* Release Confirmation Dialog */}
+              <Dialog open={releaseConfirmDialogOpen} onClose={handleCancelRelease}>
+                <DialogTitle>Release Inventory?</DialogTitle>
+                <DialogContent>
+                  <Typography>
+                    Are you sure you want to release this inventory from the fulfillment?
+                    {selectedFulfilment?.purchaseOrderLineItemId && (
+                      <> This will also disconnect the associated purchase order.</>
+                    )}
+                  </Typography>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleCancelRelease}>Cancel</Button>
+                  <Button onClick={handleConfirmRelease} color="error" variant="contained">
+                    Release
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            </>
           ) : (
             <Button
               variant="contained"
@@ -1163,7 +1406,7 @@ function EquipmentCard({
                 inventoryItem.fulfilmentId !== null && inventoryItem.fulfilmentId !== undefined
               }
             >
-              Assign
+              Reserve
             </Button>
           )}
         </Box>
