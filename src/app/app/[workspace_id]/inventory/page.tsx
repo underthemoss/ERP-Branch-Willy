@@ -27,6 +27,7 @@ import {
   Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { useParams } from "next/navigation";
 import * as React from "react";
 import { useState } from "react";
 
@@ -71,6 +72,9 @@ graphql(`
 `);
 
 export default function Inventory() {
+  const params = useParams();
+  const workspaceId = params?.workspace_id as string;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [thirdPartyFilter, setThirdPartyFilter] = useState<string>("ALL");
@@ -82,6 +86,7 @@ export default function Inventory() {
     variables: {
       query: {
         filter: {
+          workspaceId: workspaceId,
           ...(statusFilter !== "ALL" && { status: statusFilter as any }),
           ...(thirdPartyFilter !== "ALL" && {
             isThirdPartyRental: thirdPartyFilter === "THIRD_PARTY",
@@ -187,6 +192,16 @@ export default function Inventory() {
       `${asset.pim_make || ""} ${asset.pim_product_model || ""} ${asset.pim_product_year || ""}`.trim() ||
       "Unknown Asset"
     );
+  };
+
+  // Helper function to parse and format PIM path
+  const formatPimPath = (path: string) => {
+    if (!path) return "";
+    // Split by pipe, remove empty strings, filter out "Categories", and join with " > "
+    return path
+      .split("|")
+      .filter((part) => part.trim() !== "" && part.trim() !== "Categories")
+      .join(" > ");
   };
 
   return (
@@ -455,7 +470,7 @@ export default function Inventory() {
                       <Box sx={{ flexGrow: 1 }}>
                         <Typography variant="h6">{category.name}</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {category.path}
+                          {formatPimPath(category.path)}
                         </Typography>
                       </Box>
                       <Box sx={{ display: "flex", gap: 3, mr: 2 }}>

@@ -23,6 +23,11 @@ export {
   useListRentalFulfilmentsQuery,
   useAssignInventoryToRentalFulfilmentMutation,
   useUnassignInventoryFromRentalFulfilmentMutation,
+  useCreatePurchaseOrderForFulfilmentMutation,
+  useCreateRentalPurchaseOrderLineItemForFulfilmentMutation,
+  useGeneratePurchaseOrderReferenceNumberMutation,
+  useSetFulfilmentPurchaseOrderLineItemIdMutationMutation,
+  useSubmitPurchaseOrderForFulfilmentMutation,
 } from "@/graphql/hooks";
 
 export const RentalFulfilmentPriceFields = graphql(`
@@ -189,6 +194,82 @@ export const ServiceFulfilmentFields = graphql(`
   }
 `);
 
+export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
+  fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
+    id
+    contactId
+    contact {
+      __typename
+      ... on BusinessContact {
+        id
+        name
+      }
+      ... on PersonContact {
+        id
+        name
+      }
+    }
+    project {
+      id
+      name
+      project_code
+    }
+    purchaseOrderNumber
+    purchaseOrderLineItemId
+    purchaseOrderLineItem {
+      __typename
+      ... on RentalPurchaseOrderLineItem {
+        id
+        purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+          status
+        }
+      }
+      ... on SalePurchaseOrderLineItem {
+        id
+        purchase_order_id
+        purchaseOrder {
+          id
+          purchase_order_number
+          status
+        }
+      }
+    }
+    salesOrderId
+    salesOrder {
+      id
+      sales_order_number
+      purchase_order_number
+      status
+      buyer {
+        __typename
+        ... on BusinessContact {
+          id
+          name
+        }
+        ... on PersonContact {
+          id
+          name
+        }
+      }
+    }
+    salesOrderPONumber
+    inventory {
+      id
+    }
+    rentalStartDate
+    expectedRentalEndDate
+    rentalEndDate
+    pimCategoryId
+    pimCategoryName
+    pimCategoryPath
+    priceName
+    inventoryId
+  }
+`);
+
 export const GetFulfilmentById = graphql(`
   query GetFulfilmentById($id: ID!) {
     getFulfilmentById(id: $id) {
@@ -283,6 +364,61 @@ export const ListRentalFulfilments = graphql(`
       items {
         ...InventoryAssignment_RentalFulFulfilmentFields
       }
+    }
+  }
+`);
+
+// Purchase Order Mutations for CreatePurchaseOrderDialog
+export const CreatePurchaseOrderForFulfilment = graphql(`
+  mutation CreatePurchaseOrderForFulfilment($input: PurchaseOrderInput) {
+    createPurchaseOrder(input: $input) {
+      id
+      purchase_order_number
+      status
+    }
+  }
+`);
+
+export const CreateRentalPurchaseOrderLineItemForFulfilment = graphql(`
+  mutation CreateRentalPurchaseOrderLineItemForFulfilment(
+    $input: CreateRentalPurchaseOrderLineItemInput
+  ) {
+    createRentalPurchaseOrderLineItem(input: $input) {
+      id
+      purchase_order_id
+      lineitem_status
+    }
+  }
+`);
+
+export const SetFulfilmentPurchaseOrderLineItemIdMutation = graphql(`
+  mutation SetFulfilmentPurchaseOrderLineItemIdMutation(
+    $fulfilmentId: ID!
+    $purchaseOrderLineItemId: ID
+  ) {
+    setFulfilmentPurchaseOrderLineItemId(
+      fulfilmentId: $fulfilmentId
+      purchaseOrderLineItemId: $purchaseOrderLineItemId
+    ) {
+      id
+      purchaseOrderLineItemId
+    }
+  }
+`);
+
+export const SubmitPurchaseOrderForFulfilment = graphql(`
+  mutation SubmitPurchaseOrderForFulfilment($id: ID!) {
+    submitPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`);
+
+export const GeneratePurchaseOrderReferenceNumber = graphql(`
+  mutation GeneratePurchaseOrderReferenceNumber($input: GenerateReferenceNumberInput!) {
+    generateReferenceNumber(input: $input) {
+      referenceNumber
     }
   }
 `);

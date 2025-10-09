@@ -748,6 +748,7 @@ input CreateInventoryInput {
   purchaseOrderId: String
   purchaseOrderLineItemId: String
   status: InventoryStatus!
+  workspaceId: String
 }
 
 input CreateInvoiceInput {
@@ -1008,6 +1009,8 @@ interface FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   salesOrder: SalesOrder
   salesOrderId: ID!
@@ -1249,6 +1252,7 @@ type Inventory {
   updatedAt: DateTime!
   updatedBy: String!
   updatedByUser: User
+  workspaceId: String
 }
 
 enum InventoryCondition {
@@ -1487,6 +1491,7 @@ input ListInventoryFilter {
   purchaseOrderId: String
   startDate: DateTime
   status: InventoryStatus
+  workspaceId: String
 }
 
 input ListInventoryPage {
@@ -1578,10 +1583,12 @@ type ListPriceBooksResult {
 }
 
 input ListPricesFilter {
+  businessContactId: String
   name: String
   pimCategoryId: String
   priceBookId: String
   priceType: PriceType
+  projectId: String
   workspaceId: ID!
 }
 
@@ -1748,6 +1755,7 @@ type Mutation {
   runNightlyRentalChargesJob: [RentalFulfilment!]!
   runNightlyRentalChargesJobAsync: Boolean
   setExpectedRentalEndDate(expectedRentalEndDate: DateTime!, fulfilmentId: ID!): RentalFulfilment
+  setFulfilmentPurchaseOrderLineItemId(fulfilmentId: ID!, purchaseOrderLineItemId: ID): FulfilmentBase
 
   """Set the active status of an intake form"""
   setIntakeFormActive(id: String!, isActive: Boolean!): IntakeForm
@@ -2458,6 +2466,8 @@ type RentalFulfilment implements FulfilmentBase {
   pricePerWeekInCents: Int!
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   rentalEndDate: DateTime
   rentalStartDate: DateTime
@@ -2523,6 +2533,7 @@ type RentalPurchaseOrderLineItem {
   po_quantity: Int
   price: Price
   price_id: String
+  purchaseOrder: PurchaseOrder
   purchase_order_id: String!
   so_pim_category: PimCategory
   so_pim_product: PimProduct
@@ -2660,6 +2671,8 @@ type SaleFulfilment implements FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   quantity: Int!
   salePrice: Float
@@ -2720,6 +2733,7 @@ type SalePurchaseOrderLineItem {
   po_quantity: Int
   price: Price
   price_id: String
+  purchaseOrder: PurchaseOrder
   purchase_order_id: String!
   so_pim_category: PimCategory
   so_pim_product: PimProduct
@@ -2980,6 +2994,8 @@ type ServiceFulfilment implements FulfilmentBase {
   priceName: String
   project: Project
   projectId: ID
+  purchaseOrderLineItem: PurchaseOrderLineItem
+  purchaseOrderLineItemId: ID
   purchaseOrderNumber: String!
   salesOrder: SalesOrder
   salesOrderId: ID!
