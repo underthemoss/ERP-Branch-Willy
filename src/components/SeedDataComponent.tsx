@@ -274,8 +274,9 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createdData, setCreatedData] = useState<{
     workspace?: any;
-    business?: any;
-    employee?: any;
+    vendor?: any;
+    tradePartner?: any;
+    tradePartnerEmployee?: any;
     project?: any;
     priceBook?: any;
     salesOrder?: any;
@@ -289,8 +290,9 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
 
   const [steps, setSteps] = useState<SeedStep[]>([
     { id: "workspace", label: "Create Workspace", status: "pending" },
-    { id: "business", label: "Create Business Contact", status: "pending" },
-    { id: "employee", label: "Create Employee Contact", status: "pending" },
+    { id: "vendor", label: "Create Vendor Business", status: "pending" },
+    { id: "tradePartner", label: "Create Trade Partner Business", status: "pending" },
+    { id: "tradePartnerEmployee", label: "Create Trade Partner Employee", status: "pending" },
     { id: "project", label: "Create Project", status: "pending" },
     { id: "priceBook", label: "Create Price Book", status: "pending" },
     { id: "salesOrder", label: "Create Sales Order", status: "pending" },
@@ -359,11 +361,11 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       updateStepStatus("workspace", "completed");
       notifySuccess(`Workspace "${workspace.name}" created successfully`);
 
-      // Step 2: Create Business Contact
-      updateStepStatus("business", "loading");
+      // Step 2: Create Vendor Business (Riverside Equipment Rentals)
+      updateStepStatus("vendor", "loading");
       await delay(500);
 
-      const businessResult = await createBusinessContact({
+      const vendorResult = await createBusinessContact({
         variables: {
           input: {
             name: "Riverside Equipment Rentals",
@@ -372,46 +374,74 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             phone: "+1 (512) 555-0198",
             website: "https://riversideequipment.com",
             notes:
-              "Full-service equipment rental company specializing in construction and industrial equipment",
+              "Full-service equipment rental company specializing in construction and industrial equipment. Upstream vendor supplying equipment to Summit Construction.",
           },
         },
       });
 
-      if (!businessResult.data?.createBusinessContact) {
-        throw new Error("Failed to create business contact");
+      if (!vendorResult.data?.createBusinessContact) {
+        throw new Error("Failed to create vendor business contact");
       }
 
-      const business = businessResult.data.createBusinessContact;
-      setCreatedData((prev) => ({ ...prev, business }));
-      updateStepStatus("business", "completed");
-      notifySuccess(`Business "${business.name}" created successfully`);
+      const vendor = vendorResult.data.createBusinessContact;
+      setCreatedData((prev) => ({ ...prev, vendor }));
+      updateStepStatus("vendor", "completed");
+      notifySuccess(`Vendor "${vendor.name}" created successfully`);
 
-      // Step 3: Create Employee Contact
-      updateStepStatus("employee", "loading");
+      // Step 3: Create Trade Partner Business (Skyline Mechanical Contractors)
+      updateStepStatus("tradePartner", "loading");
       await delay(500);
 
-      const employeeResult = await createPersonContact({
+      const tradePartnerResult = await createBusinessContact({
         variables: {
           input: {
-            name: "Michael Chen",
-            email: `mchen${Date.now().toString().slice(-4)}@summitconstruction.com`,
-            businessId: business.id,
+            name: "Skyline Mechanical Contractors",
             workspaceId: workspace.id,
-            phone: "+1 (512) 555-0142",
-            role: "Senior Project Manager",
-            notes: "Experienced project manager with expertise in commercial construction",
+            address: "2890 Tech Ridge Boulevard, Austin, TX 78754",
+            phone: "+1 (512) 555-0276",
+            website: "https://skylinemechanical.com",
+            notes:
+              "Mechanical and HVAC subcontractor specializing in commercial projects. Trade partner receiving equipment rentals from Summit Construction.",
           },
         },
       });
 
-      if (!employeeResult.data?.createPersonContact) {
-        throw new Error("Failed to create employee contact");
+      if (!tradePartnerResult.data?.createBusinessContact) {
+        throw new Error("Failed to create trade partner business contact");
       }
 
-      const employee = employeeResult.data.createPersonContact;
-      setCreatedData((prev) => ({ ...prev, employee }));
-      updateStepStatus("employee", "completed");
-      notifySuccess(`Employee "${employee.name}" created successfully`);
+      const tradePartner = tradePartnerResult.data.createBusinessContact;
+      setCreatedData((prev) => ({ ...prev, tradePartner }));
+      updateStepStatus("tradePartner", "completed");
+      notifySuccess(`Trade Partner "${tradePartner.name}" created successfully`);
+
+      // Step 4: Create Trade Partner Employee (Jennifer Martinez)
+      updateStepStatus("tradePartnerEmployee", "loading");
+      await delay(500);
+
+      const tradePartnerEmployeeResult = await createPersonContact({
+        variables: {
+          input: {
+            name: "Jennifer Martinez",
+            email: `jmartinez${Date.now().toString().slice(-4)}@skylinemechanical.com`,
+            businessId: tradePartner.id,
+            workspaceId: workspace.id,
+            phone: "+1 (512) 555-0283",
+            role: "Project Coordinator",
+            notes:
+              "Project coordinator for Skyline Mechanical, responsible for equipment needs and logistics coordination with general contractors.",
+          },
+        },
+      });
+
+      if (!tradePartnerEmployeeResult.data?.createPersonContact) {
+        throw new Error("Failed to create trade partner employee contact");
+      }
+
+      const tradePartnerEmployee = tradePartnerEmployeeResult.data.createPersonContact;
+      setCreatedData((prev) => ({ ...prev, tradePartnerEmployee }));
+      updateStepStatus("tradePartnerEmployee", "completed");
+      notifySuccess(`Trade Partner Employee "${tradePartnerEmployee.name}" created successfully`);
 
       // Step 4: Create Project
       updateStepStatus("project", "loading");
@@ -434,8 +464,8 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             ],
             project_contacts: [
               {
-                contact_id: employee.id,
-                relation_to_project: ProjectContactRelationEnum.ProjectManagerGc,
+                contact_id: tradePartnerEmployee.id,
+                relation_to_project: ProjectContactRelationEnum.EquipmentRentalCoordinator,
               },
             ],
           },
@@ -460,10 +490,11 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
           input: {
             name: "Austin Metro Rental Rates",
             workspaceId: workspace.id,
-            businessContactId: business.id,
+            businessContactId: vendor.id,
             projectId: project.id,
             location: "Austin, TX",
-            notes: "Standard equipment rental pricing for Austin metro area projects",
+            notes:
+              "Standard equipment rental pricing from Riverside Equipment Rentals for Austin metro area projects",
             isDefault: true,
           },
         },
@@ -485,7 +516,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const salesOrderResult = await createSalesOrder({
         variables: {
           input: {
-            buyer_id: business.id,
+            buyer_id: tradePartner.id,
             project_id: project.id,
             purchase_order_number: `PO-${Date.now().toString().slice(-6)}`,
             sales_order_number: `SO-${Date.now().toString().slice(-6)}`,
@@ -510,7 +541,7 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
       const purchaseOrderResult = await createPurchaseOrder({
         variables: {
           input: {
-            seller_id: business.id,
+            seller_id: vendor.id,
             project_id: project.id,
             purchase_order_number: `PO-${Date.now().toString().slice(-6)}`,
             workspace_id: workspace.id,
@@ -1084,16 +1115,21 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
                     {createdData.workspace.id})
                   </Alert>
                 )}
-                {createdData.business && (
+                {createdData.vendor && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Business:</strong> {createdData.business.name} (ID:{" "}
-                    {createdData.business.id})
+                    <strong>Vendor:</strong> {createdData.vendor.name} (ID: {createdData.vendor.id})
                   </Alert>
                 )}
-                {createdData.employee && (
+                {createdData.tradePartner && (
                   <Alert severity="info" sx={{ mb: 1 }}>
-                    <strong>Employee:</strong> {createdData.employee.name} (ID:{" "}
-                    {createdData.employee.id})
+                    <strong>Trade Partner:</strong> {createdData.tradePartner.name} (ID:{" "}
+                    {createdData.tradePartner.id})
+                  </Alert>
+                )}
+                {createdData.tradePartnerEmployee && (
+                  <Alert severity="info" sx={{ mb: 1 }}>
+                    <strong>Trade Partner Employee:</strong> {createdData.tradePartnerEmployee.name}{" "}
+                    (ID: {createdData.tradePartnerEmployee.id})
                   </Alert>
                 )}
                 {createdData.project && (
@@ -1241,14 +1277,21 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
               {createdData.workspace.id})
             </Alert>
           )}
-          {createdData.business && (
+          {createdData.vendor && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Business:</strong> {createdData.business.name} (ID: {createdData.business.id})
+              <strong>Vendor:</strong> {createdData.vendor.name} (ID: {createdData.vendor.id})
             </Alert>
           )}
-          {createdData.employee && (
+          {createdData.tradePartner && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              <strong>Employee:</strong> {createdData.employee.name} (ID: {createdData.employee.id})
+              <strong>Trade Partner:</strong> {createdData.tradePartner.name} (ID:{" "}
+              {createdData.tradePartner.id})
+            </Alert>
+          )}
+          {createdData.tradePartnerEmployee && (
+            <Alert severity="info" sx={{ mb: 1 }}>
+              <strong>Trade Partner Employee:</strong> {createdData.tradePartnerEmployee.name} (ID:{" "}
+              {createdData.tradePartnerEmployee.id})
             </Alert>
           )}
           {createdData.project && (

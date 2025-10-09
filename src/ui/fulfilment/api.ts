@@ -225,6 +225,17 @@ export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
           id
           purchase_order_number
           status
+          seller {
+            __typename
+            ... on BusinessContact {
+              id
+              name
+            }
+            ... on PersonContact {
+              id
+              name
+            }
+          }
         }
       }
       ... on SalePurchaseOrderLineItem {
@@ -234,6 +245,17 @@ export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
           id
           purchase_order_number
           status
+          seller {
+            __typename
+            ... on BusinessContact {
+              id
+              name
+            }
+            ... on PersonContact {
+              id
+              name
+            }
+          }
         }
       }
     }
