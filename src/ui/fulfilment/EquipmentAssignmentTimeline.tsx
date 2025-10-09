@@ -34,46 +34,6 @@ import {
 } from "./api";
 import { SourcingPanel } from "./SourcingPanel";
 
-const RentalFulfilmentFieldsFragment = graphql(`
-  fragment InventoryAssignment_RentalFulFulfilmentFields on RentalFulfilment {
-    id
-    contactId
-    contact {
-      __typename
-      ... on BusinessContact {
-        id
-        name
-      }
-      ... on PersonContact {
-        id
-        name
-      }
-    }
-    project {
-      id
-      name
-      project_code
-    }
-    purchaseOrderNumber
-    salesOrderId
-    salesOrderLineItemId
-    salesOrderPONumber
-    inventory {
-      id
-    }
-    rentalStartDate
-    expectedRentalEndDate
-    rentalEndDate
-    pimCategoryId
-    pimCategoryName
-    pimCategoryPath
-    priceName
-    inventoryId
-  }
-`);
-
-type t = typeof RentalFulfilmentFieldsFragment;
-
 type ViewMode = "30days" | "60days" | "90days" | "custom";
 
 const VIEW_DAYS: Record<Exclude<ViewMode, "custom">, number> = {
