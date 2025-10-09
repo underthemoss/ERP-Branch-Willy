@@ -46,6 +46,7 @@ const SourcingPanelListInventory = graphql(`
         status
         fulfilmentId
         purchaseOrderId
+        purchaseOrderLineItemId
         assetId
         asset {
           id
@@ -70,6 +71,7 @@ const GetInventoryById = graphql(`
       status
       fulfilmentId
       purchaseOrderId
+      purchaseOrderLineItemId
       assetId
       asset {
         id
@@ -1108,7 +1110,20 @@ function EquipmentCard({
 
   const handleReceiveClick = () => {
     if (inventoryItem.purchaseOrderId && workspaceId) {
-      router.push(`/app/${workspaceId}/purchase-orders/${inventoryItem.purchaseOrderId}/receive`);
+      const baseUrl = `/app/${workspaceId}/purchase-orders/${inventoryItem.purchaseOrderId}/receive`;
+
+      // If we have a line item ID, add it to query params to auto-open the receive dialog
+      if (inventoryItem.purchaseOrderLineItemId) {
+        // Include returnPath so user can be returned to this page after receiving
+        const currentPath = window.location.pathname + window.location.search;
+        const params = new URLSearchParams({
+          lineItemId: inventoryItem.purchaseOrderLineItemId,
+          returnPath: currentPath,
+        });
+        router.push(`${baseUrl}?${params.toString()}`);
+      } else {
+        router.push(baseUrl);
+      }
     }
   };
 
@@ -1168,27 +1183,51 @@ function EquipmentCard({
       {isOnOrder && (
         <Box
           sx={{
-            display: "inline-flex",
+            display: "flex",
             alignItems: "center",
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 0.25,
-            backgroundColor: "#f57c0015",
+            gap: 1,
             mt: 1,
           }}
         >
-          <Typography
-            variant="caption"
+          <Box
             sx={{
-              fontWeight: 500,
-              color: "#f57c00",
-              textTransform: "uppercase",
-              fontSize: "0.65rem",
-              letterSpacing: "0.5px",
+              display: "inline-flex",
+              alignItems: "center",
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 0.25,
+              backgroundColor: "#f57c0015",
             }}
           >
-            On Order
-          </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 500,
+                color: "#f57c00",
+                textTransform: "uppercase",
+                fontSize: "0.65rem",
+                letterSpacing: "0.5px",
+              }}
+            >
+              On Order
+            </Typography>
+          </Box>
+          {inventoryItem.purchaseOrderId && workspaceId && (
+            <Button
+              variant="text"
+              color="primary"
+              size="small"
+              onClick={handleReceiveClick}
+              sx={{
+                minWidth: "auto",
+                padding: "2px 8px",
+                fontSize: "0.75rem",
+                textTransform: "none",
+              }}
+            >
+              Receive Item
+            </Button>
+          )}
         </Box>
       )}
 
@@ -1216,17 +1255,6 @@ function EquipmentCard({
               }
             >
               Assign
-            </Button>
-          )}
-          {isOnOrder && inventoryItem.purchaseOrderId && workspaceId && (
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              fullWidth
-              onClick={handleReceiveClick}
-            >
-              Receive Item
             </Button>
           )}
         </Box>
