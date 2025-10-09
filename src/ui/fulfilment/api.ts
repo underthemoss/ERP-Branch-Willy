@@ -280,6 +280,7 @@ export const InventoryAssignment_RentalFulFulfilmentFields = graphql(`
     salesOrderPONumber
     inventory {
       id
+      status
     }
     rentalStartDate
     expectedRentalEndDate

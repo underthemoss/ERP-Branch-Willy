@@ -7,6 +7,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ClearIcon from "@mui/icons-material/Clear";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Box,
@@ -239,7 +240,7 @@ export default function EquipmentAssignmentTimeline() {
                 Inventory Assignment Timeline
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Drag inventory from the pool to assign to rental fulfillments
+                Drag inventory from the pool to reserve for rental fulfillments
               </Typography>
             </Box>
 
@@ -963,11 +964,11 @@ function TimelineRow({
   // Determine if fulfilment is within visible range
   const isVisible = visibleEndOffset > 0 && visibleStartOffset < dates.length;
 
-  // Determine color based on priority: inventory (green) > PO line item (amber) > neither (red)
+  // Enhanced state determination logic
   const hasInventory = !!fulfilment.inventoryId;
   const hasPOLineItem = !!fulfilment.purchaseOrderLineItemId;
 
-  // Extract purchase order ID
+  // Extract purchase order details
   const purchaseOrderId =
     fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
       ? fulfilment.purchaseOrderLineItem.purchase_order_id
@@ -975,8 +976,70 @@ function TimelineRow({
         ? fulfilment.purchaseOrderLineItem.purchase_order_id
         : null;
 
-  const barColor = hasInventory ? "#66bb6a" : hasPOLineItem ? "#fbc02d" : "#ef5350";
-  const backgroundColor = hasInventory ? "#e8f5e9" : hasPOLineItem ? "#fff8e1" : "#ffebee";
+  const purchaseOrderStatus =
+    fulfilment.purchaseOrderLineItem?.__typename === "RentalPurchaseOrderLineItem"
+      ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+      : fulfilment.purchaseOrderLineItem?.__typename === "SalePurchaseOrderLineItem"
+        ? fulfilment.purchaseOrderLineItem.purchaseOrder?.status
+        : null;
+
+  // Determine state based on priority hierarchy
+  let barColor: string;
+  let backgroundColor: string;
+  let statusLabel: string;
+  let statusIcon: "check" | "shipping" | "assignment" | "warning" | "error";
+
+  // Priority 1: Inventory status (if inventory is assigned)
+  if (hasInventory) {
+    const inventoryStatus = fulfilment.inventory?.status;
+
+    if (inventoryStatus === "RECEIVED") {
+      // Green - Inventory received and ready
+      barColor = "#66bb6a";
+      backgroundColor = "#e8f5e9";
+      statusIcon = "check";
+      statusLabel = `Inv: ${fulfilment.inventoryId}`;
+    } else if (inventoryStatus === "ON_ORDER") {
+      // Blue - Inventory on order, awaiting delivery
+      barColor = "#42a5f5";
+      backgroundColor = "#e3f2fd";
+      statusIcon = "shipping";
+      statusLabel = `On Order: ${fulfilment.inventoryId}`;
+    } else {
+      // Fallback for unknown inventory status - treat as received
+      barColor = "#66bb6a";
+      backgroundColor = "#e8f5e9";
+      statusIcon = "check";
+      statusLabel = `Inv: ${fulfilment.inventoryId}`;
+    }
+  }
+  // Priority 2: PO Status (if PO exists but no inventory)
+  else if (hasPOLineItem && purchaseOrderStatus) {
+    if (purchaseOrderStatus === "SUBMITTED") {
+      barColor = "#fbc02d";
+      backgroundColor = "#fff8e1";
+      statusIcon = "assignment";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."} (Submitted)`;
+    } else if (purchaseOrderStatus === "DRAFT") {
+      barColor = "#ff9800";
+      backgroundColor = "#fff3e0";
+      statusIcon = "warning";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."} (Draft)`;
+    } else {
+      // Fallback for unknown PO status
+      barColor = "#fbc02d";
+      backgroundColor = "#fff8e1";
+      statusIcon = "warning";
+      statusLabel = `PO: ${fulfilment.purchaseOrderNumber || "..."}`;
+    }
+  }
+  // Priority 3: No inventory, no PO
+  else {
+    barColor = "#ef5350";
+    backgroundColor = "#ffebee";
+    statusIcon = "error";
+    statusLabel = "Not Sourced";
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -1078,10 +1141,10 @@ function TimelineRow({
             flex: 1,
           }}
         >
-          {hasInventory ? (
+          {statusIcon === "check" ? (
             <CheckCircleIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
-          ) : hasPOLineItem ? (
-            <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
+          ) : statusIcon === "shipping" ? (
+            <LocalShippingIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           ) : (
             <WarningAmberIcon sx={{ fontSize: 16, color: barColor, flexShrink: 0 }} />
           )}
@@ -1096,11 +1159,7 @@ function TimelineRow({
               whiteSpace: "nowrap",
             }}
           >
-            {hasInventory
-              ? `Inv: ${fulfilment.inventoryId}`
-              : hasPOLineItem
-                ? `PO: ${fulfilment.purchaseOrderNumber || "..."}`
-                : "Not Sourced"}
+            {statusLabel}
           </Typography>
         </Box>
 
