@@ -76,7 +76,7 @@ export default function EditSalesOrderDialog({
           input: {
             id: salesOrder.id,
             buyer_id: buyerId,
-            purchase_order_number: poNumber,
+            purchase_order_number: poNumber.trim() || null,
             sales_order_number: salesOrderNumber,
             project_id: projectId || null,
           },
@@ -121,10 +121,10 @@ export default function EditSalesOrderDialog({
 
           {/* PO Number */}
           <TextField
-            label="Purchase Order Number"
+            label="Purchase Order Number (optional)"
             value={poNumber}
             onChange={(e) => setPoNumber(e.target.value)}
-            required
+            placeholder="Enter purchase order number"
             fullWidth
           />
 
@@ -147,7 +147,7 @@ export default function EditSalesOrderDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || !buyerId || !poNumber || !salesOrderNumber}
+          disabled={loading || !buyerId || !salesOrderNumber}
         >
           {loading ? "Updating..." : "Update"}
         </Button>

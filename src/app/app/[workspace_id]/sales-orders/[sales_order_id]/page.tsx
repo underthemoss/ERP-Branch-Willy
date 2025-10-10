@@ -40,6 +40,7 @@ import {
 } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
+import EditPurchaseOrderNumberDialog from "./EditPurchaseOrderNumberDialog";
 import EditSalesOrderDialog from "./EditSalesOrderDialog";
 import OrderItemsSection from "./OrderItemsSection";
 import SalesOrderCostForcastReport from "./SalesOrderCostForcastReport";
@@ -206,6 +207,7 @@ export default function SalesOrderDetailPage() {
 
   const [cachekey, setCacheKey] = React.useState(0);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [editPoNumberDialogOpen, setEditPoNumberDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const { data, loading, error } = useGetSalesOrderByIdQuery({
@@ -518,20 +520,31 @@ export default function SalesOrderDetailPage() {
                     Purchase Order #:
                   </Typography>
                   <Typography variant="body2" fontWeight="bold" sx={{ mr: 0.5 }}>
-                    {salesOrder.purchase_order_number}
+                    {salesOrder.purchase_order_number || "(not set)"}
                   </Typography>
-                  <Tooltip title="Copy Purchase Order Number" arrow>
+                  <Tooltip title="Edit Purchase Order Number" arrow>
                     <IconButton
                       size="small"
-                      aria-label="Copy Purchase Order Number"
-                      data-testid="sales-order-details-copy-number"
-                      onClick={() =>
-                        navigator.clipboard.writeText(salesOrder.purchase_order_number)
-                      }
+                      aria-label="Edit Purchase Order Number"
+                      onClick={() => setEditPoNumberDialogOpen(true)}
                     >
-                      <ContentCopyIcon fontSize="small" />
+                      <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
+                  {salesOrder.purchase_order_number && (
+                    <Tooltip title="Copy Purchase Order Number" arrow>
+                      <IconButton
+                        size="small"
+                        aria-label="Copy Purchase Order Number"
+                        data-testid="sales-order-details-copy-po-number"
+                        onClick={() =>
+                          navigator.clipboard.writeText(salesOrder.purchase_order_number || "")
+                        }
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
@@ -854,6 +867,21 @@ export default function SalesOrderDetailPage() {
         </DialogActions>
       </Dialog>
 
+      {/* Edit Purchase Order Number Dialog */}
+      {salesOrder && (
+        <EditPurchaseOrderNumberDialog
+          open={editPoNumberDialogOpen}
+          onClose={() => setEditPoNumberDialogOpen(false)}
+          salesOrderId={salesOrder.id}
+          currentPurchaseOrderNumber={salesOrder.purchase_order_number || ""}
+          onSuccess={() => {
+            setSnackbarMessage("Purchase order number updated successfully!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+          }}
+        />
+      )}
+
       {/* Edit Sales Order Dialog */}
       {salesOrder && (
         <EditSalesOrderDialog
@@ -862,7 +890,7 @@ export default function SalesOrderDetailPage() {
           salesOrder={{
             id: salesOrder.id,
             buyer_id: salesOrder.buyer_id,
-            purchase_order_number: salesOrder.purchase_order_number,
+            purchase_order_number: salesOrder.purchase_order_number || "",
             sales_order_number: salesOrder.sales_order_number,
             project_id: salesOrder.project_id,
           }}
