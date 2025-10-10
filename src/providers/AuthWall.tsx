@@ -3,13 +3,19 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
+import { useJwtOverride } from "./JwtOverrideContext";
 
 export const AuthWall: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const { loginWithRedirect, getAccessTokenSilently } = useAuth0();
+  const jwtOverride = useJwtOverride();
 
   useEffect(() => {
+    if (jwtOverride) {
+      return;
+    }
+
     getAccessTokenSilently({ cacheMode: "on" }).catch((e) => {
       console.error("Auth0 error:", e);
 
@@ -41,7 +47,7 @@ export const AuthWall: React.FC<{
       const errorUrl = `/auth/error${errorParams.toString() ? `?${errorParams.toString()}` : ""}`;
       redirect(errorUrl);
     });
-  }, [getAccessTokenSilently, loginWithRedirect]);
+  }, [jwtOverride, getAccessTokenSilently, loginWithRedirect]);
 
   return children;
 };
