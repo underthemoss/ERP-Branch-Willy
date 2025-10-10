@@ -114,9 +114,6 @@ export default function RequestForm({
     if (!contact.company.trim()) {
       newErrors.company = "Company name is required";
     }
-    if (!contact.purchaseOrderNumber?.trim()) {
-      newErrors.purchaseOrderNumber = "Purchase order number is required";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -341,15 +338,16 @@ export default function RequestForm({
                     <Grid size={{ xs: 12 }}>
                       <TextField
                         fullWidth
-                        label="Purchase Order Number"
+                        label="Purchase Order Number (Optional)"
                         value={contact.purchaseOrderNumber || ""}
                         onChange={(e) =>
                           setContact({ ...contact, purchaseOrderNumber: e.target.value })
                         }
                         error={!!errors.purchaseOrderNumber}
-                        helperText={errors.purchaseOrderNumber}
+                        helperText={
+                          errors.purchaseOrderNumber || "Optional - provide if you have one"
+                        }
                         placeholder="PO-12345"
-                        required
                       />
                     </Grid>
                   </Grid>
