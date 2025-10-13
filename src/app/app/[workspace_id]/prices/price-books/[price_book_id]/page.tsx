@@ -1,5 +1,6 @@
 "use client";
 
+import { ResourceTypes } from "@/graphql/graphql";
 import { useNotification } from "@/providers/NotificationProvider";
 import FileUpload from "@/ui/FileUpload";
 import {
@@ -419,6 +420,7 @@ export default function PriceBook() {
             Upload a CSV file to import prices into this price book.
           </DialogContentText>
           <FileUpload
+            entityType={ResourceTypes.ErpPricebook}
             acceptedTypes={["text/csv", "application/vnd.ms-excel", ".csv"]}
             entityId={price_book_id as string}
             label="Select CSV file"

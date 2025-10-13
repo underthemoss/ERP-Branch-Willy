@@ -1,8 +1,9 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import type { SupportedContentType } from "@/graphql/graphql";
+import type { ResourceTypes, SupportedContentType } from "@/graphql/graphql";
 import { useAddFileToEntityMutation, useGetSignedUploadUrlLazyQuery } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Alert, Box, Button, LinearProgress, Typography } from "@mui/material";
 import React, { useRef, useState } from "react";
@@ -25,6 +26,7 @@ type FileUploadProps = {
   multiple?: boolean;
   disabled?: boolean;
   entityId?: string;
+  entityType: ResourceTypes;
 };
 
 type ClientSupportedContentType = "IMAGE_JPEG" | "IMAGE_PNG" | "APPLICATION_PDF" | "TEXT_CSV";
@@ -50,16 +52,21 @@ const addFileToEntityMutation = graphql(`
     $file_name: String!
     $metadata: JSON
     $parent_entity_id: String!
+    $parent_entity_type: ResourceTypes
+    $workspace_id: String!
   ) {
     addFileToEntity(
       file_key: $file_key
       file_name: $file_name
       metadata: $metadata
       parent_entity_id: $parent_entity_id
+      parent_entity_type: $parent_entity_type
+      workspace_id: $workspace_id
     ) {
       id
       file_key
       file_name
+      workspace_id
     }
   }
 `);
@@ -80,6 +87,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   disabled = false,
   entityId,
+  entityType,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -88,6 +96,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [getUploadUrl] = useGetSignedUploadUrlLazyQuery();
   const [addFileToEntity] = useAddFileToEntityMutation();
+  const workspaceId = useSelectedWorkspaceId();
   // Helper to map file type to SupportedContentType
   function getSupportedContentType(file: File): ClientSupportedContentType | null {
     return SUPPORTED_CONTENT_TYPE_MAP[file.type] || null;
@@ -159,13 +168,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       // If entityId is set, call addFileToEntity and capture returned file id
       let createdFileId: string | undefined;
-      if (entityId) {
+      if (entityId && workspaceId) {
         const addRes = await addFileToEntity({
           variables: {
             file_key: key,
             file_name: file.name,
             metadata: null,
             parent_entity_id: entityId,
+            parent_entity_type: entityType,
+            workspace_id: workspaceId,
           },
         });
         createdFileId = addRes.data?.addFileToEntity.id;

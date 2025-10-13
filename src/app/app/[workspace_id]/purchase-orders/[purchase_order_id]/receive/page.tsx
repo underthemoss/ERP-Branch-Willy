@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import {
+  ResourceTypes,
   usePurchaseOrderDetailsForReceivingQuery,
   useReceiveInventoryEnhancedQuery,
 } from "@/graphql/hooks";
@@ -247,7 +248,11 @@ export default function ReceiveInventoryPage() {
           order.
         </Typography>
         <Divider sx={{ mb: 2 }} />
-        <AttachedFilesSection entityId={purchase_order_id} key={`files-${refreshKey}`} />
+        <AttachedFilesSection
+          entityId={purchase_order_id}
+          key={`files-${refreshKey}`}
+          entityType={ResourceTypes.ErpPurchaseOrder}
+        />
       </Paper>
     </Container>
   );

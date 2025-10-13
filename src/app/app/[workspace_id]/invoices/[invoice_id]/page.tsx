@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import {
+  ResourceTypes,
   useCreatePdfFromPageAndAttachToInvoiceMutation,
   useDeleteInvoiceMutation,
   useInvoiceByIdQuery,
@@ -46,11 +47,13 @@ graphql(`
     $entity_id: String!
     $path: String!
     $file_name: String!
+    $workspaceId: String!
   ) {
     createPdfFromPageAndAttachToEntityId(
       entity_id: $entity_id
       path: $path
       file_name: $file_name
+      workspaceId: $workspaceId
     ) {
       success
       error_message
@@ -534,6 +537,7 @@ export default function InvoiceDisplayPage() {
                           entity_id: invoice.id,
                           path: `print/invoice/${workspaceId}/${invoiceId}`,
                           file_name: printFileName,
+                          workspaceId: workspaceId,
                         },
                       });
                       setPrintDialogOpen(false);
@@ -554,7 +558,11 @@ export default function InvoiceDisplayPage() {
                 Attached Files
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection key={`files-${cachekey}`} entityId={invoice.id} />
+              <AttachedFilesSection
+                key={`files-${cachekey}`}
+                entityId={invoice.id}
+                entityType={ResourceTypes.ErpInvoice}
+              />
             </Paper>
 
             {/* Notes Section */}

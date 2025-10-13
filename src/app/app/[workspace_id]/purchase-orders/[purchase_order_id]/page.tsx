@@ -3,7 +3,8 @@
 import { graphql } from "@/graphql";
 import { PurchaseOrderStatus } from "@/graphql/graphql";
 import {
-  useCreatePdfFromPageAndAttachToEntityIdMutation,
+  ResourceTypes,
+  useCreatePdfFromPageAndAttachToPurchaseOrderMutation,
   useGetPurchaseOrderByIdQuery,
   useSoftDeletePurchaseOrderMutation,
   useSubmitPurchaseOrderMutation,
@@ -45,15 +46,17 @@ import OrderItemsSection from "./OrderItemsSection";
 import PurchaseOrderCostForcastReport from "./PurchaseOrderCostForcastReport";
 
 const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
-  mutation CreatePdfFromPageAndAttachToEntityId(
+  mutation CreatePdfFromPageAndAttachToPurchaseOrder(
     $entity_id: String!
     $path: String!
     $file_name: String!
+    $workspaceId: String!
   ) {
     createPdfFromPageAndAttachToEntityId(
       entity_id: $entity_id
       path: $path
       file_name: $file_name
+      workspaceId: $workspaceId
     ) {
       success
       error_message
@@ -210,7 +213,7 @@ export default function PurchaseOrderDetailPage() {
   });
 
   const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
-    useCreatePdfFromPageAndAttachToEntityIdMutation();
+    useCreatePdfFromPageAndAttachToPurchaseOrderMutation();
 
   // Submit Purchase Order mutation
   const [submitPurchaseOrder, { loading: submitLoading, data: submitData, error: submitError }] =
@@ -383,6 +386,7 @@ export default function PurchaseOrderDetailPage() {
                               entity_id: purchaseOrder.id,
                               path: `print/purchase-order/${workspace_id}/${purchase_order_id}`,
                               file_name: fileName,
+                              workspaceId: workspace_id,
                             },
                           });
                           setCacheKey((k) => k + 1);
@@ -572,7 +576,11 @@ export default function PurchaseOrderDetailPage() {
                 Attached Files
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection key={`files-${cachekey}`} entityId={purchaseOrder.id} />
+              <AttachedFilesSection
+                key={`files-${cachekey}`}
+                entityId={purchaseOrder.id}
+                entityType={ResourceTypes.ErpPurchaseOrder}
+              />
             </Paper>
 
             {/* Notes Section */}

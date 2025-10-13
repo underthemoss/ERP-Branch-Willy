@@ -987,6 +987,7 @@ type File {
   updated_by: String!
   updated_by_user: User
   url: String!
+  workspace_id: String!
 }
 
 union Fulfilment = RentalFulfilment | SaleFulfilment | ServiceFulfilment
@@ -1674,7 +1675,7 @@ input MarkInvoiceAsSentInput {
 }
 
 type Mutation {
-  addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!): File!
+  addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!, parent_entity_type: ResourceTypes, workspace_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   addSearchRecent(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   addTaxLineItem(input: AddTaxLineItemInput!): Invoice!
@@ -1704,7 +1705,7 @@ type Mutation {
   createNote(input: NoteInput!): Note
 
   """Generate and save a PDF for an entity by path and entity_id"""
-  createPdfFromPageAndAttachToEntityId(entity_id: String!, file_name: String, path: String!): CreatePdfResult
+  createPdfFromPageAndAttachToEntityId(entity_id: String!, file_name: String, path: String!, workspaceId: String!): CreatePdfResult
   createPersonContact(input: PersonContactInput!): PersonContact
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
@@ -1835,6 +1836,7 @@ type Mutation {
   updateWorkspaceSettings(bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String, workspaceId: String!): Workspace
   updateWorkspaceUserRoles(roles: [WorkspaceUserRole!]!, userId: String!, workspaceId: String!): WorkspaceMember
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
+  upsertUser(id: String!, input: UserUpsertInput!): User
 }
 
 type Note {
@@ -1899,6 +1901,9 @@ enum PermissionType {
   ERP_CONTACT_READ
   ERP_CONTACT_UPDATE
   ERP_DOMAIN_IS_MEMBER
+  ERP_FILE_DELETE
+  ERP_FILE_READ
+  ERP_FILE_UPDATE
   ERP_FULFILMENT_DELETE
   ERP_FULFILMENT_READ
   ERP_FULFILMENT_UPDATE
@@ -1926,6 +1931,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_JOIN
   ERP_WORKSPACE_CAN_MANAGE_CHARGES
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS
+  ERP_WORKSPACE_CAN_MANAGE_FILES
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_MANAGE_INVOICES
@@ -1936,6 +1942,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
   ERP_WORKSPACE_CAN_READ_CHARGES
   ERP_WORKSPACE_CAN_READ_CONTACTS
+  ERP_WORKSPACE_CAN_READ_FILES
   ERP_WORKSPACE_CAN_READ_INVOICES
   ERP_WORKSPACE_CAN_READ_PROJECTS
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS
@@ -2332,7 +2339,7 @@ type Query {
   listAssets(page: ListAssetsPage): ListAssetsResult
   listCharges(filter: ListChargesFilter!, page: PageInfoInput): ChargePage
   listContacts(filter: ListContactsFilter!, page: ListContactsPage): ListContactsResult
-  listFilesByEntityId(parent_entity_id: String!): [File!]!
+  listFilesByEntityId(parent_entity_id: String!, workspace_id: String!): [File!]!
   listFulfilments(filter: ListFulfilmentsFilter!, page: ListFulfilmentsPage): ListFulfilmentsResult
 
   """List all line items for an intake form submission"""
@@ -2642,6 +2649,27 @@ enum ResourceType {
   ERP_CHARGE
   ERP_CONTACT
   ERP_DOMAIN
+  ERP_FILE
+  ERP_FULFILMENT
+  ERP_INTAKE_FORM
+  ERP_INTAKE_FORM_SUBMISSION
+  ERP_INVOICE
+  ERP_PLATFORM
+  ERP_PRICEBOOK
+  ERP_PRICEBOOK_PRICE
+  ERP_PROJECT
+  ERP_PURCHASE_ORDER
+  ERP_SALES_ORDER
+  ERP_SERVICE_ACCOUNT
+  ERP_USER
+  ERP_WORKSPACE
+}
+
+enum ResourceTypes {
+  ERP_CHARGE
+  ERP_CONTACT
+  ERP_DOMAIN
+  ERP_FILE
   ERP_FULFILMENT
   ERP_INTAKE_FORM
   ERP_INTAKE_FORM_SUBMISSION
@@ -3403,6 +3431,9 @@ type UserPermissionMap {
   ERP_CONTACT_READ: Boolean
   ERP_CONTACT_UPDATE: Boolean
   ERP_DOMAIN_IS_MEMBER: Boolean
+  ERP_FILE_DELETE: Boolean
+  ERP_FILE_READ: Boolean
+  ERP_FILE_UPDATE: Boolean
   ERP_FULFILMENT_DELETE: Boolean
   ERP_FULFILMENT_READ: Boolean
   ERP_FULFILMENT_UPDATE: Boolean
@@ -3430,6 +3461,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_JOIN: Boolean
   ERP_WORKSPACE_CAN_MANAGE_CHARGES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_FILES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORMS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_INVOICES: Boolean
@@ -3440,6 +3472,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_CHARGES: Boolean
   ERP_WORKSPACE_CAN_READ_CONTACTS: Boolean
+  ERP_WORKSPACE_CAN_READ_FILES: Boolean
   ERP_WORKSPACE_CAN_READ_INVOICES: Boolean
   ERP_WORKSPACE_CAN_READ_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS: Boolean
@@ -3456,6 +3489,19 @@ type UserPermissionMap {
   ERP_WORKSPACE_READ_PRICE_BOOKS: Boolean
   ERP_WORKSPACE_REMOVE_USER: Boolean
   ERP_WORKSPACE_UPDATE_USER_ROLES: Boolean
+}
+
+input UserUpsertInput {
+  auth0UserId: String
+  companyId: String
+  deleted: Boolean
+  email: String!
+  emailVerified: Boolean
+  esUserId: String
+  firstName: String!
+  lastName: String!
+  picture: String
+  username: String
 }
 
 type ValidEnterpriseDomainResult {
@@ -3543,6 +3589,8 @@ enum WorkspaceUserRole {
   charge_reader
   contact_manager
   contact_reader
+  file_manager
+  file_reader
   intake_form_submissions_manager
   intake_form_submissions_reader
   intake_forms_manager

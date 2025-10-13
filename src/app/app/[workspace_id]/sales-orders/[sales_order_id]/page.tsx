@@ -3,7 +3,8 @@
 import { graphql } from "@/graphql";
 import { SalesOrderStatus } from "@/graphql/graphql";
 import {
-  useCreatePdfFromPageAndAttachToEntityIdMutation,
+  ResourceTypes,
+  useCreatePdfFromPageAndAttachToSalesOrderMutation,
   useGetSalesOrderByIdQuery,
   useSoftDeleteSalesOrderMutation,
   useSubmitSalesOrderSalesOrderPageMutation,
@@ -46,15 +47,17 @@ import OrderItemsSection from "./OrderItemsSection";
 import SalesOrderCostForcastReport from "./SalesOrderCostForcastReport";
 
 const CREATE_PDF_FROM_PAGE_AND_ATTACH_TO_ENTITY_ID = graphql(`
-  mutation CreatePdfFromPageAndAttachToEntityId(
+  mutation CreatePdfFromPageAndAttachToSalesOrder(
     $entity_id: String!
     $path: String!
     $file_name: String!
+    $workspaceId: String!
   ) {
     createPdfFromPageAndAttachToEntityId(
       entity_id: $entity_id
       path: $path
       file_name: $file_name
+      workspaceId: $workspaceId
     ) {
       success
       error_message
@@ -216,7 +219,7 @@ export default function SalesOrderDetailPage() {
   });
 
   const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
-    useCreatePdfFromPageAndAttachToEntityIdMutation();
+    useCreatePdfFromPageAndAttachToSalesOrderMutation();
 
   // Submit Sales Order mutation
   const [submitSalesOrder, { loading: submitLoading, data: submitData, error: submitError }] =
@@ -375,6 +378,7 @@ export default function SalesOrderDetailPage() {
                               entity_id: salesOrder.id,
                               path: `print/sales-order/${workspace_id}/${sales_order_id}`,
                               file_name: fileName,
+                              workspaceId: workspace_id,
                             },
                           });
                           setCacheKey((k) => k + 1);
@@ -454,7 +458,11 @@ export default function SalesOrderDetailPage() {
                 Attached Files
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection key={`files-${cachekey}`} entityId={salesOrder.id} />
+              <AttachedFilesSection
+                key={`files-${cachekey}`}
+                entityId={salesOrder.id}
+                entityType={ResourceTypes.ErpSalesOrder}
+              />
             </Paper>
             {/* Price Forecast Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>

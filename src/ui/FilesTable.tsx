@@ -6,6 +6,7 @@ import {
   useRemoveFileFromEntityMutation,
   useRenameFileMutation,
 } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import AudiotrackIcon from "@mui/icons-material/Audiotrack";
 import CodeIcon from "@mui/icons-material/Code";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -34,8 +35,8 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import * as React from "react";
 
 graphql(`
-  query ListFilesByEntityIdTableComponent($parent_entity_id: String!) {
-    listFilesByEntityId(parent_entity_id: $parent_entity_id) {
+  query ListFilesByEntityIdTableComponent($parent_entity_id: String!, $workspace_id: String!) {
+    listFilesByEntityId(parent_entity_id: $parent_entity_id, workspace_id: $workspace_id) {
       id
       file_name
       file_size
@@ -54,6 +55,7 @@ graphql(`
       file_key
       metadata
       parent_entity_id
+      workspace_id
     }
   }
 `);
@@ -114,9 +116,14 @@ type FilesTableProps = {
 };
 
 export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProps) {
+  const workspaceId = useSelectedWorkspaceId();
   const { data, loading, error, refetch } = useListFilesByEntityIdTableComponentQuery({
-    variables: { parent_entity_id: entityId },
+    variables: {
+      parent_entity_id: entityId,
+      workspace_id: workspaceId || "",
+    },
     fetchPolicy: "cache-and-network",
+    skip: !workspaceId,
   });
 
   const [removeFile] = useRemoveFileFromEntityMutation();

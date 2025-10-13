@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import {
+  ResourceTypes,
   useDeleteProjectMutation,
   useGetProjectBasicQuery,
   useGetProjectByIdForDisplayQuery,
@@ -519,7 +520,7 @@ export default function ProjectDetailAltPage() {
                 Attached Files
               </Typography>
               <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection entityId={project.id} />
+              <AttachedFilesSection entityId={project.id} entityType={ResourceTypes.ErpProject} />
             </Paper>
             {/* Notes Section */}
             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
