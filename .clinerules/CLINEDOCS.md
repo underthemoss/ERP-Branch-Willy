@@ -11,7 +11,7 @@ This file is always read by Cline before starting any new task in this project.
 
 ### Project Overview
 
-This is a typescript project, always use typescript.
+This is a typescript project, always use typescript. Never use `any` to fix a typescript issue.
 
 This is a NextJs app router project.
 

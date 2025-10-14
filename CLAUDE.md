@@ -77,6 +77,8 @@ Use `npm run test:playwright` for testing.
 
 ### Code Quality
 
+Never use `any` to fix a typescript issue.
+
 Always run these commands to ensure code quality:
 
 - `npm run lint` - Check linting

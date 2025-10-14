@@ -986,8 +986,13 @@ type File {
   updated_at: String!
   updated_by: String!
   updated_by_user: User
-  url: String!
+  url(type: FileUrlType): String!
   workspace_id: String!
+}
+
+enum FileUrlType {
+  ATTACHMENT
+  INLINE
 }
 
 union Fulfilment = RentalFulfilment | SaleFulfilment | ServiceFulfilment
@@ -1742,6 +1747,7 @@ type Mutation {
   deleteWorkflowConfigurationById(id: ID!): Boolean
   exportPrices(priceBookId: ID!): File
   generateReferenceNumber(input: GenerateReferenceNumberInput!): GenerateReferenceNumberResult
+  getSignedReadUrl(fileId: ID!, type: FileUrlType): String
   importPrices(fileId: ID!, priceBookId: ID!): ImportPricesResult
   inviteUserToWorkspace(email: String!, roles: [WorkspaceUserRole!]!, workspaceId: String!): WorkspaceMember
   joinWorkspace(workspaceId: String!): Workspace

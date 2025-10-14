@@ -2,19 +2,24 @@
 
 import { graphql } from "@/graphql";
 import {
+  FileUrlType,
+  useGetSignedReadUrlMutation,
   useListFilesByEntityIdTableComponentQuery,
   useRemoveFileFromEntityMutation,
   useRenameFileMutation,
 } from "@/graphql/hooks";
+import { useNotification } from "@/providers/NotificationProvider";
 import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import AudiotrackIcon from "@mui/icons-material/Audiotrack";
 import CodeIcon from "@mui/icons-material/Code";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DescriptionIcon from "@mui/icons-material/Description";
+import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import ImageIcon from "@mui/icons-material/Image";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import MovieIcon from "@mui/icons-material/Movie";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import {
@@ -41,7 +46,6 @@ graphql(`
       file_name
       file_size
       mime_type
-      url
       created_at
       created_by
       created_by_user {
@@ -74,6 +78,12 @@ graphql(`
       id
       file_name
     }
+  }
+`);
+
+graphql(`
+  mutation GetSignedReadUrl($fileId: ID!, $type: FileUrlType!) {
+    getSignedReadUrl(fileId: $fileId, type: $type)
   }
 `);
 
@@ -117,6 +127,7 @@ type FilesTableProps = {
 
 export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProps) {
   const workspaceId = useSelectedWorkspaceId();
+  const { notifyError, notifySuccess } = useNotification();
   const { data, loading, error, refetch } = useListFilesByEntityIdTableComponentQuery({
     variables: {
       parent_entity_id: entityId,
@@ -128,6 +139,7 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
 
   const [removeFile] = useRemoveFileFromEntityMutation();
   const [renameFile] = useRenameFileMutation();
+  const [getSignedReadUrl] = useGetSignedReadUrlMutation();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [fileToDelete, setFileToDelete] = React.useState<{ id: string; name: string } | null>(null);
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
@@ -203,6 +215,53 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
     setNewFileName("");
   };
 
+  const handleOpenInNewTab = async (fileId: string, fileName: string) => {
+    try {
+      const result = await getSignedReadUrl({
+        variables: {
+          fileId: fileId,
+          type: FileUrlType.Inline,
+        },
+      });
+
+      if (result.data?.getSignedReadUrl) {
+        window.open(result.data.getSignedReadUrl, "_blank");
+      } else {
+        notifyError("Failed to get file URL");
+      }
+    } catch (error) {
+      console.error("Error opening file:", error);
+      notifyError("Failed to open file");
+    }
+  };
+
+  const handleDownload = async (fileId: string, fileName: string) => {
+    try {
+      const result = await getSignedReadUrl({
+        variables: {
+          fileId: fileId,
+          type: FileUrlType.Attachment,
+        },
+      });
+
+      if (result.data?.getSignedReadUrl) {
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = result.data.getSignedReadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        notifySuccess(`Downloading ${fileName}`);
+      } else {
+        notifyError("Failed to get download URL");
+      }
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      notifyError("Failed to download file");
+    }
+  };
+
   const files = data?.listFilesByEntityId ?? [];
 
   if (loading) {
@@ -234,62 +293,64 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
 
   const columns: GridColDef[] = [
     {
-      field: "file_name",
-      headerName: "Name",
-      flex: 2,
-      minWidth: 200,
+      field: "file_actions",
+      headerName: "",
+      width: 80,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
       renderCell: (params) => {
-        const file = params.row;
         return (
-          <Link
-            href={file.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            underline="hover"
-            color="primary"
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            {getFileIcon(file.mime_type)}
-            {file.file_name}
-          </Link>
+          <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", height: "100%" }}>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenInNewTab(params.row.id, params.row.file_name)}
+              color="primary"
+              title="Open in new tab"
+            >
+              <OpenInNewIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => handleDownload(params.row.id, params.row.file_name)}
+              color="primary"
+              title="Download file"
+            >
+              <DownloadIcon fontSize="small" />
+            </IconButton>
+          </Box>
         );
       },
     },
     {
-      field: "mime_type",
-      headerName: "Type",
-      flex: 1,
-      minWidth: 120,
-      valueGetter: (value) => value || "-",
+      field: "file_name",
+      headerName: "Name",
+      flex: 2,
+      minWidth: 300,
+      renderCell: (params) => {
+        const file = params.row;
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            {getFileIcon(file.mime_type)}
+            <Typography variant="body2">{file.file_name}</Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "file_size",
       headerName: "Size",
       flex: 1,
-      minWidth: 100,
       type: "string",
       align: "right",
       headerAlign: "right",
       valueGetter: (value) => (value ? formatFileSize(value) : "-"),
     },
     {
-      field: "created_by_user",
-      headerName: "Created By",
-      flex: 1,
-      minWidth: 180,
-      valueGetter: (value: any) => {
-        if (!value) return "-";
-        const firstName = value?.firstName ?? "";
-        const lastName = value?.lastName ?? "";
-        const fullName = `${firstName} ${lastName}`.trim();
-        return fullName || "-";
-      },
-    },
-    {
       field: "created_at",
       headerName: "Created",
       flex: 1,
-      minWidth: 160,
+      minWidth: 130,
       valueGetter: (value) => {
         const date = value ? new Date(value) : null;
         return date
