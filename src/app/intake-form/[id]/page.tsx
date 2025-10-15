@@ -1,8 +1,8 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { RequestType } from "@/graphql/graphql";
 import { useCreateIntakeFormSubmissionMutation, useGetIntakeFormByIdQuery } from "@/graphql/hooks";
+import { useAuth0 } from "@auth0/auth0-react";
 import {
   Box,
   CircularProgress,
@@ -149,6 +149,7 @@ export default function IntakeFormPage() {
   const formId = params.id as string; // This is the intake form ID from the URL
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { loginWithRedirect, user } = useAuth0();
 
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
@@ -235,6 +236,32 @@ export default function IntakeFormPage() {
           </Paper>
         </Container>
       );
+    }
+
+    if (formError && formError.message.includes("permission")) {
+      if (user) {
+        return (
+          // User is logged in but doesn't have access
+          <Container maxWidth="md" sx={{ py: 4 }}>
+            <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
+              <Typography variant="h6" color="error" gutterBottom>
+                Access Denied
+              </Typography>
+              <Typography>
+                You do not have permission to access this intake form. Please contact the form
+                administrator for access.
+              </Typography>
+            </Paper>
+          </Container>
+        );
+      }
+      // redirect to login
+      loginWithRedirect({
+        appState: {
+          returnTo: window.location.pathname,
+        },
+      });
+      return null;
     }
 
     if (formError || (!loadingForm && !intakeForm)) {

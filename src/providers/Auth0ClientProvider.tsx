@@ -1,6 +1,7 @@
 "use client";
 
 import { Auth0Provider } from "@auth0/auth0-react";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { JwtOverrideProvider } from "./JwtOverrideContext";
 
@@ -11,6 +12,7 @@ export const Auth0ClientProvider: React.FC<{
   audience: string;
   children: React.ReactNode;
 }> = ({ children, clientId, domain, redirect, audience }) => {
+  const router = useRouter();
   // Parse JWT from URL hash: #jwt=...
   const jwt = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -44,6 +46,9 @@ export const Auth0ClientProvider: React.FC<{
         authorizationParams={{
           redirect_uri: redirectUri,
           audience,
+        }}
+        onRedirectCallback={(appState?: { returnTo?: string }) => {
+          router.push(appState?.returnTo || "/");
         }}
       >
         {children}

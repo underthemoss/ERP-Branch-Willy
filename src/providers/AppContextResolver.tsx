@@ -101,6 +101,11 @@ export function AppContextResolver({ children }: AppContextResolverProps) {
 
   // Check if user is platform admin accessing admin routes
   const isAdminRoute = pathname?.startsWith("/admin");
+  const isIntakeFormRoute = pathname?.startsWith("/intake-form");
+  if (isIntakeFormRoute) {
+    // Bypass all checks and render children directly for intake form routes
+    return <>{children}</>;
+  }
   const isPlatformAdminOnAdminRoute = user?.isPlatformAdmin && isAdminRoute;
 
   // Skip workspace selection for platform admins on admin routes
