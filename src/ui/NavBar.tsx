@@ -8,6 +8,7 @@ import {
 import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckIcon from "@mui/icons-material/Check";
@@ -133,6 +134,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <EventNoteIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
       testId: "nav-rental-fulfillment",
+    },
+    {
+      text: "T3 Rentals",
+      href: `/app/${currentWorkspace?.id}/t3-rentals`,
+      icon: <AssignmentIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/t3-rentals`,
+      testId: "nav-t3-rentals",
     },
     {
       text: "Invoices",
