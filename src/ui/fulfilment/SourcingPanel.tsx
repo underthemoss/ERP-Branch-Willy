@@ -8,6 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactPageOutlinedIcon from "@mui/icons-material/ContactPageOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -33,6 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { addDays, differenceInCalendarDays, format } from "date-fns";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { InventoryFieldsFragment as InventoryItem } from "../inventory/api";
@@ -323,7 +325,7 @@ export function SourcingPanel({
 
       {/* Combined Fulfilment Details and Rental Duration Card */}
       <Box sx={{ px: 2, pb: 2 }}>
-        <FulfilmentDetailsCard fulfilment={selectedFulfilment} />
+        <FulfilmentDetailsCard fulfilment={selectedFulfilment} workspaceId={workspaceId} />
       </Box>
 
       {/* Sales Order Section */}
@@ -523,8 +525,10 @@ export function SourcingPanel({
 
 function FulfilmentDetailsCard({
   fulfilment,
+  workspaceId,
 }: {
   fulfilment: InventoryAssignment_RentalFulFulfilment;
+  workspaceId: string;
 }) {
   const assignmentStart = new Date(fulfilment.rentalStartDate);
   const assignmentEnd = new Date(
@@ -569,6 +573,7 @@ function FulfilmentDetailsCard({
           backgroundColor: "#e3f2fd",
           borderRadius: 1,
           border: "1px solid #90caf9",
+          mb: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
@@ -633,6 +638,43 @@ function FulfilmentDetailsCard({
           </Box>
         </Box>
       </Box>
+
+      {/* View Details Link */}
+      <Link
+        href={`/app/${workspaceId}/fulfillment/${fulfilment.id}`}
+        style={{ textDecoration: "none" }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            p: 1,
+            borderRadius: 1,
+            backgroundColor: "transparent",
+            border: "1px solid #1976d2",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            "&:hover": {
+              backgroundColor: "rgba(25, 118, 210, 0.08)",
+              transform: "translateY(-1px)",
+              boxShadow: 1,
+            },
+          }}
+        >
+          <InfoOutlinedIcon sx={{ fontSize: 18, color: "#1976d2" }} />
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#1976d2",
+              fontWeight: 500,
+            }}
+          >
+            View Full Details
+          </Typography>
+        </Box>
+      </Link>
     </Box>
   );
 }
