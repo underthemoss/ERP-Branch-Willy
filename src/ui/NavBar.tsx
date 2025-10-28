@@ -120,13 +120,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
       testId: "nav-purchase-order",
     },
-    {
-      text: "Fulfillment",
-      href: `/app/${currentWorkspace?.id}/fulfillment`,
-      icon: <LocalShippingIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/fulfillment`,
-      testId: "nav-fulfillment",
-    },
+    // {
+    //   text: "Sale Fulfillments",
+    //   href: `/app/${currentWorkspace?.id}/fulfillment`,
+    //   icon: <LocalShippingIcon fontSize="small" />,
+    //   selected: pathname === `/app/${currentWorkspace?.id}/fulfillment`,
+    //   testId: "nav-fulfillment",
+    // },
     {
       text: "Rental Fulfillments",
       href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
