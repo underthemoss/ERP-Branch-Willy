@@ -232,11 +232,11 @@ export default function WorkspaceSettingsPage() {
 
   // Load brand data when component mounts
   useEffect(() => {
-    if (userDomain) {
-      getBrandByDomain({ variables: { domain: userDomain } });
-      validateEnterpriseDomain({ variables: { domain: userDomain } });
+    if (currentWorkspace?.domain) {
+      getBrandByDomain({ variables: { domain: currentWorkspace.domain } });
+      validateEnterpriseDomain({ variables: { domain: currentWorkspace.domain } });
     }
-  }, [userDomain, getBrandByDomain, validateEnterpriseDomain]);
+  }, [currentWorkspace, getBrandByDomain, validateEnterpriseDomain]);
 
   const handleSaveSettings = async () => {
     if (!currentWorkspace?.id) return;
@@ -849,7 +849,7 @@ export default function WorkspaceSettingsPage() {
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Domain color={accessType === "domain" ? "primary" : "action"} />
                           <Typography variant="subtitle1">
-                            Allow anyone from @{userDomain || "yourdomain.com"}
+                            Allow anyone from @{currentWorkspace?.domain || "yourdomain.com"}
                           </Typography>
                           {domainValidationLoading && <CircularProgress size={16} sx={{ ml: 1 }} />}
                           {!domainValidationLoading && isDomainValid && (
