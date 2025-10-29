@@ -22,6 +22,15 @@ import {
 
 const DEV_TEST_CATEGORY_ID = "e2299185-e836-475d-bdf7-337be6c8f2e3";
 
+// Reusable filter function for categories
+function shouldIncludeCategory(category: PimCategoryFields): boolean {
+  return (
+    category.id !== DEV_TEST_CATEGORY_ID &&
+    category.name !== "Unknown" &&
+    !category.path?.includes("Unknown")
+  );
+}
+
 type TreeViewNode = Record<
   string,
   {
@@ -385,7 +394,7 @@ export function PimCategoriesTreeView(props: {
 
         const categoryItems = data?.listPimCategories?.items || [];
         const treeItems: PimCategoryTreeViewItem[] = categoryItems
-          .filter((category) => category.id !== DEV_TEST_CATEGORY_ID)
+          .filter(shouldIncludeCategory)
           .map((category) => ({
             id: category.id,
             label: category.name.replace("(Do not touch)", "").replace("Experiment", "") ?? "",
@@ -489,8 +498,14 @@ export function PimCategoriesTreeView(props: {
             })
           : Promise.resolve({ data: { listPimProducts: { items: [] } } }),
       ]);
+
+      // Apply the same filter to search results
+      const filteredCategories = (categoriesData?.data?.listPimCategories?.items || []).filter(
+        shouldIncludeCategory,
+      );
+
       const items = getTreeItems({
-        pimCategories: categoriesData?.data?.listPimCategories?.items || [],
+        pimCategories: filteredCategories,
         pimProducts: productsData?.data?.listPimProducts?.items || [],
       });
       setSearchResults(items);
