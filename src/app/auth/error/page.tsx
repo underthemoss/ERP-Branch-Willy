@@ -1,6 +1,7 @@
 "use client";
 
-import { Home, Refresh, Warning } from "@mui/icons-material";
+import { useAuth0 } from "@auth0/auth0-react";
+import { Home, Logout, Refresh, Warning } from "@mui/icons-material";
 import { Alert, Box, Button, Typography } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import { useEffect, useState } from "react";
 export default function Page() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { logout } = useAuth0();
   const [errorDetails, setErrorDetails] = useState<{
     error?: string;
     error_description?: string;
@@ -35,13 +37,19 @@ export default function Page() {
     router.push("/");
   };
 
+  const handleLogout = () => {
+    logout({ logoutParams: { returnTo: window.location.origin } });
+  };
+
   // Determine the user-friendly error message
   const getErrorMessage = () => {
     const { error, error_description } = errorDetails;
 
+    console.log(errorDetails);
+
     if (error_description) {
       // Check for specific error patterns
-      if (error_description.includes("USER role")) {
+      if (error === "access_denied") {
         return "You don't have the necessary permissions to access this application. Please contact your administrator to request access.";
       }
       if (error_description.includes("consent_required")) {
@@ -164,6 +172,19 @@ export default function Page() {
             }}
           >
             Go to Home
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="large"
+            color="error"
+            startIcon={<Logout />}
+            onClick={handleLogout}
+            sx={{
+              minWidth: 150,
+            }}
+          >
+            Logout
           </Button>
         </Box>
 
