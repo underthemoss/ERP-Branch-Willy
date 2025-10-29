@@ -11,6 +11,7 @@ import {
   IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import React from "react";
@@ -71,12 +72,16 @@ const LineItemTypeStep: React.FC<LineItemTypeStepProps> = ({
       label: "Rental",
       description: "Rent the equipment at a daily, weekly, or monthly rate.",
       icon: <AutorenewIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
+      disabled: false,
+      tooltipText: "",
     },
     {
       key: "PURCHASE" as const,
       label: "Purchase",
       description: "Buy outright — ownership passes to the buyer.",
       icon: <SellOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
+      disabled: true,
+      tooltipText: "Coming soon",
     },
   ];
 
@@ -85,45 +90,74 @@ const LineItemTypeStep: React.FC<LineItemTypeStepProps> = ({
       <DialogTitle sx={{ pb: 0 }}>Add new item</DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Stack spacing={2}>
-          {transactionOptions.map((opt) => (
-            <Paper
-              key={opt.key}
-              variant="outlined"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                p: 2,
-                cursor: "pointer",
-                borderColor: lineItem.type === opt.key ? "primary.main" : "primary.light",
-                bgcolor: lineItem.type === opt.key ? "action.selected" : "transparent",
-                "&:hover": {
-                  boxShadow: 2,
-                  borderColor: "primary.main",
-                  bgcolor: lineItem.type === opt.key ? "action.selected" : "action.hover",
-                },
-              }}
-              onClick={() => handleTypeSelect(opt.key)}
-              tabIndex={0}
-            >
-              <Box sx={{ mr: 2 }}>{opt.icon}</Box>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography fontWeight={600}>{opt.label}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {opt.description}
-                </Typography>
-              </Box>
-              <IconButton
-                edge="end"
-                size="small"
+          {transactionOptions.map((opt) => {
+            const paperContent = (
+              <Paper
+                key={opt.key}
+                variant="outlined"
                 sx={{
-                  color: "grey.500",
-                  pointerEvents: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  cursor: opt.disabled ? "not-allowed" : "pointer",
+                  borderColor: opt.disabled
+                    ? "grey.300"
+                    : lineItem.type === opt.key
+                      ? "primary.main"
+                      : "primary.light",
+                  bgcolor: opt.disabled
+                    ? "grey.50"
+                    : lineItem.type === opt.key
+                      ? "action.selected"
+                      : "transparent",
+                  opacity: opt.disabled ? 0.6 : 1,
+                  "&:hover": opt.disabled
+                    ? {}
+                    : {
+                        boxShadow: 2,
+                        borderColor: "primary.main",
+                        bgcolor: lineItem.type === opt.key ? "action.selected" : "action.hover",
+                      },
                 }}
+                onClick={() => !opt.disabled && handleTypeSelect(opt.key)}
+                tabIndex={opt.disabled ? -1 : 0}
               >
-                <ArrowForwardIosIcon />
-              </IconButton>
-            </Paper>
-          ))}
+                <Box sx={{ mr: 2, opacity: opt.disabled ? 0.5 : 1 }}>{opt.icon}</Box>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography
+                    fontWeight={600}
+                    color={opt.disabled ? "text.disabled" : "text.primary"}
+                  >
+                    {opt.label}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color={opt.disabled ? "text.disabled" : "text.secondary"}
+                  >
+                    {opt.description}
+                  </Typography>
+                </Box>
+                <IconButton
+                  edge="end"
+                  size="small"
+                  sx={{
+                    color: opt.disabled ? "grey.300" : "grey.500",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <ArrowForwardIosIcon />
+                </IconButton>
+              </Paper>
+            );
+
+            return opt.disabled && opt.tooltipText ? (
+              <Tooltip key={opt.key} title={opt.tooltipText} placement="top" arrow>
+                <Box>{paperContent}</Box>
+              </Tooltip>
+            ) : (
+              paperContent
+            );
+          })}
         </Stack>
       </DialogContent>
       <Footer nextEnabled={!!lineItem.type} onNext={onNext} onClose={onClose} isFirstStep={true} />

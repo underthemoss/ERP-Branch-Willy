@@ -69,7 +69,7 @@ const transactionOptions: {
     label: "Sale",
     description: "Purchase outright — ownership passes to the buyer.",
     icon: <SellOutlinedIcon fontSize="large" sx={{ color: "#5B6B8C" }} />,
-    disabled: false,
+    disabled: true,
   },
   {
     key: "transfer",
@@ -136,7 +136,7 @@ const PurchaseOrderTransactionTypeSelectDialog: React.FC<
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 0 }}>Add new item</DialogTitle>
+      <DialogTitle sx={{ pb: 0 }}>Add New Item</DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Start by selecting the line-item&apos;s transaction type; you&apos;ll specify products and
@@ -192,7 +192,7 @@ const PurchaseOrderTransactionTypeSelectDialog: React.FC<
           color="text.secondary"
           sx={{ mt: 2, display: "block", textAlign: "left" }}
         >
-          Feature not yet available—internal transfers are on the roadmap.
+          Feature not yet available; sale and internal transfers are on the roadmap.
         </Typography>
       </DialogContent>
       <DialogActions>
