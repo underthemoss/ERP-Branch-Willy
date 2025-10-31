@@ -15,12 +15,12 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
-import { NewLineItem } from "../../page";
+import { LineItem } from "../../page";
 import { StepFooterComponent } from "./AddLineItemDialog";
 
 interface LineItemTypeStepProps {
-  lineItem: Partial<NewLineItem>;
-  onUpdate: (updates: Partial<NewLineItem>) => void;
+  lineItem: Partial<LineItem>;
+  onUpdate: (updates: Partial<LineItem>) => void;
   Footer: StepFooterComponent;
   onNext: () => void;
   onClose: () => void;

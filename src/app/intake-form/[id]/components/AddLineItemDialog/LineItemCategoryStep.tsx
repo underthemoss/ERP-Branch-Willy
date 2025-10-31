@@ -11,12 +11,12 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
-import { NewLineItem } from "../../page";
+import { LineItem } from "../../page";
 import { StepFooterComponent } from "./AddLineItemDialog";
 
 interface LineItemCategoryStepProps {
-  lineItem: Partial<NewLineItem>;
-  onUpdate: (updates: Partial<NewLineItem>) => void;
+  lineItem: Partial<LineItem>;
+  onUpdate: (updates: Partial<LineItem>) => void;
   Footer: StepFooterComponent;
   onNext: () => void;
   onBack: () => void;

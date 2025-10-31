@@ -17,12 +17,12 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import React, { useState } from "react";
-import { NewLineItem } from "../../page";
+import { LineItem } from "../../page";
 import { StepFooterComponent } from "./AddLineItemDialog";
 
 interface LineItemDeliveryStepProps {
-  lineItem: Partial<NewLineItem>;
-  onUpdate: (updates: Partial<NewLineItem>) => void;
+  lineItem: Partial<LineItem>;
+  onUpdate: (updates: Partial<LineItem>) => void;
   Footer: StepFooterComponent;
   onNext: () => void;
   onBack: () => void;

@@ -836,6 +836,7 @@ input CreateRentalSalesOrderLineItemInput {
   delivery_date: String
   delivery_location: String
   delivery_method: DeliveryMethod
+  intake_form_submission_line_item_id: String
   lineitem_status: LineItemStatus
   off_rent_date: String
   price_id: String
@@ -886,6 +887,7 @@ input CreateSaleSalesOrderLineItemInput {
   delivery_date: String
   delivery_location: String
   delivery_method: DeliveryMethod
+  intake_form_submission_line_item_id: String
   lineitem_status: LineItemStatus
   price_id: String
   sales_order_id: String!
@@ -1123,8 +1125,12 @@ type IntakeFormLineItem {
   deliveryNotes: String
   description: String!
   durationInDays: Int!
+  fulfilmentId: String
   id: ID!
+  inventoryReservations: [InventoryReservation!]
+  pimCategory: PimCategory
   pimCategoryId: String!
+  price: Price
   priceId: String
   quantity: Int!
   rentalEndDate: DateTime
@@ -1183,6 +1189,7 @@ type IntakeFormSubmission {
   phone: String
   purchaseOrderId: String
   purchaseOrderNumber: String
+  salesOrder: SubmissionSalesOrder
   salesOrderId: String
   status: IntakeFormSubmissionStatus!
   submittedAt: DateTime
@@ -1635,6 +1642,16 @@ type ListRentalFulfilmentsResult {
   page: PaginationInfo!
 }
 
+input ListRentalViewsPageInput {
+  number: Int = 1
+  size: Int = 10
+}
+
+type ListRentalViewsResult {
+  items: [RentalMaterializedView!]!
+  page: PaginationInfo!
+}
+
 type ListTransactionResult {
   items: [Transaction!]!
   page: PaginationInfo!
@@ -1911,6 +1928,7 @@ enum PermissionType {
   ERP_FILE_READ
   ERP_FILE_UPDATE
   ERP_FULFILMENT_DELETE
+  ERP_FULFILMENT_MANAGE_RENTAL_PERIOD
   ERP_FULFILMENT_READ
   ERP_FULFILMENT_UPDATE
   ERP_INTAKE_FORM_CREATE_SUBMISSION
@@ -1931,6 +1949,7 @@ enum PermissionType {
   ERP_PROJECT_UPDATE
   ERP_PURCHASE_ORDER_READ
   ERP_PURCHASE_ORDER_UPDATE
+  ERP_SALES_ORDER_PORTAL_ACCESS
   ERP_SALES_ORDER_READ
   ERP_SALES_ORDER_UPDATE
   ERP_WORKSPACE_ADD_USER
@@ -2294,13 +2313,14 @@ enum PurchaseOrderStatus {
 type Query {
   """Admin operations (Admin only)"""
   admin: AdminQueryNamespace
-  currentUser: JWTPayload
+  currentUser: JWTPayload @deprecated(reason: "use getCurrentUser instead")
   getBrandByDomain(domain: String!): Brand
   getBrandById(brandId: String!): Brand
   getBrandsByIds(brandIds: [String!]!): [Brand]
   getBulkSearchDocumentsById(ids: [String!]!): [SearchDocument]!
   getContactById(id: ID!): Contact
   getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
+  getCurrentUser: User
   getDefaultTemplates: [ReferenceNumberTemplate!]!
   getFulfilmentById(id: ID!): Fulfilment
 
@@ -2352,10 +2372,13 @@ type Query {
   listIntakeFormSubmissionLineItems(submissionId: String!): [IntakeFormLineItem!]!
 
   """List all intake form submissions for a workspace with pagination"""
-  listIntakeFormSubmissions(excludeWithSalesOrder: Boolean, limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
+  listIntakeFormSubmissions(excludeWithSalesOrder: Boolean, intakeFormId: String, limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
 
   """List all intake forms for a workspace with pagination"""
   listIntakeForms(limit: Int, page: Int, workspaceId: String!): IntakeFormPage
+
+  """List all intake forms that a user has access to with pagination"""
+  listIntakeFormsForUser(limit: Int, page: Int): IntakeFormPage
   listInventory(query: ListInventoryQuery): InventoryResponse!
   listInventoryGroupedByPimCategoryId(query: ListInventoryQuery): InventoryGroupedByCategoryResponse!
   listInventoryReservations(filter: ListInventoryReservationsFilter, page: ListInventoryPage): InventoryReservationsResponse!
@@ -2383,6 +2406,7 @@ type Query {
   listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
   listRentalFulfilments(filter: ListRentalFulfilmentsFilter!, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
+  listRentalViews(filter: RentalViewFilterInput, page: ListRentalViewsPageInput): ListRentalViewsResult
 
   """
   Get all resource map entries filtered by tenant_id (from the calling user company id)
@@ -2499,6 +2523,14 @@ type RentalFulfilment implements FulfilmentBase {
   workspaceId: ID!
 }
 
+type RentalMaterializedView {
+  asset: RentalViewAsset
+  details: RentalViewDetails
+  order: RentalViewOrder
+  rentalId: String!
+  status: RentalViewStatus
+}
+
 type RentalPrice {
   createdAt: DateTime!
   createdBy: String!
@@ -2577,6 +2609,12 @@ type RentalSalesOrderLineItem {
   delivery_location: String
   delivery_method: DeliveryMethod
   id: String!
+
+  """
+  The intake form submission line item associated with this sales order line item
+  """
+  intakeFormSubmissionLineItem: IntakeFormLineItem
+  intake_form_submission_line_item_id: String
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
   off_rent_date: String
@@ -2619,6 +2657,178 @@ type RentalTransaction implements BaseTransaction {
   updatedAt: DateTime
   workflowId: ID
   workspaceId: ID
+}
+
+type RentalViewAsset {
+  assetId: String
+  class: RentalViewAssetClass
+  company: RentalViewAssetCompany
+  details: RentalViewAssetDetails
+  groups: [RentalViewAssetGroup]
+  inventoryBranch: RentalViewAssetBranch
+  keypad: [String]
+  make: RentalViewAssetMake
+  model: RentalViewAssetModel
+  mspBranch: RentalViewAssetBranch
+  photo: RentalViewAssetPhoto
+  rspBranch: RentalViewAssetBranch
+  tracker: RentalViewAssetTracker
+  tspCompanies: [RentalViewAssetTspCompany]
+  type: RentalViewAssetType
+}
+
+type RentalViewAssetBranch {
+  companyId: String
+  companyName: String
+  description: String
+  id: String
+  name: String
+}
+
+type RentalViewAssetClass {
+  description: String
+  id: String
+  name: String
+}
+
+type RentalViewAssetCompany {
+  id: String
+  name: String
+}
+
+type RentalViewAssetDetails {
+  assetId: String
+  cameraId: String
+  customName: String
+  description: String
+  driverName: String
+  model: String
+  name: String
+  photoId: String
+  serialNumber: String
+  trackerId: String
+  vin: String
+  year: String
+}
+
+type RentalViewAssetGroup {
+  companyId: String
+  companyName: String
+  id: String
+  name: String
+}
+
+type RentalViewAssetMake {
+  id: String
+  name: String
+}
+
+type RentalViewAssetModel {
+  id: String
+  name: String
+}
+
+type RentalViewAssetPhoto {
+  filename: String
+  photoId: String
+}
+
+type RentalViewAssetTracker {
+  companyId: String
+  created: String
+  deviceSerial: String
+  id: String
+  trackerTypeId: String
+  updated: String
+  vendorId: String
+}
+
+type RentalViewAssetTspCompany {
+  companyId: String
+  companyName: String
+}
+
+type RentalViewAssetType {
+  id: String
+  name: String
+}
+
+type RentalViewDetails {
+  amountReceived: String
+  assetId: String
+  borrowerUserId: String
+  dateCreated: String
+  deleted: String
+  deliveryCharge: String
+  deliveryInstructions: String
+  deliveryRequired: String
+  dropOffDeliveryId: String
+  dropOffDeliveryRequired: String
+  endDate: String
+  endDateEstimated: String
+  equipmentClassId: String
+  externalId: String
+  hasReRent: String
+  inventoryProductId: String
+  inventoryProductName: String
+  inventoryProductNameHistorical: String
+  isBelowFloorRate: String
+  isFlatMonthlyRate: String
+  isFlexibleRate: String
+  jobDescription: String
+  lienNoticeSent: String
+  offRentDateRequested: String
+  oneTimeCharge: String
+  orderId: String
+  partTypeId: String
+  price: String
+  pricePerDay: String
+  pricePerHour: String
+  pricePerMonth: String
+  pricePerWeek: String
+  purchasePrice: String
+  quantity: String
+  rateTypeId: String
+  rentalId: String
+  rentalPricingStructureId: String
+  rentalProtectionPlanId: String
+  rentalPurchaseOptionId: String
+  rentalStatusId: String
+  rentalTypeId: String
+  returnCharge: String
+  returnDeliveryId: String
+  returnDeliveryRequired: String
+  startDate: String
+  startDateEstimated: String
+  taxable: String
+}
+
+input RentalViewFilterInput {
+  assetId: String
+  borrowerUserId: String
+  orderId: String
+  rentalStatusId: String
+  startDateFrom: String
+  startDateTo: String
+}
+
+type RentalViewOrder {
+  companyId: String
+  companyName: String
+  dateCreated: String
+  dateUpdated: String
+  orderId: String
+  orderStatusId: String
+  orderStatusName: String
+  orderedByEmail: String
+  orderedByFirstName: String
+  orderedByLastName: String
+  orderedByUserId: String
+}
+
+type RentalViewStatus {
+  id: String
+  name: String
 }
 
 enum RequestType {
@@ -2793,6 +3003,12 @@ type SaleSalesOrderLineItem {
   delivery_location: String
   delivery_method: DeliveryMethod
   id: String!
+
+  """
+  The intake form submission line item associated with this sales order line item
+  """
+  intakeFormSubmissionLineItem: IntakeFormLineItem
+  intake_form_submission_line_item_id: String
   lineitem_status: LineItemStatus
   lineitem_type: LineItemType!
   price: Price
@@ -2840,6 +3056,7 @@ type SalesOrder {
 
   """The intake form submission associated with this sales order"""
   intakeFormSubmission: IntakeFormSubmission
+  intake_form_submission_id: String
   line_items: [SalesOrderLineItem]
 
   """Pricing summary for the sales order"""
@@ -2859,6 +3076,7 @@ type SalesOrder {
 
 input SalesOrderInput {
   buyer_id: String!
+  intake_form_submission_id: String
   project_id: String
   purchase_order_number: String
   sales_order_number: String
@@ -3107,6 +3325,21 @@ type SpiceDBSubjectReference {
   id: String!
   relation: String
   type: String!
+}
+
+type SubmissionSalesOrder {
+  created_at: String!
+  deleted_at: DateTime
+  id: String!
+  project: IntakeFormProject
+  project_id: String
+  purchase_order_number: String
+  sales_order_number: String!
+
+  """Status of the sales order"""
+  status: SalesOrderStatus!
+  updated_at: String!
+  workspace_id: String
 }
 
 type Subscription {
@@ -3441,6 +3674,7 @@ type UserPermissionMap {
   ERP_FILE_READ: Boolean
   ERP_FILE_UPDATE: Boolean
   ERP_FULFILMENT_DELETE: Boolean
+  ERP_FULFILMENT_MANAGE_RENTAL_PERIOD: Boolean
   ERP_FULFILMENT_READ: Boolean
   ERP_FULFILMENT_UPDATE: Boolean
   ERP_INTAKE_FORM_CREATE_SUBMISSION: Boolean
@@ -3461,6 +3695,7 @@ type UserPermissionMap {
   ERP_PROJECT_UPDATE: Boolean
   ERP_PURCHASE_ORDER_READ: Boolean
   ERP_PURCHASE_ORDER_UPDATE: Boolean
+  ERP_SALES_ORDER_PORTAL_ACCESS: Boolean
   ERP_SALES_ORDER_READ: Boolean
   ERP_SALES_ORDER_UPDATE: Boolean
   ERP_WORKSPACE_ADD_USER: Boolean

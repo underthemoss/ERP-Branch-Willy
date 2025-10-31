@@ -11,19 +11,13 @@ import {
   Divider,
   Grid,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { differenceInDays } from "date-fns";
 import React from "react";
-import { FormData } from "../page";
+import { FormData, LineItem } from "../page";
+import LineItemsTable from "./LineItemsTable";
 
 interface RequestConfirmationProps {
   projectId: string;
@@ -32,6 +26,7 @@ interface RequestConfirmationProps {
   companyName?: string;
   workspaceLogo?: string | null;
   formData: FormData;
+  lineItems?: LineItem[];
   submissionStatus?: "DRAFT" | "SUBMITTED";
   onConfirm: () => void;
   onNewRequest: () => void;
@@ -46,6 +41,7 @@ export default function RequestConfirmation({
   companyName,
   workspaceLogo,
   formData,
+  lineItems,
   submissionStatus = "DRAFT",
   onConfirm,
   onNewRequest,
@@ -174,112 +170,7 @@ export default function RequestConfirmation({
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Request Items
               </Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Start Date</TableCell>
-                      <TableCell>End Date</TableCell>
-                      <TableCell align="center">Quantity</TableCell>
-                      <TableCell>Delivery</TableCell>
-                      <TableCell>Cost</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {/* Display new line items if available, otherwise fall back to old format */}
-                    {(formData.newLineItems && formData.newLineItems.length > 0
-                      ? formData.newLineItems
-                      : formData.lineItems
-                    ).map((item, index) => {
-                      // Check if it's a new line item format
-                      if ("pimCategoryId" in item) {
-                        const newItem = item as any; // NewLineItem type
-                        const description = newItem.isCustomProduct
-                          ? newItem.customProductName || "Custom Product"
-                          : newItem.priceName || newItem.pimCategoryName || "Product";
-
-                        const startDate =
-                          newItem.type === "RENTAL"
-                            ? newItem.rentalStartDate
-                            : newItem.deliveryDate;
-
-                        const endDate = newItem.type === "RENTAL" ? newItem.rentalEndDate : null;
-
-                        const getCostDisplay = () => {
-                          if (newItem.isCustomProduct) return "Custom pricing";
-
-                          if (newItem.type === "PURCHASE" && newItem.unitCostInCents) {
-                            const total = (newItem.unitCostInCents * newItem.quantity) / 100;
-                            return `$${total.toFixed(2)}`;
-                          }
-
-                          if (
-                            newItem.type === "RENTAL" &&
-                            newItem.rentalDuration &&
-                            newItem.pricePerDayInCents
-                          ) {
-                            const total =
-                              (newItem.pricePerDayInCents *
-                                newItem.rentalDuration *
-                                newItem.quantity) /
-                              100;
-                            return `$${total.toFixed(2)} (est.)`;
-                          }
-
-                          return "-";
-                        };
-
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>
-                              {description}
-                              {newItem.isCustomProduct && (
-                                <Typography variant="caption" display="block" color="info.main">
-                                  Custom Product
-                                </Typography>
-                              )}
-                            </TableCell>
-                            <TableCell>{newItem.type}</TableCell>
-                            <TableCell>
-                              {startDate ? new Date(startDate).toLocaleDateString() : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {endDate ? new Date(endDate).toLocaleDateString() : "-"}
-                            </TableCell>
-                            <TableCell align="center">{newItem.quantity}</TableCell>
-                            <TableCell>{newItem.deliveryMethod || "-"}</TableCell>
-                            <TableCell>{getCostDisplay()}</TableCell>
-                          </TableRow>
-                        );
-                      } else {
-                        // Old line item format
-                        const oldItem = item as any;
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>{oldItem.description}</TableCell>
-                            <TableCell>{oldItem.type}</TableCell>
-                            <TableCell>
-                              {new Date(oldItem.startDate).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>-</TableCell>
-                            <TableCell align="center">{oldItem.quantity}</TableCell>
-                            <TableCell>-</TableCell>
-                            <TableCell>
-                              {oldItem.type === "RENTAL" &&
-                              oldItem.rentalStartDate &&
-                              oldItem.rentalEndDate
-                                ? `${differenceInDays(new Date(oldItem.rentalEndDate), new Date(oldItem.rentalStartDate))} days`
-                                : "-"}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      }
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <LineItemsTable lineItems={lineItems || formData.lineItems} showActions={false} />
             </Box>
 
             {/* Action Buttons */}

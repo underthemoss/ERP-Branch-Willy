@@ -1,15 +1,14 @@
 "use client";
 
-import { graphql } from "@/graphql";
 import { ContactType } from "@/graphql/graphql";
+import { useContactSelectorListQuery } from "@/graphql/hooks";
 import {
-  useContactSelectorListQuery,
   useCreateIntakeFormMutation,
   useDeleteIntakeFormMutation,
   useListIntakeFormsQuery,
   useListIntakeFormSubmissionsQuery,
   useUpdateIntakeFormMutation,
-} from "@/graphql/hooks";
+} from "@/ui/intake-forms/api";
 import SubmissionsTable from "@/ui/intake-forms/SubmissionsTable";
 import { useListPriceBooksQuery } from "@/ui/prices/api";
 import ProjectSelector from "@/ui/ProjectSelector";
@@ -54,125 +53,6 @@ import { createFilterOptions } from "@mui/material/Autocomplete";
 import { DataGridPremium, GridColDef, GridRenderCellParams } from "@mui/x-data-grid-premium";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState } from "react";
-
-// GraphQL queries and mutations
-graphql(`
-  query ListIntakeForms($workspaceId: String!) {
-    listIntakeForms(workspaceId: $workspaceId) {
-      items {
-        id
-        workspaceId
-        projectId
-        project {
-          id
-          name
-          projectCode
-        }
-        workspace {
-          id
-          name
-          logoUrl
-          bannerImageUrl
-        }
-        pricebook {
-          id
-          name
-        }
-        isActive
-        createdAt
-        updatedAt
-        isPublic
-        sharedWithUsers {
-          id
-          email
-        }
-      }
-      page {
-        number
-        size
-        totalItems
-        totalPages
-      }
-    }
-  }
-`);
-
-graphql(`
-  mutation CreateIntakeForm($input: IntakeFormInput!) {
-    createIntakeForm(input: $input) {
-      id
-      workspaceId
-      projectId
-      isActive
-      createdAt
-      updatedAt
-    }
-  }
-`);
-
-graphql(`
-  query ListIntakeFormSubmissions($workspaceId: String!, $excludeWithSalesOrder: Boolean) {
-    listIntakeFormSubmissions(
-      workspaceId: $workspaceId
-      excludeWithSalesOrder: $excludeWithSalesOrder
-    ) {
-      items {
-        id
-        formId
-        workspaceId
-        name
-        email
-        createdAt
-        phone
-        companyName
-        purchaseOrderNumber
-        salesOrderId
-        purchaseOrderId
-        lineItems {
-          description
-          startDate
-          type
-          durationInDays
-          quantity
-          rentalStartDate
-          rentalEndDate
-        }
-      }
-      page {
-        number
-        size
-        totalItems
-        totalPages
-      }
-    }
-  }
-`);
-
-graphql(`
-  mutation DeleteIntakeForm($id: String!) {
-    deleteIntakeForm(id: $id) {
-      id
-    }
-  }
-`);
-
-graphql(`
-  mutation UpdateIntakeForm($id: String!, $input: UpdateIntakeFormInput!) {
-    updateIntakeForm(id: $id, input: $input) {
-      id
-      workspaceId
-      projectId
-      isActive
-      createdAt
-      updatedAt
-      isPublic
-      sharedWithUsers {
-        id
-        email
-      }
-    }
-  }
-`);
 
 interface IntakeForm {
   id: string;

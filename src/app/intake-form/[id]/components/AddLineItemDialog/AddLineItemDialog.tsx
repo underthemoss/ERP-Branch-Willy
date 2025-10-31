@@ -2,7 +2,7 @@
 
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { NewLineItem } from "../../page";
+import { LineItem } from "../../page";
 import LineItemCategoryStep from "./LineItemCategoryStep";
 import LineItemDeliveryStep from "./LineItemDeliveryStep";
 import LineItemPriceStep from "./LineItemPriceStep";
@@ -11,13 +11,13 @@ import LineItemTypeStep from "./LineItemTypeStep";
 interface AddLineItemDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (lineItem: NewLineItem) => void;
-  editingItem?: NewLineItem;
+  onSave: (lineItem: LineItem) => void;
+  editingItem?: LineItem;
   editingIndex?: number | null;
   pricebookId?: string | null;
   workspaceId: string;
   loading?: boolean;
-  lastLineItem?: NewLineItem; // For reusing fulfillment details
+  lastLineItem?: LineItem; // For reusing fulfillment details
 }
 
 export type StepFooterComponent = React.FC<{
@@ -30,7 +30,7 @@ export type StepFooterComponent = React.FC<{
   isLastStep?: boolean;
 }>;
 
-const DEFAULT_LINE_ITEM: Partial<NewLineItem> = {
+const DEFAULT_LINE_ITEM: Partial<LineItem> = {
   quantity: 1,
   deliveryMethod: "DELIVERY",
 };
@@ -47,7 +47,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
   lastLineItem,
 }) => {
   const [step, setStep] = useState(1);
-  const [lineItem, setLineItem] = useState<Partial<NewLineItem>>(DEFAULT_LINE_ITEM);
+  const [lineItem, setLineItem] = useState<Partial<LineItem>>(DEFAULT_LINE_ITEM);
 
   // Reset or load editing data when dialog opens
   useEffect(() => {
@@ -91,7 +91,7 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
     }
   }, [open, editingItem, lastLineItem]);
 
-  const handleUpdateLineItem = (updates: Partial<NewLineItem>) => {
+  const handleUpdateLineItem = (updates: Partial<LineItem>) => {
     setLineItem((prev) => ({ ...prev, ...updates }));
   };
 
@@ -148,7 +148,8 @@ const AddLineItemDialog: React.FC<AddLineItemDialogProps> = ({
 
   const handleSave = () => {
     // Ensure all required fields are present
-    const completeLineItem: NewLineItem = {
+    const completeLineItem: LineItem = {
+      id: lineItem.id, // Include the optional id if present
       type: lineItem.type || "PURCHASE",
       pimCategoryId: lineItem.pimCategoryId || "",
       pimCategoryName: lineItem.pimCategoryName,

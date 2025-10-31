@@ -1,7 +1,9 @@
 "use client";
 
-import { graphql } from "@/graphql";
-import { useCreateIntakeFormSubmissionMutation, useGetIntakeFormByIdQuery } from "@/graphql/hooks";
+import {
+  useCreateIntakeFormSubmissionMutation,
+  useGetIntakeFormByIdQuery,
+} from "@/ui/intake-forms/api";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Box,
@@ -27,20 +29,14 @@ export interface ContactInfo {
   purchaseOrderNumber?: string;
 }
 
+// Line item type with pricebook support
 export interface LineItem {
-  description: string;
-  startDate: Date;
-  type: "RENTAL" | "PURCHASE";
-  durationInDays: number;
-  quantity: number;
-}
-
-// New line item type with pricebook support
-export interface NewLineItem {
+  id?: string; // Optional ID for tracking created items
   // Core fields
   type: "RENTAL" | "PURCHASE";
   pimCategoryId: string;
   pimCategoryName?: string; // Store for display
+  label?: string; // Computed display label derived from available fields
   priceId?: string;
   priceName?: string; // Store for display
   priceBookName?: string; // Store for display
@@ -72,76 +68,9 @@ export interface NewLineItem {
 export interface FormData {
   contact: ContactInfo;
   lineItems: LineItem[];
-  newLineItems?: NewLineItem[]; // New line items with pricebook support
   requestNumber?: string;
   submittedDate?: Date;
 }
-
-graphql(`
-  query GetIntakeFormById($id: String!) {
-    getIntakeFormById(id: $id) {
-      id
-      workspaceId
-      projectId
-      project {
-        id
-        name
-        projectCode
-      }
-      isActive
-      createdAt
-      updatedAt
-      pricebook {
-        id
-        name
-      }
-      pricebookId
-      workspace {
-        id
-        name
-        logoUrl
-        bannerImageUrl
-      }
-    }
-  }
-
-  mutation CreateIntakeFormSubmission($input: IntakeFormSubmissionInput!) {
-    createIntakeFormSubmission(input: $input) {
-      id
-      formId
-      workspaceId
-      name
-      email
-      createdAt
-      phone
-      companyName
-      purchaseOrderNumber
-      userId
-    }
-  }
-
-  mutation CreateIntakeFormSubmissionLineItem(
-    $submissionId: String!
-    $input: IntakeFormLineItemInput!
-  ) {
-    createIntakeFormSubmissionLineItem(submissionId: $submissionId, input: $input) {
-      id
-      description
-      startDate
-      type
-      durationInDays
-      quantity
-      pimCategoryId
-      priceId
-      customPriceName
-      deliveryLocation
-      deliveryMethod
-      deliveryNotes
-      rentalStartDate
-      rentalEndDate
-    }
-  }
-`);
 
 export default function IntakeFormPage() {
   const params = useParams();
@@ -161,7 +90,6 @@ export default function IntakeFormPage() {
       purchaseOrderNumber: "",
     },
     lineItems: [],
-    newLineItems: [], // Initialize new line items array
   });
 
   // Query to get the intake form by ID

@@ -1,8 +1,8 @@
 "use client";
 
-import { graphql } from "@/graphql";
-import { RequestType } from "@/graphql/graphql";
+import { IntakeFormSubmissionLineItemFieldsFragment, RequestType } from "@/graphql/graphql";
 import {
+  ListIntakeFormSubmissionLineItemsQuery,
   useCreateIntakeFormSubmissionLineItemMutation,
   useDeleteIntakeFormSubmissionLineItemMutation,
   useGetIntakeFormByIdQuery,
@@ -10,7 +10,7 @@ import {
   useListIntakeFormSubmissionLineItemsQuery,
   useSubmitIntakeFormSubmissionMutation,
   useUpdateIntakeFormSubmissionLineItemMutation,
-} from "@/graphql/hooks";
+} from "@/ui/intake-forms/api";
 import {
   Box,
   CircularProgress,
@@ -26,6 +26,10 @@ import IntakeFormHeader from "../components/IntakeFormHeader";
 import RequestConfirmation from "../components/RequestConfirmation";
 import RequestFormWithLineItems from "./components/RequestFormWithLineItems";
 
+// Type for a single line item from the GraphQL query
+type IntakeFormLineItemFromQuery =
+  ListIntakeFormSubmissionLineItemsQuery["listIntakeFormSubmissionLineItems"][number];
+
 const steps = ["Portal Landing", "Request Form", "Request Confirmation", "Request Landing"];
 
 export interface ContactInfo {
@@ -36,22 +40,14 @@ export interface ContactInfo {
   purchaseOrderNumber?: string;
 }
 
+// Line item type with pricebook support
 export interface LineItem {
-  id?: string;
-  description: string;
-  startDate: Date;
-  type: "RENTAL" | "PURCHASE";
-  durationInDays: number;
-  quantity: number;
-}
-
-// New line item type with pricebook support
-export interface NewLineItem {
   id?: string; // Add ID for tracking created items
   // Core fields
   type: "RENTAL" | "PURCHASE";
   pimCategoryId: string;
   pimCategoryName?: string; // Store for display
+  label?: string; // Computed display label derived from available fields
   priceId?: string;
   priceName?: string; // Store for display
   priceBookName?: string; // Store for display
@@ -82,128 +78,10 @@ export interface NewLineItem {
 export interface FormData {
   contact: ContactInfo;
   lineItems: LineItem[];
-  newLineItems?: NewLineItem[]; // New line items with pricebook support
   requestNumber?: string;
   submittedDate?: Date;
   submissionId?: string;
 }
-
-// GraphQL queries and mutations
-graphql(`
-  query GetIntakeFormById($id: String!) {
-    getIntakeFormById(id: $id) {
-      id
-      workspaceId
-      projectId
-      project {
-        id
-        name
-        projectCode
-      }
-      isActive
-      createdAt
-      updatedAt
-      pricebook {
-        id
-        name
-      }
-      pricebookId
-      workspace {
-        id
-        name
-        logoUrl
-        bannerImageUrl
-      }
-    }
-  }
-
-  query GetIntakeFormSubmissionById($id: String!) {
-    getIntakeFormSubmissionById(id: $id) {
-      id
-      formId
-      workspaceId
-      name
-      email
-      createdAt
-      phone
-      companyName
-      purchaseOrderNumber
-      status
-      submittedAt
-      userId
-    }
-  }
-
-  query ListIntakeFormSubmissionLineItems($submissionId: String!) {
-    listIntakeFormSubmissionLineItems(submissionId: $submissionId) {
-      id
-      description
-      startDate
-      type
-      durationInDays
-      quantity
-      pimCategoryId
-      priceId
-      customPriceName
-      deliveryLocation
-      deliveryMethod
-      deliveryNotes
-      rentalStartDate
-      rentalEndDate
-    }
-  }
-
-  mutation CreateIntakeFormSubmissionLineItem(
-    $submissionId: String!
-    $input: IntakeFormLineItemInput!
-  ) {
-    createIntakeFormSubmissionLineItem(submissionId: $submissionId, input: $input) {
-      id
-      description
-      startDate
-      type
-      durationInDays
-      quantity
-      pimCategoryId
-      priceId
-      customPriceName
-      deliveryLocation
-      deliveryMethod
-      deliveryNotes
-      rentalStartDate
-      rentalEndDate
-    }
-  }
-
-  mutation UpdateIntakeFormSubmissionLineItem($id: String!, $input: IntakeFormLineItemInput!) {
-    updateIntakeFormSubmissionLineItem(id: $id, input: $input) {
-      id
-      description
-      quantity
-    }
-  }
-
-  mutation DeleteIntakeFormSubmissionLineItem($id: String!) {
-    deleteIntakeFormSubmissionLineItem(id: $id)
-  }
-
-  mutation SubmitIntakeFormSubmission($id: String!) {
-    submitIntakeFormSubmission(id: $id) {
-      id
-      formId
-      workspaceId
-      name
-      email
-      createdAt
-      phone
-      companyName
-      purchaseOrderNumber
-      userId
-      status
-      submittedAt
-    }
-  }
-`);
 
 export default function IntakeFormSubmissionPage() {
   const params = useParams();
@@ -224,7 +102,6 @@ export default function IntakeFormSubmissionPage() {
       purchaseOrderNumber: "",
     },
     lineItems: [],
-    newLineItems: [],
     submissionId: submissionId,
   });
 
@@ -297,44 +174,79 @@ export default function IntakeFormSubmissionPage() {
     }
   }, [submissionData]);
 
-  // Update formData when line items are loaded
-  useEffect(() => {
-    if (lineItemsData?.listIntakeFormSubmissionLineItems) {
-      const lineItems = lineItemsData.listIntakeFormSubmissionLineItems.map((item) => ({
-        id: item.id,
-        description: item.description,
-        type: item.type as "RENTAL" | "PURCHASE",
-        pimCategoryId: item.pimCategoryId,
-        priceId: item.priceId || undefined,
-        customProductName: item.customPriceName || undefined,
-        isCustomProduct: !!item.customPriceName,
-        quantity: item.quantity,
-        deliveryLocation: item.deliveryLocation || undefined,
-        deliveryMethod: item.deliveryMethod as "DELIVERY" | "PICKUP" | undefined,
-        deliveryNotes: item.deliveryNotes || undefined,
+  // Helper function to derive a display label from line item fields
+  // Priority: customPriceName → priceName → categoryName → "Product"
+  const deriveLineItemLabel = (lineItem: {
+    customProductName?: string;
+    priceName?: string;
+    pimCategoryName?: string;
+  }): string => {
+    if (lineItem.customProductName) {
+      return lineItem.customProductName;
+    }
+    if (lineItem.priceName) {
+      return lineItem.priceName;
+    }
+    if (lineItem.pimCategoryName) {
+      return lineItem.pimCategoryName;
+    }
+    return "Product";
+  };
+
+  // Helper function to map line items from GraphQL to LineItem
+  const mapLineItemToLineItem = (item: IntakeFormSubmissionLineItemFieldsFragment): LineItem => {
+    const isRental = item.type === "RENTAL";
+    const isCustom = !!item.customPriceName;
+
+    // Derive label from available fields
+    // Since we now store the label in description, use it directly as a fallback
+    const label = item.customPriceName || item.price?.name || item.pimCategory?.name || "Product";
+
+    const baseItem: LineItem = {
+      id: item.id,
+      type: item.type as "RENTAL" | "PURCHASE",
+      pimCategoryId: item.pimCategoryId,
+      pimCategoryName: undefined, // No longer parsed from description
+      label: label,
+      priceId: item.priceId || undefined,
+      priceName: undefined, // No longer parsed from description
+      isCustomProduct: isCustom,
+      customProductName: item.customPriceName || undefined,
+      quantity: item.quantity,
+      deliveryLocation: item.deliveryLocation || undefined,
+      deliveryMethod: item.deliveryMethod as "DELIVERY" | "PICKUP" | undefined,
+      deliveryNotes: item.deliveryNotes || undefined,
+    };
+
+    if (isRental) {
+      return {
+        ...baseItem,
         rentalStartDate: item.rentalStartDate ? new Date(item.rentalStartDate) : undefined,
         rentalEndDate: item.rentalEndDate ? new Date(item.rentalEndDate) : undefined,
-        deliveryDate:
-          item.type === "PURCHASE" && item.startDate ? new Date(item.startDate) : undefined,
-        durationInDays: item.durationInDays,
-      }));
-
-      setFormData((prev) => ({
-        ...prev,
-        newLineItems: lineItems as NewLineItem[],
-      }));
+        rentalDuration: item.durationInDays || 0,
+      };
+    } else {
+      return {
+        ...baseItem,
+        deliveryDate: item.startDate ? new Date(item.startDate) : undefined,
+      };
     }
-  }, [lineItemsData]);
+  };
 
-  const handleAddLineItem = async (lineItem: NewLineItem) => {
+  // Map line items directly from query data
+  const lineItems = lineItemsData?.listIntakeFormSubmissionLineItems
+    ? lineItemsData.listIntakeFormSubmissionLineItems.map(mapLineItemToLineItem)
+    : [];
+
+  const handleAddLineItem = async (lineItem: LineItem) => {
+    console.log("Adding line item:", lineItem);
+
     try {
-      const result = await createLineItem({
+      await createLineItem({
         variables: {
           submissionId,
           input: {
-            description: lineItem.isCustomProduct
-              ? lineItem.customProductName || "Custom Product"
-              : lineItem.priceName || lineItem.pimCategoryName || "Product",
+            description: deriveLineItemLabel(lineItem),
             startDate: (
               lineItem.deliveryDate ||
               lineItem.rentalStartDate ||
@@ -355,23 +267,19 @@ export default function IntakeFormSubmissionPage() {
         },
       });
 
-      if (result.data?.createIntakeFormSubmissionLineItem) {
-        await refetchLineItems();
-      }
+      await refetchLineItems();
     } catch (error) {
       console.error("Error creating line item:", error);
     }
   };
 
-  const handleUpdateLineItem = async (lineItemId: string, lineItem: NewLineItem) => {
+  const handleUpdateLineItem = async (lineItemId: string, lineItem: LineItem) => {
     try {
       await updateLineItem({
         variables: {
           id: lineItemId,
           input: {
-            description: lineItem.isCustomProduct
-              ? lineItem.customProductName || "Custom Product"
-              : lineItem.priceName || lineItem.pimCategoryName || "Product",
+            description: deriveLineItemLabel(lineItem),
             startDate: (
               lineItem.deliveryDate ||
               lineItem.rentalStartDate ||
@@ -496,7 +404,7 @@ export default function IntakeFormSubmissionPage() {
             pricebookName={pricebookName}
             submissionId={submissionId}
             submissionStatus={submissionStatus}
-            lineItems={formData.newLineItems || []}
+            lineItems={lineItems}
             onAddLineItem={handleAddLineItem}
             onUpdateLineItem={handleUpdateLineItem}
             onDeleteLineItem={handleDeleteLineItem}
@@ -512,6 +420,7 @@ export default function IntakeFormSubmissionPage() {
             projectCode={intakeForm?.project?.projectCode || ""}
             companyName={intakeForm?.workspace?.name || ""}
             formData={formData}
+            lineItems={lineItems}
             submissionStatus={submissionStatus}
             onConfirm={handleConfirm}
             onNewRequest={handleNewRequest}

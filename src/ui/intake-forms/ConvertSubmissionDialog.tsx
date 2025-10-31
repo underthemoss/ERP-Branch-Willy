@@ -13,7 +13,6 @@ import {
   useCreateSalePurchaseOrderLineItemMutation,
   useCreateSaleSalesOrderLineItemMutation,
   useCreateSalesOrderMutation,
-  useGetIntakeFormSubmissionByIdQuery,
   useListInventoryItemsLazyQuery,
   useListPricesQuery,
   useListRentalFulfilmentsLazyQuery,
@@ -22,8 +21,13 @@ import {
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import ContactSelector from "@/ui/ContactSelector";
+import {
+  useGetIntakeFormByIdQuery,
+  useGetIntakeFormSubmissionByIdQuery,
+  useListIntakeFormSubmissionLineItemsQuery,
+  useUpdateIntakeFormSubmissionMutation,
+} from "@/ui/intake-forms/api";
 import ProjectSelector from "@/ui/ProjectSelector";
-import { gql, useQuery } from "@apollo/client";
 import {
   Add as AddIcon,
   ArrowForward as ArrowForwardIcon,
@@ -76,35 +80,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PriceSelectionDialog } from "../prices/PriceSelectionDialog";
 import { CreateContactDialog } from "./CreateContactDialog";
 
-// GraphQL Queries and Mutations
-graphql(`
-  query GetIntakeFormSubmissionByIdForConversion($id: String!) {
-    getIntakeFormSubmissionById(id: $id) {
-      id
-      formId
-      workspaceId
-      name
-      email
-      phone
-      companyName
-      purchaseOrderNumber
-      status
-    }
-  }
-`);
-
-graphql(`
-  mutation UpdateIntakeFormSubmissionForConversion(
-    $id: String!
-    $input: UpdateIntakeFormSubmissionInput!
-  ) {
-    updateIntakeFormSubmission(id: $id, input: $input) {
-      id
-      salesOrderId
-      purchaseOrderId
-    }
-  }
-`);
+// Note: Most GraphQL operations have been moved to @/ui/intake-forms/api
+// These conversion-specific queries remain here as they're beyond core intake form operations
 
 graphql(`
   mutation SubmitSalesOrderForConversion($id: ID!) {
@@ -166,53 +143,6 @@ graphql(`
     }
   }
 `);
-
-const GET_INTAKE_FORM_FOR_SUBMISSION = gql`
-  query GetIntakeFormForSubmission($formId: String!) {
-    getIntakeFormById(id: $formId) {
-      projectId
-      project {
-        id
-        name
-        projectCode
-      }
-      pricebookId
-      pricebook {
-        id
-        name
-        parentPriceBook {
-          id
-          name
-          businessContact {
-            id
-            name
-            contactType
-          }
-        }
-      }
-    }
-  }
-`;
-
-const GET_SUBMISSION_LINE_ITEMS = gql`
-  query GetSubmissionLineItems($submissionId: String!) {
-    listIntakeFormSubmissionLineItems(submissionId: $submissionId) {
-      id
-      description
-      type
-      quantity
-      startDate
-      priceId
-      pimCategoryId
-      customPriceName
-      deliveryLocation
-      deliveryMethod
-      deliveryNotes
-      rentalStartDate
-      rentalEndDate
-    }
-  }
-`;
 
 interface ConvertSubmissionDialogProps {
   open: boolean;
@@ -305,14 +235,14 @@ export default function ConvertSubmissionDialog({
   });
 
   // Fetch intake form data
-  const { data: intakeFormData } = useQuery(GET_INTAKE_FORM_FOR_SUBMISSION, {
-    variables: { formId: submissionData?.getIntakeFormSubmissionById?.formId || "" },
+  const { data: intakeFormData } = useGetIntakeFormByIdQuery({
+    variables: { id: submissionData?.getIntakeFormSubmissionById?.formId || "" },
     skip: !submissionData?.getIntakeFormSubmissionById?.formId,
     fetchPolicy: "cache-and-network",
   });
 
   // Fetch line items
-  const { data: lineItemsData } = useQuery(GET_SUBMISSION_LINE_ITEMS, {
+  const { data: lineItemsData } = useListIntakeFormSubmissionLineItemsQuery({
     variables: { submissionId },
     skip: !open,
     fetchPolicy: "cache-and-network",

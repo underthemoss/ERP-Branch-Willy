@@ -21,7 +21,7 @@ import {
   useTheme,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { ContactInfo, FormData, LineItem, NewLineItem } from "../page";
+import { ContactInfo, FormData, LineItem } from "../page";
 import AddLineItemDialog from "./AddLineItemDialog/AddLineItemDialog";
 import IntakeFormHeader from "./IntakeFormHeader";
 
@@ -36,11 +36,7 @@ interface RequestFormProps {
   workspaceLogo?: string | null;
   workspaceBanner?: string | null;
   formData: FormData;
-  onSubmit: (
-    contact: ContactInfo,
-    lineItems: LineItem[],
-    newLineItems?: NewLineItem[],
-  ) => Promise<void>;
+  onSubmit: (contact: ContactInfo) => Promise<void>;
   onBack: () => void;
   workspaceId: string;
   pricebookId?: string | null;
@@ -83,7 +79,7 @@ export default function RequestForm({
     return formData.contact;
   });
 
-  const [newLineItems, setNewLineItems] = useState<NewLineItem[]>(formData.newLineItems || []);
+  const [lineItems, setLineItems] = useState<LineItem[]>(formData.lineItems || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Line item dialog state
@@ -120,7 +116,7 @@ export default function RequestForm({
   };
 
   const validateLineItems = () => {
-    if (newLineItems.length === 0) {
+    if (lineItems.length === 0) {
       setErrors({ lineItems: "At least one line item is required" });
       return false;
     }
@@ -133,7 +129,7 @@ export default function RequestForm({
       setLoading(true);
       try {
         // Call onSubmit to create the submission and navigate
-        await onSubmit(contact, [], []);
+        await onSubmit(contact);
       } catch (error) {
         console.error("Error creating submission:", error);
         setLoading(false);
@@ -152,19 +148,19 @@ export default function RequestForm({
   };
 
   const handleDeleteLineItem = (index: number) => {
-    const updated = newLineItems.filter((_, i) => i !== index);
-    setNewLineItems(updated);
+    const updated = lineItems.filter((_, i) => i !== index);
+    setLineItems(updated);
   };
 
-  const handleSaveLineItem = (lineItem: NewLineItem) => {
+  const handleSaveLineItem = (lineItem: LineItem) => {
     if (editingIndex !== null) {
       // Update existing
-      const updated = [...newLineItems];
+      const updated = [...lineItems];
       updated[editingIndex] = lineItem;
-      setNewLineItems(updated);
+      setLineItems(updated);
     } else {
       // Add new
-      setNewLineItems([...newLineItems, lineItem]);
+      setLineItems([...lineItems, lineItem]);
     }
     setLineItemDialogOpen(false);
     setEditingIndex(null);
@@ -172,8 +168,7 @@ export default function RequestForm({
 
   const handleSubmit = () => {
     if (validateLineItems()) {
-      // Pass empty array for old lineItems and new array for newLineItems
-      onSubmit(contact, [], newLineItems);
+      onSubmit(contact);
     }
   };
 
@@ -182,14 +177,14 @@ export default function RequestForm({
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  const getLineItemDescription = (item: NewLineItem) => {
+  const getLineItemDescription = (item: LineItem) => {
     if (item.isCustomProduct) {
       return item.customProductName || "Custom Product";
     }
     return item.priceName || item.pimCategoryName || "Product";
   };
 
-  const getRentalCostDisplay = (item: NewLineItem) => {
+  const getRentalCostDisplay = (item: LineItem) => {
     if (item.type !== "RENTAL") return "-";
 
     // If it's a custom product, no pricing available
@@ -230,7 +225,7 @@ export default function RequestForm({
     );
   };
 
-  const getPurchaseCostDisplay = (item: NewLineItem) => {
+  const getPurchaseCostDisplay = (item: LineItem) => {
     if (item.type !== "PURCHASE") return "-";
 
     // If it's a custom product, no pricing available
@@ -389,7 +384,7 @@ export default function RequestForm({
                     </Button>
                   </Box>
 
-                  {newLineItems.length > 0 && (
+                  {lineItems.length > 0 && (
                     <TableContainer component={Paper} variant="outlined">
                       <Table>
                         <TableHead>
@@ -405,7 +400,7 @@ export default function RequestForm({
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {newLineItems.map((item, index) => (
+                          {lineItems.map((item, index) => (
                             <TableRow key={index}>
                               <TableCell>
                                 <Box>
@@ -481,7 +476,7 @@ export default function RequestForm({
                       variant="contained"
                       size="large"
                       onClick={handleSubmit}
-                      disabled={newLineItems.length === 0}
+                      disabled={lineItems.length === 0}
                     >
                       Submit Request
                     </Button>
@@ -501,11 +496,11 @@ export default function RequestForm({
           setEditingIndex(null);
         }}
         onSave={handleSaveLineItem}
-        editingItem={editingIndex !== null ? newLineItems[editingIndex] : undefined}
+        editingItem={editingIndex !== null ? lineItems[editingIndex] : undefined}
         editingIndex={editingIndex}
         pricebookId={pricebookId}
         workspaceId={workspaceId}
-        lastLineItem={newLineItems.length > 0 ? newLineItems[newLineItems.length - 1] : undefined}
+        lastLineItem={lineItems.length > 0 ? lineItems[lineItems.length - 1] : undefined}
       />
     </>
   );

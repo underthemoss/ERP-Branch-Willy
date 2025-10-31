@@ -1,10 +1,9 @@
 "use client";
 
-import { graphql } from "@/graphql";
 import {
-  useListFormSubmissionsQuery,
+  useListIntakeFormSubmissionsQuery as useListFormSubmissionsQuery,
   useListIntakeFormSubmissionLineItemsQuery,
-} from "@/graphql/hooks";
+} from "@/ui/intake-forms/api";
 import SubmissionsTable from "@/ui/intake-forms/SubmissionsTable";
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
@@ -19,54 +18,6 @@ import {
 } from "@mui/material";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-
-// GraphQL query for submissions - now without line items
-graphql(`
-  query ListFormSubmissions($workspaceId: String!) {
-    listIntakeFormSubmissions(workspaceId: $workspaceId) {
-      items {
-        id
-        formId
-        workspaceId
-        name
-        email
-        createdAt
-        phone
-        companyName
-        purchaseOrderNumber
-        userId
-      }
-      page {
-        number
-        size
-        totalItems
-        totalPages
-      }
-    }
-  }
-`);
-
-// New query for fetching line items for a submission
-graphql(`
-  query ListIntakeFormSubmissionLineItems($submissionId: String!) {
-    listIntakeFormSubmissionLineItems(submissionId: $submissionId) {
-      id
-      description
-      startDate
-      type
-      durationInDays
-      quantity
-      pimCategoryId
-      priceId
-      customPriceName
-      deliveryLocation
-      deliveryMethod
-      deliveryNotes
-      rentalStartDate
-      rentalEndDate
-    }
-  }
-`);
 
 export default function IntakeFormSubmissionsPage() {
   const router = useRouter();
