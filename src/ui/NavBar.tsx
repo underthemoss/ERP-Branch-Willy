@@ -8,6 +8,7 @@ import {
 import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckIcon from "@mui/icons-material/Check";
@@ -25,6 +26,7 @@ import MailIcon from "@mui/icons-material/Mail";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
@@ -147,6 +149,19 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <InventoryIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
       testId: "nav-inventory",
+      ...(isPlatformAdmin
+        ? {
+            subitems: [
+              {
+                text: "Asset Search",
+                href: `/app/${currentWorkspace?.id}/inventory/asset-search`,
+                icon: <SearchIcon fontSize="small" />,
+                selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
+                testId: "nav-inventory-asset-search",
+              },
+            ],
+          }
+        : {}),
     },
     {
       text: "Prices",

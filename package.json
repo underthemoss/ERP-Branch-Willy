@@ -50,6 +50,7 @@
     "@mui/x-tree-view": "^8.3.1",
     "@mui/x-tree-view-pro": "^8.6.0",
     "@react-google-maps/api": "^2.20.7",
+    "@searchkit/instantsearch-client": "^4.14.1",
     "@toolpad/core": "^0.15.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
@@ -66,6 +67,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.3",
+    "react-instantsearch": "^7.17.0",
     "react-virtualized-auto-sizer": "^1.0.26",
     "sqids": "^0.3.0"
   },
