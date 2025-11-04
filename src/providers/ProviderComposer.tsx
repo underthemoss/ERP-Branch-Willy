@@ -2,6 +2,7 @@ import { ApolloClientProvider } from "@/providers/ApolloProvider";
 import { AppContextResolver } from "@/providers/AppContextResolver";
 import { Auth0ClientProvider } from "@/providers/Auth0ClientProvider";
 import { AuthWall } from "@/providers/AuthWall";
+import { ConfigProvider, useConfig } from "@/providers/ConfigProvider";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
@@ -12,24 +13,23 @@ interface ProviderComposerProps {
   children: React.ReactNode;
 }
 
-const apiUrl =
-  process.env.NEXT_PUBLIC_GQL_URL || process.env.NEXT_PUBLIC_API_URL + "/es-erp-api/graphql";
-const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "";
-const auth0ClientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "";
-const auth0Audience = process.env.NEXT_PUBLIC_API_URL + "/es-erp-api";
-
 /**
- * ProviderComposer consolidates all application providers in a single component.
- * This maintains the correct nesting order while keeping the layout clean.
+ * Inner component that uses the config context
  */
-export function ProviderComposer({ children }: ProviderComposerProps) {
+function ProviderComposerInner({ children }: ProviderComposerProps) {
+  const config = useConfig();
+
   return (
-    <Auth0ClientProvider domain={auth0Domain} clientId={auth0ClientId} audience={auth0Audience}>
+    <Auth0ClientProvider
+      domain={config.auth0Domain}
+      clientId={config.auth0ClientId}
+      audience={config.auth0Audience}
+    >
       <AuthWall>
         <DatadogRumProvider>
           <GoogleMapsServerProvider>
             <NotificationProvider>
-              <ApolloClientProvider api={apiUrl}>
+              <ApolloClientProvider api={config.graphqlUrl}>
                 <WorkspaceProvider>
                   <AppContextResolver>{children}</AppContextResolver>
                 </WorkspaceProvider>
@@ -42,16 +42,45 @@ export function ProviderComposer({ children }: ProviderComposerProps) {
   );
 }
 
-export function ProviderComposerNoAuth({ children }: ProviderComposerProps) {
+/**
+ * Inner component for no-auth variant
+ */
+function ProviderComposerNoAuthInner({ children }: ProviderComposerProps) {
+  const config = useConfig();
+
   return (
-    <Auth0ClientProvider domain={auth0Domain} clientId={auth0ClientId} audience={auth0Audience}>
+    <Auth0ClientProvider
+      domain={config.auth0Domain}
+      clientId={config.auth0ClientId}
+      audience={config.auth0Audience}
+    >
       <DatadogRumProvider>
         <GoogleMapsServerProvider>
           <NotificationProvider>
-            <ApolloClientProvider api={apiUrl}>{children}</ApolloClientProvider>
+            <ApolloClientProvider api={config.graphqlUrl}>{children}</ApolloClientProvider>
           </NotificationProvider>
         </GoogleMapsServerProvider>
       </DatadogRumProvider>
     </Auth0ClientProvider>
+  );
+}
+
+/**
+ * ProviderComposer consolidates all application providers in a single component.
+ * This maintains the correct nesting order while keeping the layout clean.
+ */
+export function ProviderComposer({ children }: ProviderComposerProps) {
+  return (
+    <ConfigProvider>
+      <ProviderComposerInner>{children}</ProviderComposerInner>
+    </ConfigProvider>
+  );
+}
+
+export function ProviderComposerNoAuth({ children }: ProviderComposerProps) {
+  return (
+    <ConfigProvider>
+      <ProviderComposerNoAuthInner>{children}</ProviderComposerNoAuthInner>
+    </ConfigProvider>
   );
 }
