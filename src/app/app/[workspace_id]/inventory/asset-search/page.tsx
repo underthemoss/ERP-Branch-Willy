@@ -4,6 +4,7 @@ import { createSearchClient } from "@/lib/searchClient";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
+import { useParams } from "next/navigation";
 import * as React from "react";
 import {
   Configure,
@@ -928,12 +929,13 @@ function CustomPagination() {
 }
 
 // Main Page Component
-export default function AssetSearchPage({ params }: { params: { workspace_id: string } }) {
+export default function AssetSearchPage() {
+  const params = useParams();
+  const workspaceId = params.workspace_id as string;
   const { getAccessTokenSilently } = useAuth0();
   const [searchClient, setSearchClient] = React.useState<any>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<string>("");
-  const workspaceId = params.workspace_id;
 
   React.useEffect(() => {
     async function initializeSearch() {
