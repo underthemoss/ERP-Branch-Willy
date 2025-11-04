@@ -1,6 +1,7 @@
 "use client";
 
 import { createSearchClient } from "@/lib/searchClient";
+import { useConfig } from "@/providers/ConfigProvider";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
@@ -932,6 +933,7 @@ function CustomPagination() {
 export default function AssetSearchPage() {
   const params = useParams();
   const workspaceId = params.workspace_id as string;
+  const config = useConfig();
   const { getAccessTokenSilently } = useAuth0();
   const [searchClient, setSearchClient] = React.useState<any>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -941,7 +943,7 @@ export default function AssetSearchPage() {
     async function initializeSearch() {
       try {
         const token = await getAccessTokenSilently({ cacheMode: "on" });
-        const client = createSearchClient(token);
+        const client = createSearchClient(token, config.searchApiUrl);
         setSearchClient(client);
       } catch (err) {
         console.error("Error initializing search client:", err);
@@ -950,7 +952,7 @@ export default function AssetSearchPage() {
     }
 
     initializeSearch();
-  }, [getAccessTokenSilently]);
+  }, [getAccessTokenSilently, config.searchApiUrl]);
 
   if (error) {
     return (
