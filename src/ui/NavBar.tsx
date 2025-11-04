@@ -26,6 +26,7 @@ import MailIcon from "@mui/icons-material/Mail";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
@@ -136,13 +137,6 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       testId: "nav-rental-fulfillment",
     },
     {
-      text: "T3 Rentals",
-      href: `/app/${currentWorkspace?.id}/t3-rentals`,
-      icon: <AssignmentIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/t3-rentals`,
-      testId: "nav-t3-rentals",
-    },
-    {
       text: "Invoices",
       href: `/app/${currentWorkspace?.id}/invoices`,
       icon: <ReceiptLongIcon fontSize="small" />,
@@ -155,6 +149,15 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <InventoryIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
       testId: "nav-inventory",
+      subitems: [
+        {
+          text: "Asset Search",
+          href: `/app/${currentWorkspace?.id}/inventory/asset-search`,
+          icon: <SearchIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
+          testId: "nav-inventory-asset-search",
+        },
+      ],
     },
     {
       text: "Prices",
