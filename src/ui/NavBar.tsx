@@ -149,15 +149,19 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <InventoryIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
       testId: "nav-inventory",
-      subitems: [
-        {
-          text: "Asset Search",
-          href: `/app/${currentWorkspace?.id}/inventory/asset-search`,
-          icon: <SearchIcon fontSize="small" />,
-          selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
-          testId: "nav-inventory-asset-search",
-        },
-      ],
+      ...(isPlatformAdmin
+        ? {
+            subitems: [
+              {
+                text: "Asset Search",
+                href: `/app/${currentWorkspace?.id}/inventory/asset-search`,
+                icon: <SearchIcon fontSize="small" />,
+                selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
+                testId: "nav-inventory-asset-search",
+              },
+            ],
+          }
+        : {}),
     },
     {
       text: "Prices",
