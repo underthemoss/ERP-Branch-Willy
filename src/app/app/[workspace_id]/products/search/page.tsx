@@ -1261,7 +1261,7 @@ export default function ProductSearchPage() {
           {/* Sidebar Filters */}
           <aside
             style={{
-              width: "504px",
+              width: "320px",
               flexShrink: 0,
               backgroundColor: "#ffffff",
               borderRight: "1px solid #e5e7eb",
