@@ -999,20 +999,9 @@ export default function ProductSearchPage() {
                 />
               </div>
             </div>
-            <FilterSection
-              title="Make"
-              attribute="make"
-              searchable
-            />
-            <FilterSection
-              title="Model"
-              attribute="model"
-              searchable
-            />
-            <FilterSection
-              title="Variant"
-              attribute="variant"
-            />
+            <FilterSection title="Make" attribute="make" searchable />
+            <FilterSection title="Model" attribute="model" searchable />
+            <FilterSection title="Variant" attribute="variant" />
             <FilterSection title="Year" attribute="year" />
           </aside>
 
