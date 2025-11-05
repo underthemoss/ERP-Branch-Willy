@@ -159,6 +159,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
                 selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
                 testId: "nav-inventory-asset-search",
               },
+              {
+                text: "Product Search",
+                href: `/app/${currentWorkspace?.id}/products/search`,
+                icon: <SearchIcon fontSize="small" />,
+                selected: pathname === `/app/${currentWorkspace?.id}/products/search`,
+                testId: "nav-products-search",
+              },
             ],
           }
         : {}),
