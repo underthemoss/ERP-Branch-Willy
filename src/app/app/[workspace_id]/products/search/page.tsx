@@ -62,17 +62,152 @@ interface ProductHit {
   category_lvl12?: string;
 }
 
-// Modern Search Bar Component
+// Modern Search Bar Component with Autocomplete
 function SearchBar() {
   const { query, refine } = useSearchBox();
+  const config = useConfig();
+  const { getAccessTokenSilently } = useAuth0();
   const [localQuery, setLocalQuery] = React.useState(query);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const [focusedIndex, setFocusedIndex] = React.useState(-1);
+  const [suggestions, setSuggestions] = React.useState<ProductHit[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = React.useState(false);
+  const [autocompleteClient, setAutocompleteClient] = React.useState<any>(null);
+  const searchRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setLocalQuery(query);
   }, [query]);
 
+  // Initialize autocomplete search client
+  React.useEffect(() => {
+    async function initAutocomplete() {
+      try {
+        const token = await getAccessTokenSilently({ cacheMode: "on" });
+        const client = createSearchClient(token, config.searchApiUrl);
+        setAutocompleteClient(client);
+      } catch (error) {
+        console.error("Error initializing autocomplete client:", error);
+      }
+    }
+    initAutocomplete();
+  }, [getAccessTokenSilently, config.searchApiUrl]);
+
+  // Show suggestions when typing, hide when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch autocomplete suggestions from backend
+  React.useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!localQuery || localQuery.length < 2 || !autocompleteClient) {
+        setSuggestions([]);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      try {
+        const results = await autocompleteClient.search([
+          {
+            indexName: "t3_pim_products",
+            params: {
+              query: localQuery,
+              hitsPerPage: 8,
+            },
+          },
+        ]);
+
+        if (results.results?.[0]?.hits) {
+          setSuggestions(results.results[0].hits);
+        }
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 150);
+    return () => clearTimeout(debounceTimer);
+  }, [localQuery, autocompleteClient]);
+
+  const getCategoryBreadcrumb = (product: ProductHit): string => {
+    const levels: string[] = [];
+    for (let i = 1; i <= 12; i++) {
+      const levelKey = `category_lvl${i}` as keyof ProductHit;
+      const levelValue = product[levelKey];
+      if (levelValue && typeof levelValue === "string") {
+        // Extract the last part after the pipe separator
+        const parts = levelValue.split("|");
+        const categoryName = parts[parts.length - 1];
+        if (categoryName && !levels.includes(categoryName)) {
+          levels.push(categoryName);
+        }
+      } else {
+        break;
+      }
+    }
+    return levels.join(" › ");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      if (showSuggestions && focusedIndex >= 0 && suggestions[focusedIndex]) {
+        // Select focused suggestion
+        e.preventDefault();
+        const product = suggestions[focusedIndex];
+        const productName = product.data.product_core_attributes.name || "";
+        setLocalQuery(productName);
+        refine(productName);
+        setShowSuggestions(false);
+        setFocusedIndex(-1);
+      } else {
+        // Submit search
+        e.preventDefault();
+        refine(localQuery);
+        setShowSuggestions(false);
+        setFocusedIndex(-1);
+      }
+      return;
+    }
+
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        break;
+      case "Escape":
+        setShowSuggestions(false);
+        setFocusedIndex(-1);
+        break;
+    }
+  };
+
+  const handleSuggestionClick = (product: ProductHit) => {
+    const productName = product.data.product_core_attributes.name || "";
+    setLocalQuery(productName);
+    refine(productName);
+    setShowSuggestions(false);
+    setFocusedIndex(-1);
+  };
+
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div ref={searchRef} style={{ position: "relative", width: "100%" }}>
       <svg
         style={{
           position: "absolute",
@@ -82,6 +217,7 @@ function SearchBar() {
           width: "20px",
           height: "20px",
           color: "#6b7280",
+          zIndex: 1,
         }}
         fill="none"
         stroke="currentColor"
@@ -99,8 +235,15 @@ function SearchBar() {
         value={localQuery}
         onChange={(e) => {
           setLocalQuery(e.target.value);
-          refine(e.target.value);
+          setShowSuggestions(true);
+          setFocusedIndex(-1);
         }}
+        onFocus={() => {
+          if (localQuery.length >= 2) {
+            setShowSuggestions(true);
+          }
+        }}
+        onKeyDown={handleKeyDown}
         placeholder="Search products by name, make, model, SKU, UPC..."
         style={{
           width: "100%",
@@ -112,11 +255,11 @@ function SearchBar() {
           transition: "all 0.2s ease",
           backgroundColor: "#ffffff",
         }}
-        onFocus={(e) => {
+        onFocusCapture={(e) => {
           e.target.style.borderColor = "#3b82f6";
           e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)";
         }}
-        onBlur={(e) => {
+        onBlurCapture={(e) => {
           e.target.style.borderColor = "#e5e7eb";
           e.target.style.boxShadow = "none";
         }}
@@ -126,6 +269,7 @@ function SearchBar() {
           onClick={() => {
             setLocalQuery("");
             refine("");
+            setShowSuggestions(false);
           }}
           style={{
             position: "absolute",
@@ -142,6 +286,7 @@ function SearchBar() {
             borderRadius: "4px",
             color: "#6b7280",
             transition: "all 0.2s ease",
+            zIndex: 1,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "#f3f4f6";
@@ -161,6 +306,141 @@ function SearchBar() {
             />
           </svg>
         </button>
+      )}
+
+      {/* Autocomplete Dropdown */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            left: 0,
+            right: 0,
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            maxHeight: "400px",
+            overflowY: "auto",
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Product Suggestions
+            </div>
+          </div>
+          {suggestions.map((product, index) => {
+            const name = product.data.product_core_attributes.name || "Unnamed Product";
+            const make = product.data.product_core_attributes.make || "";
+            const model = product.data.product_core_attributes.model || "";
+            const categoryBreadcrumb = getCategoryBreadcrumb(product);
+            const isFocused = index === focusedIndex;
+
+            return (
+              <div
+                key={product.objectID}
+                onClick={() => handleSuggestionClick(product)}
+                onMouseEnter={() => setFocusedIndex(index)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "12px",
+                  cursor: "pointer",
+                  backgroundColor: isFocused ? "#f9fafb" : "transparent",
+                  borderBottom: index < suggestions.length - 1 ? "1px solid #f3f4f6" : "none",
+                  transition: "background-color 0.15s ease",
+                }}
+              >
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    backgroundColor: "#f3f4f6",
+                    borderRadius: "8px",
+                    flexShrink: 0,
+                    marginRight: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src="https://appcdn.equipmentshare.com/img/cogplaceholder.png"
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#111827",
+                      marginBottom: "4px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {name}
+                  </div>
+                  {(make || model) && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        marginBottom: "2px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {make && model ? `${make} ${model}` : make || model}
+                    </div>
+                  )}
+                  {categoryBreadcrumb && (
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#9ca3af",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {categoryBreadcrumb}
+                    </div>
+                  )}
+                </div>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="#9ca3af"
+                  viewBox="0 0 24 24"
+                  style={{ flexShrink: 0, marginLeft: "8px" }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -505,16 +785,37 @@ function ResultsBar({
 // Modern Product Card
 function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: string }) {
   const name = hit.data.product_core_attributes.name || "Unnamed Product";
-  const make = hit.data.product_core_attributes.make || "-";
-  const model = hit.data.product_core_attributes.model || "-";
+  const make = hit.data.product_core_attributes.make || null;
+  const model = hit.data.product_core_attributes.model || null;
   const year = hit.data.product_core_attributes.year || null;
   const variant = hit.data.product_core_attributes.variant || null;
   const sku = hit.data.product_source_attributes.sku || null;
-  const upc = hit.data.product_source_attributes.upc || null;
   const mpn = hit.data.product_source_attributes.manufacturer_part_number || null;
-  const source = hit.data.product_source_attributes.source || null;
-  const category = hit.data.product_category.name || null;
   const imageUrl = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
+
+  // Build category breadcrumb
+  const getCategoryBreadcrumb = (): string => {
+    const levels: string[] = [];
+    for (let i = 1; i <= 12; i++) {
+      const levelKey = `category_lvl${i}` as keyof ProductHit;
+      const levelValue = hit[levelKey];
+      if (levelValue && typeof levelValue === "string") {
+        const parts = levelValue.split("|");
+        const categoryName = parts[parts.length - 1];
+        if (categoryName && !levels.includes(categoryName)) {
+          levels.push(categoryName);
+        }
+      } else {
+        break;
+      }
+    }
+    return levels.join(" › ");
+  };
+
+  const categoryBreadcrumb = getCategoryBreadcrumb();
+
+  // Build make/model/year line
+  const makeModelYear = [make, model, year].filter(Boolean).join(" • ");
 
   return (
     <a
@@ -563,22 +864,36 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
             objectFit: "cover",
           }}
         />
-        {source && (
+        {sku && (
           <div
             style={{
               position: "absolute",
               top: "12px",
               right: "12px",
-              padding: "4px 10px",
+              padding: "6px 12px",
               fontSize: "11px",
-              fontWeight: 600,
+              fontWeight: 700,
               color: "#ffffff",
-              backgroundColor: "rgba(99, 102, 241, 0.9)",
+              backgroundColor: "rgba(17, 24, 39, 0.9)",
               borderRadius: "6px",
               backdropFilter: "blur(8px)",
+              letterSpacing: "0.5px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
             }}
           >
-            {source}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M3 3h7l2 2h9a2 2 0 012 2v12a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+            {sku}
           </div>
         )}
       </div>
@@ -588,7 +903,7 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
             fontSize: "15px",
             fontWeight: 600,
             color: "#111827",
-            marginBottom: "6px",
+            marginBottom: "8px",
             lineHeight: "1.4",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -600,59 +915,69 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
         >
           {name}
         </h3>
-        <p
-          style={{
-            fontSize: "13px",
-            color: "#6b7280",
-            marginBottom: "12px",
-          }}
-        >
-          {make} {model}
-          {variant && ` - ${variant}`}
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
-          {category && (
+
+        {makeModelYear && (
+          <p
+            style={{
+              fontSize: "13px",
+              color: "#6b7280",
+              marginBottom: "8px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {makeModelYear}
+          </p>
+        )}
+
+        {categoryBreadcrumb && (
+          <p
+            style={{
+              fontSize: "11px",
+              color: "#9ca3af",
+              marginBottom: "12px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {categoryBreadcrumb}
+          </p>
+        )}
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
+          {variant && (
             <span
               style={{
-                padding: "4px 10px",
-                fontSize: "11px",
+                padding: "4px 8px",
+                fontSize: "10px",
                 fontWeight: 600,
-                color: "#1e40af",
-                backgroundColor: "#eff6ff",
-                borderRadius: "6px",
+                color: "#7c3aed",
+                backgroundColor: "#f5f3ff",
+                borderRadius: "4px",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
               }}
             >
-              {category}
+              {variant}
             </span>
           )}
-          {year && (
+          {mpn && (
             <span
               style={{
-                padding: "4px 10px",
-                fontSize: "11px",
-                fontWeight: 600,
+                padding: "4px 8px",
+                fontSize: "10px",
+                fontWeight: 500,
                 color: "#6b7280",
-                backgroundColor: "#f3f4f6",
-                borderRadius: "6px",
+                backgroundColor: "#f9fafb",
+                borderRadius: "4px",
+                fontFamily: "monospace",
               }}
             >
-              {year}
+              MPN: {mpn}
             </span>
           )}
-        </div>
-        <div
-          style={{
-            fontSize: "11px",
-            color: "#9ca3af",
-            fontWeight: 500,
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-          }}
-        >
-          {sku && <div>SKU: {sku}</div>}
-          {upc && <div>UPC: {upc}</div>}
-          {mpn && <div>MPN: {mpn}</div>}
         </div>
       </div>
     </a>
@@ -936,7 +1261,7 @@ export default function ProductSearchPage() {
           {/* Sidebar Filters */}
           <aside
             style={{
-              width: "504px",
+              width: "320px",
               flexShrink: 0,
               backgroundColor: "#ffffff",
               borderRight: "1px solid #e5e7eb",
