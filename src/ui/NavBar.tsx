@@ -149,26 +149,6 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <InventoryIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
       testId: "nav-inventory",
-      ...(isPlatformAdmin
-        ? {
-            subitems: [
-              {
-                text: "Asset Search",
-                href: `/app/${currentWorkspace?.id}/inventory/asset-search`,
-                icon: <SearchIcon fontSize="small" />,
-                selected: pathname === `/app/${currentWorkspace?.id}/inventory/asset-search`,
-                testId: "nav-inventory-asset-search",
-              },
-              {
-                text: "Product Search",
-                href: `/app/${currentWorkspace?.id}/products/search`,
-                icon: <SearchIcon fontSize="small" />,
-                selected: pathname === `/app/${currentWorkspace?.id}/products/search`,
-                testId: "nav-products-search",
-              },
-            ],
-          }
-        : {}),
     },
     {
       text: "Prices",
@@ -217,6 +197,54 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       ],
     },
   ];
+
+  // Add Search menu item only for platform admins
+  if (isPlatformAdmin) {
+    navItems.splice(5, 0, {
+      text: "Search",
+      href: `/app/${currentWorkspace?.id}/search/assets`,
+      icon: <SearchIcon fontSize="small" />,
+      selected: pathname.startsWith(`/app/${currentWorkspace?.id}/search`),
+      testId: "nav-search",
+      subitems: [
+        {
+          text: "Assets",
+          href: `/app/${currentWorkspace?.id}/search/assets`,
+          icon: <InventoryIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/search/assets`,
+          testId: "nav-search-assets",
+        },
+        {
+          text: "Orders",
+          href: `/app/${currentWorkspace?.id}/search/orders`,
+          icon: <DescriptionOutlinedIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/search/orders`,
+          testId: "nav-search-orders",
+        },
+        {
+          text: "Rentals",
+          href: `/app/${currentWorkspace?.id}/search/rentals`,
+          icon: <EventNoteIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/search/rentals`,
+          testId: "nav-search-rentals",
+        },
+        {
+          text: "Products",
+          href: `/app/${currentWorkspace?.id}/search/products`,
+          icon: <BusinessOutlinedIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/search/products`,
+          testId: "nav-search-products",
+        },
+        {
+          text: "Categories",
+          href: `/app/${currentWorkspace?.id}/search/categories`,
+          icon: <FolderOpenIcon fontSize="small" />,
+          selected: pathname === `/app/${currentWorkspace?.id}/search/categories`,
+          testId: "nav-search-categories",
+        },
+      ],
+    });
+  }
 
   return (
     <Box
