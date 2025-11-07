@@ -487,10 +487,10 @@ Style: Modern product pictogram or app icon, viewed from isometric angle with cl
 Colors: Limited palette of blue, grey, black, and white. If brand names are mentioned, use their brand color schemes.
 
 Text Guidelines:
+- Do NOT include ANY text in the image
 - Do NOT use logos or branding
-- Do NOT add floating text in white space
-- Do NOT use text labels
-- ONLY exception: Technical specifications (weight limits, voltage, watts, power output) displayed as numeric values integrated into the equipment design itself (e.g., on the side of machinery, as part of control panels, on equipment plates)
+- Do NOT add text labels or numbers
+- Pure visual representation only
 
 Composition: Single item only, isolated on plain white background, consistent proportions, centered. 
 Lighting: Flat, no shadows or gradients. 
