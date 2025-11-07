@@ -2,6 +2,7 @@
 
 import { createSearchClient } from "@/lib/searchClient";
 import { useConfig } from "@/providers/ConfigProvider";
+import { GeneratedImage } from "@/ui/GeneratedImage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
@@ -474,6 +475,27 @@ function PriceCard({ hit }: { hit: PriceHit }) {
 
   const categoryBreadcrumb = getCategoryBreadcrumb();
 
+  // Build prompt for generated image
+  const imagePrompt = `Generate a flat minimalist vector illustration of ${priceName}${
+    categoryBreadcrumb ? ` from ${categoryBreadcrumb}` : ""
+  } in the context of construction work tools and machinery.
+
+IMPORTANT: Show ONLY the single item mentioned - do not add any additional equipment or items.
+
+Style: Modern product pictogram or app icon, viewed from isometric angle with clean geometric shapes and smooth color blocks.
+
+Colors: Limited palette of blue, grey, black, and white. If brand names are mentioned, use their brand color schemes.
+
+Text Guidelines:
+- Do NOT use logos or branding
+- Do NOT add floating text in white space
+- Do NOT use text labels
+- ONLY exception: Technical specifications (weight limits, voltage, watts, power output) displayed as numeric values integrated into the equipment design itself (e.g., on the side of machinery, as part of control panels, on equipment plates)
+
+Composition: Single item only, isolated on plain white background, consistent proportions, centered. 
+Lighting: Flat, no shadows or gradients. 
+Aspect ratio: 1:1`;
+
   // Type badge colors
   const typeBadgeStyles =
     priceType === "RENTAL"
@@ -514,8 +536,8 @@ function PriceCard({ hit }: { hit: PriceHit }) {
           overflow: "hidden",
         }}
       >
-        <img
-          src={imageUrl}
+        <GeneratedImage
+          prompt={imagePrompt}
           alt={priceName}
           style={{
             position: "absolute",

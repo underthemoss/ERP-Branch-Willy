@@ -10,6 +10,7 @@ interface AppConfig {
   graphqlUrl: string;
   searchApiUrl: string;
   setCookieUrl: string;
+  imageGenerationUrl: string;
   apiUrl: string;
   auth0Domain: string;
   auth0ClientId: string;
@@ -36,6 +37,16 @@ function getSetCookieUrl(graphqlUrl: string): string {
   return `${url.protocol}//${url.host}${pathPrefix}/api/auth/set-cookie`;
 }
 
+/**
+ * Derives the image generation URL from the GraphQL URL
+ * Replaces /graphql with /api/images/media
+ */
+function getImageGenerationUrl(graphqlUrl: string): string {
+  const url = new URL(graphqlUrl);
+  const pathPrefix = url.pathname.replace(/\/graphql$/, "");
+  return `${url.protocol}//${url.host}${pathPrefix}/api/images/media`;
+}
+
 // Read environment variables at module level (build time)
 const graphqlUrl =
   process.env.NEXT_PUBLIC_GQL_URL ||
@@ -45,6 +56,7 @@ const config: AppConfig = {
   graphqlUrl,
   searchApiUrl: getSearchApiUrl(graphqlUrl),
   setCookieUrl: getSetCookieUrl(graphqlUrl),
+  imageGenerationUrl: getImageGenerationUrl(graphqlUrl),
   apiUrl: process.env.NEXT_PUBLIC_API_URL || "",
   auth0Domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "",
   auth0ClientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "",
