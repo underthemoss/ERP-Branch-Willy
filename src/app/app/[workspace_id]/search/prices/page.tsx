@@ -484,7 +484,7 @@ IMPORTANT: Show ONLY the single item mentioned - do not add any additional equip
 
 Style: Modern product pictogram or app icon, viewed from isometric angle with clean geometric shapes and smooth color blocks.
 
-Colors: Limited palette of blue, grey, black, and white. If brand names are mentioned, use their brand color schemes.
+Colors: Limited palette of blue, grey, construction yellow, black, and white. No transparency. If brand names are mentioned, use their brand color schemes.
 
 Text Guidelines:
 - Do NOT include ANY text in the image
