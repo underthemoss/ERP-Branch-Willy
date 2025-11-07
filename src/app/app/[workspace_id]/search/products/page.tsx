@@ -63,7 +63,7 @@ interface ProductHit {
 }
 
 // Modern Search Bar Component with Autocomplete
-function SearchBar() {
+function SearchBar({ workspaceId }: { workspaceId: string }) {
   const { query, refine } = useSearchBox();
   const config = useConfig();
   const { getAccessTokenSilently } = useAuth0();
@@ -84,14 +84,14 @@ function SearchBar() {
     async function initAutocomplete() {
       try {
         const token = await getAccessTokenSilently({ cacheMode: "on" });
-        const client = createSearchClient(token, config.searchApiUrl);
+        const client = createSearchClient(token, config.searchApiUrl, workspaceId);
         setAutocompleteClient(client);
       } catch (error) {
         console.error("Error initializing autocomplete client:", error);
       }
     }
     initAutocomplete();
-  }, [getAccessTokenSilently, config.searchApiUrl]);
+  }, [getAccessTokenSilently, config.searchApiUrl, workspaceId]);
 
   // Show suggestions when typing, hide when clicking outside
   React.useEffect(() => {
@@ -1186,7 +1186,7 @@ export default function ProductSearchPage() {
     async function initializeSearch() {
       try {
         const token = await getAccessTokenSilently({ cacheMode: "on" });
-        const client = createSearchClient(token, config.searchApiUrl);
+        const client = createSearchClient(token, config.searchApiUrl, workspaceId);
         setSearchClient(client);
       } catch (err) {
         console.error("Error initializing search client:", err);
@@ -1195,7 +1195,7 @@ export default function ProductSearchPage() {
     }
 
     initializeSearch();
-  }, [getAccessTokenSilently, config.searchApiUrl]);
+  }, [getAccessTokenSilently, config.searchApiUrl, workspaceId]);
 
   if (error) {
     return (
@@ -1252,7 +1252,7 @@ export default function ProductSearchPage() {
           }}
         >
           <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "20px 24px" }}>
-            <SearchBar />
+            <SearchBar workspaceId={workspaceId} />
           </div>
         </div>
 

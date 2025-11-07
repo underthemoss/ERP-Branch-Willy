@@ -10,13 +10,15 @@ import Client from "@searchkit/instantsearch-client";
  *
  * @param token - JWT Bearer token from Auth0 for authentication
  * @param searchApiUrl - The search API endpoint URL from configuration
+ * @param workspaceId - Optional workspace ID to filter search results by workspace
  * @returns InstantSearch-compatible search client
  */
-export function createSearchClient(token: string, searchApiUrl: string) {
+export function createSearchClient(token: string, searchApiUrl: string, workspaceId?: string) {
   return Client({
     url: searchApiUrl,
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(workspaceId && { "X-Workspace-Id": workspaceId }),
     },
   });
 }

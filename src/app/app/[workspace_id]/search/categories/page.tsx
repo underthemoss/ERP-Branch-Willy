@@ -22,7 +22,7 @@ export default function CategoryBrowserPage() {
     async function initializeSearch() {
       try {
         const token = await getAccessTokenSilently({ cacheMode: "on" });
-        const client = createSearchClient(token, config.searchApiUrl);
+        const client = createSearchClient(token, config.searchApiUrl, workspaceId);
         setSearchClient(client);
       } catch (err) {
         console.error("Error initializing search client:", err);
@@ -31,7 +31,7 @@ export default function CategoryBrowserPage() {
     }
 
     initializeSearch();
-  }, [getAccessTokenSilently, config.searchApiUrl]);
+  }, [getAccessTokenSilently, config.searchApiUrl, workspaceId]);
 
   if (error) {
     return (
