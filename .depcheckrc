@@ -6,4 +6,8 @@ ignores:
   - "@ianvs/prettier-plugin-sort-imports"
   - prettier-plugin-packagejson
   - "@storybook/addon-onboarding"
+  - "@tailwindcss/postcss"
+  - autoprefixer
+  - postcss
+  - tailwindcss
 skip-missing: true
