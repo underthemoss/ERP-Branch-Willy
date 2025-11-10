@@ -474,15 +474,15 @@ function PriceCard({ hit }: { hit: PriceHit }) {
   const categoryBreadcrumb = getCategoryBreadcrumb();
 
   // Build prompt for generated image
-  const imagePrompt = `Generate a flat minimalist vector illustration of ${priceName}${
+  const imagePrompt = `Generate a simple line drawing illustration of ${priceName}${
     categoryBreadcrumb ? ` from ${categoryBreadcrumb}` : ""
   } in the context of construction work tools and machinery.
 
 IMPORTANT: Show ONLY the single item mentioned - do not add any additional equipment or items.
 
-Style: Modern product pictogram or app icon, viewed from isometric angle with clean geometric shapes and smooth color blocks.
+Style: Clean line drawing similar to IKEA instruction manual diagrams. Simple black outlines with minimal detail, technical diagram aesthetic. Isometric or side view perspective.
 
-Colors: Limited palette of blue, grey, construction yellow, black, and white. No transparency. If brand names are mentioned, use their brand color schemes.
+Colors: Black lines on white background only. No colors, no shading, no gradients.
 
 Text Guidelines:
 - Do NOT include ANY text in the image
@@ -490,8 +490,7 @@ Text Guidelines:
 - Do NOT add text labels or numbers
 - Pure visual representation only
 
-Composition: Single item only, isolated on plain white background, consistent proportions, centered. 
-Lighting: Flat, no shadows or gradients. 
+Composition: Single item only, isolated on plain white background, consistent proportions, centered. Clean technical drawing with clear edges and simple geometric shapes.
 Aspect ratio: 1:1`;
 
   // Type badge colors
