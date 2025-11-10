@@ -221,7 +221,7 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
         setSelectedLogoUrl(defaultLogoUrl);
       }
     }
-  }, [brandData, defaultBannerUrl, defaultLogoUrl]);
+  }, [brandData, defaultBannerUrl, defaultLogoUrl, selectedBannerUrl, selectedLogoUrl]);
 
   const handleCreateWorkspace = async () => {
     setStep("creating");

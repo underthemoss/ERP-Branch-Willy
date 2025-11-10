@@ -470,7 +470,6 @@ interface BaseTransaction {
   lastUpdatedBy: ID
   notes: String
   projectId: ID
-  quotes: [Quote!]
   statusId: ID
   type: TransactionType
   updatedAt: DateTime
@@ -775,6 +774,33 @@ input CreatePriceBookInput {
   parentPriceBookPercentageFactor: Float = 1
   projectId: ID
   workspaceId: ID!
+}
+
+input CreateQuoteInput {
+  buyerWorkspaceId: String
+  buyersProjectId: String
+  buyersSellerContactId: String
+  rfqId: String
+  sellerWorkspaceId: String!
+  sellersBuyerContactId: String!
+  sellersProjectId: String!
+  status: QuoteStatus
+  validUntil: DateTime
+}
+
+input CreateQuoteRevisionInput {
+  lineItems: [QuoteRevisionLineItemInput!]!
+  quoteId: String!
+  revisionNumber: Int!
+  validUntil: DateTime
+}
+
+input CreateRFQInput {
+  buyersWorkspaceId: String!
+  invitedSellerContactIds: [String!]!
+  lineItems: [RFQLineItemInput!]!
+  responseDeadline: DateTime
+  status: RFQStatus
 }
 
 input CreateReferenceNumberTemplateInput {
@@ -1616,6 +1642,23 @@ type ListPricesResult {
   page: PaginationInfo!
 }
 
+input ListQuotesFilter {
+  buyerWorkspaceId: String
+  rfqId: String
+  sellerWorkspaceId: String
+  status: QuoteStatus
+}
+
+input ListQuotesPage {
+  number: Int
+  size: Int
+}
+
+input ListQuotesQuery {
+  filter: ListQuotesFilter!
+  page: ListQuotesPage
+}
+
 type ListRelationshipsResult {
   cursor: String
   relationships: [SpiceDBRelationship!]!
@@ -1732,6 +1775,9 @@ type Mutation {
   createPriceBook(input: CreatePriceBookInput!): PriceBook
   createProject(input: ProjectInput): Project
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
+  createQuote(input: CreateQuoteInput!): Quote!
+  createQuoteRevision(input: CreateQuoteRevisionInput!): QuoteRevision!
+  createRFQ(input: CreateRFQInput!): RFQ!
   createReferenceNumberTemplate(input: CreateReferenceNumberTemplateInput!): ReferenceNumberTemplate
   createRentalFulfilment(input: CreateRentalFulfilmentInput!): RentalFulfilment
   createRentalPrice(input: CreateRentalPriceInput!): RentalPrice
@@ -1844,6 +1890,8 @@ type Mutation {
   updateProjectStatus(id: String!, status: ProjectStatusEnum): Project
   updatePurchaseOrder(input: UpdatePurchaseOrderInput): PurchaseOrder
   updatePurchaseOrderLineItem(input: UpdatePurchaseOrderLineItemInput): PurchaseOrderLineItem @deprecated(reason: "use updateSalePurchaseOrderLineItem")
+  updateQuoteStatus(input: UpdateQuoteStatusInput!): Quote!
+  updateRFQ(input: UpdateRFQInput!): RFQ!
   updateReferenceNumberTemplate(input: UpdateReferenceNumberTemplateInput!): ReferenceNumberTemplate
   updateRentalPrice(input: UpdateRentalPriceInput!): RentalPrice
   updateRentalPurchaseOrderLineItem(input: UpdateRentalPurchaseOrderLineItemInput): RentalPurchaseOrderLineItem
@@ -2404,6 +2452,7 @@ type Query {
   listProjects(workspaceId: String!): [Project]
   listProjectsByParentProjectId(parent_project: String!): [Project]
   listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
+  listQuotes(query: ListQuotesQuery): QuotesResponse!
   listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
   listRentalFulfilments(filter: ListRentalFulfilmentsFilter!, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
   listRentalViews(filter: RentalViewFilterInput, page: ListRentalViewsPageInput): ListRentalViewsResult
@@ -2430,6 +2479,9 @@ type Query {
   listWorkspaceMembers(workspaceId: String!): ListWorkspaceMembersResult!
   listWorkspaces: ListWorkspacesResult!
   llm: Llm
+  quoteById(id: String!): Quote
+  quoteRevisionById(id: String!): QuoteRevision
+  rfqById(id: String!): RFQ
   searchBrands(query: String!): [BrandSearchResult]
   searchDocuments(collections: [SearchableCollectionType!], page: Int = 1, pageSize: Int = 20, searchText: String, workspaceId: String!): SearchDocumentsResult!
   usersSearch(searchTerm: String): [User]
@@ -2437,8 +2489,193 @@ type Query {
 }
 
 type Quote {
-  id: ID
-  url: String
+  buyerWorkspaceId: String
+  buyersProject: Project
+  buyersProjectId: String
+  buyersSellerContact: Contact
+  buyersSellerContactId: String
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  currentRevision: QuoteRevision
+  currentRevisionId: String
+  id: String!
+  rfqId: String
+  sellerWorkspaceId: String!
+  sellersBuyerContact: Contact
+  sellersBuyerContactId: String!
+  sellersProject: Project
+  sellersProjectId: String!
+  status: QuoteStatus!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+  validUntil: DateTime
+}
+
+enum QuoteLineItemType {
+  RENTAL
+  SALE
+  SERVICE
+}
+
+type QuoteRevision {
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  id: String!
+  lineItems: [QuoteRevisionLineItem!]!
+  quoteId: String!
+  revisionNumber: Int!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+  validUntil: DateTime
+}
+
+union QuoteRevisionLineItem = QuoteRevisionRentalLineItem | QuoteRevisionSaleLineItem | QuoteRevisionServiceLineItem
+
+input QuoteRevisionLineItemInput {
+  description: String!
+  id: String
+  pimCategoryId: String
+  price: Float
+  pricePerDayInCents: Int
+  pricePerMonthInCents: Int
+  pricePerWeekInCents: Int
+  quantity: Int
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+  unitPrice: Float
+}
+
+type QuoteRevisionRentalLineItem {
+  description: String!
+  id: String
+  pimCategory: PimCategory
+  pimCategoryId: String!
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
+  quantity: Int!
+  rentalEndDate: DateTime!
+  rentalStartDate: DateTime!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+}
+
+type QuoteRevisionSaleLineItem {
+  description: String!
+  id: String
+  pimCategory: PimCategory
+  pimCategoryId: String!
+  quantity: Int!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+  unitPrice: Float!
+}
+
+type QuoteRevisionServiceLineItem {
+  description: String!
+  id: String
+  price: Float!
+  quantity: Int!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+}
+
+enum QuoteStatus {
+  ACCEPTED
+  CANCELLED
+  DRAFT
+  EXPIRED
+  REJECTED
+  REVISED
+  SENT
+}
+
+type QuotesResponse {
+  items: [Quote!]!
+}
+
+type RFQ {
+  buyersWorkspaceId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  createdByUser: User
+  id: String!
+  invitedSellerContactIds: [String!]!
+  invitedSellerContacts: [Contact!]
+  lineItems: [RFQLineItem!]!
+  responseDeadline: DateTime
+  status: RFQStatus!
+  updatedAt: DateTime!
+  updatedBy: String!
+  updatedByUser: User
+}
+
+union RFQLineItem = RFQRentalLineItem | RFQSaleLineItem | RFQServiceLineItem
+
+input RFQLineItemInput {
+  description: String!
+  id: String
+  pimCategoryId: String
+  price: Float
+  pricePerDayInCents: Int
+  pricePerMonthInCents: Int
+  pricePerWeekInCents: Int
+  quantity: Int
+  rentalEndDate: DateTime
+  rentalStartDate: DateTime
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+  unitPrice: Float
+}
+
+type RFQRentalLineItem {
+  description: String!
+  id: String
+  pimCategory: PimCategory
+  pimCategoryId: String!
+  pricePerDayInCents: Int!
+  pricePerMonthInCents: Int!
+  pricePerWeekInCents: Int!
+  quantity: Int!
+  rentalEndDate: DateTime!
+  rentalStartDate: DateTime!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+}
+
+type RFQSaleLineItem {
+  description: String!
+  id: String
+  pimCategory: PimCategory
+  pimCategoryId: String!
+  quantity: Int!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+  unitPrice: Float!
+}
+
+type RFQServiceLineItem {
+  description: String!
+  id: String
+  price: Float!
+  quantity: Int!
+  subtotalInCents: Int!
+  type: QuoteLineItemType!
+}
+
+enum RFQStatus {
+  ACCEPTED
+  CANCELLED
+  DRAFT
+  EXPIRED
+  REJECTED
+  SENT
 }
 
 type ReferenceNumberTemplate {
@@ -2650,7 +2887,6 @@ type RentalTransaction implements BaseTransaction {
   pricePerMonthInCents: Int
   pricePerWeekInCents: Int
   projectId: ID
-  quotes: [Quote!]
   startDate: DateTime
   statusId: ID
   type: TransactionType
@@ -3035,7 +3271,6 @@ type SaleTransaction implements BaseTransaction {
   product: String
   projectId: ID
   quantity: Int
-  quotes: [Quote!]
   statusId: ID
   type: TransactionType
   updatedAt: DateTime
@@ -3285,7 +3520,6 @@ type ServiceTransaction implements BaseTransaction {
   location: String
   notes: String
   projectId: ID
-  quotes: [Quote!]
   statusId: ID
   tasks: [ServiceTask!]
   type: TransactionType
@@ -3502,6 +3736,19 @@ input UpdatePurchaseOrderLineItemInput {
   po_pim_id: String
   po_quantity: Int
   price_id: String
+}
+
+input UpdateQuoteStatusInput {
+  id: String!
+  status: QuoteStatus!
+}
+
+input UpdateRFQInput {
+  id: String!
+  invitedSellerContactIds: [String!]
+  lineItems: [RFQLineItemInput!]
+  responseDeadline: DateTime
+  status: RFQStatus
 }
 
 input UpdateReferenceNumberTemplateInput {

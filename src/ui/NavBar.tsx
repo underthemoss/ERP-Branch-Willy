@@ -26,6 +26,7 @@ import MailIcon from "@mui/icons-material/Mail";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
@@ -200,6 +201,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
 
   // Add Search menu item only for platform admins
   if (isPlatformAdmin) {
+    navItems.splice(1, 0, {
+      text: "Quotes & Requests",
+      href: `/app/${currentWorkspace?.id}/quotes`,
+      icon: <RequestQuoteIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/quotes`,
+      testId: "nav-quotes",
+    });
     navItems.splice(5, 0, {
       text: "Search",
       href: `/app/${currentWorkspace?.id}/search/assets`,
