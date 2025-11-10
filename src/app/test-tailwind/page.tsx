@@ -1,5 +1,32 @@
 "use client";
 
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ConstructionIcon from "@mui/icons-material/Construction";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import DescriptionIcon from "@mui/icons-material/Description";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FactoryIcon from "@mui/icons-material/Factory";
+import HelpCenterIcon from "@mui/icons-material/HelpCenter";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import MenuIcon from "@mui/icons-material/Menu";
+import MessageIcon from "@mui/icons-material/Message";
+import NetworkCellIcon from "@mui/icons-material/NetworkCell";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PeopleIcon from "@mui/icons-material/People";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import SearchIcon from "@mui/icons-material/Search";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import { BarChart } from "@mui/x-charts/BarChart";
+import { Gauge } from "@mui/x-charts/Gauge";
+import { LineChart } from "@mui/x-charts/LineChart";
+import { PieChart } from "@mui/x-charts/PieChart";
 import { useState } from "react";
 
 export default function DashboardReference() {
@@ -13,46 +40,18 @@ export default function DashboardReference() {
     general: false,
   });
 
-  const navItems = [
-    { name: "Overview", icon: "▲", hasSubmenu: true },
-    { name: "Dashboard", icon: "📊", active: true },
-    { name: "Inventory", icon: "📦" },
-    { name: "Orders", icon: "📋" },
-    { name: "Transaction", icon: "💳" },
-    { name: "Manufacture", icon: "🏭" },
-    { name: "Customers", icon: "👥" },
-  ];
-
-  const personalItems = [
-    { name: "Message", icon: "💬", badge: 1 },
-    { name: "Activity", icon: "📈" },
-    { name: "Site Access IP", icon: "🌐" },
-  ];
-
-  const otherItems = [
-    { name: "General View", icon: "◯" },
-    { name: "Reports", icon: "📄" },
-  ];
-
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-60 bg-[#2D3748] text-white flex flex-col">
         {/* Logo */}
         <div className="p-4 flex items-center gap-3 border-b border-gray-700">
-          <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center">
-            <span className="text-[#2D3748] font-bold text-lg">◆</span>
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+            <ConstructionIcon className="text-white" sx={{ fontSize: 20 }} />
           </div>
-          <span className="font-bold text-lg">GemMatrix</span>
+          <span className="font-bold text-lg">ES ERP</span>
           <button className="ml-auto text-gray-400 hover:text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+            <MenuIcon sx={{ fontSize: 20 }} />
           </button>
         </div>
 
@@ -66,25 +65,81 @@ export default function DashboardReference() {
               }
               className="flex items-center gap-2 text-gray-400 text-sm mb-2 hover:text-white transition-colors w-full"
             >
-              <span className="text-xs">{sidebarExpanded.overview ? "▼" : "▶"}</span>
+              {sidebarExpanded.overview ? (
+                <ExpandMoreIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <ChevronRightIcon sx={{ fontSize: 16 }} />
+              )}
               <span>Overview</span>
             </button>
             {sidebarExpanded.overview && (
               <div className="space-y-1">
-                {navItems.slice(1).map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => setActiveNav(item.name)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      activeNav === item.name
-                        ? "bg-[#3d4a5c] text-white"
-                        : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="text-sm">{item.name}</span>
-                  </button>
-                ))}
+                <button
+                  onClick={() => setActiveNav("Dashboard")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Dashboard"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <DashboardIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Dashboard</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Inventory")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Inventory"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <InventoryIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Inventory</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Orders")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Orders"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <ShoppingCartIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Orders</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Transaction")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Transaction"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <AccountBalanceIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Transaction</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Manufacture")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Manufacture"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <FactoryIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Manufacture</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Customers")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Customers"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <PeopleIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Customers</span>
+                </button>
               </div>
             )}
           </div>
@@ -97,30 +152,51 @@ export default function DashboardReference() {
               }
               className="flex items-center gap-2 text-gray-400 text-sm mb-2 hover:text-white transition-colors w-full"
             >
-              <span className="text-xs">{sidebarExpanded.personal ? "▼" : "▶"}</span>
+              {sidebarExpanded.personal ? (
+                <ExpandMoreIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <ChevronRightIcon sx={{ fontSize: 16 }} />
+              )}
               <span>Personal</span>
             </button>
             {sidebarExpanded.personal && (
               <div className="space-y-1">
-                {personalItems.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => setActiveNav(item.name)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      activeNav === item.name
-                        ? "bg-[#3d4a5c] text-white"
-                        : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="text-sm flex-1 text-left">{item.name}</span>
-                    {item.badge && (
-                      <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setActiveNav("Message")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Message"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <MessageIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm flex-1 text-left">Message</span>
+                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    1
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Activity")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Activity"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <TrendingUpIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Activity</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Site Access IP")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Site Access IP"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <NetworkCellIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Site Access IP</span>
+                </button>
               </div>
             )}
           </div>
@@ -133,25 +209,37 @@ export default function DashboardReference() {
               }
               className="flex items-center gap-2 text-gray-400 text-sm mb-2 hover:text-white transition-colors w-full"
             >
-              <span className="text-xs">{sidebarExpanded.other ? "▼" : "▶"}</span>
+              {sidebarExpanded.other ? (
+                <ExpandMoreIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <ChevronRightIcon sx={{ fontSize: 16 }} />
+              )}
               <span>Other</span>
             </button>
             {sidebarExpanded.other && (
               <div className="space-y-1">
-                {otherItems.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => setActiveNav(item.name)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      activeNav === item.name
-                        ? "bg-[#3d4a5c] text-white"
-                        : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="text-sm">{item.name}</span>
-                  </button>
-                ))}
+                <button
+                  onClick={() => setActiveNav("General View")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "General View"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <RemoveRedEyeIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">General View</span>
+                </button>
+                <button
+                  onClick={() => setActiveNav("Reports")}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    activeNav === "Reports"
+                      ? "bg-[#3d4a5c] text-white"
+                      : "text-gray-300 hover:bg-[#3d4a5c] hover:text-white"
+                  }`}
+                >
+                  <DescriptionIcon sx={{ fontSize: 20 }} />
+                  <span className="text-sm">Reports</span>
+                </button>
               </div>
             )}
           </div>
@@ -164,7 +252,11 @@ export default function DashboardReference() {
               }
               className="flex items-center gap-2 text-gray-400 text-sm hover:text-white transition-colors w-full"
             >
-              <span className="text-xs">{sidebarExpanded.general ? "▼" : "▶"}</span>
+              {sidebarExpanded.general ? (
+                <ExpandMoreIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <ChevronRightIcon sx={{ fontSize: 16 }} />
+              )}
               <span>General</span>
             </button>
           </div>
@@ -173,12 +265,12 @@ export default function DashboardReference() {
         {/* Bottom Actions */}
         <div className="border-t border-gray-700 p-3 space-y-1">
           <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#3d4a5c] hover:text-white transition-colors">
-            <span>❓</span>
+            <HelpCenterIcon sx={{ fontSize: 20 }} />
             <span className="text-sm">Help Center</span>
-            <span className="ml-auto text-gray-500">→</span>
+            <ArrowForwardIcon className="ml-auto" sx={{ fontSize: 16 }} />
           </button>
           <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#3d4a5c] hover:text-white transition-colors">
-            <span>⚙️</span>
+            <SettingsIcon sx={{ fontSize: 20 }} />
             <span className="text-sm">Settings</span>
           </button>
         </div>
@@ -198,19 +290,7 @@ export default function DashboardReference() {
                 placeholder="Search here.."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
               />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <SearchIcon className="text-gray-400 absolute left-3 top-2.5" sx={{ fontSize: 20 }} />
               <span className="absolute right-3 top-2.5 text-xs text-gray-400 border border-gray-300 px-1.5 py-0.5 rounded">
                 ⌘/
               </span>
@@ -220,73 +300,19 @@ export default function DashboardReference() {
           <div className="flex items-center gap-3 ml-auto">
             {/* Refresh */}
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              <RefreshIcon className="text-gray-600" sx={{ fontSize: 20 }} />
             </button>
 
             {/* Location Selector */}
             <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <svg
-                className="w-4 h-4 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <LocationOnIcon className="text-gray-600" sx={{ fontSize: 18 }} />
               <span className="text-sm text-gray-700">Austin</span>
-              <svg
-                className="w-4 h-4 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <ExpandMoreIcon className="text-gray-600" sx={{ fontSize: 18 }} />
             </button>
 
             {/* Date Range */}
             <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <svg
-                className="w-4 h-4 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <CalendarTodayIcon className="text-gray-600" sx={{ fontSize: 16 }} />
               <span className="text-sm text-gray-700">01/04/2024 - 31/03/2025</span>
             </button>
 
@@ -313,37 +339,37 @@ export default function DashboardReference() {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             {/* Sale Card */}
             <DashboardCard title="Sale">
-              <div className="flex items-center justify-center gap-4 py-4">
-                <DonutChart value={75} color="#10b981" label="Sale" />
-                <DonutChart value={60} color="#f59e0b" label="Due" />
-                <DonutChart value={45} color="#f59e0b" label="Amount" />
+              <div className="flex items-center justify-center gap-2 py-2">
+                <GaugeChart value={75} color="#10b981" label="Sale" />
+                <GaugeChart value={60} color="#f59e0b" label="Due" />
+                <GaugeChart value={45} color="#f59e0b" label="Amount" />
               </div>
             </DashboardCard>
 
             {/* Purchase Card */}
             <DashboardCard title="Purchase">
-              <div className="flex items-center justify-center gap-4 py-4">
-                <DonutChart value={85} color="#0ea5e9" label="Purchase" />
-                <DonutChart value={55} color="#f59e0b" label="Due" />
-                <DonutChart value={70} color="#f59e0b" label="Amount" />
+              <div className="flex items-center justify-center gap-2 py-2">
+                <GaugeChart value={85} color="#0ea5e9" label="Purchase" />
+                <GaugeChart value={55} color="#f59e0b" label="Due" />
+                <GaugeChart value={70} color="#f59e0b" label="Amount" />
               </div>
             </DashboardCard>
 
             {/* Sale Interest Card */}
             <DashboardCard title="Sale interest">
-              <div className="flex items-center justify-center gap-4 py-4">
-                <DonutChart value={50} color="#84cc16" label="Count" />
-                <DonutChart value={90} color="#0ea5e9" label="Sale" />
-                <DonutChart value={65} color="#f59e0b" label="Interest" />
+              <div className="flex items-center justify-center gap-2 py-2">
+                <GaugeChart value={50} color="#84cc16" label="Count" />
+                <GaugeChart value={90} color="#0ea5e9" label="Sale" />
+                <GaugeChart value={65} color="#f59e0b" label="Interest" />
               </div>
             </DashboardCard>
 
             {/* Sale Available Card */}
             <DashboardCard title="Sale available for fetch">
-              <div className="flex items-center justify-center gap-4 py-4">
-                <DonutChart value={40} color="#84cc16" label="Cert" />
-                <DonutChart value={75} color="#f59e0b" label="Loose" />
-                <DonutChart value={55} color="#f59e0b" label="Amount" />
+              <div className="flex items-center justify-center gap-2 py-2">
+                <GaugeChart value={40} color="#84cc16" label="Cert" />
+                <GaugeChart value={75} color="#f59e0b" label="Loose" />
+                <GaugeChart value={55} color="#f59e0b" label="Amount" />
               </div>
             </DashboardCard>
           </div>
@@ -355,14 +381,7 @@ export default function DashboardReference() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Stock view</h3>
                 <button className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <OpenInNewIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
@@ -412,7 +431,7 @@ export default function DashboardReference() {
 
                 {/* Pie Chart */}
                 <div className="flex-1 flex items-center justify-center">
-                  <PieChart />
+                  <StockViewPieChart />
                 </div>
               </div>
             </div>
@@ -422,14 +441,7 @@ export default function DashboardReference() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Import polish</h3>
                 <button className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <OpenInNewIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
@@ -471,7 +483,7 @@ export default function DashboardReference() {
 
                 {/* Pie Chart */}
                 <div className="flex-1 flex items-center justify-center">
-                  <PieChart2 />
+                  <ImportPolishPieChart />
                 </div>
               </div>
             </div>
@@ -484,14 +496,7 @@ export default function DashboardReference() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Sale overview</h3>
                 <button className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <OpenInNewIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
@@ -505,7 +510,7 @@ export default function DashboardReference() {
 
               {/* Line Chart */}
               <div className="h-48">
-                <LineChart />
+                <SaleOverviewLineChart />
               </div>
             </div>
 
@@ -514,20 +519,13 @@ export default function DashboardReference() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Export</h3>
                 <button className="text-gray-400 hover:text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <OpenInNewIcon sx={{ fontSize: 20 }} />
                 </button>
               </div>
 
               {/* Bar Chart */}
               <div className="h-64">
-                <BarChart />
+                <ExportBarChart />
               </div>
             </div>
           </div>
@@ -544,14 +542,7 @@ function DashboardCard({ title, children }: { title: string; children: React.Rea
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         <button className="text-gray-400 hover:text-gray-600 transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
+          <OpenInNewIcon sx={{ fontSize: 20 }} />
         </button>
       </div>
       {children}
@@ -559,34 +550,27 @@ function DashboardCard({ title, children }: { title: string; children: React.Rea
   );
 }
 
-// Donut Chart Component
-function DonutChart({ value, color, label }: { value: number; color: string; label: string }) {
-  const circumference = 2 * Math.PI * 35;
-  const strokeDashoffset = circumference - (value / 100) * circumference;
-
+// Gauge Chart Component (replaces DonutChart)
+function GaugeChart({ value, color, label }: { value: number; color: string; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-20 h-20">
-        <svg className="w-20 h-20 transform -rotate-90">
-          <circle cx="40" cy="40" r="35" stroke="#e5e7eb" strokeWidth="6" fill="none" />
-          <circle
-            cx="40"
-            cy="40"
-            r="35"
-            stroke={color}
-            strokeWidth="6"
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-500"
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-medium text-gray-700">{label}</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-1 mt-2">
+      <Gauge
+        width={100}
+        height={100}
+        value={value}
+        valueMin={0}
+        valueMax={100}
+        sx={{
+          [`& .MuiGauge-valueArc`]: {
+            fill: color,
+          },
+          [`& .MuiGauge-referenceArc`]: {
+            fill: "#e5e7eb",
+          },
+        }}
+        text={label}
+      />
+      <div className="flex items-center gap-1 mt-1">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
         <span className="text-xs text-gray-500">
           {label === "Sale" || label === "Purchase" ? "Sale" : "Due"}
@@ -596,184 +580,109 @@ function DonutChart({ value, color, label }: { value: number; color: string; lab
   );
 }
 
-// Pie Chart Component
-function PieChart() {
+// Stock View Pie Chart
+function StockViewPieChart() {
+  const data = [
+    { id: 0, value: 936.5, label: "Sale", color: "#f59e0b" },
+    { id: 1, value: 762.12, label: "Opening", color: "#0ea5e9" },
+    { id: 2, value: 230.25, label: "Stock", color: "#a855f7" },
+    { id: 3, value: 152.36, label: "Purchase", color: "#06b6d4" },
+  ];
+
   return (
-    <svg viewBox="0 0 200 200" className="w-48 h-48">
-      <circle cx="100" cy="100" r="80" fill="#f59e0b" />
-      <path d="M 100 100 L 100 20 A 80 80 0 0 1 180 100 Z" fill="#06b6d4" />
-      <path d="M 100 100 L 180 100 A 80 80 0 0 1 130 170 Z" fill="#a855f7" />
-      <path d="M 100 100 L 130 170 A 80 80 0 0 1 20 100 Z" fill="#0ea5e9" />
-      <text x="100" y="85" textAnchor="middle" className="text-2xl font-bold fill-white">
-        100
-      </text>
-      <text x="100" y="105" textAnchor="middle" className="text-xs fill-white">
-        Total
-      </text>
-      <text x="140" y="55" className="text-sm font-medium fill-white">
-        12
-      </text>
-      <text x="150" y="130" className="text-sm font-medium fill-white">
-        30
-      </text>
-      <text x="70" y="180" className="text-sm font-medium fill-white">
-        70
-      </text>
-    </svg>
+    <PieChart
+      series={[
+        {
+          data,
+          highlightScope: { fade: "global", highlight: "item" },
+          innerRadius: 40,
+          outerRadius: 80,
+          paddingAngle: 2,
+          cornerRadius: 4,
+        },
+      ]}
+      width={200}
+      height={200}
+      margin={{ right: 5 }}
+    />
   );
 }
 
-// Pie Chart 2 Component
-function PieChart2() {
+// Import Polish Pie Chart
+function ImportPolishPieChart() {
+  const data = [
+    { id: 0, value: 1.02, label: "Boxes", color: "#06b6d4" },
+    { id: 1, value: 2.17, label: "Cert", color: "#a855f7" },
+    { id: 2, value: 5.81, label: "Loose", color: "#f59e0b" },
+  ];
+
   return (
-    <svg viewBox="0 0 200 200" className="w-48 h-48">
-      <circle cx="100" cy="100" r="80" fill="#f59e0b" />
-      <path d="M 100 100 L 100 20 A 80 80 0 0 1 160 60 Z" fill="#06b6d4" />
-      <path d="M 100 100 L 160 60 A 80 80 0 0 1 180 100 Z" fill="#a855f7" />
-      <text x="100" y="85" textAnchor="middle" className="text-xl font-bold fill-white">
-        9.00
-      </text>
-      <text x="100" y="105" textAnchor="middle" className="text-xs fill-white">
-        Total
-      </text>
-      <text x="130" y="45" className="text-sm font-medium fill-white">
-        1.02
-      </text>
-      <text x="165" y="80" className="text-sm font-medium fill-white">
-        2.17
-      </text>
-      <text x="130" y="140" className="text-sm font-medium fill-white">
-        5.81
-      </text>
-    </svg>
+    <PieChart
+      series={[
+        {
+          data,
+          highlightScope: { fade: "global", highlight: "item" },
+          innerRadius: 40,
+          outerRadius: 80,
+          paddingAngle: 2,
+          cornerRadius: 4,
+        },
+      ]}
+      width={200}
+      height={200}
+      margin={{ right: 5 }}
+    />
   );
 }
 
-// Line Chart Component
-function LineChart() {
+// Sale Overview Line Chart
+function SaleOverviewLineChart() {
+  const thisMonthData = [2.0, 2.3, 2.2, 3.2, 3.0, 3.8];
+  const lastMonthData = [2.2, 3.0, 2.7, 2.5, 3.2, 3.0];
+
   return (
-    <svg viewBox="0 0 400 150" className="w-full h-full">
-      {/* Grid lines */}
-      <line x1="40" y1="20" x2="40" y2="130" stroke="#e5e7eb" strokeWidth="1" />
-      <line x1="40" y1="130" x2="380" y2="130" stroke="#e5e7eb" strokeWidth="1" />
-
-      {/* This Month Line */}
-      <polyline
-        points="40,80 100,70 160,75 220,45 280,50 340,30"
-        fill="none"
-        stroke="#3b82f6"
-        strokeWidth="2"
-      />
-
-      {/* Last Month Line */}
-      <polyline
-        points="40,75 100,50 160,60 220,65 280,45 340,50"
-        fill="none"
-        stroke="#ef4444"
-        strokeWidth="2"
-      />
-
-      {/* Dots for This Month */}
-      {[40, 100, 160, 220, 280, 340].map((x, i) => (
-        <circle key={`this-${i}`} cx={x} cy={[80, 70, 75, 45, 50, 30][i]} r="4" fill="#3b82f6" />
-      ))}
-
-      {/* Dots for Last Month */}
-      {[40, 100, 160, 220, 280, 340].map((x, i) => (
-        <circle key={`last-${i}`} cx={x} cy={[75, 50, 60, 65, 45, 50][i]} r="4" fill="#ef4444" />
-      ))}
-
-      {/* X-axis labels */}
-      {["Jan", "Feb", "Mar", "Apr", "Mai", "Jun"].map((month, i) => (
-        <text
-          key={month}
-          x={40 + i * 60}
-          y="145"
-          textAnchor="middle"
-          className="text-xs fill-gray-600"
-        >
-          {month}
-        </text>
-      ))}
-
-      {/* Y-axis labels */}
-      <text x="30" y="130" textAnchor="end" className="text-xs fill-gray-600">
-        0
-      </text>
-      <text x="30" y="90" textAnchor="end" className="text-xs fill-gray-600">
-        $2M
-      </text>
-      <text x="30" y="50" textAnchor="end" className="text-xs fill-gray-600">
-        $4M
-      </text>
-      <text x="30" y="25" textAnchor="end" className="text-xs fill-gray-600">
-        $6M
-      </text>
-
-      {/* Legend */}
-      <circle cx="250" cy="10" r="4" fill="#3b82f6" />
-      <text x="260" y="14" className="text-xs fill-gray-700">
-        This Month
-      </text>
-      <circle cx="330" cy="10" r="4" fill="#ef4444" />
-      <text x="340" y="14" className="text-xs fill-gray-700">
-        Last Month
-      </text>
-    </svg>
+    <LineChart
+      xAxis={[{ data: [0, 1, 2, 3, 4, 5], scaleType: "point" }]}
+      series={[
+        {
+          data: thisMonthData,
+          label: "This Month",
+          color: "#3b82f6",
+          curve: "linear",
+        },
+        {
+          data: lastMonthData,
+          label: "Last Month",
+          color: "#ef4444",
+          curve: "linear",
+        },
+      ]}
+      height={200}
+      margin={{ left: 50, right: 10, top: 30, bottom: 30 }}
+      grid={{ vertical: false, horizontal: true }}
+    />
   );
 }
 
-// Bar Chart Component
-function BarChart() {
-  const names = ["Jane", "Warren", "Esther", "Cody", "Albert", "Richards"];
-  const values = [4.5, 5.5, 1.8, 4.2, 5.2, 3.8];
-  const maxValue = 6;
-
+// Export Bar Chart
+function ExportBarChart() {
   return (
-    <svg viewBox="0 0 400 200" className="w-full h-full">
-      {/* Y-axis labels */}
-      <text x="35" y="30" textAnchor="end" className="text-xs fill-gray-600">
-        $6M
-      </text>
-      <text x="35" y="80" textAnchor="end" className="text-xs fill-gray-600">
-        $4M
-      </text>
-      <text x="35" y="130" textAnchor="end" className="text-xs fill-gray-600">
-        $2M
-      </text>
-      <text x="35" y="180" textAnchor="end" className="text-xs fill-gray-600">
-        0
-      </text>
-
-      {/* Grid lines */}
-      <line x1="45" y1="30" x2="380" y2="30" stroke="#e5e7eb" strokeWidth="1" />
-      <line x1="45" y1="80" x2="380" y2="80" stroke="#e5e7eb" strokeWidth="1" />
-      <line x1="45" y1="130" x2="380" y2="130" stroke="#e5e7eb" strokeWidth="1" />
-      <line x1="45" y1="180" x2="380" y2="180" stroke="#e5e7eb" strokeWidth="1" />
-
-      {/* Bars */}
-      {names.map((name, i) => {
-        const barHeight = (values[i] / maxValue) * 150;
-        const x = 55 + i * 55;
-        const y = 180 - barHeight;
-
-        return (
-          <g key={name}>
-            <rect
-              x={x}
-              y={y}
-              width="35"
-              height={barHeight}
-              fill="#0d9488"
-              rx="4"
-              className="hover:fill-teal-700 transition-colors cursor-pointer"
-            />
-            <text x={x + 17.5} y="195" textAnchor="middle" className="text-xs fill-gray-700">
-              {name}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <BarChart
+      xAxis={[
+        {
+          scaleType: "band",
+          data: ["Jane", "Warren", "Esther", "Cody", "Albert", "Richards"],
+        },
+      ]}
+      series={[
+        {
+          data: [4.5, 5.5, 1.8, 4.2, 5.2, 3.8],
+          color: "#0d9488",
+        },
+      ]}
+      height={256}
+      margin={{ left: 50, right: 10, top: 10, bottom: 40 }}
+      grid={{ horizontal: true }}
+    />
   );
 }
