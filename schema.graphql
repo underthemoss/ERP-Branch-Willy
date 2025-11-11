@@ -22,7 +22,7 @@ type AdminMutationNamespace {
   ): Boolean
 
   """
-  Touch all documents in a collection by adding/updating a _touch timestamp field. This triggers CDC for all documents.
+  Touch all documents in a collection by adding/updating a _touch timestamp field.
   """
   collectionSnapshot(
     """Name of the collection to snapshot"""
@@ -132,11 +132,6 @@ type AdminMutationNamespace {
 }
 
 type AdminQueryNamespace {
-  """
-  Get the CDC sync status for all MongoDB collections in the es-erp database
-  """
-  cdcCollectionStatus: CDCStatusResult!
-
   """Get a single Auth0 user by ID (Admin only)"""
   getUserById(
     """Auth0 user ID"""
@@ -605,50 +600,6 @@ input BusinessContactInput {
   workspaceId: String!
 }
 
-type CDCCollectionStatus {
-  collectionName: String!
-  isSynced: Boolean!
-
-  """Reason why collection is not synced (if applicable)"""
-  reason: String
-}
-
-type CDCEvent {
-  """The collection where the change occurred"""
-  collection: String!
-
-  """The database where the change occurred"""
-  database: String!
-
-  """The document key that was affected"""
-  documentKey: JSON
-
-  """The full document after the change"""
-  fullDocument: JSON
-
-  """The full document before the change (when available)"""
-  fullDocumentBeforeChange: JSON
-
-  """The type of operation (insert, update, replace, delete)"""
-  operationType: String!
-
-  """The complete raw CDC event data"""
-  rawEvent: JSON
-
-  """When the change occurred"""
-  timestamp: String!
-
-  """Details about what was updated (for update operations)"""
-  updateDescription: JSON
-}
-
-type CDCStatusResult {
-  collections: [CDCCollectionStatus!]!
-  notSyncedCollections: Int!
-  syncedCollections: Int!
-  totalCollections: Int!
-}
-
 input CancelInvoiceInput {
   invoiceId: String!
 }
@@ -937,6 +888,11 @@ input CreateServiceFulfilmentInput {
 input CreateWorkflowConfigurationInput {
   columns: [WorkflowColumnInput!]!
   name: String!
+}
+
+type CurrentTimeEvent {
+  """The current server time"""
+  timestamp: String!
 }
 
 """
@@ -2361,6 +2317,7 @@ enum PurchaseOrderStatus {
 type Query {
   """Admin operations (Admin only)"""
   admin: AdminQueryNamespace
+  calculateSubTotal(durationInDays: Int!, priceId: ID!): LineItemPriceForecast!
   currentUser: JWTPayload @deprecated(reason: "use getCurrentUser instead")
   getBrandByDomain(domain: String!): Brand
   getBrandById(brandId: String!): Brand
@@ -2391,6 +2348,7 @@ type Query {
   getPimCategoryById(id: ID!): PimCategory
   getPimProductById(id: ID!): PimProduct
   getPriceBookById(id: ID!): PriceBook
+  getPriceById(id: ID!): Price
   getProjectById(id: String!): Project
   getPurchaseOrderById(id: String): PurchaseOrder
   getPurchaseOrderLineItemById(id: String): PurchaseOrderLineItem
@@ -2539,16 +2497,11 @@ input QuoteRevisionLineItemInput {
   description: String!
   id: String
   pimCategoryId: String
-  price: Float
-  pricePerDayInCents: Int
-  pricePerMonthInCents: Int
-  pricePerWeekInCents: Int
   quantity: Int
   rentalEndDate: DateTime
   rentalStartDate: DateTime
-  subtotalInCents: Int!
+  sellersPriceId: ID!
   type: QuoteLineItemType!
-  unitPrice: Float
 }
 
 type QuoteRevisionRentalLineItem {
@@ -2556,12 +2509,11 @@ type QuoteRevisionRentalLineItem {
   id: String
   pimCategory: PimCategory
   pimCategoryId: String!
-  pricePerDayInCents: Int!
-  pricePerMonthInCents: Int!
-  pricePerWeekInCents: Int!
+  price: Price
   quantity: Int!
   rentalEndDate: DateTime!
   rentalStartDate: DateTime!
+  sellersPriceId: ID!
   subtotalInCents: Int!
   type: QuoteLineItemType!
 }
@@ -2571,17 +2523,19 @@ type QuoteRevisionSaleLineItem {
   id: String
   pimCategory: PimCategory
   pimCategoryId: String!
+  price: Price
   quantity: Int!
+  sellersPriceId: ID!
   subtotalInCents: Int!
   type: QuoteLineItemType!
-  unitPrice: Float!
 }
 
 type QuoteRevisionServiceLineItem {
   description: String!
   id: String
-  price: Float!
+  price: Price
   quantity: Int!
+  sellersPriceId: ID!
   subtotalInCents: Int!
   type: QuoteLineItemType!
 }
@@ -2622,16 +2576,10 @@ input RFQLineItemInput {
   description: String!
   id: String
   pimCategoryId: String
-  price: Float
-  pricePerDayInCents: Int
-  pricePerMonthInCents: Int
-  pricePerWeekInCents: Int
   quantity: Int
   rentalEndDate: DateTime
   rentalStartDate: DateTime
-  subtotalInCents: Int!
   type: QuoteLineItemType!
-  unitPrice: Float
 }
 
 type RFQRentalLineItem {
@@ -2639,13 +2587,9 @@ type RFQRentalLineItem {
   id: String
   pimCategory: PimCategory
   pimCategoryId: String!
-  pricePerDayInCents: Int!
-  pricePerMonthInCents: Int!
-  pricePerWeekInCents: Int!
   quantity: Int!
   rentalEndDate: DateTime!
   rentalStartDate: DateTime!
-  subtotalInCents: Int!
   type: QuoteLineItemType!
 }
 
@@ -2655,17 +2599,13 @@ type RFQSaleLineItem {
   pimCategory: PimCategory
   pimCategoryId: String!
   quantity: Int!
-  subtotalInCents: Int!
   type: QuoteLineItemType!
-  unitPrice: Float!
 }
 
 type RFQServiceLineItem {
   description: String!
   id: String
-  price: Float!
   quantity: Int!
-  subtotalInCents: Int!
   type: QuoteLineItemType!
 }
 
@@ -2769,6 +2709,7 @@ type RentalMaterializedView {
 }
 
 type RentalPrice {
+  calculateSubTotal(durationInDays: Int!): LineItemPriceForecast!
   createdAt: DateTime!
   createdBy: String!
   id: ID!
@@ -3577,23 +3518,10 @@ type SubmissionSalesOrder {
 }
 
 type Subscription {
-  """Subscribe to all CDC events (Platform Admin only)"""
-  adminCdcEvents: CDCEvent
-
   """
-  Subscribe to CDC events for a specific collection (Platform Admin only)
+  Subscribe to current server time updates (emitted every 5 seconds, for educational purposes)
   """
-  adminCdcEventsByCollection(collection: String!): CDCEvent
-
-  """
-  Subscribe to CDC events for a specific collection and operation (Platform Admin only)
-  """
-  adminCdcEventsByCollectionAndOperation(collection: String!, operationType: String!): CDCEvent
-
-  """
-  Subscribe to CDC events for a specific operation type (Platform Admin only)
-  """
-  adminCdcEventsByOperation(operationType: String!): CDCEvent
+  currentTime: CurrentTimeEvent
 }
 
 enum SupportedContentType {
