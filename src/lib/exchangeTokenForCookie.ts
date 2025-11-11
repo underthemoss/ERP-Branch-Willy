@@ -21,10 +21,8 @@ export async function exchangeTokenForCookie(token: string, setCookieUrl: string
       );
     }
 
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error("Cookie exchange failed: server returned success=false");
-    }
+    // Backend returns 204 No Content on success (no body to parse)
+    // No need to check response body - response.ok already validates success
   } catch (error) {
     console.error("Error exchanging token for cookie:", error);
     // Don't throw - we want to continue even if cookie exchange fails
