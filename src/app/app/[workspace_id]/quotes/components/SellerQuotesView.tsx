@@ -2,8 +2,9 @@
 
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { Box, Chip, IconButton, Typography } from "@mui/material";
+import { Box, Chip, IconButton, Tooltip, Typography } from "@mui/material";
 import { DataGridPremium, GridColDef } from "@mui/x-data-grid-premium";
+import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 
 type SalesQuoteRow = {
@@ -60,6 +61,10 @@ interface SellerQuotesViewProps {
 }
 
 export function SellerQuotesView({ searchTerm }: SellerQuotesViewProps) {
+  const router = useRouter();
+  const params = useParams();
+  const workspaceId = params?.workspace_id as string;
+
   const filteredRows = React.useMemo(() => {
     if (!searchTerm) return fakeSalesQuotesData;
     const lower = searchTerm.toLowerCase();
@@ -67,6 +72,15 @@ export function SellerQuotesView({ searchTerm }: SellerQuotesViewProps) {
       Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
     );
   }, [searchTerm]);
+
+  const handleRowClick = (quoteId: string) => {
+    router.push(`/app/${workspaceId}/quotes/${quoteId}`);
+  };
+
+  const handleViewClick = (event: React.MouseEvent, quoteId: string) => {
+    event.stopPropagation();
+    router.push(`/app/${workspaceId}/quotes/${quoteId}`);
+  };
 
   const columns: GridColDef[] = [
     {
@@ -136,14 +150,22 @@ export function SellerQuotesView({ searchTerm }: SellerQuotesViewProps) {
       headerName: "Actions",
       width: 120,
       sortable: false,
-      renderCell: () => (
+      renderCell: (params) => (
         <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton size="small" sx={{ color: "#6B7280" }}>
-            <DescriptionOutlinedIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" sx={{ color: "#6B7280" }}>
-            <VisibilityOutlinedIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Generate PDF">
+            <IconButton size="small" sx={{ color: "#6B7280" }}>
+              <DescriptionOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="View Details">
+            <IconButton
+              size="small"
+              sx={{ color: "#6B7280" }}
+              onClick={(e) => handleViewClick(e, params.row.id)}
+            >
+              <VisibilityOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
       ),
     },
@@ -156,6 +178,7 @@ export function SellerQuotesView({ searchTerm }: SellerQuotesViewProps) {
       disableRowSelectionOnClick
       hideFooter
       getRowId={(row: SalesQuoteRow) => row.id}
+      onRowClick={(params) => handleRowClick(params.row.id)}
       sx={{
         border: "none",
         "& .MuiDataGrid-columnHeaders": {

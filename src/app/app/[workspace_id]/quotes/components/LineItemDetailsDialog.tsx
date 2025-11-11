@@ -129,7 +129,7 @@ export function LineItemDetailsDialog({
     if (!canSubmit) return;
 
     const details: LineItemDetails = {
-      priceId: price._id,
+      priceId: price.objectID,
       priceName: price.name || "Unnamed Price",
       priceType: price.priceType,
       pimCategoryId: price.pimCategoryId,

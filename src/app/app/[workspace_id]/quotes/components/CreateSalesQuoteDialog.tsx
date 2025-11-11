@@ -137,37 +137,27 @@ export function CreateSalesQuoteDialog({ open, onClose }: CreateSalesQuoteDialog
         setQuoteId(newQuoteId);
 
         // Create the first revision with the line item
+        const lineItemInput = {
+          type: details.priceType === "RENTAL" ? QuoteLineItemType.Rental : QuoteLineItemType.Sale,
+          description: details.description,
+          pimCategoryId: details.pimCategoryId,
+          quantity: details.quantity,
+          sellersPriceId: details.priceId,
+          ...(details.priceType === "RENTAL"
+            ? {
+                rentalStartDate: details.rentalStartDate?.toISOString(),
+                rentalEndDate: details.rentalEndDate?.toISOString(),
+              }
+            : {}),
+        };
+
         await createQuoteRevision({
           variables: {
             input: {
               quoteId: newQuoteId,
               revisionNumber: 1,
               validUntil: validUntil.toISOString(),
-              lineItems: [
-                {
-                  type:
-                    details.priceType === "RENTAL"
-                      ? QuoteLineItemType.Rental
-                      : QuoteLineItemType.Sale,
-                  description: details.description,
-                  pimCategoryId: details.pimCategoryId,
-                  quantity: details.quantity,
-                  subtotalInCents: details.subtotalInCents,
-                  ...(details.priceType === "RENTAL"
-                    ? {
-                        pricePerDayInCents: details.pricePerDayInCents,
-                        pricePerWeekInCents: details.pricePerWeekInCents,
-                        pricePerMonthInCents: details.pricePerMonthInCents,
-                        rentalStartDate: details.rentalStartDate?.toISOString(),
-                        rentalEndDate: details.rentalEndDate?.toISOString(),
-                      }
-                    : {
-                        unitPrice: details.unitCostInCents
-                          ? details.unitCostInCents / 100
-                          : undefined,
-                      }),
-                },
-              ],
+              lineItems: [lineItemInput],
             },
           },
         });
@@ -183,31 +173,33 @@ export function CreateSalesQuoteDialog({ open, onClose }: CreateSalesQuoteDialog
         const validUntil = new Date();
         validUntil.setDate(validUntil.getDate() + validForDays);
 
+        const lineItemsInput = newLineItems.map((item) => ({
+          type: item.priceType === "RENTAL" ? QuoteLineItemType.Rental : QuoteLineItemType.Sale,
+          description: item.description,
+          pimCategoryId: item.pimCategoryId,
+          quantity: item.quantity,
+          sellersPriceId: item.priceId,
+          ...(item.priceType === "RENTAL"
+            ? {
+                rentalStartDate: item.rentalStartDate?.toISOString(),
+                rentalEndDate: item.rentalEndDate?.toISOString(),
+              }
+            : {}),
+        }));
+
+        console.log("🔄 Updating revision with line items:", lineItemsInput);
+        console.log(
+          "🔄 sellersPriceIds:",
+          lineItemsInput.map((item) => item.sellersPriceId),
+        );
+
         await createQuoteRevision({
           variables: {
             input: {
               quoteId,
               revisionNumber: 1, // Still revision 1 since we're building the initial quote
               validUntil: validUntil.toISOString(),
-              lineItems: newLineItems.map((item) => ({
-                type:
-                  item.priceType === "RENTAL" ? QuoteLineItemType.Rental : QuoteLineItemType.Sale,
-                description: item.description,
-                pimCategoryId: item.pimCategoryId,
-                quantity: item.quantity,
-                subtotalInCents: item.subtotalInCents,
-                ...(item.priceType === "RENTAL"
-                  ? {
-                      pricePerDayInCents: item.pricePerDayInCents,
-                      pricePerWeekInCents: item.pricePerWeekInCents,
-                      pricePerMonthInCents: item.pricePerMonthInCents,
-                      rentalStartDate: item.rentalStartDate?.toISOString(),
-                      rentalEndDate: item.rentalEndDate?.toISOString(),
-                    }
-                  : {
-                      unitPrice: item.unitCostInCents ? item.unitCostInCents / 100 : undefined,
-                    }),
-              })),
+              lineItems: lineItemsInput,
             },
           },
         });
