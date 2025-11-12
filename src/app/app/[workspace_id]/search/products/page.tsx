@@ -2,6 +2,7 @@
 
 import { createSearchClient } from "@/lib/searchClient";
 import { useConfig } from "@/providers/ConfigProvider";
+import { GeneratedImage } from "@/ui/GeneratedImage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
@@ -207,18 +208,9 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
   };
 
   return (
-    <div ref={searchRef} style={{ position: "relative", width: "100%" }}>
+    <div ref={searchRef} className="relative w-full">
       <svg
-        style={{
-          position: "absolute",
-          left: "16px",
-          top: "50%",
-          transform: "translateY(-50%)",
-          width: "20px",
-          height: "20px",
-          color: "#6b7280",
-          zIndex: 1,
-        }}
+        className="absolute left-4 top-1/2 z-[1] h-5 w-5 -translate-y-1/2 text-gray-500"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -245,24 +237,7 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
         }}
         onKeyDown={handleKeyDown}
         placeholder="Search products by name, make, model, SKU, UPC..."
-        style={{
-          width: "100%",
-          padding: "14px 48px",
-          fontSize: "16px",
-          border: "2px solid #e5e7eb",
-          borderRadius: "12px",
-          outline: "none",
-          transition: "all 0.2s ease",
-          backgroundColor: "#ffffff",
-        }}
-        onFocusCapture={(e) => {
-          e.target.style.borderColor = "#3b82f6";
-          e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)";
-        }}
-        onBlurCapture={(e) => {
-          e.target.style.borderColor = "#e5e7eb";
-          e.target.style.boxShadow = "none";
-        }}
+        className="w-full rounded-xl border-2 border-gray-200 bg-white px-12 py-3.5 text-base outline-none transition-all duration-200 ease-in-out focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
       />
       {localQuery && (
         <button
@@ -271,31 +246,7 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
             refine("");
             setShowSuggestions(false);
           }}
-          style={{
-            position: "absolute",
-            right: "12px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "4px",
-            color: "#6b7280",
-            transition: "all 0.2s ease",
-            zIndex: 1,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#f3f4f6";
-            e.currentTarget.style.color = "#111827";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.color = "#6b7280";
-          }}
+          className="absolute right-3 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center rounded border-none bg-transparent p-1 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-100 hover:text-gray-900"
         >
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -310,31 +261,9 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
 
       {/* Autocomplete Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            left: 0,
-            right: 0,
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            maxHeight: "400px",
-            overflowY: "auto",
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ padding: "8px 12px", borderBottom: "1px solid #f3f4f6" }}>
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#6b7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1000] max-h-[400px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-gray-100 px-3 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Product Suggestions
             </div>
           </div>
@@ -350,74 +279,29 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
                 key={product.objectID}
                 onClick={() => handleSuggestionClick(product)}
                 onMouseEnter={() => setFocusedIndex(index)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "12px",
-                  cursor: "pointer",
-                  backgroundColor: isFocused ? "#f9fafb" : "transparent",
-                  borderBottom: index < suggestions.length - 1 ? "1px solid #f3f4f6" : "none",
-                  transition: "background-color 0.15s ease",
-                }}
+                className={`flex cursor-pointer items-center p-3 transition-[background-color] duration-150 ease-in-out ${
+                  isFocused ? "bg-gray-50" : "bg-transparent"
+                } ${index < suggestions.length - 1 ? "border-b border-gray-100" : ""}`}
               >
-                <div
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    backgroundColor: "#f3f4f6",
-                    borderRadius: "8px",
-                    flexShrink: 0,
-                    marginRight: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <img
-                    src="https://appcdn.equipmentshare.com/img/cogplaceholder.png"
+                <div className="mr-3 flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                  <GeneratedImage
+                    entity="pim-product"
+                    entityId={product.objectID}
                     alt=""
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#111827",
-                      marginBottom: "4px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900">
                     {name}
                   </div>
                   {(make || model) && (
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                        marginBottom: "2px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <div className="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-gray-500">
                       {make && model ? `${make} ${model}` : make || model}
                     </div>
                   )}
                   {categoryBreadcrumb && (
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#9ca3af",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-gray-400">
                       {categoryBreadcrumb}
                     </div>
                   )}
@@ -428,7 +312,7 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
                   fill="none"
                   stroke="#9ca3af"
                   viewBox="0 0 24 24"
-                  style={{ flexShrink: 0, marginLeft: "8px" }}
+                  className="ml-2 flex-shrink-0"
                 >
                   <path
                     strokeLinecap="round"
@@ -464,21 +348,11 @@ function FilterSection({ title, attribute, searchable = false }: FilterProps) {
   const displayItems = showAll ? items : items.slice(0, 6);
 
   return (
-    <div style={{ marginBottom: "28px" }}>
-      <h3
-        style={{
-          fontSize: "14px",
-          fontWeight: 600,
-          color: "#111827",
-          marginBottom: "12px",
-          letterSpacing: "-0.01em",
-        }}
-      >
-        {title}
-      </h3>
+    <div className="mb-7">
+      <h3 className="mb-3 text-sm font-semibold tracking-tight text-gray-900">{title}</h3>
 
       {searchable && (
-        <div style={{ position: "relative", marginBottom: "12px" }}>
+        <div className="relative mb-3">
           <input
             type="text"
             value={searchQuery}
@@ -487,88 +361,34 @@ function FilterSection({ title, attribute, searchable = false }: FilterProps) {
               searchForItems(e.target.value);
             }}
             placeholder={`Search ${title.toLowerCase()}...`}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              fontSize: "13px",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-              outline: "none",
-              transition: "all 0.2s ease",
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#3b82f6";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#e5e7eb";
-            }}
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] outline-none transition-all duration-200 ease-in-out focus:border-blue-500"
           />
         </div>
       )}
 
       {items.length === 0 && searchQuery ? (
-        <div
-          style={{
-            padding: "12px 8px",
-            fontSize: "13px",
-            color: "#6b7280",
-            textAlign: "center",
-            fontStyle: "italic",
-          }}
-        >
+        <div className="px-2 py-3 text-center text-[13px] italic text-gray-500">
           No results found
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div className="flex flex-col gap-1.5">
           {displayItems.map((item) => (
             <label
               key={item.label}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                padding: "6px 8px",
-                borderRadius: "6px",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f9fafb";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className="flex cursor-pointer items-center rounded-md px-2 py-1.5 transition-all duration-150 ease-in-out hover:bg-gray-50"
             >
               <input
                 type="checkbox"
                 checked={item.isRefined}
                 onChange={() => refine(item.value)}
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  marginRight: "10px",
-                  cursor: "pointer",
-                  accentColor: "#3b82f6",
-                }}
+                className="mr-2.5 h-4 w-4 cursor-pointer accent-blue-500"
               />
               <span
-                style={{
-                  flex: 1,
-                  fontSize: "14px",
-                  color: "#374151",
-                  fontWeight: item.isRefined ? 500 : 400,
-                }}
+                className={`flex-1 text-sm text-gray-700 ${item.isRefined ? "font-medium" : "font-normal"}`}
               >
                 {item.label}
               </span>
-              <span
-                style={{
-                  fontSize: "12px",
-                  color: "#9ca3af",
-                  fontWeight: 500,
-                }}
-              >
-                {item.count}
-              </span>
+              <span className="text-xs font-medium text-gray-400">{item.count}</span>
             </label>
           ))}
         </div>
@@ -577,23 +397,7 @@ function FilterSection({ title, attribute, searchable = false }: FilterProps) {
       {items.length > 6 && (
         <button
           onClick={() => setShowAll(!showAll)}
-          style={{
-            marginTop: "8px",
-            padding: "6px 0",
-            fontSize: "13px",
-            color: "#3b82f6",
-            fontWeight: 500,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            transition: "color 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "#2563eb";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#3b82f6";
-          }}
+          className="mt-2 border-none bg-transparent px-0 py-1.5 text-[13px] font-medium text-blue-500 transition-colors duration-200 ease-in-out hover:text-blue-600"
         >
           {showAll ? "Show less" : `Show ${items.length - 6} more`}
         </button>
@@ -631,43 +435,17 @@ function ActiveFilters() {
   if (items.length === 0) return null;
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
+    <div className="mb-5 flex flex-wrap gap-2">
       {items.map((item) =>
         item.refinements.map((refinement) => (
           <div
             key={`${item.attribute}-${refinement.label}`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              backgroundColor: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "20px",
-              fontSize: "13px",
-              color: "#1e40af",
-              fontWeight: 500,
-            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[13px] font-medium text-blue-900"
           >
             <span>{getDisplayLabel(refinement.label, item.attribute)}</span>
             <button
               onClick={() => item.refine(refinement)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
-                color: "#1e40af",
-                transition: "color 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#1e3a8a";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#1e40af";
-              }}
+              className="flex items-center border-none bg-transparent p-0.5 text-blue-900 transition-colors duration-200 ease-in-out hover:text-blue-950"
             >
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -684,25 +462,7 @@ function ActiveFilters() {
       {items.length > 0 && (
         <button
           onClick={() => clear()}
-          style={{
-            padding: "6px 14px",
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "#6b7280",
-            backgroundColor: "transparent",
-            border: "1px solid #e5e7eb",
-            borderRadius: "20px",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#f9fafb";
-            e.currentTarget.style.borderColor = "#d1d5db";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.borderColor = "#e5e7eb";
-          }}
+          className="cursor-pointer rounded-full border border-gray-200 bg-transparent px-3.5 py-1.5 text-[13px] font-medium text-gray-500 transition-all duration-200 ease-in-out hover:border-gray-300 hover:bg-gray-50"
         >
           Clear all
         </button>
@@ -724,52 +484,19 @@ function ResultsBar({
   const sortOptions = [{ label: "Relevance", value: "" }];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "24px",
-        paddingBottom: "16px",
-        borderBottom: "1px solid #f3f4f6",
-      }}
-    >
-      <div style={{ fontSize: "14px", color: "#6b7280", fontWeight: 500 }}>
-        <span style={{ color: "#111827", fontWeight: 600 }}>{nbHits.toLocaleString()}</span> results
+    <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+      <div className="text-sm font-medium text-gray-500">
+        <span className="font-semibold text-gray-900">{nbHits.toLocaleString()}</span> results
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <label
-          htmlFor="sort-select"
-          style={{ fontSize: "14px", color: "#6b7280", fontWeight: 500 }}
-        >
+      <div className="flex items-center gap-3">
+        <label htmlFor="sort-select" className="text-sm font-medium text-gray-500">
           Sort by:
         </label>
         <select
           id="sort-select"
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
-          style={{
-            padding: "8px 36px 8px 12px",
-            fontSize: "14px",
-            fontWeight: 500,
-            color: "#111827",
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "8px",
-            cursor: "pointer",
-            outline: "none",
-            appearance: "none",
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 12px center",
-            transition: "all 0.2s ease",
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "#3b82f6";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = "#e5e7eb";
-          }}
+          className="cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%236b7280%27 d=%27M6 9L1 4h10z%27/%3E%3C/svg%3E')] bg-[length:12px_12px] bg-[center_right_12px] bg-no-repeat py-2 pl-3 pr-9 text-sm font-medium text-gray-900 outline-none transition-all duration-200 ease-in-out focus:border-blue-500"
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -791,7 +518,6 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
   const variant = hit.data.product_core_attributes.variant || null;
   const sku = hit.data.product_source_attributes.sku || null;
   const mpn = hit.data.product_source_attributes.manufacturer_part_number || null;
-  const imageUrl = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
 
   // Build category breadcrumb
   const getCategoryBreadcrumb = (): string => {
@@ -821,39 +547,13 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
     <a
       href="#"
       onClick={(e) => e.preventDefault()}
-      style={{
-        display: "block",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "12px",
-        overflow: "hidden",
-        transition: "all 0.3s ease",
-        textDecoration: "none",
-        color: "inherit",
-        height: "100%",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 12px 24px -4px rgba(0, 0, 0, 0.1)";
-        e.currentTarget.style.borderColor = "#d1d5db";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.borderColor = "#e5e7eb";
-      }}
+      className="block h-full overflow-hidden rounded-xl border border-gray-200 bg-white text-inherit no-underline transition-all duration-300 ease-in-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.1)]"
     >
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          paddingTop: "75%",
-          backgroundColor: "#f9fafb",
-          overflow: "hidden",
-        }}
-      >
-        <img
-          src={imageUrl}
+      <div className="relative w-full overflow-hidden bg-gray-50 pt-[75%]">
+        <GeneratedImage
+          entity="pim-product"
+          entityId={hit.objectID}
+          size="card"
           alt={name}
           style={{
             position: "absolute",
@@ -865,24 +565,7 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
           }}
         />
         {sku && (
-          <div
-            style={{
-              position: "absolute",
-              top: "12px",
-              right: "12px",
-              padding: "6px 12px",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#ffffff",
-              backgroundColor: "rgba(17, 24, 39, 0.9)",
-              borderRadius: "6px",
-              backdropFilter: "blur(8px)",
-              letterSpacing: "0.5px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
+          <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-md bg-gray-900/90 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white backdrop-blur-sm">
             <svg
               width="12"
               height="12"
@@ -897,84 +580,31 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
           </div>
         )}
       </div>
-      <div style={{ padding: "16px" }}>
-        <h3
-          style={{
-            fontSize: "15px",
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: "8px",
-            lineHeight: "1.4",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            minHeight: "42px",
-          }}
-        >
+      <div className="p-4">
+        <h3 className="mb-2 min-h-[42px] overflow-hidden text-ellipsis text-[15px] font-semibold leading-[1.4] text-gray-900 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]">
           {name}
         </h3>
 
         {makeModelYear && (
-          <p
-            style={{
-              fontSize: "13px",
-              color: "#6b7280",
-              marginBottom: "8px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <p className="mb-2 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-gray-500">
             {makeModelYear}
           </p>
         )}
 
         {categoryBreadcrumb && (
-          <p
-            style={{
-              fontSize: "11px",
-              color: "#9ca3af",
-              marginBottom: "12px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <p className="mb-3 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-gray-400">
             {categoryBreadcrumb}
           </p>
         )}
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
+        <div className="mt-auto flex flex-wrap gap-1.5">
           {variant && (
-            <span
-              style={{
-                padding: "4px 8px",
-                fontSize: "10px",
-                fontWeight: 600,
-                color: "#7c3aed",
-                backgroundColor: "#f5f3ff",
-                borderRadius: "4px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
+            <span className="rounded bg-purple-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-purple-600">
               {variant}
             </span>
           )}
           {mpn && (
-            <span
-              style={{
-                padding: "4px 8px",
-                fontSize: "10px",
-                fontWeight: 500,
-                color: "#6b7280",
-                backgroundColor: "#f9fafb",
-                borderRadius: "4px",
-                fontFamily: "monospace",
-              }}
-            >
+            <span className="rounded bg-gray-50 px-2 py-1 font-mono text-[10px] font-medium text-gray-500">
               MPN: {mpn}
             </span>
           )}
@@ -990,24 +620,8 @@ function ProductGrid({ workspaceId }: { workspaceId: string }) {
 
   if (hits.length === 0) {
     return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "64px 24px",
-        }}
-      >
-        <div
-          style={{
-            width: "64px",
-            height: "64px",
-            margin: "0 auto 24px",
-            backgroundColor: "#f3f4f6",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="px-6 py-16 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
           <svg
             width="32"
             height="32"
@@ -1023,36 +637,14 @@ function ProductGrid({ workspaceId }: { workspaceId: string }) {
             />
           </svg>
         </div>
-        <h3
-          style={{
-            fontSize: "18px",
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: "8px",
-          }}
-        >
-          No results found
-        </h3>
-        <p
-          style={{
-            fontSize: "14px",
-            color: "#6b7280",
-          }}
-        >
-          Try adjusting your search or filters
-        </p>
+        <h3 className="mb-2 text-lg font-semibold text-gray-900">No results found</h3>
+        <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: "20px",
-      }}
-    >
+    <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
       {hits.map((hit) => (
         <ProductCard key={hit.objectID} hit={hit} workspaceId={workspaceId} />
       ))}
@@ -1090,51 +682,18 @@ function CustomPagination() {
     <button
       onClick={() => page !== undefined && refine(page)}
       disabled={isActive}
-      style={{
-        minWidth: "40px",
-        height: "40px",
-        padding: "0 12px",
-        fontSize: "14px",
-        fontWeight: 500,
-        color: isActive ? "#ffffff" : "#374151",
-        backgroundColor: isActive ? "#3b82f6" : "#ffffff",
-        border: "1px solid",
-        borderColor: isActive ? "#3b82f6" : "#e5e7eb",
-        borderRadius: "8px",
-        cursor: isActive ? "default" : "pointer",
-        transition: "all 0.2s ease",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = "#f9fafb";
-          e.currentTarget.style.borderColor = "#d1d5db";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = "#ffffff";
-          e.currentTarget.style.borderColor = "#e5e7eb";
-        }
-      }}
+      className={`flex min-w-[40px] items-center justify-center rounded-lg border px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-in-out ${
+        isActive
+          ? "cursor-default border-blue-500 bg-blue-500 text-white"
+          : "cursor-pointer border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+      }`}
     >
       {children}
     </button>
   );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "8px",
-        marginTop: "48px",
-        marginBottom: "32px",
-      }}
-    >
+    <div className="mb-8 mt-12 flex items-center justify-center gap-2">
       <PaginationButton page={currentRefinement - 1}>
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1144,7 +703,7 @@ function CustomPagination() {
       {visiblePages[0] > 0 && (
         <>
           <PaginationButton page={0}>1</PaginationButton>
-          {visiblePages[0] > 1 && <span style={{ color: "#9ca3af" }}>...</span>}
+          {visiblePages[0] > 1 && <span className="text-gray-400">...</span>}
         </>
       )}
 
@@ -1157,7 +716,7 @@ function CustomPagination() {
       {visiblePages[visiblePages.length - 1] < nbPages - 1 && (
         <>
           {visiblePages[visiblePages.length - 1] < nbPages - 2 && (
-            <span style={{ color: "#9ca3af" }}>...</span>
+            <span className="text-gray-400">...</span>
           )}
           <PaginationButton page={nbPages - 1}>{nbPages}</PaginationButton>
         </>
@@ -1199,30 +758,16 @@ export default function ProductSearchPage() {
 
   if (error) {
     return (
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "64px 24px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: "16px", color: "#ef4444" }}>{error}</p>
+      <div className="mx-auto max-w-[1200px] px-6 py-16 text-center">
+        <p className="text-base text-red-500">{error}</p>
       </div>
     );
   }
 
   if (!searchClient) {
     return (
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "64px 24px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: "16px", color: "#6b7280" }}>Loading search...</p>
+      <div className="mx-auto max-w-[1200px] px-6 py-16 text-center">
+        <p className="text-base text-gray-500">Loading search...</p>
       </div>
     );
   }
@@ -1235,74 +780,28 @@ export default function ProductSearchPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb", marginTop: -16 }}>
+    <div className="-mt-4 min-h-screen bg-gray-50">
       <InstantSearch searchClient={searchClient} indexName="t3_pim_products" routing={routing}>
         <Configure hitsPerPage={24} {...(sortBy ? { sort: sortBy } : {})} />
 
         {/* Header with Search */}
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            borderBottom: "1px solid #e5e7eb",
-            position: "sticky",
-            right: 0,
-            left: 0,
-            top: -16,
-            zIndex: 100,
-          }}
-        >
-          <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "20px 24px" }}>
+        <div className="sticky -top-4 left-0 right-0 z-[100] border-b border-gray-200 bg-white">
+          <div className="mx-auto max-w-[1600px] px-6 py-5">
             <SearchBar workspaceId={workspaceId} />
           </div>
         </div>
 
         {/* Main Content */}
-        <div style={{ maxWidth: "1600px", margin: "0 auto", display: "flex", minHeight: "100vh" }}>
+        <div className="mx-auto flex min-h-screen max-w-[1600px]">
           {/* Sidebar Filters */}
-          <aside
-            style={{
-              width: "320px",
-              flexShrink: 0,
-              backgroundColor: "#ffffff",
-              borderRight: "1px solid #e5e7eb",
-              padding: "24px 20px",
-              position: "sticky",
-              top: "73px",
-              height: "calc(100vh - 80px)",
-              overflowY: "auto",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 700,
-                color: "#111827",
-                marginBottom: "24px",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Filters
-            </h2>
+          <aside className="sticky top-[73px] h-[calc(100vh-80px)] w-80 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white px-5 py-6">
+            <h2 className="mb-6 text-base font-bold tracking-tight text-gray-900">Filters</h2>
 
-            <div style={{ marginBottom: "28px" }}>
-              <h3
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#111827",
-                  marginBottom: "12px",
-                  letterSpacing: "-0.01em",
-                }}
-              >
+            <div className="mb-7">
+              <h3 className="mb-3 text-sm font-semibold tracking-tight text-gray-900">
                 Categories
               </h3>
-              <div
-                style={{
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                }}
-              >
+              <div className="max-h-[300px] overflow-x-hidden overflow-y-auto">
                 <HierarchicalMenu
                   attributes={[
                     "category_lvl1",
@@ -1331,20 +830,12 @@ export default function ProductSearchPage() {
           </aside>
 
           {/* Main Content Area */}
-          <main style={{ flex: 1, padding: "32px 32px 64px" }}>
-            <div style={{ marginBottom: "24px" }}>
-              <h1
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#111827",
-                  marginBottom: "8px",
-                  letterSpacing: "-0.02em",
-                }}
-              >
+          <main className="flex-1 px-8 pb-16 pt-8">
+            <div className="mb-6">
+              <h1 className="mb-2 text-[32px] font-bold tracking-tight text-gray-900">
                 Product Catalog
               </h1>
-              <p style={{ fontSize: "14px", color: "#6b7280" }}>
+              <p className="text-sm text-gray-500">
                 Browse and search our complete product inventory
               </p>
             </div>

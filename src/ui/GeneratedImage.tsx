@@ -3,14 +3,18 @@
 import { useConfig } from "@/providers/ConfigProvider";
 import { useMemo, useState } from "react";
 
+type ImageSize = "list" | "card" | "preview" | "full";
+
 interface GeneratedImageProps {
-  entity: "price";
+  entity: "price" | "pim-product";
   entityId: string;
+  size?: ImageSize;
   alt?: string;
   className?: string;
   width?: number | string;
   height?: number | string;
   style?: React.CSSProperties;
+  showIllustrativeBanner?: boolean;
 }
 
 const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
@@ -25,6 +29,7 @@ const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder
  * <GeneratedImage
  *   entity="price"
  *   entityId="price-123"
+ *   size="card"
  *   alt="Track Excavator"
  *   width={200}
  *   height={200}
@@ -34,11 +39,13 @@ const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder
 export function GeneratedImage({
   entity,
   entityId,
+  size = "list",
   alt = "Generated image",
   className,
   width,
   height,
   style,
+  showIllustrativeBanner = true,
 }: GeneratedImageProps) {
   const { graphqlUrl } = useConfig();
   const [isLoading, setIsLoading] = useState(true);
@@ -49,13 +56,24 @@ export function GeneratedImage({
     const url = new URL(graphqlUrl);
     const pathPrefix = url.pathname.replace(/\/graphql$/, "");
 
+    let baseUrl: string;
     switch (entity) {
       case "price":
-        return `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${entityId}`;
+        baseUrl = `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${entityId}`;
+        break;
+      case "pim-product":
+        baseUrl = `${url.protocol}//${url.host}${pathPrefix}/api/images/pim-products/${entityId}`;
+        break;
       default:
         throw new Error(`Unsupported entity type: ${entity}`);
     }
-  }, [graphqlUrl, entity, entityId]);
+
+    // Add size parameter if not the default
+    if (size !== "list") {
+      return `${baseUrl}?size=${size}`;
+    }
+    return baseUrl;
+  }, [graphqlUrl, entity, entityId, size]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -119,6 +137,31 @@ export function GeneratedImage({
           onLoad={handleLoad}
           onError={handleError}
         />
+      )}
+
+      {/* Illustrative banner - horizontal bar at 75% down the image */}
+      {showIllustrativeBanner && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            left: 0,
+            right: 0,
+            backgroundColor: "rgba(59, 130, 246, 0.9)",
+            color: "#ffffff",
+            padding: "2px 8px",
+            fontSize: "9px",
+            fontWeight: 700,
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+            zIndex: 10,
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          Illustrative Image Only
+        </div>
       )}
 
       {/* Keyframes for shimmer animation */}
