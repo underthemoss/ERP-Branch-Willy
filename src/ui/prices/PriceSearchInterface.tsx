@@ -473,26 +473,6 @@ function PriceCard({ hit }: { hit: PriceHit }) {
 
   const categoryBreadcrumb = getCategoryBreadcrumb();
 
-  // Build prompt for generated image
-  const imagePrompt = `Generate a simple line drawing illustration of ${priceName}${
-    categoryBreadcrumb ? ` from ${categoryBreadcrumb}` : ""
-  } in the context of construction work tools and machinery.
-
-IMPORTANT: Show ONLY the single item mentioned - do not add any additional equipment or items.
-
-Style: Clean line drawing similar to IKEA instruction manual diagrams. Simple black outlines with minimal detail, technical diagram aesthetic. Isometric or side view perspective.
-
-Colors: Black lines on white background only. No colors, no shading, no gradients.
-
-Text Guidelines:
-- Do NOT include ANY text in the image
-- Do NOT use logos or branding
-- Do NOT add text labels or numbers
-- Pure visual representation only
-
-Composition: Single item only, isolated on plain white background, consistent proportions, centered. Clean technical drawing with clear edges and simple geometric shapes.
-Aspect ratio: 1:1`;
-
   // Type badge colors
   const typeBadgeStyles =
     priceType === "RENTAL"
@@ -534,7 +514,8 @@ Aspect ratio: 1:1`;
         }}
       >
         <GeneratedImage
-          prompt={imagePrompt}
+          entity="price"
+          entityId={hit.objectID}
           alt={priceName}
           style={{
             position: "absolute",

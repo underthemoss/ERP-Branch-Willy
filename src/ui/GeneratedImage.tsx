@@ -4,7 +4,8 @@ import { useConfig } from "@/providers/ConfigProvider";
 import { useMemo, useState } from "react";
 
 interface GeneratedImageProps {
-  prompt: string;
+  entity: "price";
+  entityId: string;
   alt?: string;
   className?: string;
   width?: number | string;
@@ -15,14 +16,15 @@ interface GeneratedImageProps {
 const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
 
 /**
- * GeneratedImage component that displays a dynamically generated image based on a prompt.
- * The prompt is base64 encoded and used as the key parameter for the image generation API.
+ * GeneratedImage component that displays a dynamically generated image for an entity.
+ * The component fetches images from entity-specific API endpoints based on the entity ID.
  * Includes loading state and fallback image handling.
  *
  * @example
  * ```tsx
  * <GeneratedImage
- *   prompt="Generate a flat minimalist vector illustration of a Track Excavator"
+ *   entity="price"
+ *   entityId="price-123"
  *   alt="Track Excavator"
  *   width={200}
  *   height={200}
@@ -30,22 +32,30 @@ const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder
  * ```
  */
 export function GeneratedImage({
-  prompt,
+  entity,
+  entityId,
   alt = "Generated image",
   className,
   width,
   height,
   style,
 }: GeneratedImageProps) {
-  const { imageGenerationUrl } = useConfig();
+  const { graphqlUrl } = useConfig();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   const imageUrl = useMemo(() => {
-    // Base64 encode the prompt (UTF-8 safe)
-    const base64Prompt = btoa(unescape(encodeURIComponent(prompt)));
-    return `${imageGenerationUrl}?key=${base64Prompt}`;
-  }, [imageGenerationUrl, prompt]);
+    // Build entity-specific image URL
+    const url = new URL(graphqlUrl);
+    const pathPrefix = url.pathname.replace(/\/graphql$/, "");
+
+    switch (entity) {
+      case "price":
+        return `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${entityId}`;
+      default:
+        throw new Error(`Unsupported entity type: ${entity}`);
+    }
+  }, [graphqlUrl, entity, entityId]);
 
   const handleLoad = () => {
     setIsLoading(false);
