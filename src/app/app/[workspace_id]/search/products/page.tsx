@@ -6,6 +6,7 @@ import { GeneratedImage } from "@/ui/GeneratedImage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import {
@@ -475,9 +476,13 @@ function ActiveFilters() {
 function ResultsBar({
   sortBy,
   onSortChange,
+  viewMode,
+  onViewModeChange,
 }: {
   sortBy: string;
   onSortChange: (value: string) => void;
+  viewMode: "grid" | "list";
+  onViewModeChange: (mode: "grid" | "list") => void;
 }) {
   const { nbHits } = useStats();
 
@@ -504,6 +509,46 @@ function ResultsBar({
             </option>
           ))}
         </select>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+          <button
+            onClick={() => onViewModeChange("grid")}
+            className={`flex items-center justify-center rounded-md p-2 transition-all duration-200 ${
+              viewMode === "grid"
+                ? "bg-blue-500 text-white"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            }`}
+            title="Grid View"
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={() => onViewModeChange("list")}
+            className={`flex items-center justify-center rounded-md p-2 transition-all duration-200 ${
+              viewMode === "list"
+                ? "bg-blue-500 text-white"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            }`}
+            title="List View"
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -544,9 +589,8 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
   const makeModelYear = [make, model, year].filter(Boolean).join(" • ");
 
   return (
-    <a
-      href="#"
-      onClick={(e) => e.preventDefault()}
+    <Link
+      href={`/app/${workspaceId}/products/${hit.objectID}`}
       className="block h-full overflow-hidden rounded-xl border border-gray-200 bg-white text-inherit no-underline transition-all duration-300 ease-in-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.1)]"
     >
       <div className="relative w-full overflow-hidden bg-gray-50 pt-[75%]">
@@ -610,7 +654,7 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
           )}
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -647,6 +691,130 @@ function ProductGrid({ workspaceId }: { workspaceId: string }) {
     <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
       {hits.map((hit) => (
         <ProductCard key={hit.objectID} hit={hit} workspaceId={workspaceId} />
+      ))}
+    </div>
+  );
+}
+
+// Product List Item (for list view)
+function ProductListItem({ hit, workspaceId }: { hit: ProductHit; workspaceId: string }) {
+  const name = hit.data.product_core_attributes.name || "Unnamed Product";
+  const make = hit.data.product_core_attributes.make || null;
+  const model = hit.data.product_core_attributes.model || null;
+  const year = hit.data.product_core_attributes.year || null;
+  const variant = hit.data.product_core_attributes.variant || null;
+  const sku = hit.data.product_source_attributes.sku || null;
+  const mpn = hit.data.product_source_attributes.manufacturer_part_number || null;
+
+  // Build category breadcrumb
+  const getCategoryBreadcrumb = (): string => {
+    const levels: string[] = [];
+    for (let i = 1; i <= 12; i++) {
+      const levelKey = `category_lvl${i}` as keyof ProductHit;
+      const levelValue = hit[levelKey];
+      if (levelValue && typeof levelValue === "string") {
+        const parts = levelValue.split("|");
+        const categoryName = parts[parts.length - 1];
+        if (categoryName && !levels.includes(categoryName)) {
+          levels.push(categoryName);
+        }
+      } else {
+        break;
+      }
+    }
+    return levels.join(" › ");
+  };
+
+  const categoryBreadcrumb = getCategoryBreadcrumb();
+  const makeModelYear = [make, model, year].filter(Boolean).join(" • ");
+
+  return (
+    <Link
+      href={`/app/${workspaceId}/products/${hit.objectID}`}
+      className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 text-inherit no-underline transition-all duration-200 ease-in-out hover:border-gray-300 hover:shadow-md"
+    >
+      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-50">
+        <GeneratedImage
+          entity="pim-product"
+          entityId={hit.objectID}
+          size="list"
+          alt={name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <h3 className="mb-1 text-base font-semibold text-gray-900">{name}</h3>
+        {makeModelYear && <p className="mb-1 text-sm text-gray-500">{makeModelYear}</p>}
+        {categoryBreadcrumb && <p className="mb-2 text-xs text-gray-400">{categoryBreadcrumb}</p>}
+        <div className="flex flex-wrap gap-2">
+          {sku && (
+            <span className="inline-flex items-center gap-1 rounded bg-gray-900/90 px-2 py-1 font-mono text-[10px] font-bold tracking-wide text-white">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path d="M3 3h7l2 2h9a2 2 0 012 2v12a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2z" />
+              </svg>
+              {sku}
+            </span>
+          )}
+          {variant && (
+            <span className="rounded bg-purple-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-purple-600">
+              {variant}
+            </span>
+          )}
+          {mpn && (
+            <span className="rounded bg-gray-50 px-2 py-1 font-mono text-[10px] font-medium text-gray-500">
+              MPN: {mpn}
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// Product List
+function ProductList({ workspaceId }: { workspaceId: string }) {
+  const { hits } = useHits<ProductHit>();
+
+  if (hits.length === 0) {
+    return (
+      <div className="px-6 py-16 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+          <svg
+            width="32"
+            height="32"
+            fill="none"
+            stroke="#9ca3af"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <h3 className="mb-2 text-lg font-semibold text-gray-900">No results found</h3>
+        <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {hits.map((hit) => (
+        <ProductListItem key={hit.objectID} hit={hit} workspaceId={workspaceId} />
       ))}
     </div>
   );
@@ -740,6 +908,7 @@ export default function ProductSearchPage() {
   const [searchClient, setSearchClient] = React.useState<any>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<string>("");
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
 
   React.useEffect(() => {
     async function initializeSearch() {
@@ -841,8 +1010,17 @@ export default function ProductSearchPage() {
             </div>
 
             <ActiveFilters />
-            <ResultsBar sortBy={sortBy} onSortChange={setSortBy} />
-            <ProductGrid workspaceId={workspaceId} />
+            <ResultsBar
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
+            {viewMode === "grid" ? (
+              <ProductGrid workspaceId={workspaceId} />
+            ) : (
+              <ProductList workspaceId={workspaceId} />
+            )}
             <CustomPagination />
           </main>
         </div>

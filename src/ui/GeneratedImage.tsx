@@ -140,7 +140,7 @@ export function GeneratedImage({
       )}
 
       {/* Illustrative banner - horizontal bar at 75% down the image */}
-      {showIllustrativeBanner && (
+      {showIllustrativeBanner && size !== "list" && (
         <div
           style={{
             position: "absolute",
