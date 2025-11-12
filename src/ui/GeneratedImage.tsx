@@ -14,6 +14,7 @@ interface GeneratedImageProps {
   width?: number | string;
   height?: number | string;
   style?: React.CSSProperties;
+  showIllustrativeBanner?: boolean;
 }
 
 const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
@@ -44,6 +45,7 @@ export function GeneratedImage({
   width,
   height,
   style,
+  showIllustrativeBanner = true,
 }: GeneratedImageProps) {
   const { graphqlUrl } = useConfig();
   const [isLoading, setIsLoading] = useState(true);
@@ -135,6 +137,31 @@ export function GeneratedImage({
           onLoad={handleLoad}
           onError={handleError}
         />
+      )}
+
+      {/* Illustrative banner - horizontal bar at 75% down the image */}
+      {showIllustrativeBanner && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            left: 0,
+            right: 0,
+            backgroundColor: "rgba(59, 130, 246, 0.9)",
+            color: "#ffffff",
+            padding: "2px 8px",
+            fontSize: "9px",
+            fontWeight: 700,
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+            zIndex: 10,
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          Illustrative Image Only
+        </div>
       )}
 
       {/* Keyframes for shimmer animation */}
