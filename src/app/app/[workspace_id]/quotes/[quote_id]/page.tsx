@@ -313,9 +313,7 @@ function getStatusColor(
   status: QuoteStatus,
 ): "default" | "primary" | "success" | "error" | "warning" {
   switch (status) {
-    case QuoteStatus.Draft:
-      return "default";
-    case QuoteStatus.Sent:
+    case QuoteStatus.Active:
       return "primary";
     case QuoteStatus.Accepted:
       return "success";
@@ -325,8 +323,6 @@ function getStatusColor(
       return "error";
     case QuoteStatus.Expired:
       return "warning";
-    case QuoteStatus.Revised:
-      return "primary";
     default:
       return "default";
   }
@@ -444,7 +440,7 @@ export default function QuoteDetailPage() {
             </Stack>
           </Box>
           <Stack direction="row" spacing={1}>
-            {isSeller && quote.status === QuoteStatus.Draft && (
+            {isSeller && quote.status === QuoteStatus.Active && !quote.currentRevisionId && (
               <Button
                 variant="contained"
                 startIcon={<SendIcon />}
@@ -454,7 +450,7 @@ export default function QuoteDetailPage() {
                 Send Quote
               </Button>
             )}
-            {isBuyer && quote.status === QuoteStatus.Sent && (
+            {isBuyer && quote.status === QuoteStatus.Active && quote.currentRevisionId && (
               <>
                 <Button
                   variant="contained"

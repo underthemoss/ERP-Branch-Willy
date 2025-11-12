@@ -46,7 +46,7 @@ export function SendQuoteDialog({ open, onClose, quoteId, onSuccess }: SendQuote
         variables: {
           input: {
             id: quoteId,
-            status: QuoteStatus.Sent,
+            status: QuoteStatus.Active,
           },
         },
         refetchQueries: ["GetQuoteById"],

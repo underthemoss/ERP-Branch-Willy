@@ -124,7 +124,7 @@ export function CreateSalesQuoteDialog({ open, onClose }: CreateSalesQuoteDialog
               sellersBuyerContactId: buyerContactId,
               sellersProjectId: projectId,
               validUntil: validUntil.toISOString(),
-              status: QuoteStatus.Draft,
+              status: QuoteStatus.Active,
             },
           },
         });
