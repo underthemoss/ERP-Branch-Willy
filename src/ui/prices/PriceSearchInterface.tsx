@@ -515,6 +515,7 @@ function PriceCard({ hit }: { hit: PriceHit }) {
       >
         <GeneratedImage
           entity="price"
+          size="card"
           entityId={hit.objectID}
           alt={priceName}
           style={{

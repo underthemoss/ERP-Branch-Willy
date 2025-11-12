@@ -3,9 +3,12 @@
 import { useConfig } from "@/providers/ConfigProvider";
 import { useMemo, useState } from "react";
 
+type ImageSize = "list" | "card" | "preview" | "full";
+
 interface GeneratedImageProps {
-  entity: "price";
+  entity: "price" | "pim-product";
   entityId: string;
+  size?: ImageSize;
   alt?: string;
   className?: string;
   width?: number | string;
@@ -25,6 +28,7 @@ const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder
  * <GeneratedImage
  *   entity="price"
  *   entityId="price-123"
+ *   size="card"
  *   alt="Track Excavator"
  *   width={200}
  *   height={200}
@@ -34,6 +38,7 @@ const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder
 export function GeneratedImage({
   entity,
   entityId,
+  size = "list",
   alt = "Generated image",
   className,
   width,
@@ -49,13 +54,24 @@ export function GeneratedImage({
     const url = new URL(graphqlUrl);
     const pathPrefix = url.pathname.replace(/\/graphql$/, "");
 
+    let baseUrl: string;
     switch (entity) {
       case "price":
-        return `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${entityId}`;
+        baseUrl = `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${entityId}`;
+        break;
+      case "pim-product":
+        baseUrl = `${url.protocol}//${url.host}${pathPrefix}/api/images/pim-products/${entityId}`;
+        break;
       default:
         throw new Error(`Unsupported entity type: ${entity}`);
     }
-  }, [graphqlUrl, entity, entityId]);
+
+    // Add size parameter if not the default
+    if (size !== "list") {
+      return `${baseUrl}?size=${size}`;
+    }
+    return baseUrl;
+  }, [graphqlUrl, entity, entityId, size]);
 
   const handleLoad = () => {
     setIsLoading(false);

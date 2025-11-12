@@ -2,6 +2,7 @@
 
 import { createSearchClient } from "@/lib/searchClient";
 import { useConfig } from "@/providers/ConfigProvider";
+import { GeneratedImage } from "@/ui/GeneratedImage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
@@ -374,8 +375,9 @@ function SearchBar({ workspaceId }: { workspaceId: string }) {
                     overflow: "hidden",
                   }}
                 >
-                  <img
-                    src="https://appcdn.equipmentshare.com/img/cogplaceholder.png"
+                  <GeneratedImage
+                    entity="pim-product"
+                    entityId={product.objectID}
                     alt=""
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
@@ -852,8 +854,10 @@ function ProductCard({ hit, workspaceId }: { hit: ProductHit; workspaceId: strin
           overflow: "hidden",
         }}
       >
-        <img
-          src={imageUrl}
+        <GeneratedImage
+          entity="pim-product"
+          entityId={hit.objectID}
+          size="card"
           alt={name}
           style={{
             position: "absolute",
