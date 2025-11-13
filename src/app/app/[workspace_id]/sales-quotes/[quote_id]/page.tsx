@@ -368,6 +368,17 @@ export default function SalesQuoteDetailPage() {
                                 {item.pimCategory && (
                                   <p className="text-xs text-gray-500">{item.pimCategory.name}</p>
                                 )}
+                                {item.type === "RENTAL" &&
+                                  item.rentalStartDate &&
+                                  item.rentalEndDate && (
+                                    <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>
+                                        {formatDate(item.rentalStartDate)} -{" "}
+                                        {formatDate(item.rentalEndDate)}
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                           </td>
