@@ -251,7 +251,7 @@ export default function SalesQuotesPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quotes</h1>
-          <p className="text-gray-600">Manage quotes you've created for customers</p>
+          <p className="text-gray-600">Manage quotes you&apos;ve created for customers</p>
         </div>
 
         {/* Stats Cards */}

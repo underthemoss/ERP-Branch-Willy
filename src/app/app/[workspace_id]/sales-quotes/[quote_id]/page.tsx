@@ -4,12 +4,15 @@ import { graphql } from "@/graphql";
 import { QuoteStatus } from "@/graphql/graphql";
 import { useSalesQuoteDetail_GetQuoteByIdQuery } from "@/graphql/hooks";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import { GeneratedImage } from "@/ui/GeneratedImage";
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   CircleDot,
   Clock,
   DollarSign,
@@ -185,6 +188,7 @@ export default function SalesQuoteDetailPage() {
   const params = useParams();
   const quoteId = params?.quote_id as string;
   const workspaceId = params?.workspace_id as string;
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
 
   const { data, loading, error } = useSalesQuoteDetail_GetQuoteByIdQuery({
     variables: { id: quoteId },
@@ -346,13 +350,25 @@ export default function SalesQuoteDetailPage() {
                       {quote.currentRevision.lineItems.map((item: any, index: number) => (
                         <tr key={item.id || index} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {item.description}
-                              </p>
-                              {item.pimCategory && (
-                                <p className="text-xs text-gray-500">{item.pimCategory.name}</p>
+                            <div className="flex items-center gap-3">
+                              {item.sellersPriceId && (
+                                <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                                  <GeneratedImage
+                                    entity="price"
+                                    entityId={item.sellersPriceId}
+                                    size="list"
+                                    alt={item.description}
+                                  />
+                                </div>
                               )}
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {item.description}
+                                </p>
+                                {item.pimCategory && (
+                                  <p className="text-xs text-gray-500">{item.pimCategory.name}</p>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -482,7 +498,36 @@ export default function SalesQuoteDetailPage() {
                     </p>
                   )}
                   {quote.sellersProject.description && (
-                    <p className="text-sm text-gray-600 mt-2">{quote.sellersProject.description}</p>
+                    <div className="mt-2">
+                      <div className="relative">
+                        <p
+                          className={`text-sm text-gray-600 whitespace-pre-wrap ${
+                            isDescriptionExpanded ? "" : "max-h-32 overflow-hidden"
+                          }`}
+                        >
+                          {quote.sellersProject.description}
+                        </p>
+                        {!isDescriptionExpanded && (
+                          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                      >
+                        {isDescriptionExpanded ? (
+                          <>
+                            <ChevronUp className="w-3 h-3" />
+                            Show less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3" />
+                            Show more
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
