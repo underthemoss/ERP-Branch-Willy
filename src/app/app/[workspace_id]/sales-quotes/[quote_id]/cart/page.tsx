@@ -214,7 +214,7 @@ function CartProvider({ children, quoteData }: { children: React.ReactNode; quot
           pimCategoryId: lineItem.pimCategoryId,
           pimCategoryName: lineItem.price?.pimCategoryName || "",
           description: lineItem.description,
-          cartItemId: `${lineItem.sellersPriceId}-${Date.now()}-${Math.random()}`,
+          cartItemId: crypto.randomUUID(),
         };
         newSaleItems.push(cartItem);
       } else if (lineItem.type === "RENTAL") {
@@ -231,7 +231,7 @@ function CartProvider({ children, quoteData }: { children: React.ReactNode; quot
           description: lineItem.description,
           rentalStartDate: lineItem.rentalStartDate ? new Date(lineItem.rentalStartDate) : null,
           rentalEndDate: lineItem.rentalEndDate ? new Date(lineItem.rentalEndDate) : null,
-          cartItemId: `${lineItem.sellersPriceId}-${Date.now()}-${Math.random()}`,
+          cartItemId: crypto.randomUUID(),
         };
         newRentalItems.push(cartItem);
       }
@@ -257,7 +257,7 @@ function CartProvider({ children, quoteData }: { children: React.ReactNode; quot
       description: hit.name || "Unnamed Price",
       rentalStartDate: null,
       rentalEndDate: null,
-      cartItemId: `${hit.objectID}-${Date.now()}-${Math.random()}`, // Unique ID for each cart item
+      cartItemId: crypto.randomUUID(), // Unique ID for each cart item
     };
 
     if (hit.priceType === "SALE") {
