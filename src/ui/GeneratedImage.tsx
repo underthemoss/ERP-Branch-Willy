@@ -147,7 +147,7 @@ export function GeneratedImage({
             bottom: "10%",
             left: 0,
             right: 0,
-            backgroundColor: "rgba(59, 130, 246, 0.9)",
+            backgroundColor: "rgba(100, 100, 100, 0.5)",
             color: "#ffffff",
             padding: "2px 8px",
             fontSize: "9px",
