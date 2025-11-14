@@ -229,7 +229,7 @@ export default function EquipmentAssignmentTimeline() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3, backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+      <Box sx={{ p: 3, backgroundColor: "#f9fafb", minHeight: "100vh" }}>
         {/* Header */}
         <Box sx={{ mb: 3 }}>
           <Box

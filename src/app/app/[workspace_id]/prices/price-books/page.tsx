@@ -77,7 +77,7 @@ export default function Prices() {
   }, [data]);
 
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Price Books
       </Typography>
