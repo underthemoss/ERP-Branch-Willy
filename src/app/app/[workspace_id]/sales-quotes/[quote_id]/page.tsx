@@ -5,6 +5,7 @@ import { QuoteStatus } from "@/graphql/graphql";
 import { useSalesQuoteDetail_GetQuoteByIdQuery } from "@/graphql/hooks";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { GeneratedImage } from "@/ui/GeneratedImage";
+import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
   AlertCircle,
@@ -528,6 +529,9 @@ export default function SalesQuoteDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Rental Calendar */}
+            <RentalCalendarView quoteId={quoteId} />
           </div>
 
           {/* Sidebar - Right Column */}
