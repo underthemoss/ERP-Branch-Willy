@@ -41,9 +41,6 @@ const DashboardMainSection: React.FC<{
           sx={{
             flex: 1,
             overflowX: "auto",
-            pl: { xs: 1.5, md: 2 },
-            pr: { xs: 1, md: 2 },
-            py: { xs: 1.5, md: 2 },
           }}
         >
           {children}
