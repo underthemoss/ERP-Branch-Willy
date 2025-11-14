@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
+import { SendQuoteDialog } from "./components/SendQuoteDialog";
 
 // GraphQL Query
 graphql(`
@@ -50,6 +51,14 @@ graphql(`
           contactType
           name
           phone
+          employees {
+            items {
+              id
+              name
+              email
+              role
+            }
+          }
         }
       }
       sellersProjectId
@@ -189,13 +198,17 @@ export default function SalesQuoteDetailPage() {
   const quoteId = params?.quote_id as string;
   const workspaceId = params?.workspace_id as string;
   const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
 
-  const { data, loading, error } = useSalesQuoteDetail_GetQuoteByIdQuery({
+  const { data, loading, error, refetch } = useSalesQuoteDetail_GetQuoteByIdQuery({
     variables: { id: quoteId },
     fetchPolicy: "cache-and-network",
   });
 
   const quote = data?.quoteById;
+
+  // Determine if we should show the send button (only for ACTIVE quotes)
+  const canSendQuote = quote && quote.status === "ACTIVE";
 
   // Calculate totals
   const totalAmount = React.useMemo(() => {
@@ -249,13 +262,15 @@ export default function SalesQuoteDetailPage() {
               <p className="text-gray-600 font-mono text-sm">{quote.id}</p>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Edit quote items
-              </Link>
+              {canSendQuote && (
+                <button
+                  onClick={() => setSendDialogOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Send Quote
+                </button>
+              )}
               <StatusBadge status={quote.status as QuoteStatusType} />
             </div>
           </div>
@@ -321,8 +336,15 @@ export default function SalesQuoteDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Line Items */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Line Items</h2>
+                <Link
+                  href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Edit Items
+                </Link>
               </div>
               <div className="overflow-x-auto">
                 {quote.currentRevision?.lineItems && quote.currentRevision.lineItems.length > 0 ? (
@@ -418,8 +440,25 @@ export default function SalesQuoteDetailPage() {
                     </tfoot>
                   </table>
                 ) : (
-                  <div className="px-6 py-12 text-center text-gray-500">
-                    No line items added yet
+                  <div className="px-6 py-16 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="mb-4">
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        No items in this quote
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-6">
+                        Add products, rentals, or services to build your quote. Items you add will appear here with pricing and delivery details.
+                      </p>
+                      <Link
+                        href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        Add Items to Quote
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
@@ -565,6 +604,14 @@ export default function SalesQuoteDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Send Quote Dialog */}
+      <SendQuoteDialog
+        open={sendDialogOpen}
+        onClose={() => setSendDialogOpen(false)}
+        quote={quote}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

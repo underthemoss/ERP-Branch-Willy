@@ -25,6 +25,24 @@
     color: inherit;
     text-decoration: none;
   }
+
+  /* Ensure all buttons have pointer cursor */
+  button,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"] {
+    cursor: pointer;
+  }
+
+  /* Maintain default cursor for disabled buttons */
+  button:disabled,
+  [role="button"]:disabled,
+  [type="button"]:disabled,
+  [type="submit"]:disabled,
+  [type="reset"]:disabled {
+    cursor: not-allowed;
+  }
 }
 .no-select {
   -webkit-touch-callout: none; /* iOS Safari */
