@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   CircleDot,
   Clock,
-  Copy,
   DollarSign,
   Eye,
   FileText,
@@ -443,28 +442,16 @@ export default function SalesQuotesPage() {
                         <StatusBadge status={row.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRowClick(row.id);
-                            }}
-                            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                            title="View"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // TODO: Implement duplicate
-                            }}
-                            className="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors cursor-pointer"
-                            title="Duplicate"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(row.id);
+                          }}
+                          className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                          title="View Quote"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
