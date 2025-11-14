@@ -66,7 +66,7 @@ export function SendQuoteDialog({ open, onClose, quote, onSuccess }: SendQuoteDi
 
     // Filter employees with valid, non-empty email addresses
     const validEmployees = buyerContact.employees.items.filter(
-      (emp: any) => emp?.email && emp.email.trim() !== ""
+      (emp: any) => emp?.email && emp.email.trim() !== "",
     );
 
     // Debug logging

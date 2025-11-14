@@ -449,7 +449,8 @@ export default function SalesQuoteDetailPage() {
                         No items in this quote
                       </h3>
                       <p className="text-sm text-gray-600 mb-6">
-                        Add products, rentals, or services to build your quote. Items you add will appear here with pricing and delivery details.
+                        Add products, rentals, or services to build your quote. Items you add will
+                        appear here with pricing and delivery details.
                       </p>
                       <Link
                         href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
