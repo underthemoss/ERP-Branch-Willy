@@ -542,6 +542,11 @@ type BrandSearchResult {
   name: String!
 }
 
+input BulkCalculateSubTotalInput {
+  durationInDays: Int!
+  priceId: ID!
+}
+
 input BulkMarkInventoryReceivedInput {
   assetId: String
   conditionNotes: String
@@ -2349,6 +2354,7 @@ enum PurchaseOrderStatus {
 type Query {
   """Admin operations (Admin only)"""
   admin: AdminQueryNamespace
+  bulkCalculateSubTotal(inputs: [BulkCalculateSubTotalInput!]!): [LineItemPriceForecast!]!
   calculateSubTotal(durationInDays: Int!, priceId: ID!): LineItemPriceForecast!
   currentUser: JWTPayload @deprecated(reason: "use getCurrentUser instead")
   getBrandByDomain(domain: String!): Brand

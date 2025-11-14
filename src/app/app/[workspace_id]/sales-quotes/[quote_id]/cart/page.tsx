@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import {
   QuoteLineItemType,
+  useCartPage_BulkCalculateSubTotalQuery,
   useCartPage_CreateQuoteRevisionMutation,
   useCartPage_GetQuoteByIdQuery,
   useCartPage_UpdateQuoteMutation,
@@ -31,6 +32,7 @@ import {
   useStats,
 } from "react-instantsearch";
 import "instantsearch.css/themes/satellite.css";
+import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import { DateRange } from "@mui/x-date-pickers-pro";
 import { DateRangeCalendar } from "@mui/x-date-pickers-pro/DateRangeCalendar";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -107,6 +109,38 @@ graphql(`
     updateQuote(input: $input) {
       id
       currentRevisionId
+    }
+  }
+`);
+
+graphql(`
+  query CartPage_BulkCalculateSubTotal($inputs: [BulkCalculateSubTotalInput!]!) {
+    bulkCalculateSubTotal(inputs: $inputs) {
+      accumulative_cost_in_cents
+      days {
+        accumulative_cost_in_cents
+        cost_in_cents
+        day
+        details {
+          optimalSplit {
+            days1
+            days7
+            days28
+          }
+          rates {
+            pricePer1DayInCents
+            pricePer7DaysInCents
+            pricePer28DaysInCents
+          }
+        }
+        rental_period {
+          days1
+          days7
+          days28
+        }
+        savings_compared_to_day_rate_in_cents
+        savings_compared_to_day_rate_in_fraction
+      }
     }
   }
 `);
@@ -1114,6 +1148,8 @@ function CartItemCard({ item, type }: { item: CartItem; type: "RENTAL" | "SALE" 
     null,
     null,
   ]);
+  const [calculatedTotal, setCalculatedTotal] = React.useState<number | null>(null);
+  const [showBreakdown, setShowBreakdown] = React.useState(false);
 
   // Get unique date ranges from other rental items for suggestions
   const dateRangeSuggestions = React.useMemo(() => {
@@ -1221,12 +1257,59 @@ function CartItemCard({ item, type }: { item: CartItem; type: "RENTAL" | "SALE" 
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium text-gray-900 truncate">{item.priceName}</h4>
           <p className="text-xs text-gray-600 truncate">{item.pimCategoryName}</p>
-          <p className="text-xs font-semibold text-gray-900 mt-1">
-            {type === "SALE"
-              ? formatPrice(item.unitCostInCents)
-              : formatPrice(item.pricePerDayInCents)}
-            {type === "RENTAL" && "/day"}
-          </p>
+          <div className="flex items-center gap-1 mt-1">
+            <p className="text-xs font-semibold text-gray-900">
+              {type === "SALE" ? (
+                formatPrice(item.unitCostInCents)
+              ) : calculatedTotal !== null && item.rentalStartDate && item.rentalEndDate ? (
+                formatPrice(calculatedTotal)
+              ) : (
+                <>
+                  {formatPrice(item.pricePerDayInCents)}
+                  /day
+                </>
+              )}
+            </p>
+            {/* Expand/collapse icon for rental items with dates */}
+            {type === "RENTAL" &&
+              calculatedTotal !== null &&
+              item.rentalStartDate &&
+              item.rentalEndDate && (
+                <button
+                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  className="p-0.5 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                  title={showBreakdown ? "Hide breakdown" : "Show breakdown"}
+                >
+                  <svg
+                    className={`w-3 h-3 text-gray-600 transition-transform ${showBreakdown ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              )}
+          </div>
+
+          {/* Pricing Breakdown - always render to calculate total, visibility controlled by isExpanded */}
+          {type === "RENTAL" && item.rentalStartDate && item.rentalEndDate && (
+            <div className="mt-2">
+              <RentalPricingBreakdown
+                priceId={item.priceId}
+                startDate={item.rentalStartDate}
+                endDate={item.rentalEndDate}
+                compact
+                onTotalCalculated={setCalculatedTotal}
+                isExpanded={showBreakdown}
+              />
+            </div>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2">
           <button

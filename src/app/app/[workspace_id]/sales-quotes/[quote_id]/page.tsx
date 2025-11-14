@@ -5,6 +5,7 @@ import { QuoteStatus } from "@/graphql/graphql";
 import { useSalesQuoteDetail_GetQuoteByIdQuery } from "@/graphql/hooks";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { GeneratedImage } from "@/ui/GeneratedImage";
+import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
   AlertCircle,
   ArrowLeft,
@@ -199,6 +200,19 @@ export default function SalesQuoteDetailPage() {
   const workspaceId = params?.workspace_id as string;
   const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
+  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+
+  const toggleItemExpansion = (itemId: string) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
 
   const { data, loading, error, refetch } = useSalesQuoteDetail_GetQuoteByIdQuery({
     variables: { id: quoteId },
@@ -369,61 +383,111 @@ export default function SalesQuoteDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {quote.currentRevision.lineItems.map((item: any, index: number) => (
-                        <tr key={item.id || index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              {item.sellersPriceId && (
-                                <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100">
-                                  <GeneratedImage
-                                    entity="price"
-                                    entityId={item.sellersPriceId}
-                                    size="list"
-                                    alt={item.description}
-                                  />
-                                </div>
-                              )}
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {item.description}
-                                </p>
-                                {item.pimCategory && (
-                                  <p className="text-xs text-gray-500">{item.pimCategory.name}</p>
-                                )}
-                                {item.type === "RENTAL" &&
-                                  item.rentalStartDate &&
-                                  item.rentalEndDate && (
-                                    <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
-                                      <Calendar className="w-3 h-3" />
-                                      <span>
-                                        {formatDate(item.rentalStartDate)} -{" "}
-                                        {formatDate(item.rentalEndDate)}
-                                      </span>
+                      {quote.currentRevision.lineItems.map((item: any, index: number) => {
+                        const isExpanded = expandedItems.has(item.id);
+                        const isRental = item.type === "RENTAL";
+                        return (
+                          <React.Fragment key={item.id || index}>
+                            <tr className="hover:bg-gray-50">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  {item.sellersPriceId && (
+                                    <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                                      <GeneratedImage
+                                        entity="price"
+                                        entityId={item.sellersPriceId}
+                                        size="list"
+                                        alt={item.description}
+                                      />
                                     </div>
                                   )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {item.type}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-900">
-                            {item.quantity}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-900">
-                            {item.type === "RENTAL" && item.price
-                              ? formatPrice(item.price.pricePerDayInCents)
-                              : item.type === "SALE" && item.price
-                                ? formatPrice(item.price.unitCostInCents)
-                                : "—"}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                            {formatPrice(item.subtotalInCents)}
-                          </td>
-                        </tr>
-                      ))}
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {item.description}
+                                    </p>
+                                    {item.pimCategory && (
+                                      <p className="text-xs text-gray-500">
+                                        {item.pimCategory.name}
+                                      </p>
+                                    )}
+                                    {isRental && item.rentalStartDate && item.rentalEndDate && (
+                                      <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>
+                                          {formatDate(item.rentalStartDate)} -{" "}
+                                          {formatDate(item.rentalEndDate)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {item.type}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right text-sm text-gray-900">
+                                {item.quantity}
+                              </td>
+                              <td className="px-6 py-4 text-right text-sm text-gray-900">
+                                {item.type === "RENTAL" && item.price
+                                  ? formatPrice(item.price.pricePerDayInCents)
+                                  : item.type === "SALE" && item.price
+                                    ? formatPrice(item.price.unitCostInCents)
+                                    : "—"}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {formatPrice(item.subtotalInCents)}
+                                  </span>
+                                  {isRental && item.rentalStartDate && item.rentalEndDate && (
+                                    <button
+                                      onClick={() => toggleItemExpansion(item.id)}
+                                      className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                                      title={isExpanded ? "Hide breakdown" : "Show breakdown"}
+                                    >
+                                      <svg
+                                        className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 9l-7 7-7-7"
+                                        />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            {isRental &&
+                              isExpanded &&
+                              item.rentalStartDate &&
+                              item.rentalEndDate && (
+                                <tr>
+                                  <td colSpan={5} className="px-6 py-4 bg-gray-50">
+                                    <div className="max-w-md ml-auto">
+                                      <RentalPricingBreakdown
+                                        priceId={item.sellersPriceId}
+                                        startDate={new Date(item.rentalStartDate)}
+                                        endDate={new Date(item.rentalEndDate)}
+                                        compact={false}
+                                        showSavings={false}
+                                        isExpanded={true}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                     <tfoot className="bg-gray-50 border-t-2 border-gray-200">
                       <tr>
