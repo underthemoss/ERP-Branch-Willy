@@ -6,8 +6,8 @@ import {
   useCreatePdfFromPageAndAttachToQuoteMutation,
   useSalesQuoteDetail_GetQuoteByIdQuery,
 } from "@/graphql/hooks";
-import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { useNotification } from "@/providers/NotificationProvider";
+import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { GeneratedImage } from "@/ui/GeneratedImage";
 import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
@@ -317,7 +317,7 @@ export default function SalesQuoteDetailPage() {
                   const mm = String(today.getMonth() + 1).padStart(2, "0");
                   const dd = String(today.getDate()).padStart(2, "0");
                   const fileName = `sales-quote-${yyyy}-${mm}-${dd}`;
-                  
+
                   try {
                     const result = await createPdf({
                       variables: {
@@ -327,7 +327,7 @@ export default function SalesQuoteDetailPage() {
                         workspaceId: workspaceId,
                       },
                     });
-                    
+
                     if (result.data?.createPdfFromPageAndAttachToEntityId?.success) {
                       notifySuccess("PDF generated successfully and added to attached files");
                       setCacheKey((k) => k + 1);
