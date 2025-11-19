@@ -43,6 +43,11 @@
   [type="reset"]:disabled {
     cursor: not-allowed;
   }
+
+  /* Dialog backdrop - semi-transparent dark overlay for modals */
+  .dialog-backdrop {
+    @apply fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity;
+  }
 }
 .no-select {
   -webkit-touch-callout: none; /* iOS Safari */

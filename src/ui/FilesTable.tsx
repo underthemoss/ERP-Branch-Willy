@@ -10,33 +10,16 @@ import {
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
-import AudiotrackIcon from "@mui/icons-material/Audiotrack";
-import CodeIcon from "@mui/icons-material/Code";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DescriptionIcon from "@mui/icons-material/Description";
-import DownloadIcon from "@mui/icons-material/Download";
-import EditIcon from "@mui/icons-material/Edit";
-import ImageIcon from "@mui/icons-material/Image";
-import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import MovieIcon from "@mui/icons-material/Movie";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
-  Link,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+  Download,
+  ExternalLink,
+  File,
+  FileImage,
+  FileText,
+  FileVideo,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import * as React from "react";
 
 graphql(`
@@ -96,29 +79,28 @@ function formatFileSize(bytes: number): string {
   return (mb / 1024).toFixed(1) + " GB";
 }
 
-function getFileIcon(mimeType: string | null | undefined) {
-  if (!mimeType)
-    return <InsertDriveFileIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (mimeType.startsWith("image/"))
-    return <ImageIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (mimeType === "application/pdf")
-    return <PictureAsPdfIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (mimeType.startsWith("audio/"))
-    return <AudiotrackIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (mimeType.startsWith("video/"))
-    return <MovieIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (mimeType === "text/plain" || mimeType === "text/markdown" || mimeType === "text/csv")
-    return <TextSnippetIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  if (
-    mimeType === "application/json" ||
-    mimeType === "application/javascript" ||
-    mimeType === "text/javascript" ||
-    mimeType === "text/x-python" ||
-    mimeType === "text/x-java-source"
-  )
-    return <CodeIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-  return <DescriptionIcon sx={{ mr: 1, verticalAlign: "middle" }} color="secondary" />;
-}
+// Icon components using Lucide React
+const FileIcon = ({ mimeType }: { mimeType?: string | null }) => {
+  const className = "w-5 h-5 text-gray-400";
+
+  if (!mimeType) {
+    return <File className={className} />;
+  }
+
+  if (mimeType.startsWith("image/")) {
+    return <FileImage className={className} />;
+  }
+
+  if (mimeType === "application/pdf" || mimeType.startsWith("text/")) {
+    return <FileText className={className} />;
+  }
+
+  if (mimeType.startsWith("video/")) {
+    return <FileVideo className={className} />;
+  }
+
+  return <File className={className} />;
+};
 
 type FilesTableProps = {
   entityId: string;
@@ -167,13 +149,13 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
       await removeFile({
         variables: { file_id: fileToDelete.id },
       });
-      // Refresh the file list after successful deletion
       await refetch();
       setDeleteDialogOpen(false);
       setFileToDelete(null);
+      notifySuccess("File deleted successfully");
     } catch (error) {
       console.error("Error deleting file:", error);
-      // You might want to show an error message to the user here
+      notifyError("Failed to delete file");
     }
   };
 
@@ -198,14 +180,14 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
           new_file_name: newFileName.trim(),
         },
       });
-      // Refresh the file list after successful rename
       await refetch();
       setRenameDialogOpen(false);
       setFileToRename(null);
       setNewFileName("");
+      notifySuccess("File renamed successfully");
     } catch (error) {
       console.error("Error renaming file:", error);
-      // You might want to show an error message to the user here
+      notifyError("Failed to rename file");
     }
   };
 
@@ -245,7 +227,6 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
       });
 
       if (result.data?.getSignedReadUrl) {
-        // Create a temporary anchor element to trigger download
         const link = document.createElement("a");
         link.href = result.data.getSignedReadUrl;
         link.download = fileName;
@@ -266,220 +247,213 @@ export default function FilesTable({ entityId, onUploadSuccess }: FilesTableProp
 
   if (loading) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center" minHeight={80}>
-        <CircularProgress size={20} sx={{ mr: 1 }} />
-        <Typography variant="body2" color="text.secondary">
-          Loading files...
-        </Typography>
-      </Box>
+      <div className="flex items-center justify-center py-8">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm text-gray-600">Loading files...</span>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Typography variant="body2" color="error">
-        Error loading files: {error.message}
-      </Typography>
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-sm text-red-800">Error loading files: {error.message}</p>
+      </div>
     );
   }
 
   if (!files.length) {
     return (
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        No files attached.
-      </Typography>
+      <div className="py-4">
+        <p className="text-sm text-gray-500">No files attached.</p>
+      </div>
     );
   }
 
-  const columns: GridColDef[] = [
-    {
-      field: "file_actions",
-      headerName: "",
-      width: 80,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: (params) => {
-        return (
-          <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", height: "100%" }}>
-            <IconButton
-              size="small"
-              onClick={() => handleOpenInNewTab(params.row.id, params.row.file_name)}
-              color="primary"
-              title="Open in new tab"
-            >
-              <OpenInNewIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => handleDownload(params.row.id, params.row.file_name)}
-              color="primary"
-              title="Download file"
-            >
-              <DownloadIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "file_name",
-      headerName: "Name",
-      flex: 2,
-      minWidth: 300,
-      renderCell: (params) => {
-        const file = params.row;
-        return (
-          <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
-            {getFileIcon(file.mime_type)}
-            <Typography variant="body2">{file.file_name}</Typography>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "file_size",
-      headerName: "Size",
-      flex: 1,
-      type: "string",
-      align: "right",
-      headerAlign: "right",
-      valueGetter: (value) => (value ? formatFileSize(value) : "-"),
-    },
-    {
-      field: "created_at",
-      headerName: "Created",
-      flex: 1,
-      minWidth: 130,
-      valueGetter: (value) => {
-        const date = value ? new Date(value) : null;
-        return date
-          ? date.toLocaleString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-";
-      },
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 120,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: (params) => {
-        return (
-          <Box sx={{ display: "flex", gap: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={() => handleRenameClick(params.row.id, params.row.file_name)}
-              color="primary"
-              title="Rename file"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => handleDeleteClick(params.row.id, params.row.file_name)}
-              color="error"
-              title="Delete file"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        );
-      },
-    },
-  ];
-
   return (
     <>
-      <Box sx={{ mb: 2, width: "100%", overflowX: "auto" }}>
-        <DataGrid
-          autoHeight
-          rows={files}
-          columns={columns}
-          getRowId={(row) => row.id}
-          hideFooter
-          disableColumnMenu
-          disableRowSelectionOnClick
-          sx={{
-            border: 0,
-            "& .MuiDataGrid-cell": { borderBottom: "1px solid #f0f0f0" },
-            "& .MuiDataGrid-columnHeaders": { borderBottom: "1px solid #e0e0e0" },
-          }}
-        />
-      </Box>
+      <div className="mb-4 overflow-hidden border border-gray-200 rounded-lg">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
+                  Name
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
+                  Size
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
+                  Created
+                </th>
+                <th scope="col" className="px-4 py-3 text-right">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {files.map((file) => (
+                <tr key={file.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <FileIcon mimeType={file.mime_type} />
+                      <span className="text-sm font-medium text-gray-900 truncate max-w-md">
+                        {file.file_name}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-sm text-gray-600">
+                      {file.file_size ? formatFileSize(file.file_size) : "-"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-600">
+                      {file.created_at
+                        ? new Date(file.created_at).toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {/* Open in New Tab */}
+                      <button
+                        onClick={() => handleOpenInNewTab(file.id, file.file_name)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Open in new tab"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
 
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">Delete File</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete &ldquo;{fileToDelete?.name}&rdquo;? This action cannot
-            be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+                      {/* Download */}
+                      <button
+                        onClick={() => handleDownload(file.id, file.file_name)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Download file"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
 
-      <Dialog
-        open={renameDialogOpen}
-        onClose={handleRenameCancel}
-        aria-labelledby="rename-dialog-title"
-        aria-describedby="rename-dialog-description"
-      >
-        <DialogTitle id="rename-dialog-title">Rename File</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="rename-dialog-description">
-            Enter a new name for &ldquo;{fileToRename?.name}&rdquo;:
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="new-file-name"
-            label="New file name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newFileName}
-            onChange={(e) => setNewFileName(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                handleRenameConfirm();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleRenameCancel} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleRenameConfirm}
-            color="primary"
-            variant="contained"
-            disabled={!newFileName.trim() || newFileName.trim() === fileToRename?.name}
-          >
-            Rename
-          </Button>
-        </DialogActions>
-      </Dialog>
+                      {/* Rename */}
+                      <button
+                        onClick={() => handleRenameClick(file.id, file.file_name)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Rename file"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteClick(file.id, file.file_name)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete file"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="dialog-backdrop" onClick={handleDeleteCancel}></div>
+
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete File</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to delete &ldquo;{fileToDelete?.name}&rdquo;? This action
+                cannot be undone.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Dialog */}
+      {renameDialogOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="dialog-backdrop" onClick={handleRenameCancel}></div>
+
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Rename File</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Enter a new name for &ldquo;{fileToRename?.name}&rdquo;:
+              </p>
+
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleRenameConfirm();
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="New file name"
+                autoFocus
+              />
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={handleRenameCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRenameConfirm}
+                  disabled={!newFileName.trim() || newFileName.trim() === fileToRename?.name}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Rename
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
