@@ -1,3 +1,17 @@
+input AcceptQuoteInput {
+  """
+  If the seller accepts on behalf of the buyer, provide confirmation details here.
+  """
+  approvalConfirmation: String
+  quoteId: String!
+}
+
+type AcceptQuoteResult {
+  purchaseOrder: PurchaseOrder
+  quote: Quote!
+  salesOrder: SalesOrder!
+}
+
 input AddInvoiceChargesInput {
   chargeIds: [ID!]!
   invoiceId: ID!
@@ -1722,6 +1736,7 @@ input MarkInvoiceAsSentInput {
 }
 
 type Mutation {
+  acceptQuote(input: AcceptQuoteInput!): AcceptQuoteResult!
   addFileToEntity(file_key: String!, file_name: String!, metadata: JSON, parent_entity_id: String!, parent_entity_type: ResourceTypes, workspace_id: String!): File!
   addInvoiceCharges(input: AddInvoiceChargesInput!): Invoice!
   addSearchRecent(searchDocumentId: String!, workspaceId: String!): SearchUserState!
@@ -1799,6 +1814,7 @@ type Mutation {
   markInvoiceAsPaid(input: MarkInvoiceAsPaidInput!): Invoice!
   markInvoiceAsSent(input: MarkInvoiceAsSentInput!): Invoice!
   refreshBrand(brandId: String!): Brand
+  rejectQuote(quoteId: String!): Quote!
   removeFileFromEntity(file_id: String!): File!
   removeSearchRecent(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   removeTaxLineItem(input: RemoveTaxLineItemInput!): Invoice!
@@ -1982,7 +1998,9 @@ enum PermissionType {
   ERP_PROJECT_UPDATE
   ERP_PURCHASE_ORDER_READ
   ERP_PURCHASE_ORDER_UPDATE
+  ERP_QUOTE_ACCEPT
   ERP_QUOTE_READ
+  ERP_QUOTE_REJECT
   ERP_QUOTE_UPDATE
   ERP_RFQ_READ
   ERP_RFQ_UPDATE
@@ -2269,6 +2287,8 @@ type PurchaseOrder {
   project: Project
   project_id: String
   purchase_order_number: String!
+  quote_id: String
+  quote_revision_id: String
   seller: Contact
   seller_id: String!
 
@@ -2486,6 +2506,7 @@ type Query {
 }
 
 type Quote {
+  buyerUserId: String
   buyerWorkspaceId: String
   buyersProject: Project
   buyersProjectId: String
@@ -2800,6 +2821,7 @@ type RentalPurchaseOrderLineItem {
   price_id: String
   purchaseOrder: PurchaseOrder
   purchase_order_id: String!
+  quote_revision_line_item_id: String
   so_pim_category: PimCategory
   so_pim_product: PimProduct
 
@@ -2837,6 +2859,7 @@ type RentalSalesOrderLineItem {
   off_rent_date: String
   price: Price
   price_id: String
+  quote_revision_line_item_id: String
   sales_order_id: String!
   so_pim_category: PimCategory
   so_pim_id: String
@@ -3209,6 +3232,7 @@ type SalePurchaseOrderLineItem {
   price_id: String
   purchaseOrder: PurchaseOrder
   purchase_order_id: String!
+  quote_revision_line_item_id: String
   so_pim_category: PimCategory
   so_pim_product: PimProduct
   updated_at: String
@@ -3238,6 +3262,7 @@ type SaleSalesOrderLineItem {
   lineitem_type: LineItemType!
   price: Price
   price_id: String
+  quote_revision_line_item_id: String
   sales_order_id: String!
   so_pim_category: PimCategory
   so_pim_id: String
@@ -3288,6 +3313,8 @@ type SalesOrder {
   project: Project
   project_id: String
   purchase_order_number: String
+  quote_id: String
+  quote_revision_id: String
   sales_order_number: String!
 
   """Status of the sales order"""
@@ -3939,7 +3966,9 @@ type UserPermissionMap {
   ERP_PROJECT_UPDATE: Boolean
   ERP_PURCHASE_ORDER_READ: Boolean
   ERP_PURCHASE_ORDER_UPDATE: Boolean
+  ERP_QUOTE_ACCEPT: Boolean
   ERP_QUOTE_READ: Boolean
+  ERP_QUOTE_REJECT: Boolean
   ERP_QUOTE_UPDATE: Boolean
   ERP_RFQ_READ: Boolean
   ERP_RFQ_UPDATE: Boolean
