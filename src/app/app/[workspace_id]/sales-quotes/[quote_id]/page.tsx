@@ -32,6 +32,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
+import { AcceptQuoteDialog } from "./components/AcceptQuoteDialog";
 import { SendQuoteDialog } from "./components/SendQuoteDialog";
 
 // GraphQL Mutation for PDF generation
@@ -227,6 +228,7 @@ export default function SalesQuoteDetailPage() {
   const workspaceId = params?.workspace_id as string;
   const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
+  const [acceptDialogOpen, setAcceptDialogOpen] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
   const [cachekey, setCacheKey] = React.useState(0);
   const { notifySuccess, notifyError } = useNotification();
@@ -345,13 +347,22 @@ export default function SalesQuoteDetailPage() {
                 {pdfLoading ? "Generating..." : "Print PDF"}
               </button>
               {canSendQuote && (
-                <button
-                  onClick={() => setSendDialogOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  <Mail className="w-4 h-4" />
-                  Send Quote
-                </button>
+                <>
+                  <button
+                    onClick={() => setAcceptDialogOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Accept on Behalf
+                  </button>
+                  <button
+                    onClick={() => setSendDialogOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Send Quote
+                  </button>
+                </>
               )}
               <StatusBadge status={quote.status as QuoteStatusType} />
             </div>
@@ -751,6 +762,14 @@ export default function SalesQuoteDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Accept Quote Dialog */}
+      <AcceptQuoteDialog
+        open={acceptDialogOpen}
+        onClose={() => setAcceptDialogOpen(false)}
+        quoteId={quote.id}
+        onSuccess={() => refetch()}
+      />
 
       {/* Send Quote Dialog */}
       <SendQuoteDialog
