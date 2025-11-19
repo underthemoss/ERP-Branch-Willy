@@ -1,9 +1,13 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { QuoteStatus } from "@/graphql/graphql";
-import { useSalesQuoteDetail_GetQuoteByIdQuery } from "@/graphql/hooks";
+import { QuoteStatus, ResourceTypes } from "@/graphql/graphql";
+import {
+  useCreatePdfFromPageAndAttachToQuoteMutation,
+  useSalesQuoteDetail_GetQuoteByIdQuery,
+} from "@/graphql/hooks";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { GeneratedImage } from "@/ui/GeneratedImage";
 import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
@@ -20,6 +24,7 @@ import {
   DollarSign,
   Mail,
   Phone,
+  Printer,
   ShoppingCart,
   User,
 } from "lucide-react";
@@ -27,6 +32,26 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { SendQuoteDialog } from "./components/SendQuoteDialog";
+
+// GraphQL Mutation for PDF generation
+graphql(`
+  mutation CreatePdfFromPageAndAttachToQuote(
+    $entity_id: String!
+    $path: String!
+    $file_name: String!
+    $workspaceId: String!
+  ) {
+    createPdfFromPageAndAttachToEntityId(
+      entity_id: $entity_id
+      path: $path
+      file_name: $file_name
+      workspaceId: $workspaceId
+    ) {
+      success
+      error_message
+    }
+  }
+`);
 
 // GraphQL Query
 graphql(`
@@ -202,6 +227,7 @@ export default function SalesQuoteDetailPage() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const [cachekey, setCacheKey] = React.useState(0);
 
   const toggleItemExpansion = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -219,6 +245,9 @@ export default function SalesQuoteDetailPage() {
     variables: { id: quoteId },
     fetchPolicy: "cache-and-network",
   });
+
+  const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
+    useCreatePdfFromPageAndAttachToQuoteMutation();
 
   const quote = data?.quoteById;
 
@@ -277,6 +306,31 @@ export default function SalesQuoteDetailPage() {
               <p className="text-gray-600 font-mono text-sm">{quote.id}</p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  if (!quote?.id || !workspaceId || !quoteId) return;
+                  // Format file name as sales-quote-YYYY-MM-DD
+                  const today = new Date();
+                  const yyyy = today.getFullYear();
+                  const mm = String(today.getMonth() + 1).padStart(2, "0");
+                  const dd = String(today.getDate()).padStart(2, "0");
+                  const fileName = `sales-quote-${yyyy}-${mm}-${dd}`;
+                  await createPdf({
+                    variables: {
+                      entity_id: quote.id,
+                      path: `print/sales-quote/${workspaceId}/${quoteId}`,
+                      file_name: fileName,
+                      workspaceId: workspaceId,
+                    },
+                  });
+                  setCacheKey((k) => k + 1);
+                }}
+                disabled={pdfLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                {pdfLoading ? "Generating..." : "Print PDF"}
+              </button>
               {canSendQuote && (
                 <button
                   onClick={() => setSendDialogOpen(true)}
@@ -530,6 +584,17 @@ export default function SalesQuoteDetailPage() {
               </div>
             </div>
 
+            {/* File Upload Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Attached Files</h2>
+              <div className="border-t border-gray-200 pt-4">
+                <AttachedFilesSection
+                  key={`files-${cachekey}`}
+                  entityId={quote.id}
+                  entityType={ResourceTypes.ErpQuote}
+                />
+              </div>
+            </div>
             {/* Rental Calendar */}
             <RentalCalendarView quoteId={quoteId} />
           </div>

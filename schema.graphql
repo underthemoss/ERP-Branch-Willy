@@ -2422,6 +2422,7 @@ type Query {
   getSignedUploadUrl(contentType: SupportedContentType!, originalFilename: String): SignedUploadUrl!
   getUsersById(userIds: [String!]!): [User]
   getWorkflowConfigurationById(id: ID!): WorkflowConfiguration
+  getWorkspaceById(id: String!): Workspace
   helloWorld: String
   inventoryById(id: String!): Inventory
   invoiceById(id: String!): Invoice
