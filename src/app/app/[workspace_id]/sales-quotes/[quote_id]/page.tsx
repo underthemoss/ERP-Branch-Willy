@@ -7,6 +7,7 @@ import {
   useSalesQuoteDetail_GetQuoteByIdQuery,
 } from "@/graphql/hooks";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import { useNotification } from "@/providers/NotificationProvider";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { GeneratedImage } from "@/ui/GeneratedImage";
 import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
@@ -228,6 +229,7 @@ export default function SalesQuoteDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
   const [cachekey, setCacheKey] = React.useState(0);
+  const { notifySuccess, notifyError } = useNotification();
 
   const toggleItemExpansion = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -315,15 +317,26 @@ export default function SalesQuoteDetailPage() {
                   const mm = String(today.getMonth() + 1).padStart(2, "0");
                   const dd = String(today.getDate()).padStart(2, "0");
                   const fileName = `sales-quote-${yyyy}-${mm}-${dd}`;
-                  await createPdf({
-                    variables: {
-                      entity_id: quote.id,
-                      path: `print/sales-quote/${workspaceId}/${quoteId}`,
-                      file_name: fileName,
-                      workspaceId: workspaceId,
-                    },
-                  });
-                  setCacheKey((k) => k + 1);
+                  
+                  try {
+                    const result = await createPdf({
+                      variables: {
+                        entity_id: quote.id,
+                        path: `print/sales-quote/${workspaceId}/${quoteId}`,
+                        file_name: fileName,
+                        workspaceId: workspaceId,
+                      },
+                    });
+                    
+                    if (result.data?.createPdfFromPageAndAttachToEntityId?.success) {
+                      notifySuccess("PDF generated successfully and added to attached files");
+                      setCacheKey((k) => k + 1);
+                    } else if (result.data?.createPdfFromPageAndAttachToEntityId?.error_message) {
+                      notifyError(result.data.createPdfFromPageAndAttachToEntityId.error_message);
+                    }
+                  } catch (error) {
+                    notifyError("Failed to generate PDF");
+                  }
                 }}
                 disabled={pdfLoading}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors"
