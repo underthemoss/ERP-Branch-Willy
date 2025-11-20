@@ -1,36 +1,14 @@
 "use client";
 
-import DeleteIcon from "@mui/icons-material/Delete";
-import ReplyIcon from "@mui/icons-material/Reply";
-import SendIcon from "@mui/icons-material/Send";
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
 import { format } from "date-fns";
-import React, { useState } from "react";
+import { MessageSquare, Reply, Smile, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import {
   useCreateNoteMutation,
-  useCurrentUserQuery,
   useDeleteNoteMutation,
+  useGetCurrentUserQuery,
   useListNotesByEntityIdQuery,
-  type Note as NoteType,
 } from "./api";
-import Note from "./Note";
 import NoteReactions from "./NoteReactions";
 import NoteWithSubmit from "./NoteWithSubmit";
 
@@ -46,9 +24,25 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
-
-  // State for the input text
   const [commentText, setCommentText] = useState("");
+  const [actionsMenuNoteId, setActionsMenuNoteId] = useState<string | null>(null);
+  const [emojiPickerNoteId, setEmojiPickerNoteId] = useState<string | null>(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside emoji picker
+      if (!target.closest("[data-emoji-picker]")) {
+        setEmojiPickerNoteId(null);
+      }
+    };
+
+    if (emojiPickerNoteId) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [emojiPickerNoteId]);
 
   // Fetch notes
   const { data, loading, error } = useListNotesByEntityIdQuery({
@@ -61,8 +55,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
   const [deleteNote] = useDeleteNoteMutation();
 
   // Get current user
-  const { data: currentUserData } = useCurrentUserQuery();
-  const currentUserId = currentUserData?.currentUser?.es_user_id;
+  const { data: currentUserData } = useGetCurrentUserQuery();
+  const currentUserId = currentUserData?.getCurrentUser?.id;
 
   // Helper function to check if a note is an emoji reaction
   const isEmojiReaction = (note: any): boolean => {
@@ -77,16 +71,13 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
   const getReactionsForNote = (noteId: string, allNotes: any[], parentNoteId?: string): any[] => {
     const reactions: { [emoji: string]: { emoji: string; users: any[] } } = {};
 
-    // If this is a reply, we need to look in the parent note's sub_notes
     if (parentNoteId) {
       const parentNote = allNotes.find((n) => n._id === parentNoteId);
       if (!parentNote || !parentNote.sub_notes) return [];
 
-      // Find the reply within the parent's sub_notes
       const reply = parentNote.sub_notes.find((sn: any) => sn._id === noteId);
       if (!reply || !reply.sub_notes) return [];
 
-      // Process the reply's sub_notes to find reactions
       reply.sub_notes.forEach((subNote: any) => {
         if (!subNote.deleted && isEmojiReaction(subNote)) {
           const emoji = subNote.value.reaction;
@@ -96,7 +87,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
             reactions[emoji] = { emoji, users: [] };
           }
 
-          // Check if user already exists in this reaction
           const existingUser = reactions[emoji].users.find((u: any) => u.id === userId);
           if (!existingUser) {
             reactions[emoji].users.push({
@@ -108,11 +98,9 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
         }
       });
     } else {
-      // For top-level notes, look in the note's own sub_notes
       const note = allNotes.find((n) => n._id === noteId);
       if (!note || !note.sub_notes) return [];
 
-      // Process sub_notes to find reactions
       note.sub_notes.forEach((subNote: any) => {
         if (!subNote.deleted && isEmojiReaction(subNote)) {
           const emoji = subNote.value.reaction;
@@ -122,7 +110,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
             reactions[emoji] = { emoji, users: [] };
           }
 
-          // Check if user already exists in this reaction
           const existingUser = reactions[emoji].users.find((u: any) => u.id === userId);
           if (!existingUser) {
             reactions[emoji].users.push({
@@ -163,7 +150,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
     let reactionNote = null;
 
     if (parentNoteId) {
-      // For replies, look in the parent note's sub_notes
       const parentNote = notes.find((n) => n._id === parentNoteId);
       if (!parentNote || !parentNote.sub_notes) return;
 
@@ -178,7 +164,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
           subNote.created_by === currentUserId,
       );
     } else {
-      // For top-level notes
       const note = notes.find((n) => n._id === noteId);
       if (!note || !note.sub_notes) return;
 
@@ -218,7 +203,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
           },
         },
       });
-      // Reset the input
       setCommentText("");
     } catch (error) {
       console.error("Failed to create comment:", error);
@@ -237,13 +221,12 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
       await createNote({
         variables: {
           input: {
-            parent_entity_id: noteId, // Use the note ID directly
+            parent_entity_id: noteId,
             workspace_id: workspaceId,
             value: { plainText: trimmedText },
           },
         },
       });
-      // Reset the reply state
       setReplyText("");
       setReplyingTo(null);
     } catch (error) {
@@ -278,7 +261,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
       await deleteNote({
         variables: { id: noteToDelete },
         update: (cache) => {
-          // Remove from cache
           cache.modify({
             fields: {
               listNotesByEntityId(existingNotes = [], { readField }) {
@@ -330,12 +312,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
   const getNoteContent = (value: any): string => {
     if (!value) return "";
 
-    // Handle new format { plainText: "..." }
     if (typeof value === "object" && value.plainText) {
       return value.plainText;
     }
 
-    // Handle old block format
     if (Array.isArray(value)) {
       return value
         .map((block: any) => {
@@ -351,7 +331,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
         .trim();
     }
 
-    // Fallback for string
     if (typeof value === "string") return value;
 
     return "";
@@ -359,20 +338,18 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
 
   if (loading && !data) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center" p={2}>
-        <CircularProgress size={20} sx={{ mr: 1 }} />
-        <Typography variant="body2" color="text.secondary">
-          Loading comments...
-        </Typography>
-      </Box>
+      <div className="flex items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-sm text-gray-600">Loading comments...</span>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Error loading comments: {error.message}
-      </Alert>
+      <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+        <p className="text-sm text-red-800">Error loading comments: {error.message}</p>
+      </div>
     );
   }
 
@@ -383,240 +360,292 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
 
   // Render a single note with its replies
   const renderNote = (note: any, isReply = false, parentNoteId?: string) => {
-    // Don't render emoji reactions as regular notes
     if (isEmojiReaction(note)) return null;
 
-    // Get reactions for the note
     const reactions = getReactionsForNote(note._id, notes, isReply ? parentNoteId : undefined);
+    const isHovered = hoveredNoteId === note._id;
+    const canDelete = currentUserId === note.created_by_user?.id;
+    const showActionsMenu = actionsMenuNoteId === note._id;
 
     return (
-      <Box key={note._id}>
-        <Card
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            setHoveredNoteId(note._id);
-          }}
-          onMouseLeave={(e) => {
-            e.stopPropagation();
+      <div key={note._id} className={isReply ? "" : "mb-4"}>
+        {/* Main note container */}
+        <div
+          className="flex gap-3 items-start"
+          onMouseEnter={() => setHoveredNoteId(note._id)}
+          onMouseLeave={() => {
             setHoveredNoteId(null);
-          }}
-          sx={{
-            p: 1,
-            boxShadow: 0,
-            border: "none",
+            setActionsMenuNoteId(null);
           }}
         >
-          <Box display="flex" gap={1}>
-            <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            <div
+              className={`${isReply ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm"} rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md`}
+            >
               {getUserInitials(note.created_by_user)}
-            </Avatar>
-            <Box flex={1}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Typography variant="body2" fontWeight={600}>
+            </div>
+          </div>
+
+          {/* Speech bubble container */}
+          <div className="flex-1 min-w-0 max-w-[85%]">
+            <div className="group relative">
+              {/* Speech bubble */}
+              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-200 hover:border-gray-300 transition-colors relative">
+                {/* Header: Username and actions menu */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-semibold text-gray-900">
                     {getUserFullName(note.created_by_user)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(note.created_at)}
-                  </Typography>
-                </Box>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  sx={{
-                    opacity: hoveredNoteId === note._id ? 1 : 0,
-                    transition: "opacity 0.2s ease-in-out",
-                  }}
-                >
-                  {/* Reaction picker button */}
-                  <NoteReactions
-                    noteId={note._id}
-                    reactions={reactions}
-                    currentUserId={currentUserId || ""}
-                    onReactionChange={async (updatedReactions) => {
-                      // Find which reactions changed
-                      const currentEmojis = reactions.map((r) => r.emoji);
-                      const updatedEmojis = updatedReactions.map((r) => r.emoji);
+                  </span>
 
-                      // Find added reactions
-                      const addedEmojis = updatedEmojis.filter(
-                        (emoji) => !currentEmojis.includes(emoji),
-                      );
-                      for (const emoji of addedEmojis) {
-                        await handleEmojiReaction(note._id, emoji);
-                      }
-
-                      // Find removed reactions
-                      const removedEmojis = currentEmojis.filter(
-                        (emoji) => !updatedEmojis.includes(emoji),
-                      );
-                      for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(
-                          note._id,
-                          emoji,
-                          isReply ? parentNoteId : undefined,
-                        );
-                      }
-                    }}
-                    showPicker={true}
-                  />
-                  <Tooltip title="Reply to this comment">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        handleReplyClick(isReply && parentNoteId ? parentNoteId : note._id)
-                      }
-                      sx={{ ml: 1 }}
+                  {/* Actions ellipse menu - top right */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActionsMenuNoteId(showActionsMenu ? null : note._id)}
+                      className={`p-1 hover:bg-gray-100 rounded-lg transition-opacity ${
+                        isHovered || showActionsMenu ? "opacity-100" : "opacity-0"
+                      }`}
+                      title="More actions"
                     >
-                      <ReplyIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  {currentUserId === note.created_by && (
-                    <Tooltip title="Delete this comment">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteClick(note._id)}
-                        sx={{ ml: 1 }}
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
                       >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Box>
-              </Box>
-              <Box
-                sx={{
-                  overflow: "auto",
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+
+                    {/* Dropdown menu */}
+                    {showActionsMenu && (
+                      <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[160px]">
+                        <button
+                          onClick={() => {
+                            handleReplyClick(isReply && parentNoteId ? parentNoteId : note._id);
+                            setActionsMenuNoteId(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Reply className="w-4 h-4" />
+                          Reply
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEmojiPickerNoteId(note._id);
+                            setActionsMenuNoteId(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Smile className="w-4 h-4" />
+                          Add reaction
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => {
+                              handleDeleteClick(note._id);
+                              setActionsMenuNoteId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Message content */}
+                <div
+                  className={`${isReply ? "text-sm" : "text-[15px]"} leading-relaxed text-gray-800 whitespace-pre-wrap break-words mb-2`}
                 >
                   {getNoteContent(note.value)}
-                </Typography>
-              </Box>
-              {/* Reactions display */}
-              {reactions.length > 0 && (
-                <Box sx={{ mt: 1 }}>
-                  <NoteReactions
-                    noteId={note._id}
-                    reactions={reactions}
-                    currentUserId={currentUserId || ""}
-                    onReactionChange={async (updatedReactions) => {
-                      // Find which reactions changed
-                      const currentEmojis = reactions.map((r) => r.emoji);
-                      const updatedEmojis = updatedReactions.map((r) => r.emoji);
+                </div>
 
-                      // Find added reactions
-                      const addedEmojis = updatedEmojis.filter(
-                        (emoji) => !currentEmojis.includes(emoji),
-                      );
-                      for (const emoji of addedEmojis) {
-                        await handleEmojiReaction(note._id, emoji);
-                      }
+                {/* Reactions inside bubble */}
+                <div className="flex items-center gap-1 mb-2">
+                  {reactions.length > 0 && (
+                    <NoteReactions
+                      noteId={note._id}
+                      reactions={reactions}
+                      currentUserId={currentUserId || ""}
+                      onReactionChange={async (updatedReactions) => {
+                        const currentEmojis = reactions.map((r) => r.emoji);
+                        const updatedEmojis = updatedReactions.map((r) => r.emoji);
 
-                      // Find removed reactions
-                      const removedEmojis = currentEmojis.filter(
-                        (emoji) => !updatedEmojis.includes(emoji),
-                      );
-                      for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(
-                          note._id,
-                          emoji,
-                          isReply ? parentNoteId : undefined,
+                        const addedEmojis = updatedEmojis.filter(
+                          (emoji) => !currentEmojis.includes(emoji),
                         );
-                      }
-                    }}
-                    showPicker={false}
-                  />
-                </Box>
-              )}
-            </Box>
-          </Box>
-        </Card>
+                        for (const emoji of addedEmojis) {
+                          await handleEmojiReaction(note._id, emoji);
+                        }
 
-        {/* Render replies */}
-        {note.sub_notes && note.sub_notes.length > 0 && (
-          <Box sx={{ mt: 1, ml: 3, borderLeft: "2px solid", borderColor: "divider", pl: 1.5 }}>
-            <Stack spacing={1}>
-              {note.sub_notes
-                .filter((reply: any) => !reply.deleted && !isEmojiReaction(reply))
-                .sort(
-                  (a: any, b: any) =>
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-                )
-                .map((reply: any) => renderNote(reply, true, note._id))}
-            </Stack>
-          </Box>
+                        const removedEmojis = currentEmojis.filter(
+                          (emoji) => !updatedEmojis.includes(emoji),
+                        );
+                        for (const emoji of removedEmojis) {
+                          await handleRemoveReaction(
+                            note._id,
+                            emoji,
+                            isReply ? parentNoteId : undefined,
+                          );
+                        }
+                      }}
+                      showPicker={false}
+                    />
+                  )}
+
+                  {/* Emoji picker button */}
+                  {emojiPickerNoteId === note._id && (
+                    <div onClick={(e) => e.stopPropagation()} data-emoji-picker>
+                      <NoteReactions
+                        noteId={note._id}
+                        reactions={reactions}
+                        currentUserId={currentUserId || ""}
+                        onReactionChange={async (updatedReactions) => {
+                          const currentEmojis = reactions.map((r) => r.emoji);
+                          const updatedEmojis = updatedReactions.map((r) => r.emoji);
+
+                          const addedEmojis = updatedEmojis.filter(
+                            (emoji) => !currentEmojis.includes(emoji),
+                          );
+                          for (const emoji of addedEmojis) {
+                            await handleEmojiReaction(note._id, emoji);
+                          }
+
+                          const removedEmojis = currentEmojis.filter(
+                            (emoji) => !updatedEmojis.includes(emoji),
+                          );
+                          for (const emoji of removedEmojis) {
+                            await handleRemoveReaction(
+                              note._id,
+                              emoji,
+                              isReply ? parentNoteId : undefined,
+                            );
+                          }
+
+                          setEmojiPickerNoteId(null);
+                        }}
+                        showPicker={true}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Timestamp at bottom right */}
+                <div className="flex justify-end">
+                  <span className="text-xs text-gray-400">
+                    {format(new Date(note.created_at), "h:mm a")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Render replies with indent */}
+        {!isReply && note.sub_notes && note.sub_notes.length > 0 && (
+          <div className="ml-12 mt-3 space-y-3">
+            {note.sub_notes
+              .filter((reply: any) => !reply.deleted && !isEmojiReaction(reply))
+              .sort(
+                (a: any, b: any) =>
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+              )
+              .map((reply: any) => (
+                <div key={reply._id}>{renderNote(reply, true, note._id)}</div>
+              ))}
+          </div>
         )}
 
-        {/* Reply input */}
-        {replyingTo === note._id && (
-          <Box sx={{ mt: 1 }}>
+        {/* Reply input - indented below parent */}
+        {!isReply && replyingTo === note._id && (
+          <div className="ml-12 mt-2">
             <NoteWithSubmit
               initialContent={replyText}
               onChange={setReplyText}
               onSubmit={() => replyingTo && handleSubmitReply(replyingTo)}
               isSubmitting={isSubmitting}
             />
-            <Button size="small" onClick={handleCancelReply} sx={{ mt: 1 }}>
+            <button
+              onClick={handleCancelReply}
+              className="mt-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
               Cancel
-            </Button>
-          </Box>
+            </button>
+          </div>
         )}
-      </Box>
+      </div>
     );
   };
 
   return (
-    <Box>
+    <div>
       {/* Comments list */}
-      {sortedNotes.length > 0 && (
-        <Stack spacing={1} sx={{ mb: 2 }}>
-          {sortedNotes.map((note) => renderNote(note))}
-        </Stack>
+      {sortedNotes.length > 0 ? (
+        <div className="space-y-0 mb-6">{sortedNotes.map((note) => renderNote(note))}</div>
+      ) : (
+        <div className="text-center py-12 px-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 mb-4">
+            <MessageSquare className="w-8 h-8 text-blue-400" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 mb-1">No comments yet</h3>
+          <p className="text-sm text-gray-500">
+            Start the conversation by adding the first comment
+          </p>
+        </div>
       )}
 
-      {/* Comment input - hide when replying */}
+      {/* Comment input */}
       {!replyingTo && (
-        <Box sx={{ mt: 2 }}>
+        <div>
           <NoteWithSubmit
             initialContent={commentText}
             onChange={setCommentText}
             onSubmit={handleSubmitComment}
             isSubmitting={isSubmitting}
           />
-        </Box>
+        </div>
       )}
 
       {/* Delete confirmation dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">Delete Comment</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete this comment? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Delete Comment</h3>
+                  <p className="text-sm text-gray-500">This action is permanent</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                Are you sure you want to delete this comment? This action cannot be undone and the
+                comment will be permanently removed.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-105"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg shadow-red-500/30"
+                >
+                  Delete Comment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

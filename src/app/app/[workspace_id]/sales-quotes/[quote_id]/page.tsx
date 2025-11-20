@@ -10,6 +10,7 @@ import { useNotification } from "@/providers/NotificationProvider";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { GeneratedImage } from "@/ui/GeneratedImage";
+import NotesSection from "@/ui/notes/NotesSection";
 import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
@@ -101,6 +102,7 @@ graphql(`
       currentRevision {
         id
         revisionNumber
+        status
         validUntil
         createdAt
         lineItems {
@@ -255,8 +257,19 @@ export default function SalesQuoteDetailPage() {
 
   const quote = data?.quoteById;
 
-  // Determine if we should show the send button (only for ACTIVE quotes)
-  const canSendQuote = quote && quote.status === "ACTIVE";
+  // Determine CTA visibility based on quote and revision status
+  const isQuoteActive = quote?.status === "ACTIVE";
+  const revisionStatus = quote?.currentRevision?.status;
+  const hasLineItems = (quote?.currentRevision?.lineItems?.length ?? 0) > 0;
+
+  // "Send Quote" - only available for ACTIVE quotes with DRAFT revisions that have line items
+  const canSendQuote = isQuoteActive && revisionStatus === "DRAFT" && hasLineItems;
+
+  // "Accept on Behalf" - only available for ACTIVE quotes with SENT revisions
+  const canAcceptQuote = isQuoteActive && revisionStatus === "SENT";
+
+  // "Edit Items" - only available for ACTIVE quotes
+  const canEditItems = isQuoteActive;
 
   // Calculate totals
   const totalAmount = React.useMemo(() => {
@@ -346,23 +359,23 @@ export default function SalesQuoteDetailPage() {
                 <Printer className="w-4 h-4" />
                 {pdfLoading ? "Generating..." : "Print PDF"}
               </button>
+              {canAcceptQuote && (
+                <button
+                  onClick={() => setAcceptDialogOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Accept on Behalf
+                </button>
+              )}
               {canSendQuote && (
-                <>
-                  <button
-                    onClick={() => setAcceptDialogOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Accept on Behalf
-                  </button>
-                  <button
-                    onClick={() => setSendDialogOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Send Quote
-                  </button>
-                </>
+                <button
+                  onClick={() => setSendDialogOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Send Quote
+                </button>
               )}
               <StatusBadge status={quote.status as QuoteStatusType} />
             </div>
@@ -431,13 +444,15 @@ export default function SalesQuoteDetailPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Line Items</h2>
-                <Link
-                  href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Edit Items
-                </Link>
+                {canEditItems && (
+                  <Link
+                    href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Edit Items
+                  </Link>
+                )}
               </div>
               <div className="overflow-x-auto">
                 {quote.currentRevision?.lineItems && quote.currentRevision.lineItems.length > 0 ? (
@@ -595,13 +610,15 @@ export default function SalesQuoteDetailPage() {
                         Add products, rentals, or services to build your quote. Items you add will
                         appear here with pricing and delivery details.
                       </p>
-                      <Link
-                        href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Add Items to Quote
-                      </Link>
+                      {canEditItems && (
+                        <Link
+                          href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          Add Items to Quote
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}
@@ -619,6 +636,15 @@ export default function SalesQuoteDetailPage() {
                 />
               </div>
             </div>
+
+            {/* Comments and Notes */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Comments & Notes</h2>
+              <div className="border-t border-gray-200 pt-4">
+                <NotesSection entityId={quote.id} workspaceId={workspaceId} />
+              </div>
+            </div>
+
             {/* Rental Calendar */}
             <RentalCalendarView quoteId={quoteId} />
           </div>

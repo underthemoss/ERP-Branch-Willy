@@ -1,8 +1,8 @@
 import { graphql } from "@/graphql";
 import {
   useCreateNoteMutation as _useCreateNoteMutation,
-  useCurrentUserQuery,
   useDeleteNoteMutation,
+  useGetCurrentUserQuery,
   useListNotesByEntityIdQuery,
   useUpdateNoteMutation,
 } from "@/graphql/hooks";
@@ -15,7 +15,7 @@ export {
   useListNotesByEntityIdQuery,
   useUpdateNoteMutation,
   useDeleteNoteMutation,
-  useCurrentUserQuery,
+  useGetCurrentUserQuery,
 };
 
 // GraphQL fragments
@@ -91,10 +91,12 @@ graphql(`
 `);
 
 graphql(`
-  query CurrentUser {
-    currentUser {
-      es_user_id
-      es_user_name
+  query GetCurrentUser {
+    getCurrentUser {
+      id
+      email
+      firstName
+      lastName
     }
   }
 `);

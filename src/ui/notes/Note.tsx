@@ -1,6 +1,5 @@
 "use client";
 
-import { TextField } from "@mui/material";
 import React from "react";
 
 export type NoteProps = {
@@ -24,7 +23,7 @@ const Note: React.FC<NoteProps> = ({
     }
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Check for Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux)
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
       event.preventDefault();
@@ -35,29 +34,16 @@ const Note: React.FC<NoteProps> = ({
   };
 
   return (
-    <TextField
-      multiline
-      fullWidth
+    <textarea
       value={initialContent}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       disabled={readOnly}
-      className={className}
-      variant="outlined"
+      className={`w-full resize-none border-none focus:outline-none text-sm ${className || ""} ${
+        readOnly ? "p-0 bg-transparent cursor-default" : "p-1"
+      }`}
       placeholder={readOnly ? "" : "Leave a comment..."}
-      minRows={readOnly ? 1 : 1}
-      sx={{
-        "& .MuiOutlinedInput-root": {
-          padding: readOnly ? 0 : undefined,
-          "& fieldset": {
-            border: "none",
-          },
-        },
-        "& .MuiInputBase-input": {
-          fontSize: "14px",
-          padding: readOnly ? 0 : "4px 8px",
-        },
-      }}
+      rows={readOnly ? 1 : 2}
     />
   );
 };

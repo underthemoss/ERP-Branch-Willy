@@ -1,10 +1,9 @@
 "use client";
 
-import AddReactionIcon from "@mui/icons-material/AddReaction";
-import { Box, Chip, IconButton, Popover, Tooltip } from "@mui/material";
 import { format } from "date-fns";
 import Picker from "emoji-picker-react";
-import React, { useState } from "react";
+import { Smile } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface ReactionUser {
   id: string;
@@ -14,7 +13,7 @@ interface ReactionUser {
 
 interface Reaction {
   emoji: string;
-  users: ReactionUser[] | string[]; // Can be either detailed users or just IDs for backward compatibility
+  users: ReactionUser[] | string[];
 }
 
 interface NoteReactionsProps {
@@ -32,17 +31,23 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
   onReactionChange,
   showPicker = false,
 }) => {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  // Close picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setIsPickerOpen(false);
+      }
+    };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
+    if (isPickerOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isPickerOpen]);
 
   // Helper to check if users array contains detailed user info
   const isDetailedUsers = (users: ReactionUser[] | string[]): users is ReactionUser[] => {
@@ -80,31 +85,25 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
     const emoji = emojiData.emoji;
     const updatedReactions = [...reactions];
 
-    // Check if this emoji already exists
     const existingReactionIndex = updatedReactions.findIndex((r) => r.emoji === emoji);
 
     if (existingReactionIndex >= 0) {
-      // Emoji exists, toggle user
       const reaction = updatedReactions[existingReactionIndex];
       const userIds = getUserIds(reaction);
       const userIndex = userIds.indexOf(currentUserId);
 
       if (userIndex >= 0) {
-        // User already reacted, remove them
         if (isDetailedUsers(reaction.users)) {
           reaction.users = reaction.users.filter((u) => u.id !== currentUserId);
         } else {
           reaction.users = reaction.users.filter((id) => id !== currentUserId);
         }
 
-        // If no users left, remove the reaction
         if (reaction.users.length === 0) {
           updatedReactions.splice(existingReactionIndex, 1);
         }
       } else {
-        // Add user to existing reaction
         if (isDetailedUsers(reaction.users)) {
-          // This shouldn't happen in practice, but handle it gracefully
           reaction.users.push({
             id: currentUserId,
             name: "You",
@@ -115,14 +114,13 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
         }
       }
     } else {
-      // New reaction
       updatedReactions.push({
         emoji,
         users: [currentUserId],
       });
     }
 
-    handleClose();
+    setIsPickerOpen(false);
 
     if (onReactionChange) {
       onReactionChange(updatedReactions);
@@ -139,21 +137,17 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
       const userIndex = userIds.indexOf(currentUserId);
 
       if (userIndex >= 0) {
-        // User already reacted, remove them
         if (isDetailedUsers(reaction.users)) {
           reaction.users = reaction.users.filter((u) => u.id !== currentUserId);
         } else {
           reaction.users = reaction.users.filter((id) => id !== currentUserId);
         }
 
-        // If no users left, remove the reaction
         if (reaction.users.length === 0) {
           updatedReactions.splice(reactionIndex, 1);
         }
       } else {
-        // Add user to existing reaction
         if (isDetailedUsers(reaction.users)) {
-          // This shouldn't happen in practice, but handle it gracefully
           reaction.users.push({
             id: currentUserId,
             name: "You",
@@ -178,38 +172,18 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
   };
 
   if (showPicker) {
-    // Return just the picker button when used inline with actions
     return (
-      <>
-        <Tooltip title="Add reaction">
-          <IconButton size="small" onClick={handleClick} sx={{ ml: 1 }}>
-            <AddReactionIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        {/* Emoji picker popover */}
-        <Popover
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "left",
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "left",
-          }}
-          sx={{
-            "& .MuiPaper-root": {
-              backgroundColor: "transparent",
-              boxShadow: "none",
-              border: "none",
-              overflow: "visible",
-            },
-          }}
+      <div className="relative inline-block" ref={pickerRef}>
+        <button
+          onClick={() => setIsPickerOpen(!isPickerOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-105"
+          title="Add reaction"
         >
-          <Box>
+          <Smile className="w-4 h-4 text-gray-500 hover:text-blue-600" />
+        </button>
+
+        {isPickerOpen && (
+          <div className="absolute top-full left-0 mt-2 z-50 shadow-xl rounded-lg overflow-hidden">
             <Picker
               reactionsDefaultOpen={true}
               onReactionClick={handleReaction}
@@ -220,47 +194,32 @@ const NoteReactions: React.FC<NoteReactionsProps> = ({
               searchDisabled
               skinTonesDisabled
             />
-          </Box>
-        </Popover>
-      </>
+          </div>
+        )}
+      </div>
     );
   }
 
-  // Return the reactions display
   return (
-    <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
-      {/* Display existing reactions */}
-      {reactions.map((reaction) => (
-        <Tooltip
-          key={reaction.emoji}
-          title={getTooltipContent(reaction)}
-          sx={{
-            "& .MuiTooltip-tooltip": {
-              whiteSpace: "pre-line",
-              maxWidth: "none",
-            },
-          }}
-        >
-          <Chip
-            label={`${reaction.emoji} ${reaction.users.length}`}
-            size="small"
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {reactions.map((reaction) => {
+        const isUserReacted = getUserReactionStatus(reaction.emoji);
+        return (
+          <button
+            key={reaction.emoji}
             onClick={() => handleReactionClick(reaction.emoji)}
-            color={getUserReactionStatus(reaction.emoji) ? "primary" : "default"}
-            variant={getUserReactionStatus(reaction.emoji) ? "filled" : "outlined"}
-            sx={{
-              height: 24,
-              fontSize: "0.875rem",
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: getUserReactionStatus(reaction.emoji)
-                  ? "primary.dark"
-                  : "action.hover",
-              },
-            }}
-          />
-        </Tooltip>
-      ))}
-    </Box>
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer hover:scale-105 shadow-sm ${
+              isUserReacted
+                ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-300 hover:border-blue-400 hover:shadow-md"
+                : "bg-gray-50 text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            <span className="text-base">{reaction.emoji}</span>
+            <span className="text-xs">{reaction.users.length}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 };
 
