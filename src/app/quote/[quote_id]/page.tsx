@@ -11,7 +11,6 @@ import { GeneratedImage } from "@/ui/GeneratedImage";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
   AlertCircle,
-  Building2,
   Calendar,
   CheckCircle2,
   ChevronDown,
@@ -606,31 +605,6 @@ export default function BuyerQuoteViewPage() {
             )}
           </div>
         </div>
-
-        {/* Seller Information */}
-        {quote.sellersProject && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-gray-600" />
-              Project Details
-            </h2>
-            <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-medium text-gray-900">{quote.sellersProject.name}</span>
-              </p>
-              {quote.sellersProject.project_code && (
-                <p className="text-xs text-gray-600 font-mono">
-                  {quote.sellersProject.project_code}
-                </p>
-              )}
-              {quote.sellersProject.description && (
-                <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">
-                  {quote.sellersProject.description}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Footer */}
