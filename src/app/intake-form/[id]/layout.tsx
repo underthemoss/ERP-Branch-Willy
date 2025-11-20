@@ -1,3 +1,5 @@
+"use client";
+
 import { ProviderComposerNoAuth } from "@/providers/ProviderComposer";
 import { AppChrome } from "@/ui/AppChrome";
 import React from "react";
