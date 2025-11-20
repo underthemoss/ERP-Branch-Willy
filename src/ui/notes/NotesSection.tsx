@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { MessageSquare, Reply, Smile, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useCreateNoteMutation,
   useDeleteNoteMutation,
@@ -25,6 +25,24 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
   const [replyText, setReplyText] = useState("");
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [actionsMenuNoteId, setActionsMenuNoteId] = useState<string | null>(null);
+  const [emojiPickerNoteId, setEmojiPickerNoteId] = useState<string | null>(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside emoji picker
+      if (!target.closest("[data-emoji-picker]")) {
+        setEmojiPickerNoteId(null);
+      }
+    };
+
+    if (emojiPickerNoteId) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [emojiPickerNoteId]);
 
   // Fetch notes
   const { data, loading, error } = useListNotesByEntityIdQuery({
@@ -347,181 +365,217 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
     const reactions = getReactionsForNote(note._id, notes, isReply ? parentNoteId : undefined);
     const isHovered = hoveredNoteId === note._id;
     const canDelete = currentUserId === note.created_by_user?.id;
+    const showActionsMenu = actionsMenuNoteId === note._id;
 
     return (
-      <div key={note._id} className={isReply ? "" : "mb-1.5"}>
+      <div key={note._id} className={isReply ? "" : "mb-4"}>
+        {/* Main note container */}
         <div
-          className={`group relative transition-all duration-200 ${
-            isReply
-              ? ""
-              : "bg-white border border-gray-200 hover:border-blue-200 hover:shadow-sm rounded-xl p-4"
-          }`}
+          className="flex gap-3 items-start"
           onMouseEnter={() => setHoveredNoteId(note._id)}
-          onMouseLeave={() => setHoveredNoteId(null)}
+          onMouseLeave={() => {
+            setHoveredNoteId(null);
+            setActionsMenuNoteId(null);
+          }}
         >
-          <div className={`flex ${isReply ? "gap-3" : "gap-4"}`}>
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div
-                className={`${isReply ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm"} rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-blue-100`}
-              >
-                {getUserInitials(note.created_by_user)}
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              {/* Header */}
-              <div className={`flex items-start justify-between ${isReply ? "mb-1.5" : "mb-2"}`}>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {getUserFullName(note.created_by_user)}
-                  </span>
-                  <span className="text-xs text-gray-500 font-medium">
-                    {formatDate(note.created_at)}
-                  </span>
-                </div>
-
-                {/* Action buttons */}
-                <div
-                  className={`flex items-center gap-0.5 transition-opacity duration-200 ${
-                    isHovered ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <NoteReactions
-                    noteId={note._id}
-                    reactions={reactions}
-                    currentUserId={currentUserId || ""}
-                    onReactionChange={async (updatedReactions) => {
-                      const currentEmojis = reactions.map((r) => r.emoji);
-                      const updatedEmojis = updatedReactions.map((r) => r.emoji);
-
-                      const addedEmojis = updatedEmojis.filter(
-                        (emoji) => !currentEmojis.includes(emoji),
-                      );
-                      for (const emoji of addedEmojis) {
-                        await handleEmojiReaction(note._id, emoji);
-                      }
-
-                      const removedEmojis = currentEmojis.filter(
-                        (emoji) => !updatedEmojis.includes(emoji),
-                      );
-                      for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(
-                          note._id,
-                          emoji,
-                          isReply ? parentNoteId : undefined,
-                        );
-                      }
-                    }}
-                    showPicker={true}
-                  />
-
-                  <button
-                    onClick={() =>
-                      handleReplyClick(isReply && parentNoteId ? parentNoteId : note._id)
-                    }
-                    className="p-2 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-105"
-                    title="Reply to this comment"
-                  >
-                    <Reply className="w-4 h-4 text-gray-500 hover:text-blue-600" />
-                  </button>
-
-                  {canDelete && (
-                    <button
-                      onClick={() => handleDeleteClick(note._id)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-105"
-                      title="Delete this comment"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-600" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Comment text */}
-              <div
-                className={`${isReply ? "text-sm" : "text-[15px]"} leading-relaxed text-gray-800 whitespace-pre-wrap break-words`}
-              >
-                {getNoteContent(note.value)}
-              </div>
-
-              {/* Reactions display */}
-              {reactions.length > 0 && (
-                <div className={isReply ? "mt-1.5" : "mt-2"}>
-                  <NoteReactions
-                    noteId={note._id}
-                    reactions={reactions}
-                    currentUserId={currentUserId || ""}
-                    onReactionChange={async (updatedReactions) => {
-                      const currentEmojis = reactions.map((r) => r.emoji);
-                      const updatedEmojis = updatedReactions.map((r) => r.emoji);
-
-                      const addedEmojis = updatedEmojis.filter(
-                        (emoji) => !currentEmojis.includes(emoji),
-                      );
-                      for (const emoji of addedEmojis) {
-                        await handleEmojiReaction(note._id, emoji);
-                      }
-
-                      const removedEmojis = currentEmojis.filter(
-                        (emoji) => !updatedEmojis.includes(emoji),
-                      );
-                      for (const emoji of removedEmojis) {
-                        await handleRemoveReaction(
-                          note._id,
-                          emoji,
-                          isReply ? parentNoteId : undefined,
-                        );
-                      }
-                    }}
-                    showPicker={false}
-                  />
-                </div>
-              )}
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            <div
+              className={`${isReply ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm"} rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md`}
+            >
+              {getUserInitials(note.created_by_user)}
             </div>
           </div>
 
-          {/* Render replies inside the parent card */}
-          {!isReply && note.sub_notes && note.sub_notes.length > 0 && (
-            <div className="mt-3 bg-gray-50/50 rounded-lg p-3">
-              {note.sub_notes
-                .filter((reply: any) => !reply.deleted && !isEmojiReaction(reply))
-                .sort(
-                  (a: any, b: any) =>
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-                )
-                .map((reply: any, index: any) => (
-                  <div
-                    key={reply._id}
-                    className={index > 0 ? "mt-3 pt-3 border-t border-gray-200/50" : ""}
-                    onMouseEnter={() => setHoveredNoteId(reply._id)}
-                    onMouseLeave={() => setHoveredNoteId(null)}
-                  >
-                    {renderNote(reply, true, note._id)}
-                  </div>
-                ))}
-            </div>
-          )}
+          {/* Speech bubble container */}
+          <div className="flex-1 min-w-0 max-w-[85%]">
+            <div className="group relative">
+              {/* Speech bubble */}
+              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-200 hover:border-gray-300 transition-colors relative">
+                {/* Header: Username and actions menu */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {getUserFullName(note.created_by_user)}
+                  </span>
 
-          {/* Reply input - now inside the card */}
-          {!isReply && replyingTo === note._id && (
-            <div className="mt-3 bg-gray-50/50 rounded-lg p-3">
-              <NoteWithSubmit
-                initialContent={replyText}
-                onChange={setReplyText}
-                onSubmit={() => replyingTo && handleSubmitReply(replyingTo)}
-                isSubmitting={isSubmitting}
-              />
-              <button
-                onClick={handleCancelReply}
-                className="mt-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Cancel
-              </button>
+                  {/* Actions ellipse menu - top right */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActionsMenuNoteId(showActionsMenu ? null : note._id)}
+                      className={`p-1 hover:bg-gray-100 rounded-lg transition-opacity ${
+                        isHovered || showActionsMenu ? "opacity-100" : "opacity-0"
+                      }`}
+                      title="More actions"
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+
+                    {/* Dropdown menu */}
+                    {showActionsMenu && (
+                      <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[160px]">
+                        <button
+                          onClick={() => {
+                            handleReplyClick(isReply && parentNoteId ? parentNoteId : note._id);
+                            setActionsMenuNoteId(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Reply className="w-4 h-4" />
+                          Reply
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEmojiPickerNoteId(note._id);
+                            setActionsMenuNoteId(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Smile className="w-4 h-4" />
+                          Add reaction
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => {
+                              handleDeleteClick(note._id);
+                              setActionsMenuNoteId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Message content */}
+                <div
+                  className={`${isReply ? "text-sm" : "text-[15px]"} leading-relaxed text-gray-800 whitespace-pre-wrap break-words mb-2`}
+                >
+                  {getNoteContent(note.value)}
+                </div>
+
+                {/* Reactions inside bubble */}
+                <div className="flex items-center gap-1 mb-2">
+                  {reactions.length > 0 && (
+                    <NoteReactions
+                      noteId={note._id}
+                      reactions={reactions}
+                      currentUserId={currentUserId || ""}
+                      onReactionChange={async (updatedReactions) => {
+                        const currentEmojis = reactions.map((r) => r.emoji);
+                        const updatedEmojis = updatedReactions.map((r) => r.emoji);
+
+                        const addedEmojis = updatedEmojis.filter(
+                          (emoji) => !currentEmojis.includes(emoji),
+                        );
+                        for (const emoji of addedEmojis) {
+                          await handleEmojiReaction(note._id, emoji);
+                        }
+
+                        const removedEmojis = currentEmojis.filter(
+                          (emoji) => !updatedEmojis.includes(emoji),
+                        );
+                        for (const emoji of removedEmojis) {
+                          await handleRemoveReaction(
+                            note._id,
+                            emoji,
+                            isReply ? parentNoteId : undefined,
+                          );
+                        }
+                      }}
+                      showPicker={false}
+                    />
+                  )}
+
+                  {/* Emoji picker button */}
+                  {emojiPickerNoteId === note._id && (
+                    <div onClick={(e) => e.stopPropagation()} data-emoji-picker>
+                      <NoteReactions
+                        noteId={note._id}
+                        reactions={reactions}
+                        currentUserId={currentUserId || ""}
+                        onReactionChange={async (updatedReactions) => {
+                          const currentEmojis = reactions.map((r) => r.emoji);
+                          const updatedEmojis = updatedReactions.map((r) => r.emoji);
+
+                          const addedEmojis = updatedEmojis.filter(
+                            (emoji) => !currentEmojis.includes(emoji),
+                          );
+                          for (const emoji of addedEmojis) {
+                            await handleEmojiReaction(note._id, emoji);
+                          }
+
+                          const removedEmojis = currentEmojis.filter(
+                            (emoji) => !updatedEmojis.includes(emoji),
+                          );
+                          for (const emoji of removedEmojis) {
+                            await handleRemoveReaction(
+                              note._id,
+                              emoji,
+                              isReply ? parentNoteId : undefined,
+                            );
+                          }
+
+                          setEmojiPickerNoteId(null);
+                        }}
+                        showPicker={true}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Timestamp at bottom right */}
+                <div className="flex justify-end">
+                  <span className="text-xs text-gray-400">
+                    {format(new Date(note.created_at), "h:mm a")}
+                  </span>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
+
+        {/* Render replies with indent */}
+        {!isReply && note.sub_notes && note.sub_notes.length > 0 && (
+          <div className="ml-12 mt-3 space-y-3">
+            {note.sub_notes
+              .filter((reply: any) => !reply.deleted && !isEmojiReaction(reply))
+              .sort(
+                (a: any, b: any) =>
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+              )
+              .map((reply: any) => (
+                <div key={reply._id}>{renderNote(reply, true, note._id)}</div>
+              ))}
+          </div>
+        )}
+
+        {/* Reply input - indented below parent */}
+        {!isReply && replyingTo === note._id && (
+          <div className="ml-12 mt-2">
+            <NoteWithSubmit
+              initialContent={replyText}
+              onChange={setReplyText}
+              onSubmit={() => replyingTo && handleSubmitReply(replyingTo)}
+              isSubmitting={isSubmitting}
+            />
+            <button
+              onClick={handleCancelReply}
+              className="mt-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     );
   };
