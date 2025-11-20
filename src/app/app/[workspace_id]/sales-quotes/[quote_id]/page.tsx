@@ -10,6 +10,7 @@ import { useNotification } from "@/providers/NotificationProvider";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import { GeneratedImage } from "@/ui/GeneratedImage";
+import NotesSection from "@/ui/notes/NotesSection";
 import { RentalCalendarView } from "@/ui/sales-quotes/RentalCalendarView";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
@@ -635,6 +636,15 @@ export default function SalesQuoteDetailPage() {
                 />
               </div>
             </div>
+
+            {/* Comments and Notes */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Comments & Notes</h2>
+              <div className="border-t border-gray-200 pt-4">
+                <NotesSection entityId={quote.id} workspaceId={workspaceId} />
+              </div>
+            </div>
+
             {/* Rental Calendar */}
             <RentalCalendarView quoteId={quoteId} />
           </div>
