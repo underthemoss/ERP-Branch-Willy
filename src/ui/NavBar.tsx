@@ -202,20 +202,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
   // Add admin-only menu items
   if (isPlatformAdmin) {
     navItems.splice(1, 0, {
-      text: "Quotes & Requests",
-      href: `/app/${currentWorkspace?.id}/quotes`,
-      icon: <RequestQuoteIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/quotes`,
-      testId: "nav-quotes",
-    });
-    navItems.splice(4, 0, {
       text: "Sales Quotes",
       href: `/app/${currentWorkspace?.id}/sales-quotes`,
       icon: <RequestQuoteIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/sales-quotes`,
       testId: "nav-sales-quotes",
     });
-    navItems.splice(6, 0, {
+    navItems.splice(3, 0, {
       text: "Search",
       href: `/app/${currentWorkspace?.id}/search/assets`,
       icon: <SearchIcon fontSize="small" />,
