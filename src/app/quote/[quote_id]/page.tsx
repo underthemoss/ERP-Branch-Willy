@@ -8,6 +8,7 @@ import {
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import { GeneratedImage } from "@/ui/GeneratedImage";
+import NotesSection from "@/ui/notes/NotesSection";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import {
   AlertCircle,
@@ -603,6 +604,14 @@ export default function BuyerQuoteViewPage() {
             ) : (
               <div className="px-6 py-16 text-center text-gray-500">No items in this quote</div>
             )}
+          </div>
+        </div>
+
+        {/* Comments & Notes */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Comments & Notes</h2>
+          <div className="border-t border-gray-200 pt-4">
+            <NotesSection entityId={quote.id} workspaceId={quote.sellerWorkspaceId} />
           </div>
         </div>
       </div>
