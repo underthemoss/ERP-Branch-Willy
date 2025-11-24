@@ -5,6 +5,7 @@ import {
   useGetDefaultTemplatesQuery,
   useUpdateReferenceNumberTemplateMutation,
 } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -69,7 +70,13 @@ export default function DefaultReferenceNumbersSection() {
   const [formData, setFormData] = React.useState<TemplateFormData>(defaultFormData);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const workspaceId = useSelectedWorkspaceId();
+
   const { data, loading, error, refetch } = useGetDefaultTemplatesQuery({
+    variables: {
+      workspaceId: workspaceId || "",
+    },
+    skip: !workspaceId,
     fetchPolicy: "cache-and-network",
   });
 
@@ -112,6 +119,11 @@ export default function DefaultReferenceNumbersSection() {
     try {
       setErrorMsg(null);
 
+      if (!workspaceId) {
+        setErrorMsg("Workspace ID is required");
+        return;
+      }
+
       const input = {
         type: formData.type as any,
         template: formData.template,
@@ -135,7 +147,12 @@ export default function DefaultReferenceNumbersSection() {
         });
       } else {
         await createTemplate({
-          variables: { input },
+          variables: {
+            input: {
+              ...input,
+              workspaceId,
+            },
+          },
         });
       }
 

@@ -7,6 +7,7 @@ import {
   useListReferenceNumberTemplatesQuery,
   useUpdateReferenceNumberTemplateMutation,
 } from "@/graphql/hooks";
+import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -83,11 +84,18 @@ export default function ReferenceNumbersSection({
   const [formData, setFormData] = React.useState<TemplateFormData>(defaultFormData);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const workspaceId = useSelectedWorkspaceId();
+
   const { data, loading, error, refetch } = useListReferenceNumberTemplatesQuery({
     variables: {
-      filter: { projectId, businessContactId },
+      filter: {
+        workspaceId: workspaceId || "",
+        projectId,
+        businessContactId,
+      },
       page: { size: 100 },
     },
+    skip: !workspaceId,
     fetchPolicy: "cache-and-network",
   });
 
@@ -146,6 +154,11 @@ export default function ReferenceNumbersSection({
     try {
       setErrorMsg(null);
 
+      if (!workspaceId) {
+        setErrorMsg("Workspace ID is required");
+        return;
+      }
+
       const input = {
         type: formData.type as any,
         template: formData.template,
@@ -168,7 +181,12 @@ export default function ReferenceNumbersSection({
         });
       } else {
         await createTemplate({
-          variables: { input },
+          variables: {
+            input: {
+              ...input,
+              workspaceId,
+            },
+          },
         });
       }
 

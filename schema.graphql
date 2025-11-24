@@ -783,6 +783,7 @@ input CreateReferenceNumberTemplateInput {
   template: String!
   type: ReferenceNumberType!
   useGlobalSequence: Boolean!
+  workspaceId: String!
 }
 
 input CreateRentalFulfilmentInput {
@@ -2020,6 +2021,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_MANAGE_QUOTES
+  ERP_WORKSPACE_CAN_MANAGE_REFERENCE_NUMBER_TEMPLATES
   ERP_WORKSPACE_CAN_MANAGE_RFQS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
   ERP_WORKSPACE_CAN_READ_CHARGES
@@ -2029,6 +2031,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_READ_PROJECTS
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS
   ERP_WORKSPACE_CAN_READ_QUOTES
+  ERP_WORKSPACE_CAN_READ_REFERENCE_NUMBER_TEMPLATES
   ERP_WORKSPACE_CAN_READ_RFQS
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS
   ERP_WORKSPACE_CREATE_INTAKE_FORM
@@ -2265,7 +2268,7 @@ enum ProjectStatusEnum {
 
 type PurchaseOrder {
   comments: [Note!]!
-  company_id: String!
+  company_id: String! @deprecated(reason: "Use workspaceId instead")
   created_at: String!
   created_by: String!
   created_by_user: User
@@ -2382,9 +2385,9 @@ type Query {
   getBrandsByIds(brandIds: [String!]!): [Brand]
   getBulkSearchDocumentsById(ids: [String!]!): [SearchDocument]!
   getContactById(id: ID!): Contact
-  getCurrentSequenceNumber(templateId: String, type: ReferenceNumberType!): Int!
+  getCurrentSequenceNumber(templateId: String!, type: ReferenceNumberType!, workspaceId: String!): Int!
   getCurrentUser: User
-  getDefaultTemplates: [ReferenceNumberTemplate!]!
+  getDefaultTemplates(workspaceId: String!): [ReferenceNumberTemplate!]!
   getFulfilmentById(id: ID!): Fulfilment
 
   """Get a single intake form by ID"""
@@ -2471,7 +2474,7 @@ type Query {
   listPurchaseOrders(limit: Int = 20, offset: Int = 0, workspaceId: String!): PurchaseOrderListResult
   listQuotes(query: ListQuotesQuery): QuotesResponse!
   listRFQs(filter: ListRFQsFilter!, page: ListRFQsPage!): ListRFQsResult!
-  listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput, page: PageInfoInput): [ReferenceNumberTemplate!]!
+  listReferenceNumberTemplates(filter: ReferenceNumberTemplateFilterInput!, page: PageInfoInput): [ReferenceNumberTemplate!]!
   listRentalFulfilments(filter: ListRentalFulfilmentsFilter!, page: ListFulfilmentsPage): ListRentalFulfilmentsResult
   listRentalViews(filter: RentalViewFilterInput, page: ListRentalViewsPageInput): ListRentalViewsResult
 
@@ -2682,7 +2685,7 @@ enum RFQStatus {
 type ReferenceNumberTemplate {
   businessContact: Contact
   businessContactId: String
-  companyId: String!
+  companyId: String @deprecated(reason: "Use workspaceId instead")
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
@@ -2699,12 +2702,14 @@ type ReferenceNumberTemplate {
   updatedBy: String!
   updatedByUser: User
   useGlobalSequence: Boolean!
+  workspaceId: String!
 }
 
 input ReferenceNumberTemplateFilterInput {
   businessContactId: String
   projectId: String
   type: ReferenceNumberType
+  workspaceId: String!
 }
 
 enum ReferenceNumberType {
@@ -3297,7 +3302,7 @@ type SalesOrder {
   buyer: Contact
   buyer_id: String!
   comments: [Note!]!
-  company_id: String!
+  company_id: String! @deprecated(reason: "Use workspace_id instead")
   created_at: String!
   created_by: String!
   created_by_user: User
@@ -3476,7 +3481,7 @@ type SendTestEmailResult {
 }
 
 type SequenceNumber {
-  companyId: String!
+  companyId: String @deprecated(reason: "Use workspaceId instead")
   createdAt: DateTime!
   createdBy: String!
   deleted: Boolean!
@@ -3487,6 +3492,7 @@ type SequenceNumber {
   updatedAt: DateTime!
   updatedBy: String!
   value: Int!
+  workspaceId: String!
 }
 
 type ServiceFulfilment implements FulfilmentBase {
@@ -3989,6 +3995,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_QUOTES: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_REFERENCE_NUMBER_TEMPLATES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_RFQS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_CHARGES: Boolean
@@ -3998,6 +4005,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_READ_PROJECTS: Boolean
   ERP_WORKSPACE_CAN_READ_PURCHASE_ORDERS: Boolean
   ERP_WORKSPACE_CAN_READ_QUOTES: Boolean
+  ERP_WORKSPACE_CAN_READ_REFERENCE_NUMBER_TEMPLATES: Boolean
   ERP_WORKSPACE_CAN_READ_RFQS: Boolean
   ERP_WORKSPACE_CAN_READ_SALES_ORDERS: Boolean
   ERP_WORKSPACE_CREATE_INTAKE_FORM: Boolean

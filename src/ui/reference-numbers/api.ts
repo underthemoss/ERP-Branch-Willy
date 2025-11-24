@@ -4,7 +4,7 @@ import { graphql } from "@/graphql";
 
 graphql(`
   query listReferenceNumberTemplates(
-    $filter: ReferenceNumberTemplateFilterInput
+    $filter: ReferenceNumberTemplateFilterInput!
     $page: PageInfoInput
   ) {
     listReferenceNumberTemplates(filter: $filter, page: $page) {
@@ -90,8 +90,8 @@ graphql(`
 `);
 
 graphql(`
-  query GetDefaultTemplates {
-    getDefaultTemplates {
+  query GetDefaultTemplates($workspaceId: String!) {
+    getDefaultTemplates(workspaceId: $workspaceId) {
       id
       type
       template
@@ -101,7 +101,7 @@ graphql(`
       useGlobalSequence
       businessContactId
       projectId
-      companyId
+      workspaceId
       createdAt
       updatedAt
       deleted
