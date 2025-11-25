@@ -21,6 +21,52 @@ Unless told otherwise default to "use client" on UI files.
 
 Use american spelling in all copy.
 
+### Tailwind CSS v4 Conventions
+
+This project uses **Tailwind CSS v4** which has different syntax from v3. Be aware of the following:
+
+#### Opacity Utilities
+
+**❌ WRONG (Tailwind v3 legacy syntax - does NOT work!):**
+
+```jsx
+<div className="bg-black bg-opacity-30" />
+<div className="text-white text-opacity-50" />
+```
+
+**✅ CORRECT (Tailwind v4 syntax):**
+
+```jsx
+<div className="bg-black/30" />
+<div className="text-white/50" />
+```
+
+Use the `/` slash notation for opacity on colors. The old `bg-opacity-*`, `text-opacity-*`, etc. utilities are **deprecated** and will render as solid colors.
+
+#### Dialog Backdrops
+
+When creating modal/dialog backdrops, use:
+
+```jsx
+{
+  /* Semi-transparent backdrop */
+}
+<div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />;
+
+{
+  /* Darker backdrop */
+}
+<div className="fixed inset-0 bg-black/50" />;
+```
+
+Or use the pre-defined class from `globals.css`:
+
+```jsx
+<div className="dialog-backdrop" />
+```
+
+---
+
 ### Coding Standards for MUI components
 
 When using MUI GRID, this is the correct syntax

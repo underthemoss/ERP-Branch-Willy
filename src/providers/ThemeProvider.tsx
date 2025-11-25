@@ -2,6 +2,26 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import * as React from "react";
 
 const theme = createTheme({
+  components: {
+    MuiBackdrop: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backdropFilter: "blur(4px)",
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        root: {
+          "& .MuiBackdrop-root": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(4px)",
+          },
+        },
+      },
+    },
+  },
   palette: {
     primary: {
       main: "#0063E9", // Dark background color from the avatar
