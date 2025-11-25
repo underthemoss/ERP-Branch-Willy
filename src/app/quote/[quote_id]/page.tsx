@@ -5,7 +5,7 @@ import { useAcceptQuoteMutation } from "@/graphql/hooks";
 import { useConfig } from "@/providers/ConfigProvider";
 import { useNotification } from "@/providers/NotificationProvider";
 import { useAuth0 } from "@auth0/auth0-react";
-import { AlertCircle } from "lucide-react";
+import { FileQuestion, FileText, Lock, Sparkles } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { AuthBanner } from "../components/AuthBanner";
@@ -34,21 +34,19 @@ export default function BuyerQuoteViewPage() {
   const searchParams = useSearchParams();
   const config = useConfig();
   const quoteId = params?.quote_id as string;
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifySuccess } = useNotification();
   const { isAuthenticated, isLoading } = useAuth0();
 
   // Extract URL parameters from search params
   const fileKey = searchParams.get("file_key");
   const pdfQuoteId = searchParams.get("sales_quote_id");
   const workspaceId = searchParams.get("workspace_id");
-  const recipientEmail = searchParams.get("recipient_email");
   const recipientName = searchParams.get("recipient_name");
 
   // Build PDF URL from GraphQL endpoint
   const pdfUrl = React.useMemo(() => {
     if (!fileKey || !pdfQuoteId || !workspaceId) return null;
 
-    // Derive API base URL from GraphQL URL
     const graphqlUrl = new URL(config.graphqlUrl);
     const apiBase = `${graphqlUrl.protocol}//${graphqlUrl.host}${graphqlUrl.pathname.replace(/\/graphql$/, "")}`;
 
@@ -59,42 +57,45 @@ export default function BuyerQuoteViewPage() {
 
   const [acceptQuote, { loading: accepting }] = useAcceptQuoteMutation();
 
-  const handleAcceptWithSignature = async (signatureData: SignatureData) => {
+  const handleAcceptWithSignature = async (signatureData: SignatureData): Promise<void> => {
     console.log("Quote accepted with signature:", signatureData);
-    // TODO: Send signature data to backend when endpoint is ready
-    try {
-      await acceptQuote({
-        variables: {
-          input: {
-            quoteId,
-          },
+    const result = await acceptQuote({
+      variables: {
+        input: {
+          quoteId,
         },
-      });
-      notifySuccess("Quote accepted successfully!");
-      setAcceptDialogOpen(false);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to accept quote";
-      notifyError(errorMessage);
+      },
+    });
+
+    if (result.errors && result.errors.length > 0) {
+      throw new Error(result.errors[0].message);
     }
+
+    notifySuccess("Quote accepted successfully!");
+    setTimeout(() => {
+      setAcceptDialogOpen(false);
+    }, 2000);
   };
 
-  // Show loading state while auth is being determined
+  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-14 h-14 bg-white rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-5">
+            <div className="animate-spin rounded-full h-7 w-7 border-2 border-emerald-200 border-t-emerald-600" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900 mb-1">Loading</h2>
+          <p className="text-sm text-slate-500">Preparing your quote...</p>
         </div>
       </div>
     );
   }
 
-  // If we have PDF URL params, show the PDF viewer for ALL users
+  // PDF viewer for all users with valid URL
   if (pdfUrl) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-        {/* Only show auth banner for unauthenticated users */}
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
         {!isAuthenticated && <AuthBanner />}
         <PdfViewerAdvanced
           pdfUrl={pdfUrl}
@@ -102,13 +103,11 @@ export default function BuyerQuoteViewPage() {
           onAcceptClick={() => setAcceptDialogOpen(true)}
           hasBanner={!isAuthenticated}
         />
-        {/* Signature Acceptance Dialog */}
         <SignatureAcceptanceDialog
           open={acceptDialogOpen}
           onClose={() => setAcceptDialogOpen(false)}
           onAccept={handleAcceptWithSignature}
           quoteNumber={quoteId}
-          totalAmount="Quote Total"
           defaultName={recipientName || ""}
           loading={accepting}
         />
@@ -118,39 +117,50 @@ export default function BuyerQuoteViewPage() {
 
   // No PDF params - show appropriate message based on auth state
   if (!isAuthenticated) {
-    // Unauthenticated without PDF params - prompt to sign in
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
         <AuthBanner />
-        <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-10 h-10 text-blue-600" />
+        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center p-6">
+          <div className="max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-500/20">
+              <Lock className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In Required</h2>
-            <p className="text-gray-600">
-              Please sign in to view this quote. If you don&apos;t have an account, contact the
-              seller for assistance.
+            <h1 className="text-2xl font-semibold text-slate-900 mb-3">Sign in to continue</h1>
+            <p className="text-slate-600 text-sm leading-relaxed mb-8">
+              Sign in to view this quote. If you don&apos;t have an account yet, contact your sales
+              representative for assistance.
             </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 text-sm rounded-xl">
+                <Sparkles className="w-4 h-4" />
+                Use the link from your email
+              </div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Authenticated but no PDF params - show message
+  // Authenticated but no PDF params
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-10 h-10 text-orange-600" />
+        <div className="max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/20">
+            <FileQuestion className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Quote Document Unavailable</h2>
-          <p className="text-gray-600">
-            The quote document link appears to be incomplete. Please use the link from your email to
-            view the quote.
+          <h1 className="text-2xl font-semibold text-slate-900 mb-3">Quote not found</h1>
+          <p className="text-slate-600 text-sm leading-relaxed mb-8">
+            The link appears to be incomplete or has expired. Please use the original link from your
+            email to view the quote.
           </p>
+          <div className="flex flex-col gap-4 items-center">
+            <div className="inline-flex items-center gap-3 px-5 py-3 bg-white border border-slate-200 rounded-xl shadow-sm">
+              <FileText className="w-5 h-5 text-slate-400" />
+              <span className="text-sm text-slate-600">Check your email for the quote link</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

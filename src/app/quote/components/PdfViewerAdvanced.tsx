@@ -1,6 +1,15 @@
 "use client";
 
-import { AlertCircle, Download, Maximize2, Printer, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  AlertCircle,
+  Download,
+  FileText,
+  Maximize2,
+  PenLine,
+  Printer,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import * as React from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -13,15 +22,14 @@ interface PdfViewerAdvancedProps {
   pdfUrl: string;
   onAcceptClick?: () => void;
   showAcceptButton?: boolean;
-  /** Whether the auth banner is shown above the viewer (affects height calculation) */
   hasBanner?: boolean;
 }
 
 type FitMode = "width" | "page" | "custom";
 
 /**
- * 📄 Advanced DocuSign-style PDF viewer
- * Features: zoom, navigation, mobile support, professional UI
+ * 📄 Modern PDF viewer with premium SaaS aesthetic
+ * Features: smooth interactions, refined UI, professional design
  */
 export function PdfViewerAdvanced({
   pdfUrl,
@@ -40,7 +48,6 @@ export function PdfViewerAdvanced({
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3.0;
 
-  // Measure container width on mount and resize
   React.useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -53,13 +60,10 @@ export function PdfViewerAdvanced({
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // Calculate scale based on fit mode
   const effectiveScale = React.useMemo(() => {
     if (fitMode === "width") {
-      // Fit to container width with padding
-      return (containerWidth - 80) / 612; // 612 is standard PDF page width
+      return (containerWidth - 80) / 612;
     } else if (fitMode === "page") {
-      // Fit entire page in view
       return Math.min((containerWidth - 80) / 612, (window.innerHeight - 200) / 792);
     }
     return scale;
@@ -103,7 +107,6 @@ export function PdfViewerAdvanced({
     window.open(pdfUrl, "_blank");
   };
 
-  // Keyboard shortcuts
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
@@ -130,20 +133,26 @@ export function PdfViewerAdvanced({
 
   return (
     <div
-      className={`flex flex-col bg-gray-100 relative ${hasBanner ? "h-[calc(100vh-80px)]" : "h-screen"}`}
+      className={`flex flex-col bg-gradient-to-b from-slate-100 to-slate-200 relative ${hasBanner ? "h-[calc(100vh-72px)]" : "h-screen"}`}
     >
       {/* Top Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-wrap gap-3 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3 flex items-center justify-between flex-wrap gap-3 shadow-sm">
         {/* Left: Document title */}
-        <div className="flex-shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">Quote Document</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+            <FileText className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Your Quote</h2>
+            <p className="text-xs text-slate-500">Review and sign below</p>
+          </div>
         </div>
 
         {/* Right: Actions */}
         <div className="flex gap-2">
           <button
             onClick={handleDownload}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 text-sm font-medium shadow-sm"
             title="Download PDF"
           >
             <Download className="w-4 h-4" />
@@ -151,7 +160,7 @@ export function PdfViewerAdvanced({
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 text-sm font-medium shadow-sm"
             title="Print PDF"
           >
             <Printer className="w-4 h-4" />
@@ -160,17 +169,10 @@ export function PdfViewerAdvanced({
           {showAcceptButton && onAcceptClick && !loading && !error && (
             <button
               onClick={onAcceptClick}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
               title="Accept & Sign Quote"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
+              <PenLine className="w-4 h-4" />
               <span className="hidden sm:inline">Accept & Sign</span>
             </button>
           )}
@@ -180,32 +182,38 @@ export function PdfViewerAdvanced({
       {/* PDF Content */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-100 p-4"
+        className="flex-1 overflow-auto p-6"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className="inline-block min-w-full">
           <div className="flex justify-center">
             {loading && (
-              <div className="flex items-center justify-center min-h-[400px]">
+              <div className="flex items-center justify-center min-h-[500px]">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Loading document...</p>
+                  <div className="w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-200 border-t-emerald-600" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600">Loading your document...</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-red-200 p-8 text-center">
-                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Unable to Load Document</h2>
-                <p className="text-gray-600 mb-4">
-                  There was an error loading the PDF. Please try downloading it instead.
+              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200/50 p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                  Unable to Load Document
+                </h2>
+                <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                  We couldn&apos;t load the PDF. Try downloading it directly instead.
                 </p>
                 <button
                   onClick={handleDownload}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl hover:from-slate-800 hover:to-slate-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4" />
                   Download PDF
                 </button>
               </div>
@@ -217,14 +225,14 @@ export function PdfViewerAdvanced({
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={onDocumentLoadError}
                 loading=""
-                className="shadow-2xl"
+                className="shadow-2xl rounded-lg overflow-hidden"
               >
                 <Page
                   pageNumber={1}
                   scale={effectiveScale}
                   renderTextLayer={true}
                   renderAnnotationLayer={true}
-                  className="bg-white shadow-lg"
+                  className="bg-white"
                 />
               </Document>
             )}
@@ -234,38 +242,38 @@ export function PdfViewerAdvanced({
 
       {/* Sticky Footer with Controls */}
       {!loading && !error && (
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 shadow-lg z-10">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+        <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-slate-200/50 px-4 py-3 shadow-lg z-10">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             {/* Zoom Controls */}
-            <div className="flex items-center gap-2 border border-gray-300 rounded-lg bg-white">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm">
               <button
                 onClick={handleZoomOut}
                 disabled={effectiveScale <= MIN_ZOOM}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
+                className="p-2.5 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-xl border-r border-slate-200"
                 title="Zoom out"
               >
-                <ZoomOut className="w-4 h-4 text-gray-700" />
+                <ZoomOut className="w-4 h-4 text-slate-600" />
               </button>
-              <span className="text-sm font-medium text-gray-700 min-w-[3.5rem] text-center">
+              <span className="text-sm font-medium text-slate-700 min-w-[4rem] text-center tabular-nums">
                 {zoomPercentage}%
               </span>
               <button
                 onClick={handleZoomIn}
                 disabled={effectiveScale >= MAX_ZOOM}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-lg"
+                className="p-2.5 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-xl border-l border-slate-200"
                 title="Zoom in"
               >
-                <ZoomIn className="w-4 h-4 text-gray-700" />
+                <ZoomIn className="w-4 h-4 text-slate-600" />
               </button>
             </div>
 
             {/* Fit Page */}
             <button
               onClick={handleFitPage}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2.5 rounded-xl transition-all duration-200 ${
                 fitMode === "page"
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  ? "bg-emerald-100 text-emerald-700 shadow-sm"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-sm"
               }`}
               title="Fit to page"
             >

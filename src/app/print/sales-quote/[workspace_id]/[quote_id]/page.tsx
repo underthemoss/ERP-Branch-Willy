@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useGetQuoteForPrintQuery } from "@/graphql/hooks";
+import { useConfig } from "@/providers/ConfigProvider";
 import { useParams } from "next/navigation";
 import * as React from "react";
 
@@ -178,10 +179,56 @@ function StatusBadge({ status }: { status: QuoteStatusType }) {
   );
 }
 
+function LineItemImage({
+  priceId,
+  graphqlUrl,
+  alt,
+}: {
+  priceId: string | null | undefined;
+  graphqlUrl: string;
+  alt: string;
+}) {
+  const [hasError, setHasError] = React.useState(false);
+
+  if (!priceId || hasError) {
+    return (
+      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+        <svg
+          className="w-5 h-5 text-gray-300"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  const url = new URL(graphqlUrl);
+  const pathPrefix = url.pathname.replace(/\/graphql$/, "");
+  const imageUrl = `${url.protocol}//${url.host}${pathPrefix}/api/images/prices/${priceId}`;
+
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      className="w-10 h-10 rounded object-cover flex-shrink-0"
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function SalesQuotePrintPage() {
   const params = useParams();
   const quote_id = params?.quote_id as string;
   const workspace_id = params?.workspace_id as string;
+  const { graphqlUrl } = useConfig();
 
   const { data, loading, error } = useGetQuoteForPrintQuery({
     variables: { id: quote_id, workspaceId: workspace_id },
@@ -380,6 +427,7 @@ export default function SalesQuotePrintPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12"></th>
                     <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Description
                     </th>
@@ -403,6 +451,13 @@ export default function SalesQuotePrintPage() {
                 <tbody className="divide-y divide-gray-200">
                   {rentalItems.map((item: any, idx: number) => (
                     <tr key={item.id || idx} className="hover:bg-gray-50">
+                      <td className="px-2 py-1.5">
+                        <LineItemImage
+                          priceId={item.price?.id}
+                          graphqlUrl={graphqlUrl}
+                          alt={item.description || "Product image"}
+                        />
+                      </td>
                       <td className="px-2 py-1.5">
                         <p className="text-xs font-medium text-gray-900">{item.description}</p>
                         {item.pimCategory && (
@@ -442,6 +497,7 @@ export default function SalesQuotePrintPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12"></th>
                     <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Description
                     </th>
@@ -459,6 +515,13 @@ export default function SalesQuotePrintPage() {
                 <tbody className="divide-y divide-gray-200">
                   {saleItems.map((item: any, idx: number) => (
                     <tr key={item.id || idx} className="hover:bg-gray-50">
+                      <td className="px-2 py-1.5">
+                        <LineItemImage
+                          priceId={item.price?.id}
+                          graphqlUrl={graphqlUrl}
+                          alt={item.description || "Product image"}
+                        />
+                      </td>
                       <td className="px-2 py-1.5">
                         <p className="text-xs font-medium text-gray-900">{item.description}</p>
                         {item.pimCategory && (
