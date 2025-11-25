@@ -42,6 +42,7 @@ export default function BuyerQuoteViewPage() {
   const pdfQuoteId = searchParams.get("sales_quote_id");
   const workspaceId = searchParams.get("workspace_id");
   const recipientName = searchParams.get("recipient_name");
+  const recipientEmail = searchParams.get("recipient_email");
 
   // Build PDF URL from GraphQL endpoint
   const pdfUrl = React.useMemo(() => {
@@ -96,7 +97,7 @@ export default function BuyerQuoteViewPage() {
   if (pdfUrl) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-        {!isAuthenticated && <AuthBanner />}
+        {!isAuthenticated && <AuthBanner email={recipientEmail} />}
         <PdfViewerAdvanced
           pdfUrl={pdfUrl}
           showAcceptButton={true}
@@ -119,7 +120,7 @@ export default function BuyerQuoteViewPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-        <AuthBanner />
+        <AuthBanner email={recipientEmail} />
         <div className="min-h-[calc(100vh-72px)] flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-500/20">
