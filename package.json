@@ -69,6 +69,8 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.3",
     "react-instantsearch": "^7.17.0",
+    "react-pdf": "^10.2.0",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "react-virtualized-auto-sizer": "^1.0.26",
     "sqids": "^0.3.0"
   },

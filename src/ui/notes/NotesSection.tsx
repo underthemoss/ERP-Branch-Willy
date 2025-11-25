@@ -611,7 +611,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ entityId, workspaceId }) =>
 
       {/* Delete confirmation dialog */}
       {deleteDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
