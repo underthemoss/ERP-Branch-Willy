@@ -16,6 +16,9 @@ export const AuthWall: React.FC<{
 
   useEffect(() => {
     if (jwtOverride) {
+      // Exchange the JWT override for an HTTP-only cookie
+      // so that browser-native requests (like <img>) can authenticate
+      exchangeTokenForCookie(jwtOverride, setCookieUrl);
       return;
     }
 
