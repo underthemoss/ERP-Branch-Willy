@@ -47,7 +47,7 @@ graphql(`
       name
       project_code
       description
-      companyId
+      workspaceId
       created_at
       created_by
       updated_at
@@ -91,7 +91,7 @@ graphql(`
       name
       project_code
       description
-      companyId
+      workspaceId
       created_at
       created_by
       updated_at

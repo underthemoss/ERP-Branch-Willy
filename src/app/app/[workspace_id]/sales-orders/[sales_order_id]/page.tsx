@@ -127,10 +127,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
         name
         project_code
         description
-        company {
-          id
-          name
-        }
+        workspaceId
         created_at
         created_by
         updated_at
@@ -729,7 +726,6 @@ export default function SalesOrderDetailPage() {
                     <Typography sx={{ whiteSpace: "pre-wrap" }}>
                       Description: {salesOrder.project.description}
                     </Typography>
-                    <Typography>Company: {salesOrder.project.company?.name}</Typography>
                     <Typography>Status: {salesOrder.project.status}</Typography>
                     <Typography>
                       Scope of Work: {salesOrder.project.scope_of_work?.join(", ")}
