@@ -46,10 +46,7 @@ graphql(`
       name
       project_code
       description
-      companyId
-      company {
-        name
-      }
+      workspaceId
       created_at
       created_by
       created_by_user {
@@ -71,9 +68,6 @@ graphql(`
         project_code
         status
         deleted
-        company {
-          name
-        }
       }
       project_contacts {
         contact_id
@@ -98,9 +92,6 @@ graphql(`
       project_code
       status
       deleted
-      company {
-        name
-      }
     }
   }
 `);
@@ -134,7 +125,6 @@ function ProjectKanbanCard({
     project_code: string;
     status?: string | null;
     deleted?: boolean | null;
-    company?: { name?: string | null } | null;
   };
   onClick?: () => void;
 }) {
@@ -173,9 +163,6 @@ function ProjectKanbanCard({
       </Box>
       <Typography variant="body2" color="text.secondary" noWrap>
         Code: <b>{project.project_code}</b>
-      </Typography>
-      <Typography variant="body2" color="text.secondary" noWrap>
-        Company: {project.company?.name ?? "—"}
       </Typography>
     </Paper>
   );
@@ -231,7 +218,7 @@ export default function ProjectDetailAltPage() {
     try {
       await deleteProject({ variables: { id: project.id } });
       setDeleteDialogOpen(false);
-      router.push(`/app/${project.companyId}/projects`);
+      router.push(`/app/${workspace_id}/projects`);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to delete project.");
     }
@@ -337,19 +324,6 @@ export default function ProjectDetailAltPage() {
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                </Box>
-                {/* Company */}
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ minWidth: 100, flexShrink: 0 }}
-                  >
-                    Company:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {project.company?.name ?? "—"}
-                  </Typography>
                 </Box>
                 {/* Status */}
                 <Box display="flex" alignItems="center" gap={1}>
@@ -730,9 +704,6 @@ function ChildProjectCard({ project, workspaceId }: { project: any; workspaceId:
               />
             )}
           </Box>
-          <Typography variant="body2" sx={{ mt: 0.5 }}>
-            <b>Vendor:</b> {project.company?.name ?? "—"}
-          </Typography>
           <Typography variant="body2">
             <b>Requested By:</b> {"—"}
           </Typography>

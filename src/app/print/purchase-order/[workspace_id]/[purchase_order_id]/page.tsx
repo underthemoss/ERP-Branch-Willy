@@ -48,10 +48,7 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
         name
         project_code
         description
-        company {
-          id
-          name
-        }
+        workspaceId
         created_at
         created_by
         updated_at
@@ -361,13 +358,7 @@ export default function PurchaseOrderPrintPage() {
 
   const total = subtotal + deliveryTotal;
 
-  // Seller info (project.company)
-  const seller =
-    purchaseOrder?.project?.company && typeof purchaseOrder.project.company === "object"
-      ? purchaseOrder.project.company
-      : null;
-
-  // Seller info (the vendor/supplier)
+  // Vendor info (the supplier we're ordering from)
   const vendor = purchaseOrder?.seller;
 
   // Group line items by type
@@ -512,25 +503,7 @@ export default function PurchaseOrderPrintPage() {
                   color: "#666",
                 }}
               >
-                From
-              </h2>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
-                {seller?.name || "—"}
-              </div>
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <h2
-                style={{
-                  margin: "0 0 6px 0",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  color: "#666",
-                }}
-              >
-                Bill To
+                Vendor
               </h2>
               <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
                 {vendor?.name || "—"}

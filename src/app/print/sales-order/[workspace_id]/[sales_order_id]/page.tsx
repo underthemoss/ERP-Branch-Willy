@@ -49,10 +49,7 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
         name
         project_code
         description
-        company {
-          id
-          name
-        }
+        workspaceId
         created_at
         created_by
         updated_at
@@ -362,11 +359,9 @@ export default function SalesOrderPrintPage() {
 
   const total = subtotal + deliveryTotal;
 
-  // Seller info (project.company)
-  const seller =
-    salesOrder?.project?.company && typeof salesOrder.project.company === "object"
-      ? salesOrder.project.company
-      : null;
+  // Seller info - company information is no longer available on Project
+  // Using project name as fallback
+  const sellerName = salesOrder?.project?.name || null;
 
   // Buyer info
   const buyer = salesOrder?.buyer;
@@ -514,7 +509,7 @@ export default function SalesOrderPrintPage() {
                 From
               </h2>
               <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
-                {seller?.name || "—"}
+                {sellerName || "—"}
               </div>
             </div>
 

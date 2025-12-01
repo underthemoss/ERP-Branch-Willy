@@ -32,9 +32,7 @@ graphql(`
       name
       project_code
       description
-      company {
-        name
-      }
+      workspaceId
       created_at
       created_by_user {
         firstName
@@ -69,7 +67,6 @@ export default function ProjectsPage() {
         name: project?.name ?? "",
         project_code: project?.project_code ?? "",
         description: project?.description ?? "",
-        company: project?.company?.name ?? "",
         created_at: project?.created_at ?? "",
         created_by: project?.created_by_user
           ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
@@ -124,7 +121,6 @@ export default function ProjectsPage() {
       filterable: false,
     },
     { field: "description", headerName: "Description", flex: 2, minWidth: 200 },
-    { field: "company", headerName: "Company", flex: 2, minWidth: 200 },
     {
       field: "status",
       headerName: "Project Status",
@@ -309,7 +305,6 @@ export default function ProjectsPage() {
                   columnVisibilityModel: {
                     id: false,
                     description: false,
-                    company: false,
                     deleted: false,
                   },
                 },

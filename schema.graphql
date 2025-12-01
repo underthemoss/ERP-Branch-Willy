@@ -2142,8 +2142,6 @@ enum PriceType {
 
 type Project {
   comments: [Note!]!
-  company: Company
-  companyId: String!
   created_at: String!
   created_by: String!
   created_by_user: User

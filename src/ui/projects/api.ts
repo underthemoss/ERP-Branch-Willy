@@ -10,10 +10,7 @@ graphql(`
       name
       project_code
       description
-      company {
-        id
-        name
-      }
+      workspaceId
       created_at
       created_by
       created_by_user {

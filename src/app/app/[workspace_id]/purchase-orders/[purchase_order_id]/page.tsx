@@ -122,10 +122,7 @@ const PURCHASE_ORDER_DETAIL_QUERY = graphql(`
         name
         project_code
         description
-        company {
-          id
-          name
-        }
+        workspaceId
         created_at
         created_by
         updated_at
@@ -813,7 +810,6 @@ export default function PurchaseOrderDetailPage() {
                     <Typography sx={{ whiteSpace: "pre-wrap" }}>
                       Description: {purchaseOrder.project.description}
                     </Typography>
-                    <Typography>Company: {purchaseOrder.project.company?.name}</Typography>
                     <Typography>Status: {purchaseOrder.project.status}</Typography>
                     <Typography>
                       Scope of Work: {purchaseOrder.project.scope_of_work?.join(", ")}
