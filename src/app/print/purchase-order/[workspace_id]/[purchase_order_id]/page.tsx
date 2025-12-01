@@ -358,10 +358,7 @@ export default function PurchaseOrderPrintPage() {
 
   const total = subtotal + deliveryTotal;
 
-  // Seller info (project name - company field has been removed from Project type)
-  const sellerName = purchaseOrder?.project?.name || null;
-
-  // Seller info (the vendor/supplier)
+  // Vendor info (the supplier we're ordering from)
   const vendor = purchaseOrder?.seller;
 
   // Group line items by type
@@ -506,25 +503,7 @@ export default function PurchaseOrderPrintPage() {
                   color: "#666",
                 }}
               >
-                From
-              </h2>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 2 }}>
-                {sellerName || "—"}
-              </div>
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <h2
-                style={{
-                  margin: "0 0 6px 0",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  color: "#666",
-                }}
-              >
-                Bill To
+                Vendor
               </h2>
               <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: 4 }}>
                 {vendor?.name || "—"}
