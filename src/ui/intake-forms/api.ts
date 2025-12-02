@@ -22,6 +22,7 @@ export {
   useListIntakeFormsQuery,
   useGetIntakeFormSubmissionByIdQuery,
   useListIntakeFormSubmissionsQuery,
+  useListIntakeFormSubmissionsByFormIdQuery,
   useListIntakeFormSubmissionLineItemsQuery,
   useCreateIntakeFormSubmissionMutation,
   useUpdateIntakeFormSubmissionMutation,
@@ -85,8 +86,12 @@ export const IntakeFormSubmissionFieldsFragment = graphql(`
     status
     submittedAt
     userId
-    salesOrderId
     purchaseOrderId
+    totalInCents
+    salesOrder {
+      id
+      status
+    }
   }
 `);
 
@@ -121,6 +126,69 @@ export const IntakeFormSubmissionLineItemFieldsFragment = graphql(`
     deliveryNotes
     rentalStartDate
     rentalEndDate
+    salesOrderId
+    salesOrderLineItem {
+      __typename
+      ... on RentalSalesOrderLineItem {
+        id
+      }
+      ... on SaleSalesOrderLineItem {
+        id
+      }
+    }
+    subtotalInCents
+    priceForecast {
+      accumulative_cost_in_cents
+      days {
+        day
+        cost_in_cents
+        accumulative_cost_in_cents
+        rental_period {
+          days1
+          days7
+          days28
+        }
+        strategy
+        savings_compared_to_day_rate_in_cents
+        savings_compared_to_day_rate_in_fraction
+        savings_compared_to_exact_split_in_cents
+        details {
+          plainText
+          rates {
+            pricePer1DayInCents
+            pricePer7DaysInCents
+            pricePer28DaysInCents
+          }
+          exactSplitDistribution {
+            days1
+            days7
+            days28
+          }
+          optimalSplit {
+            days1
+            days7
+            days28
+          }
+        }
+      }
+    }
+    inventoryReservations {
+      ... on FulfilmentReservation {
+        id
+        inventoryId
+        startDate
+        endDate
+        inventory {
+          id
+          pimCategoryName
+          assetId
+          asset {
+            id
+            name
+          }
+        }
+      }
+    }
   }
 `);
 
@@ -166,6 +234,25 @@ graphql(`
       workspaceId: $workspaceId
       excludeWithSalesOrder: $excludeWithSalesOrder
     ) {
+      items {
+        ...IntakeFormSubmissionFields
+        lineItems {
+          ...IntakeFormSubmissionLineItemFields
+        }
+      }
+      page {
+        number
+        size
+        totalItems
+        totalPages
+      }
+    }
+  }
+`);
+
+graphql(`
+  query ListIntakeFormSubmissionsByFormId($workspaceId: String!, $intakeFormId: String!) {
+    listIntakeFormSubmissions(workspaceId: $workspaceId, intakeFormId: $intakeFormId) {
       items {
         ...IntakeFormSubmissionFields
         lineItems {

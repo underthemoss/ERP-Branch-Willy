@@ -561,6 +561,7 @@ export default function ConvertSubmissionDialog({
             buyer_id: buyerContactId,
             project_id: projectId || undefined,
             purchase_order_number: submission.purchaseOrderNumber || "",
+            intake_form_submission_id: submissionId,
           },
         },
       });
@@ -608,6 +609,7 @@ export default function ConvertSubmissionDialog({
                 deliveryNotes: item.deliveryNotes,
                 lineitem_status: LineItemStatus.Confirmed,
                 so_pim_id: item.pimCategoryId,
+                intake_form_submission_line_item_id: item.id,
               },
             },
           });
@@ -626,6 +628,7 @@ export default function ConvertSubmissionDialog({
                 deliveryNotes: item.deliveryNotes,
                 lineitem_status: LineItemStatus.Confirmed,
                 so_pim_id: item.pimCategoryId,
+                intake_form_submission_line_item_id: item.id,
               },
             },
           });

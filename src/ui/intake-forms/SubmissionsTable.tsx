@@ -38,24 +38,30 @@ import React, { useMemo, useState } from "react";
 import ConvertSubmissionDialog from "./ConvertSubmissionDialog";
 
 interface LineItem {
+  id: string;
   description: string;
   startDate: string;
   type: string;
   quantity: number;
-  rentalStartDate?: string;
-  rentalEndDate?: string;
+  rentalStartDate?: string | null;
+  rentalEndDate?: string | null;
+  subtotalInCents?: number | null;
 }
 
 interface Submission {
   id: string;
   formId: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   phone?: string | null;
   companyName?: string | null;
   purchaseOrderNumber?: string | null;
   lineItems?: LineItem[] | null;
   createdAt: string;
+  status: string;
+  submittedAt?: string | null;
+  totalInCents: number;
+  salesOrderId?: string | null;
 }
 
 interface SubmissionsTableProps {
@@ -137,16 +143,33 @@ export default function SubmissionsTable({
 
     baseColumns.push(
       {
+        field: "status",
+        headerName: "Status",
+        width: 120,
+        renderCell: (params: GridRenderCellParams) => {
+          const status = params.value as string;
+          return (
+            <Chip
+              label={status === "SUBMITTED" ? "Submitted" : "Draft"}
+              color={status === "SUBMITTED" ? "success" : "default"}
+              size="small"
+            />
+          );
+        },
+      },
+      {
         field: "name",
         headerName: "Name",
         width: 150,
         flex: 1,
+        valueFormatter: (value) => value || "-",
       },
       {
         field: "email",
         headerName: "Email",
         width: 200,
         flex: 1,
+        valueFormatter: (value) => value || "-",
       },
       {
         field: "companyName",
@@ -169,11 +192,24 @@ export default function SubmissionsTable({
         valueGetter: (value, row) => row.lineItems?.length || 0,
       },
       {
-        field: "createdAt",
+        field: "totalInCents",
+        headerName: "Total",
+        width: 120,
+        type: "number",
+        renderCell: (params: GridRenderCellParams) => {
+          return params.value ? `$${((params.value as number) / 100).toFixed(2)}` : "";
+        },
+      },
+      {
+        field: "submittedAt",
         headerName: "Submitted",
         width: 180,
         type: "dateTime",
-        valueGetter: (value) => new Date(value),
+        valueGetter: (value, row) => {
+          // Use submittedAt if available, otherwise createdAt
+          const dateStr = row.submittedAt || row.createdAt;
+          return dateStr ? new Date(dateStr) : null;
+        },
         valueFormatter: (value) => {
           if (value) {
             return new Date(value).toLocaleString();
@@ -196,8 +232,8 @@ export default function SubmissionsTable({
             />,
           ];
 
-          // Add convert button if workspaceId is provided
-          if (workspaceId) {
+          // Add convert button if workspaceId is provided and not already converted
+          if (workspaceId && !params.row.salesOrderId) {
             actions.push(
               <GridActionsCellItem
                 key="convert"
@@ -214,7 +250,7 @@ export default function SubmissionsTable({
     );
 
     return baseColumns;
-  }, [showFormId]);
+  }, [showFormId, workspaceId]);
 
   // Custom empty state overlay
   const NoRowsOverlay = () => (
@@ -302,10 +338,32 @@ export default function SubmissionsTable({
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="subtitle2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Chip
+                    label={selectedSubmission.status === "SUBMITTED" ? "Submitted" : "Draft"}
+                    color={selectedSubmission.status === "SUBMITTED" ? "success" : "default"}
+                    size="small"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
                     Submitted At
                   </Typography>
                   <Typography variant="body1">
-                    {new Date(selectedSubmission.createdAt).toLocaleString()}
+                    {selectedSubmission.submittedAt
+                      ? new Date(selectedSubmission.submittedAt).toLocaleString()
+                      : new Date(selectedSubmission.createdAt).toLocaleString()}
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Total
+                  </Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {selectedSubmission.totalInCents
+                      ? `$${(selectedSubmission.totalInCents / 100).toFixed(2)}`
+                      : "-"}
                   </Typography>
                 </Grid>
                 {showFormId && (
@@ -328,13 +386,13 @@ export default function SubmissionsTable({
                   <Typography variant="subtitle2" color="text.secondary">
                     Name
                   </Typography>
-                  <Typography variant="body1">{selectedSubmission.name}</Typography>
+                  <Typography variant="body1">{selectedSubmission.name || "-"}</Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="subtitle2" color="text.secondary">
                     Email
                   </Typography>
-                  <Typography variant="body1">{selectedSubmission.email}</Typography>
+                  <Typography variant="body1">{selectedSubmission.email || "-"}</Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="subtitle2" color="text.secondary">

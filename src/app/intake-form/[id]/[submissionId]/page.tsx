@@ -157,8 +157,8 @@ export default function IntakeFormSubmissionPage() {
       setFormData((prev) => ({
         ...prev,
         contact: {
-          fullName: submission.name,
-          email: submission.email,
+          fullName: submission.name || "",
+          email: submission.email || "",
           phoneNumber: submission.phone || "",
           company: submission.companyName || "",
           purchaseOrderNumber: submission.purchaseOrderNumber || "",

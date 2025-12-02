@@ -6,6 +6,7 @@ import { ConfigProvider, useConfig } from "@/providers/ConfigProvider";
 import { DatadogRumProvider } from "@/providers/DatadogRumProvider";
 import { GoogleMapsServerProvider } from "@/providers/GoogleMapsServerProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
+import { UserBootstrapProvider } from "@/providers/UserBootstrapProvider";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import React from "react";
 
@@ -30,9 +31,11 @@ function ProviderComposerInner({ children }: ProviderComposerProps) {
           <GoogleMapsServerProvider>
             <NotificationProvider>
               <ApolloClientProvider api={config.graphqlUrl}>
-                <WorkspaceProvider>
-                  <AppContextResolver>{children}</AppContextResolver>
-                </WorkspaceProvider>
+                <UserBootstrapProvider>
+                  <WorkspaceProvider>
+                    <AppContextResolver>{children}</AppContextResolver>
+                  </WorkspaceProvider>
+                </UserBootstrapProvider>
               </ApolloClientProvider>
             </NotificationProvider>
           </GoogleMapsServerProvider>
@@ -57,7 +60,9 @@ function ProviderComposerNoAuthInner({ children }: ProviderComposerProps) {
       <DatadogRumProvider>
         <GoogleMapsServerProvider>
           <NotificationProvider>
-            <ApolloClientProvider api={config.graphqlUrl}>{children}</ApolloClientProvider>
+            <ApolloClientProvider api={config.graphqlUrl}>
+              <UserBootstrapProvider>{children}</UserBootstrapProvider>
+            </ApolloClientProvider>
           </NotificationProvider>
         </GoogleMapsServerProvider>
       </DatadogRumProvider>

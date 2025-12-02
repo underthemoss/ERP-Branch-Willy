@@ -1134,13 +1134,15 @@ type IntakeFormLineItem {
   pimCategory: PimCategory
   pimCategoryId: String!
   price: Price
+  priceForecast: LineItemPriceForecast
   priceId: String
   quantity: Int!
   rentalEndDate: DateTime
   rentalStartDate: DateTime
   salesOrderId: String
-  salesOrderLineItemId: String
+  salesOrderLineItem: SalesOrderLineItem
   startDate: DateTime!
+  subtotalInCents: Int!
   type: RequestType!
 }
 
@@ -1184,27 +1186,27 @@ type IntakeFormProject {
 type IntakeFormSubmission {
   companyName: String
   createdAt: DateTime!
-  email: String!
+  email: String
   formId: ID!
   id: ID!
   lineItems: [IntakeFormLineItem!]
-  name: String!
+  name: String
   phone: String
   purchaseOrderId: String
   purchaseOrderNumber: String
   salesOrder: SubmissionSalesOrder
-  salesOrderId: String
   status: IntakeFormSubmissionStatus!
   submittedAt: DateTime
+  totalInCents: Int!
   userId: String
   workspaceId: ID!
 }
 
 input IntakeFormSubmissionInput {
   companyName: String
-  email: String!
+  email: String
   formId: ID!
-  name: String!
+  name: String
   phone: String
   purchaseOrderNumber: String
   userId: String
@@ -1848,6 +1850,11 @@ type Mutation {
   submitIntakeFormSubmission(id: String!): IntakeFormSubmission
   submitPurchaseOrder(id: ID!): PurchaseOrder
   submitSalesOrder(id: ID!): SalesOrder
+
+  """
+  Sync the current authenticated user to the database and assign domain permissions. This replicates the Auth0 post-login webhook logic for local development. Safe to call in any environment - idempotent operation.
+  """
+  syncCurrentUser: User
   toggleSearchFavorite(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   touchAllContacts(batchSize: Int): TouchAllContactsResult
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
@@ -3707,6 +3714,10 @@ input UpdateIntakeFormInput {
 }
 
 input UpdateIntakeFormSubmissionInput {
+  companyName: String
+  email: String
+  name: String
+  phone: String
   purchaseOrderId: String
   purchaseOrderNumber: String
   salesOrderId: String
