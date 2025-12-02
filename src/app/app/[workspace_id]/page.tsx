@@ -110,6 +110,7 @@ graphql(`
     ) {
       items {
         id
+        status
       }
       page {
         totalItems
@@ -436,7 +437,9 @@ export default function DashboardMainSection() {
                       {isLoading ? (
                         <CircularProgress size={24} />
                       ) : (
-                        (intakeData?.listIntakeFormSubmissions?.page?.totalItems ?? 0)
+                        (intakeData?.listIntakeFormSubmissions?.items?.filter(
+                          (item) => item.status === "SUBMITTED",
+                        ).length ?? 0)
                       )}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">

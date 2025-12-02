@@ -32,7 +32,9 @@ export default function IntakeFormSubmissionsPage() {
     router.push(`/app/${workspaceId}/intake-forms`);
   };
 
-  const formSubmissions = data?.listIntakeFormSubmissions?.items || [];
+  const formSubmissions = (data?.listIntakeFormSubmissions?.items || []).filter(
+    (submission) => submission.status === "SUBMITTED",
+  );
 
   // Calculate stats
   const totalLineItems = formSubmissions.reduce(

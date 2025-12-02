@@ -252,7 +252,9 @@ export default function IntakeFormsPage() {
     form.id.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const allSubmissions = (submissionsData?.listIntakeFormSubmissions?.items as any[]) || [];
+  const allSubmissions = (
+    (submissionsData?.listIntakeFormSubmissions?.items as any[]) || []
+  ).filter((submission) => submission.status === "SUBMITTED");
 
   // Calculate submission counts per form
   const submissionCounts = React.useMemo(() => {
