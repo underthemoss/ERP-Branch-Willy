@@ -1081,12 +1081,6 @@ type GenerateReferenceNumberResult {
   templateUsed: ReferenceNumberTemplate!
 }
 
-type HasuraClaims {
-  x_hasura_allowed_roles: [String]
-  x_hasura_default_role: String
-  x_hasura_user_id: String
-}
-
 type ImportPricesResult {
   errors: [String!]!
   failed: Int!
@@ -1377,25 +1371,6 @@ scalar JSON
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSONObject
-
-type JWTPayload {
-  aud: [String]
-  azp: String
-  es_company_id: String
-  es_roles: [String]
-  es_security_level_id: String
-  es_user_email: String
-  es_user_id: String
-  es_user_name: String
-  exp: Int
-  hasura_claims: HasuraClaims
-  iat: Int
-  is_federated: Boolean
-  iss: String
-  permissions: [String]
-  scope: String
-  sub: String
-}
 
 type LineItemCostOptionDetails {
   exactSplitDistribution: LineItemRentalPeriod!
@@ -2384,7 +2359,6 @@ type Query {
   admin: AdminQueryNamespace
   bulkCalculateSubTotal(inputs: [BulkCalculateSubTotalInput!]!): [LineItemPriceForecast!]!
   calculateSubTotal(durationInDays: Int!, priceId: ID!): LineItemPriceForecast!
-  currentUser: JWTPayload @deprecated(reason: "use getCurrentUser instead")
   getBrandByDomain(domain: String!): Brand
   getBrandById(brandId: String!): Brand
   getBrandsByIds(brandIds: [String!]!): [Brand]
