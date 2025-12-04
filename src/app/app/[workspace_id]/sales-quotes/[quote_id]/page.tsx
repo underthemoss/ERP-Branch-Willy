@@ -466,6 +466,46 @@ export default function SalesQuoteDetailPage() {
 
   const quote = data?.quoteById;
 
+  // Ensure quote has a revision - create one if missing (handles new quotes and legacy quotes without revisions)
+  const creatingInitialRevisionRef = React.useRef(false);
+  React.useEffect(() => {
+    async function ensureRevisionExists() {
+      if (!quote || quote.currentRevision) return;
+      if (creatingInitialRevisionRef.current) return;
+
+      creatingInitialRevisionRef.current = true;
+      try {
+        const result = await createQuoteRevision({
+          variables: {
+            input: {
+              quoteId: quote.id,
+              revisionNumber: 1,
+              lineItems: [],
+            },
+          },
+        });
+
+        if (result.data?.createQuoteRevision?.id) {
+          await updateQuote({
+            variables: {
+              input: {
+                id: quote.id,
+                currentRevisionId: result.data.createQuoteRevision.id,
+              },
+            },
+          });
+          refetch();
+        }
+      } catch (error) {
+        console.error("Error creating initial revision:", error);
+      } finally {
+        creatingInitialRevisionRef.current = false;
+      }
+    }
+
+    ensureRevisionExists();
+  }, [quote, createQuoteRevision, updateQuote, refetch]);
+
   // Determine CTA visibility based on quote and revision status
   const isQuoteActive = quote?.status === "ACTIVE";
   const revisionStatus = quote?.currentRevision?.status;
