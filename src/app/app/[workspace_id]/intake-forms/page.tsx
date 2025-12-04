@@ -709,7 +709,10 @@ export default function IntakeFormsPage() {
           />
         </Box>
         <SubmissionsTable
-          submissions={allSubmissions}
+          submissions={allSubmissions.map((s) => ({
+            ...s,
+            quoteId: s.quote?.id ?? null,
+          }))}
           loading={submissionsLoading}
           showFormId={true}
           emptyStateTitle={excludeConverted ? "No unconverted submissions" : "No submissions yet"}
@@ -719,6 +722,7 @@ export default function IntakeFormsPage() {
               : "Submissions from all forms will appear here"
           }
           workspaceId={workspaceId}
+          onRefetch={() => refetchSubmissions()}
         />
       </Box>
 

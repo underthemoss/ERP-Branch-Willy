@@ -746,6 +746,13 @@ input CreatePriceBookInput {
   workspaceId: ID!
 }
 
+input CreateQuoteFromIntakeFormSubmissionInput {
+  intakeFormSubmissionId: ID!
+  sellersBuyerContactId: ID!
+  sellersProjectId: ID!
+  validUntil: DateTime
+}
+
 input CreateQuoteInput {
   buyerWorkspaceId: String
   buyersProjectId: String
@@ -1188,6 +1195,9 @@ type IntakeFormSubmission {
   phone: String
   purchaseOrderId: String
   purchaseOrderNumber: String
+
+  """The quote generated from this intake form submission"""
+  quote: Quote
   salesOrder: SubmissionSalesOrder
   status: IntakeFormSubmissionStatus!
   submittedAt: DateTime
@@ -1751,6 +1761,7 @@ type Mutation {
   createProject(input: ProjectInput): Project
   createPurchaseOrder(input: PurchaseOrderInput): PurchaseOrder
   createQuote(input: CreateQuoteInput!): Quote!
+  createQuoteFromIntakeFormSubmission(input: CreateQuoteFromIntakeFormSubmissionInput!): Quote!
   createQuoteRevision(input: CreateQuoteRevisionInput!): QuoteRevision!
   createRFQ(input: CreateRFQInput!): RFQ!
   createReferenceNumberTemplate(input: CreateReferenceNumberTemplateInput!): ReferenceNumberTemplate
@@ -2501,6 +2512,10 @@ type Quote {
   currentRevision: QuoteRevision
   currentRevisionId: String
   id: String!
+
+  """The intake form submission this quote was generated from"""
+  intakeFormSubmission: IntakeFormSubmission
+  intakeFormSubmissionId: String
   rfqId: String
   sellerWorkspaceId: String!
   sellersBuyerContact: Contact
@@ -2514,6 +2529,11 @@ type Quote {
   validUntil: DateTime
 }
 
+enum QuoteLineItemDeliveryMethod {
+  DELIVERY
+  PICKUP
+}
+
 enum QuoteLineItemType {
   RENTAL
   SALE
@@ -2524,6 +2544,7 @@ type QuoteRevision {
   createdAt: DateTime!
   createdBy: String!
   createdByUser: User
+  hasUnpricedLineItems: Boolean!
   id: String!
   lineItems: [QuoteRevisionLineItem!]!
   quoteId: String!
@@ -2538,48 +2559,67 @@ type QuoteRevision {
 union QuoteRevisionLineItem = QuoteRevisionRentalLineItem | QuoteRevisionSaleLineItem | QuoteRevisionServiceLineItem
 
 input QuoteRevisionLineItemInput {
+  deliveryLocation: String
+  deliveryMethod: QuoteLineItemDeliveryMethod
+  deliveryNotes: String
   description: String!
   id: String
+  intakeFormSubmissionLineItemId: String
   pimCategoryId: String
   quantity: Int
   rentalEndDate: DateTime
   rentalStartDate: DateTime
-  sellersPriceId: ID!
+  sellersPriceId: ID
   type: QuoteLineItemType!
 }
 
 type QuoteRevisionRentalLineItem {
+  deliveryLocation: String
+  deliveryMethod: QuoteLineItemDeliveryMethod
+  deliveryNotes: String
   description: String!
   id: String
+  intakeFormSubmissionLineItem: IntakeFormLineItem
+  intakeFormSubmissionLineItemId: String
   pimCategory: PimCategory
   pimCategoryId: String!
   price: Price
   quantity: Int!
   rentalEndDate: DateTime!
   rentalStartDate: DateTime!
-  sellersPriceId: ID!
+  sellersPriceId: ID
   subtotalInCents: Int!
   type: QuoteLineItemType!
 }
 
 type QuoteRevisionSaleLineItem {
+  deliveryLocation: String
+  deliveryMethod: QuoteLineItemDeliveryMethod
+  deliveryNotes: String
   description: String!
   id: String
+  intakeFormSubmissionLineItem: IntakeFormLineItem
+  intakeFormSubmissionLineItemId: String
   pimCategory: PimCategory
   pimCategoryId: String!
   price: Price
   quantity: Int!
-  sellersPriceId: ID!
+  sellersPriceId: ID
   subtotalInCents: Int!
   type: QuoteLineItemType!
 }
 
 type QuoteRevisionServiceLineItem {
+  deliveryLocation: String
+  deliveryMethod: QuoteLineItemDeliveryMethod
+  deliveryNotes: String
   description: String!
   id: String
+  intakeFormSubmissionLineItem: IntakeFormLineItem
+  intakeFormSubmissionLineItemId: String
   price: Price
   quantity: Int!
-  sellersPriceId: ID!
+  sellersPriceId: ID
   subtotalInCents: Int!
   type: QuoteLineItemType!
 }

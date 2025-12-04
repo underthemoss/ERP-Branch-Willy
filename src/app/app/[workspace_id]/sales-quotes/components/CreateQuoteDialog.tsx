@@ -83,7 +83,7 @@ export function CreateQuoteDialog({ open, onClose, onSuccess }: CreateQuoteDialo
         }
 
         // Navigate to the cart page to add items
-        router.push(`/app/${currentWorkspace.id}/sales-quotes/${quoteId}/cart`);
+        router.push(`/app/${currentWorkspace.id}/sales-quotes/${quoteId}`);
         handleClose();
       }
     } catch (error) {

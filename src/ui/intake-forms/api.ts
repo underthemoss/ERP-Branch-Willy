@@ -27,6 +27,7 @@ export {
   useCreateIntakeFormSubmissionMutation,
   useUpdateIntakeFormSubmissionMutation,
   useSubmitIntakeFormSubmissionMutation,
+  useCreateQuoteFromIntakeFormSubmissionMutation,
 } from "@/graphql/hooks";
 
 // ============================================================================
@@ -89,6 +90,10 @@ export const IntakeFormSubmissionFieldsFragment = graphql(`
     purchaseOrderId
     totalInCents
     salesOrder {
+      id
+      status
+    }
+    quote {
       id
       status
     }
@@ -351,6 +356,41 @@ graphql(`
 graphql(`
   mutation DeleteIntakeFormSubmissionLineItem($id: String!) {
     deleteIntakeFormSubmissionLineItem(id: $id)
+  }
+`);
+
+graphql(`
+  mutation CreateQuoteFromIntakeFormSubmission($input: CreateQuoteFromIntakeFormSubmissionInput!) {
+    createQuoteFromIntakeFormSubmission(input: $input) {
+      id
+      status
+      sellerWorkspaceId
+      sellersBuyerContactId
+      sellersProjectId
+      intakeFormSubmissionId
+      validUntil
+      currentRevision {
+        id
+        revisionNumber
+        hasUnpricedLineItems
+        lineItems {
+          ... on QuoteRevisionRentalLineItem {
+            id
+            type
+            description
+            sellersPriceId
+            intakeFormSubmissionLineItemId
+          }
+          ... on QuoteRevisionSaleLineItem {
+            id
+            type
+            description
+            sellersPriceId
+            intakeFormSubmissionLineItemId
+          }
+        }
+      }
+    }
   }
 `);
 

@@ -15,8 +15,19 @@ import { GeneratedImage } from "@/ui/GeneratedImage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { history } from "instantsearch.js/es/lib/routers";
 import { simple } from "instantsearch.js/es/lib/stateMappings";
-import { Book, Calendar, Check, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  Book,
+  Calendar,
+  Check,
+  Minus,
+  Plus,
+  PlusCircle,
+  ShoppingCart,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import {
   Configure,
@@ -32,6 +43,7 @@ import {
   useStats,
 } from "react-instantsearch";
 import "instantsearch.css/themes/satellite.css";
+import { PriceSelectionDialog } from "@/ui/prices/PriceSelectionDialog";
 import { RentalPricingBreakdown } from "@/ui/sales-quotes/RentalPricingBreakdown";
 import { DateRange } from "@mui/x-date-pickers-pro";
 import { DateRangeCalendar } from "@mui/x-date-pickers-pro/DateRangeCalendar";
@@ -1487,11 +1499,16 @@ function HeaderWithCartButton() {
 // Main Page Component
 export default function CartPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const quoteId = params?.quote_id as string;
   const workspaceId = params?.workspace_id as string;
   const config = useConfig();
   const { getAccessTokenSilently } = useAuth0();
   const [searchClient, setSearchClient] = React.useState<any>(null);
+  const [addPriceDialogOpen, setAddPriceDialogOpen] = React.useState(false);
+
+  // Check if we should show the unpriced items alert
+  const showUnpricedAlert = searchParams.get("showUnpriced") === "true";
 
   // Fetch quote to verify it exists
   const { data: quoteData, loading: quoteLoading } = useCartPage_GetQuoteByIdQuery({
@@ -1543,6 +1560,25 @@ export default function CartPage() {
           {/* Header */}
           <HeaderWithCartButton />
 
+          {/* Unpriced Items Alert Banner */}
+          {showUnpricedAlert && (
+            <div className="bg-amber-50 border-b border-amber-200 px-6 py-4">
+              <div className="container mx-auto flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-900">
+                    Quote has items that need prices
+                  </h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Some items from the intake form submission don&apos;t have prices assigned. Use
+                    the price search to find existing prices, or click &quot;Add New Price&quot; to
+                    create one.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Main Content with Sidebar */}
           <div className="flex">
             {/* Sidebar Filters - Snapped to left edge */}
@@ -1591,7 +1627,33 @@ export default function CartPage() {
 
           {/* Cart Drawer */}
           <CartDrawer quoteId={quoteId} workspaceId={workspaceId} />
+
+          {/* Floating Add New Price Button - shown when there are unpriced items */}
+          {showUnpricedAlert && (
+            <div className="fixed bottom-6 left-6 z-50">
+              <button
+                onClick={() => setAddPriceDialogOpen(true)}
+                className="flex items-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-lg font-medium transition-colors cursor-pointer"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add New Price
+              </button>
+            </div>
+          )}
         </InstantSearch>
+
+        {/* Price Selection Dialog for creating new prices */}
+        <PriceSelectionDialog
+          open={addPriceDialogOpen}
+          onClose={() => setAddPriceDialogOpen(false)}
+          onSelect={(priceId) => {
+            // When a price is selected, close the dialog
+            // The user can then search for this price in the main catalog
+            setAddPriceDialogOpen(false);
+          }}
+          workspaceId={workspaceId}
+          title="Add New Price"
+        />
       </div>
     </CartProvider>
   );

@@ -1,6 +1,11 @@
 "use client";
 
-import { Transform as TransformIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
+import {
+  MoreVert as MoreVertIcon,
+  RequestQuote as RequestQuoteIcon,
+  Transform as TransformIcon,
+  Visibility as VisibilityIcon,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -11,6 +16,8 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -23,7 +30,6 @@ import {
 } from "@mui/material";
 import {
   DataGridPremium,
-  GridActionsCellItem,
   GridColDef,
   GridRenderCellParams,
   GridToolbarColumnsButton,
@@ -34,8 +40,10 @@ import {
   GridToolbarQuickFilter,
 } from "@mui/x-data-grid-premium";
 import { differenceInDays } from "date-fns";
+import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import ConvertSubmissionDialog from "./ConvertSubmissionDialog";
+import { GenerateQuoteDialog } from "./GenerateQuoteDialog";
 
 interface LineItem {
   id: string;
@@ -62,6 +70,7 @@ interface Submission {
   submittedAt?: string | null;
   totalInCents: number;
   salesOrderId?: string | null;
+  quoteId?: string | null;
 }
 
 interface SubmissionsTableProps {
@@ -96,12 +105,27 @@ export default function SubmissionsTable({
   onExportCSV,
   emptyStateTitle = "No submissions yet",
   emptyStateMessage = "Share the form link to start collecting submissions",
+  onRefetch,
   workspaceId,
 }: SubmissionsTableProps) {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertSubmissionId, setConvertSubmissionId] = useState<string | null>(null);
+  const [generateQuoteDialogOpen, setGenerateQuoteDialogOpen] = useState(false);
+  const [generateQuoteSubmission, setGenerateQuoteSubmission] = useState<Submission | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [menuSubmission, setMenuSubmission] = useState<Submission | null>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, submission: Submission) => {
+    setMenuAnchor(event.currentTarget);
+    setMenuSubmission(submission);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setMenuSubmission(null);
+  };
 
   const handleViewDetails = (submission: Submission) => {
     setSelectedSubmission(submission);
@@ -111,6 +135,11 @@ export default function SubmissionsTable({
   const handleConvertToOrder = (submission: Submission) => {
     setConvertSubmissionId(submission.id);
     setConvertDialogOpen(true);
+  };
+
+  const handleGenerateQuote = (submission: Submission) => {
+    setGenerateQuoteSubmission(submission);
+    setGenerateQuoteDialogOpen(true);
   };
 
   // Define columns for DataGrid
@@ -155,6 +184,26 @@ export default function SubmissionsTable({
               size="small"
             />
           );
+        },
+      },
+      {
+        field: "quoteId",
+        headerName: "Quote",
+        width: 140,
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row as Submission;
+          if (row.quoteId && workspaceId) {
+            return (
+              <Link
+                href={`/app/${workspaceId}/sales-quotes/${row.quoteId}`}
+                className="text-blue-600 hover:underline font-mono text-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {row.quoteId.slice(0, 8)}...
+              </Link>
+            );
+          }
+          return <Typography color="text.secondary">—</Typography>;
         },
       },
       {
@@ -219,33 +268,16 @@ export default function SubmissionsTable({
       },
       {
         field: "actions",
-        type: "actions",
-        headerName: "Actions",
-        width: 100,
-        getActions: (params) => {
-          const actions = [
-            <GridActionsCellItem
-              key="view"
-              icon={<VisibilityIcon />}
-              label="View details"
-              onClick={() => handleViewDetails(params.row as Submission)}
-            />,
-          ];
-
-          // Add convert button if workspaceId is provided and not already converted
-          if (workspaceId && !params.row.salesOrderId) {
-            actions.push(
-              <GridActionsCellItem
-                key="convert"
-                icon={<TransformIcon />}
-                label="Convert to Order"
-                onClick={() => handleConvertToOrder(params.row as Submission)}
-              />,
-            );
-          }
-
-          return actions;
-        },
+        headerName: "",
+        width: 60,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: (params: GridRenderCellParams) => (
+          <IconButton size="small" onClick={(e) => handleMenuOpen(e, params.row as Submission)}>
+            <MoreVertIcon />
+          </IconButton>
+        ),
       },
     );
 
@@ -315,6 +347,59 @@ export default function SubmissionsTable({
           }}
         />
       </Paper>
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            if (menuSubmission) {
+              handleViewDetails(menuSubmission);
+            }
+            handleMenuClose();
+          }}
+        >
+          <VisibilityIcon sx={{ mr: 1.5, fontSize: 20 }} />
+          View Details
+        </MenuItem>
+        {workspaceId && menuSubmission && !menuSubmission.salesOrderId && (
+          <MenuItem
+            onClick={() => {
+              if (menuSubmission) {
+                handleConvertToOrder(menuSubmission);
+              }
+              handleMenuClose();
+            }}
+          >
+            <TransformIcon sx={{ mr: 1.5, fontSize: 20 }} />
+            Convert to Order
+          </MenuItem>
+        )}
+        {workspaceId && menuSubmission && !menuSubmission.quoteId && (
+          <MenuItem
+            onClick={() => {
+              if (menuSubmission) {
+                handleGenerateQuote(menuSubmission);
+              }
+              handleMenuClose();
+            }}
+          >
+            <RequestQuoteIcon sx={{ mr: 1.5, fontSize: 20 }} />
+            Generate Quote
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Details Dialog */}
       <Dialog
@@ -463,6 +548,19 @@ export default function SubmissionsTable({
           )}
         </DialogContent>
         <DialogActions>
+          {workspaceId && selectedSubmission && !selectedSubmission.quoteId && (
+            <Button
+              onClick={() => {
+                setDetailsDialogOpen(false);
+                handleGenerateQuote(selectedSubmission);
+              }}
+              startIcon={<RequestQuoteIcon />}
+              variant="contained"
+              color="primary"
+            >
+              Generate Quote
+            </Button>
+          )}
           <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
@@ -477,6 +575,24 @@ export default function SubmissionsTable({
           }}
           submissionId={convertSubmissionId}
           workspaceId={workspaceId}
+        />
+      )}
+
+      {/* Generate Quote Dialog */}
+      {workspaceId && generateQuoteSubmission && (
+        <GenerateQuoteDialog
+          open={generateQuoteDialogOpen}
+          onClose={() => {
+            setGenerateQuoteDialogOpen(false);
+            setGenerateQuoteSubmission(null);
+          }}
+          submissionId={generateQuoteSubmission.id}
+          workspaceId={workspaceId}
+          submissionEmail={generateQuoteSubmission.email}
+          submissionName={generateQuoteSubmission.name}
+          onSuccess={() => {
+            onRefetch?.();
+          }}
         />
       )}
     </>

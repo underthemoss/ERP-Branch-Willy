@@ -24,7 +24,9 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  ExternalLink,
   FileQuestion,
+  FileText,
   MapPin,
   Package,
   ShoppingBag,
@@ -83,14 +85,25 @@ function LineItemStatusChip({ status }: { status: "pending" | "accepted" | "assi
   );
 }
 
-function OrderStatusTimeline({ status }: { status: "pending" | "processing" | "assigned" }) {
+function OrderStatusTimeline({
+  status,
+}: {
+  status: "pending" | "quoted" | "processing" | "assigned";
+}) {
   const steps = [
     { key: "submitted", label: "Submitted", icon: ShoppingBag },
+    { key: "quoted", label: "Quote Sent", icon: FileText },
     { key: "processing", label: "Processing", icon: Package },
     { key: "assigned", label: "Equipment Assigned", icon: Truck },
   ];
 
-  const currentIndex = status === "pending" ? 0 : status === "processing" ? 1 : 2;
+  const statusToIndex: Record<string, number> = {
+    pending: 0,
+    quoted: 1,
+    processing: 2,
+    assigned: 3,
+  };
+  const currentIndex = statusToIndex[status] ?? 0;
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
@@ -192,8 +205,12 @@ export default function OrderDetailPage() {
   const lineItems = lineItemsData?.listIntakeFormSubmissionLineItems || [];
 
   // Helper to get order overall status
-  const getOrderStatus = (): "pending" | "processing" | "assigned" => {
+  const getOrderStatus = (): "pending" | "quoted" | "processing" | "assigned" => {
     if (lineItems.length === 0) {
+      // Check if there's a quote that needs to be accepted
+      if (submission?.quote?.id && submission?.quote?.status !== "ACCEPTED") {
+        return "quoted";
+      }
       if (submission?.salesOrder?.status === "SUBMITTED") {
         return "processing";
       }
@@ -212,6 +229,11 @@ export default function OrderDetailPage() {
 
     if (submission?.salesOrder?.status === "SUBMITTED") {
       return "processing";
+    }
+
+    // Check if there's a quote that needs to be accepted
+    if (submission?.quote?.id && submission?.quote?.status !== "ACCEPTED") {
+      return "quoted";
     }
 
     return "pending";
@@ -329,6 +351,44 @@ export default function OrderDetailPage() {
           <Box sx={{ display: "flex", justifyContent: "center" }}>
             <OrderStatusTimeline status={orderStatus} />
           </Box>
+
+          {/* Quote Action Banner */}
+          {submission.quote?.id && submission.quote?.status !== "ACCEPTED" && (
+            <Box
+              sx={{
+                mt: 3,
+                p: 2,
+                bgcolor: "primary.50",
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "primary.200",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <FileText className="w-5 h-5 text-blue-600" />
+                <Box>
+                  <Typography variant="body1" fontWeight="medium" color="primary.main">
+                    Quote Ready for Review
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Please review and accept the quote to proceed with your order
+                  </Typography>
+                </Box>
+              </Box>
+              <Link
+                href={`/quote/${submission.quote.id}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                View Quote
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            </Box>
+          )}
         </Paper>
 
         {/* Contact Information */}

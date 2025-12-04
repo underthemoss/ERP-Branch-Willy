@@ -20,6 +20,13 @@ graphql(`
             quantity
             rentalStartDate
             rentalEndDate
+            sellersPriceId
+            price {
+              ... on RentalPrice {
+                id
+                name
+              }
+            }
           }
         }
       }
@@ -29,7 +36,7 @@ graphql(`
 
 interface RentalItem {
   id: string;
-  description: string;
+  displayName: string;
   quantity: number;
   rentalStartDate: string;
   rentalEndDate: string;
@@ -116,7 +123,7 @@ export function RentalCalendarView({ quoteId }: RentalCalendarViewProps) {
       })
       .map((item: any) => ({
         id: item.id,
-        description: item.description,
+        displayName: item.price?.name || item.description,
         quantity: item.quantity,
         rentalStartDate: item.rentalStartDate,
         rentalEndDate: item.rentalEndDate,
@@ -431,10 +438,10 @@ export function RentalCalendarView({ quoteId }: RentalCalendarViewProps) {
                           onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = color.bg;
                           }}
-                          title={`${bar.item.description} (${bar.item.quantity})`}
+                          title={`${bar.item.displayName} (${bar.item.quantity})`}
                         >
                           <div className="truncate">
-                            {bar.item.description}
+                            {bar.item.displayName}
                             {bar.item.quantity > 1 && (
                               <span className="ml-1 opacity-90">(×{bar.item.quantity})</span>
                             )}
@@ -481,7 +488,7 @@ export function RentalCalendarView({ quoteId }: RentalCalendarViewProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                      {item.description}
+                      {item.displayName}
                       {item.quantity > 1 && (
                         <span className="ml-1.5 text-gray-600 font-normal">(×{item.quantity})</span>
                       )}

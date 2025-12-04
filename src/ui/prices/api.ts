@@ -24,6 +24,9 @@ export type {
   SalePriceFieldsFragment as SalePriceFields,
 } from "@/graphql/graphql";
 
+// QREV-KJABYCBZXV7PXRJG (bad)
+// QREV-KJABYCBZXV7PXRJG (good)
+
 export const PriceBookFieldsFragment = graphql(`
   fragment PriceBookFields on PriceBook {
     id

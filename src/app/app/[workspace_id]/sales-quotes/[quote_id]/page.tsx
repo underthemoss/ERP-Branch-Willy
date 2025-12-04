@@ -4,7 +4,10 @@ import { graphql } from "@/graphql";
 import { QuoteStatus, ResourceTypes } from "@/graphql/graphql";
 import {
   useCreatePdfFromPageAndAttachToQuoteMutation,
+  useSalesQuoteDetail_CreateQuoteRevisionMutation,
   useSalesQuoteDetail_GetQuoteByIdQuery,
+  useSalesQuoteDetail_UpdateQuoteMutation,
+  useSalesQuoteDetail_UpdateQuoteRevisionMutation,
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
@@ -24,16 +27,24 @@ import {
   CircleDot,
   Clock,
   DollarSign,
+  FileText,
+  Info,
   Mail,
+  Pencil,
   Phone,
+  Plus,
   Printer,
   ShoppingCart,
+  Trash2,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { AcceptQuoteDialog } from "./components/AcceptQuoteDialog";
+import { DeleteQuoteLineItemDialog } from "./components/DeleteQuoteLineItemDialog";
+import { EditQuoteLineItemDialog } from "./components/EditQuoteLineItemDialog";
+import { PriceHit, PriceSearchModal } from "./components/PriceSearchModal";
 import { SendQuoteDialog } from "./components/SendQuoteDialog";
 
 // GraphQL Mutation for PDF generation
@@ -56,6 +67,68 @@ graphql(`
   }
 `);
 
+// GraphQL Mutation for updating quote revision
+graphql(`
+  mutation SalesQuoteDetail_UpdateQuoteRevision($input: UpdateQuoteRevisionInput!) {
+    updateQuoteRevision(input: $input) {
+      id
+      revisionNumber
+      status
+      lineItems {
+        ... on QuoteRevisionRentalLineItem {
+          id
+          type
+          description
+          quantity
+          pimCategoryId
+          sellersPriceId
+          rentalStartDate
+          rentalEndDate
+          subtotalInCents
+        }
+        ... on QuoteRevisionSaleLineItem {
+          id
+          type
+          description
+          quantity
+          pimCategoryId
+          sellersPriceId
+          subtotalInCents
+        }
+        ... on QuoteRevisionServiceLineItem {
+          id
+          type
+          description
+          quantity
+          sellersPriceId
+          subtotalInCents
+        }
+      }
+    }
+  }
+`);
+
+// GraphQL Mutation for creating new quote revision
+graphql(`
+  mutation SalesQuoteDetail_CreateQuoteRevision($input: CreateQuoteRevisionInput!) {
+    createQuoteRevision(input: $input) {
+      id
+      revisionNumber
+      status
+    }
+  }
+`);
+
+// GraphQL Mutation for updating quote
+graphql(`
+  mutation SalesQuoteDetail_UpdateQuote($input: UpdateQuoteInput!) {
+    updateQuote(input: $input) {
+      id
+      currentRevisionId
+    }
+  }
+`);
+
 // GraphQL Query
 graphql(`
   query SalesQuoteDetail_GetQuoteById($id: String!) {
@@ -63,6 +136,13 @@ graphql(`
       id
       status
       sellerWorkspaceId
+      intakeFormSubmissionId
+      intakeFormSubmission {
+        id
+        name
+        email
+        companyName
+      }
       sellersBuyerContactId
       sellersBuyerContact {
         ... on PersonContact {
@@ -128,6 +208,25 @@ graphql(`
             rentalStartDate
             rentalEndDate
             subtotalInCents
+            deliveryMethod
+            deliveryLocation
+            deliveryNotes
+            intakeFormSubmissionLineItemId
+            intakeFormSubmissionLineItem {
+              id
+              description
+              quantity
+              durationInDays
+              rentalStartDate
+              rentalEndDate
+              deliveryMethod
+              deliveryLocation
+              deliveryNotes
+              customPriceName
+              pimCategory {
+                name
+              }
+            }
           }
           ... on QuoteRevisionSaleLineItem {
             id
@@ -147,6 +246,25 @@ graphql(`
               }
             }
             subtotalInCents
+            deliveryMethod
+            deliveryLocation
+            deliveryNotes
+            intakeFormSubmissionLineItemId
+            intakeFormSubmissionLineItem {
+              id
+              description
+              quantity
+              durationInDays
+              rentalStartDate
+              rentalEndDate
+              deliveryMethod
+              deliveryLocation
+              deliveryNotes
+              customPriceName
+              pimCategory {
+                name
+              }
+            }
           }
           ... on QuoteRevisionServiceLineItem {
             id
@@ -155,6 +273,22 @@ graphql(`
             quantity
             sellersPriceId
             subtotalInCents
+            deliveryMethod
+            deliveryLocation
+            deliveryNotes
+            intakeFormSubmissionLineItemId
+            intakeFormSubmissionLineItem {
+              id
+              description
+              quantity
+              durationInDays
+              rentalStartDate
+              rentalEndDate
+              deliveryMethod
+              deliveryLocation
+              deliveryNotes
+              customPriceName
+            }
           }
         }
       }
@@ -232,11 +366,36 @@ export default function SalesQuoteDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [acceptDialogOpen, setAcceptDialogOpen] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const [expandedPriceBreakdown, setExpandedPriceBreakdown] = React.useState<Set<string>>(
+    new Set(),
+  );
   const [cachekey, setCacheKey] = React.useState(0);
   const { notifySuccess, notifyError } = useNotification();
 
+  // Edit/Delete line item state
+  const [editLineItemDialogOpen, setEditLineItemDialogOpen] = React.useState(false);
+  const [deleteLineItemDialogOpen, setDeleteLineItemDialogOpen] = React.useState(false);
+  const [selectedLineItem, setSelectedLineItem] = React.useState<any>(null);
+
+  // Add line item state
+  const [addLineItemPriceSearchOpen, setAddLineItemPriceSearchOpen] = React.useState(false);
+  const [addLineItemDialogOpen, setAddLineItemDialogOpen] = React.useState(false);
+  const [newLineItemPrice, setNewLineItemPrice] = React.useState<any>(null);
+
   const toggleItemExpansion = (itemId: string) => {
     setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const togglePriceBreakdown = (itemId: string) => {
+    setExpandedPriceBreakdown((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
@@ -255,6 +414,10 @@ export default function SalesQuoteDetailPage() {
   const [createPdf, { loading: pdfLoading, data: pdfData, error: pdfError }] =
     useCreatePdfFromPageAndAttachToQuoteMutation();
 
+  const [updateQuoteRevision] = useSalesQuoteDetail_UpdateQuoteRevisionMutation();
+  const [createQuoteRevision] = useSalesQuoteDetail_CreateQuoteRevisionMutation();
+  const [updateQuote] = useSalesQuoteDetail_UpdateQuoteMutation();
+
   const quote = data?.quoteById;
 
   // Determine CTA visibility based on quote and revision status
@@ -270,6 +433,138 @@ export default function SalesQuoteDetailPage() {
 
   // "Edit Items" - only available for ACTIVE quotes
   const canEditItems = isQuoteActive;
+
+  // "Edit/Delete Line Items" - available for ACTIVE or REJECTED quotes
+  const canEditLineItems = quote?.status === "ACTIVE" || quote?.status === "REJECTED";
+
+  // Handlers for edit/delete line items
+  const handleEditLineItem = (item: any) => {
+    setSelectedLineItem(item);
+    setEditLineItemDialogOpen(true);
+  };
+
+  const handleDeleteLineItem = (item: any) => {
+    setSelectedLineItem(item);
+    setDeleteLineItemDialogOpen(true);
+  };
+
+  // Convert line item to mutation input format
+  const lineItemToInput = (item: any) => ({
+    id: item.id,
+    description: item.description,
+    type: item.type,
+    quantity: item.quantity,
+    sellersPriceId: item.sellersPriceId,
+    pimCategoryId: item.pimCategoryId,
+    ...(item.type === "RENTAL" && {
+      rentalStartDate: item.rentalStartDate,
+      rentalEndDate: item.rentalEndDate,
+    }),
+    deliveryLocation: item.deliveryLocation,
+    deliveryMethod: item.deliveryMethod,
+    deliveryNotes: item.deliveryNotes,
+  });
+
+  // Save line items (either update existing revision or create new one)
+  const handleSaveLineItems = async (updatedLineItems: any[], createNewRevision: boolean) => {
+    const lineItemInputs = updatedLineItems.map(lineItemToInput);
+
+    try {
+      if (createNewRevision) {
+        // Create new revision when current is SENT
+        const newRevisionNumber = (quote?.currentRevision?.revisionNumber || 0) + 1;
+        const result = await createQuoteRevision({
+          variables: {
+            input: {
+              quoteId: quote!.id,
+              revisionNumber: newRevisionNumber,
+              lineItems: lineItemInputs,
+            },
+          },
+        });
+
+        // Update quote to point to new revision
+        if (result.data?.createQuoteRevision?.id) {
+          await updateQuote({
+            variables: {
+              input: {
+                id: quote!.id,
+                currentRevisionId: result.data.createQuoteRevision.id,
+              },
+            },
+          });
+        }
+        notifySuccess("Line item updated. A new revision has been created.");
+      } else {
+        // Update existing revision
+        await updateQuoteRevision({
+          variables: {
+            input: {
+              id: quote!.currentRevision!.id,
+              lineItems: lineItemInputs,
+            },
+          },
+        });
+        notifySuccess("Line item updated successfully.");
+      }
+      refetch();
+    } catch (error) {
+      console.error("Error saving line items:", error);
+      notifyError("Failed to save changes. Please try again.");
+      throw error;
+    }
+  };
+
+  // Delete line item handler
+  const handleConfirmDeleteLineItem = async () => {
+    if (!selectedLineItem || !quote?.currentRevision?.lineItems) return;
+
+    const updatedLineItems = quote.currentRevision.lineItems.filter(
+      (item: any) => item.id !== selectedLineItem.id,
+    );
+    const createNewRevision = revisionStatus === "SENT";
+
+    await handleSaveLineItems(updatedLineItems, createNewRevision);
+  };
+
+  // Add line item - price selected handler
+  const handleAddLineItemPriceSelected = (price: PriceHit) => {
+    // Create a new line item skeleton based on the selected price
+    const newLineItem = {
+      id: `new-${Date.now()}`, // Temporary ID
+      type: price.priceType as "RENTAL" | "SALE",
+      description: price.name || "",
+      quantity: 1,
+      pimCategoryId: price.pimCategoryId,
+      pimCategory: price.pimCategoryName ? { name: price.pimCategoryName } : null,
+      sellersPriceId: price.objectID,
+      price: {
+        id: price.objectID,
+        name: price.name || "",
+        pricePerDayInCents: price.pricePerDayInCents || undefined,
+        pricePerWeekInCents: price.pricePerWeekInCents || undefined,
+        pricePerMonthInCents: price.pricePerMonthInCents || undefined,
+        unitCostInCents: price.unitCostInCents || undefined,
+      },
+      rentalStartDate: null,
+      rentalEndDate: null,
+      subtotalInCents: 0,
+      deliveryMethod: null,
+      deliveryLocation: null,
+      deliveryNotes: null,
+    };
+    setNewLineItemPrice(newLineItem);
+    setAddLineItemPriceSearchOpen(false);
+    setAddLineItemDialogOpen(true);
+  };
+
+  // Add line item - save handler (adds new item to the list)
+  const handleAddLineItemSave = async (updatedLineItems: any[], createNewRevision: boolean) => {
+    // The updatedLineItems will contain the new item - save it
+    await handleSaveLineItems(updatedLineItems, createNewRevision);
+    setAddLineItemDialogOpen(false);
+    setNewLineItemPrice(null);
+  };
 
   // Calculate totals
   const totalAmount = React.useMemo(() => {
@@ -445,73 +740,86 @@ export default function SalesQuoteDetailPage() {
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Line Items</h2>
                 {canEditItems && (
-                  <Link
-                    href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
+                  <button
+                    onClick={() => setAddLineItemPriceSearchOpen(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    Edit Items
-                  </Link>
+                    <Plus className="w-4 h-4" />
+                    Add Item
+                  </button>
                 )}
               </div>
               <div className="overflow-x-auto">
                 {quote.currentRevision?.lineItems && quote.currentRevision.lineItems.length > 0 ? (
-                  <table className="w-full">
+                  <table className="w-full table-fixed">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="w-[35%] px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Description
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="w-[10%] px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="w-[8%] px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Qty
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Price
+                        <th className="w-[17%] px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Date
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="w-[15%] px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Subtotal
                         </th>
+                        {canEditLineItems && (
+                          <th className="w-[15%] px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {quote.currentRevision.lineItems.map((item: any, index: number) => {
                         const isExpanded = expandedItems.has(item.id);
+                        const isPriceBreakdownExpanded = expandedPriceBreakdown.has(item.id);
                         const isRental = item.type === "RENTAL";
+                        const hasOriginalRequest = !!item.intakeFormSubmissionLineItem;
                         return (
                           <React.Fragment key={item.id || index}>
                             <tr className="hover:bg-gray-50">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  {item.sellersPriceId && (
-                                    <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                                  <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                                    {item.sellersPriceId ? (
                                       <GeneratedImage
                                         entity="price"
                                         entityId={item.sellersPriceId}
                                         size="list"
                                         alt={item.description}
                                       />
-                                    </div>
-                                  )}
-                                  <div>
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
+                                        <span className="text-gray-400 text-lg font-medium">?</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
                                     <p className="text-sm font-medium text-gray-900">
-                                      {item.description}
+                                      {item.price?.name || item.description}
                                     </p>
                                     {item.pimCategory && (
                                       <p className="text-xs text-gray-500">
                                         {item.pimCategory.name}
                                       </p>
                                     )}
-                                    {isRental && item.rentalStartDate && item.rentalEndDate && (
-                                      <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>
-                                          {formatDate(item.rentalStartDate)} -{" "}
-                                          {formatDate(item.rentalEndDate)}
-                                        </span>
-                                      </div>
+                                    {hasOriginalRequest && (
+                                      <button
+                                        onClick={() => toggleItemExpansion(item.id)}
+                                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline cursor-pointer whitespace-nowrap"
+                                      >
+                                        <span>{isExpanded ? "Hide" : "Show"} request</span>
+                                        <ChevronDown
+                                          className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                        />
+                                      </button>
                                     )}
                                   </div>
                                 </div>
@@ -524,48 +832,182 @@ export default function SalesQuoteDetailPage() {
                               <td className="px-6 py-4 text-right text-sm text-gray-900">
                                 {item.quantity}
                               </td>
-                              <td className="px-6 py-4 text-right text-sm text-gray-900">
-                                {item.type === "RENTAL" && item.price
-                                  ? formatPrice(item.price.pricePerDayInCents)
-                                  : item.type === "SALE" && item.price
-                                    ? formatPrice(item.price.unitCostInCents)
-                                    : "—"}
+                              <td className="px-6 py-4 text-left text-sm text-gray-900">
+                                {isRental && item.rentalStartDate && item.rentalEndDate ? (
+                                  <div className="flex items-center gap-1 text-xs text-gray-700">
+                                    <Calendar className="w-3 h-3 text-gray-400" />
+                                    <span>
+                                      {formatDate(item.rentalStartDate)} -{" "}
+                                      {formatDate(item.rentalEndDate)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
                               </td>
                               <td className="px-6 py-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <span className="text-sm font-medium text-gray-900">
-                                    {formatPrice(item.subtotalInCents)}
-                                  </span>
-                                  {isRental && item.rentalStartDate && item.rentalEndDate && (
-                                    <button
-                                      onClick={() => toggleItemExpansion(item.id)}
-                                      className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
-                                      title={isExpanded ? "Hide breakdown" : "Show breakdown"}
-                                    >
-                                      <svg
-                                        className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M19 9l-7 7-7-7"
-                                        />
-                                      </svg>
-                                    </button>
+                                  {item.sellersPriceId ? (
+                                    <>
+                                      <span className="text-sm font-medium text-gray-900">
+                                        {formatPrice(item.subtotalInCents)}
+                                      </span>
+                                      {isRental && item.rentalStartDate && item.rentalEndDate && (
+                                        <button
+                                          onClick={() => togglePriceBreakdown(item.id)}
+                                          className="p-1 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                                          title={
+                                            isPriceBreakdownExpanded
+                                              ? "Hide breakdown"
+                                              : "Show breakdown"
+                                          }
+                                        >
+                                          <svg
+                                            className={`w-4 h-4 text-gray-600 transition-transform ${isPriceBreakdownExpanded ? "rotate-180" : ""}`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
+                                          </svg>
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-amber-600 whitespace-nowrap">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Set price
+                                    </span>
                                   )}
                                 </div>
                               </td>
+                              {canEditLineItems && (
+                                <td className="px-6 py-4 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      onClick={() => handleEditLineItem(item)}
+                                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                      title="Edit line item"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteLineItem(item)}
+                                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                      title="Delete line item"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
-                            {isRental &&
-                              isExpanded &&
+                            {isExpanded && hasOriginalRequest && (
+                              <tr>
+                                <td
+                                  colSpan={canEditLineItems ? 6 : 5}
+                                  className="px-6 py-4 bg-blue-50"
+                                >
+                                  <div className="text-xs text-blue-700 font-semibold mb-2 flex items-center gap-1">
+                                    <Info className="w-3 h-3" />
+                                    Original Request Details
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <p className="text-xs text-gray-500 mb-0.5">Description</p>
+                                      <p className="font-medium text-gray-900">
+                                        {item.intakeFormSubmissionLineItem.description}
+                                      </p>
+                                    </div>
+                                    {item.intakeFormSubmissionLineItem.customPriceName && (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-0.5">
+                                          Requested Price
+                                        </p>
+                                        <p className="font-medium text-gray-900">
+                                          {item.intakeFormSubmissionLineItem.customPriceName}
+                                        </p>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <p className="text-xs text-gray-500 mb-0.5">Quantity</p>
+                                      <p className="font-medium text-gray-900">
+                                        {item.intakeFormSubmissionLineItem.quantity}
+                                      </p>
+                                    </div>
+                                    {item.intakeFormSubmissionLineItem.durationInDays > 0 && (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-0.5">Duration</p>
+                                        <p className="font-medium text-gray-900">
+                                          {item.intakeFormSubmissionLineItem.durationInDays} days
+                                        </p>
+                                      </div>
+                                    )}
+                                    {item.intakeFormSubmissionLineItem.rentalStartDate && (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-0.5">
+                                          Requested Dates
+                                        </p>
+                                        <p className="font-medium text-gray-900">
+                                          {formatDate(
+                                            item.intakeFormSubmissionLineItem.rentalStartDate,
+                                          )}{" "}
+                                          -{" "}
+                                          {formatDate(
+                                            item.intakeFormSubmissionLineItem.rentalEndDate,
+                                          )}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {item.intakeFormSubmissionLineItem.deliveryMethod && (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-0.5">
+                                          Delivery Method
+                                        </p>
+                                        <p className="font-medium text-gray-900">
+                                          {item.intakeFormSubmissionLineItem.deliveryMethod}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {item.intakeFormSubmissionLineItem.deliveryLocation && (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-0.5">
+                                          Delivery Location
+                                        </p>
+                                        <p className="font-medium text-gray-900">
+                                          {item.intakeFormSubmissionLineItem.deliveryLocation}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {item.intakeFormSubmissionLineItem.deliveryNotes && (
+                                      <div className="col-span-2">
+                                        <p className="text-xs text-gray-500 mb-0.5">
+                                          Delivery Notes
+                                        </p>
+                                        <p className="font-medium text-gray-900">
+                                          {item.intakeFormSubmissionLineItem.deliveryNotes}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            {/* Price Breakdown Row */}
+                            {isPriceBreakdownExpanded &&
+                              isRental &&
                               item.rentalStartDate &&
                               item.rentalEndDate && (
                                 <tr>
-                                  <td colSpan={5} className="px-6 py-4 bg-gray-50">
+                                  <td
+                                    colSpan={canEditLineItems ? 6 : 5}
+                                    className="px-6 py-4 bg-gray-50"
+                                  >
                                     <div className="max-w-md ml-auto">
                                       <RentalPricingBreakdown
                                         priceId={item.sellersPriceId}
@@ -594,6 +1036,7 @@ export default function SalesQuoteDetailPage() {
                         <td className="px-6 py-4 text-right text-lg font-bold text-gray-900">
                           {formatPrice(totalAmount)}
                         </td>
+                        {canEditLineItems && <td />}
                       </tr>
                     </tfoot>
                   </table>
@@ -610,15 +1053,6 @@ export default function SalesQuoteDetailPage() {
                         Add products, rentals, or services to build your quote. Items you add will
                         appear here with pricing and delivery details.
                       </p>
-                      {canEditItems && (
-                        <Link
-                          href={`/app/${workspaceId}/sales-quotes/${quoteId}/cart`}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          Add Items to Quote
-                        </Link>
-                      )}
                     </div>
                   </div>
                 )}
@@ -767,6 +1201,51 @@ export default function SalesQuoteDetailPage() {
               </div>
             )}
 
+            {/* Source Submission - show if quote was generated from intake form */}
+            {quote.intakeFormSubmissionId && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  Source Submission
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Submission ID</p>
+                    <Link
+                      href={`/app/${workspaceId}/intake-forms?submissionId=${quote.intakeFormSubmissionId}`}
+                      className="text-sm font-mono text-blue-600 hover:underline mt-1 block"
+                    >
+                      {quote.intakeFormSubmissionId}
+                    </Link>
+                  </div>
+                  {quote.intakeFormSubmission?.name && (
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Submitted By</p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {quote.intakeFormSubmission.name}
+                      </p>
+                    </div>
+                  )}
+                  {quote.intakeFormSubmission?.email && (
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {quote.intakeFormSubmission.email}
+                      </p>
+                    </div>
+                  )}
+                  {quote.intakeFormSubmission?.companyName && (
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Company</p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {quote.intakeFormSubmission.companyName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Metadata */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
@@ -804,6 +1283,67 @@ export default function SalesQuoteDetailPage() {
         quote={quote}
         onSuccess={() => refetch()}
       />
+
+      {/* Edit Line Item Dialog */}
+      {selectedLineItem && quote.currentRevision && (
+        <EditQuoteLineItemDialog
+          open={editLineItemDialogOpen}
+          onClose={() => {
+            setEditLineItemDialogOpen(false);
+            setSelectedLineItem(null);
+          }}
+          lineItem={selectedLineItem}
+          allLineItems={quote.currentRevision.lineItems as any[]}
+          quoteId={quote.id}
+          revisionId={quote.currentRevision.id}
+          revisionNumber={quote.currentRevision.revisionNumber}
+          revisionStatus={quote.currentRevision.status}
+          workspaceId={workspaceId}
+          onSave={handleSaveLineItems}
+        />
+      )}
+
+      {/* Delete Line Item Dialog */}
+      {selectedLineItem && (
+        <DeleteQuoteLineItemDialog
+          open={deleteLineItemDialogOpen}
+          onClose={() => {
+            setDeleteLineItemDialogOpen(false);
+            setSelectedLineItem(null);
+          }}
+          onConfirm={handleConfirmDeleteLineItem}
+          lineItemDescription={selectedLineItem.description}
+          lineItemType={selectedLineItem.type}
+        />
+      )}
+
+      {/* Add Line Item - Price Search Modal */}
+      <PriceSearchModal
+        open={addLineItemPriceSearchOpen}
+        onClose={() => setAddLineItemPriceSearchOpen(false)}
+        onSelect={handleAddLineItemPriceSelected}
+        workspaceId={workspaceId}
+      />
+
+      {/* Add Line Item - Details Dialog */}
+      {newLineItemPrice && quote?.currentRevision && (
+        <EditQuoteLineItemDialog
+          open={addLineItemDialogOpen}
+          onClose={() => {
+            setAddLineItemDialogOpen(false);
+            setNewLineItemPrice(null);
+          }}
+          lineItem={newLineItemPrice}
+          allLineItems={[...(quote.currentRevision.lineItems as any[]), newLineItemPrice]}
+          quoteId={quote.id}
+          revisionId={quote.currentRevision.id}
+          revisionNumber={quote.currentRevision.revisionNumber}
+          revisionStatus={quote.currentRevision.status}
+          workspaceId={workspaceId}
+          onSave={handleAddLineItemSave}
+          mode="add"
+        />
+      )}
     </div>
   );
 }
