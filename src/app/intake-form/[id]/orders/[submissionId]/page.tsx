@@ -642,16 +642,6 @@ export default function OrderDetailPage() {
             </Typography>
           </Box>
         </Paper>
-
-        {/* Browse More */}
-        <Box sx={{ mt: 4, textAlign: "center" }}>
-          <Link
-            href={`/intake-form/${formId}/catalog`}
-            className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Browse Catalog
-          </Link>
-        </Box>
       </Container>
     </div>
   );

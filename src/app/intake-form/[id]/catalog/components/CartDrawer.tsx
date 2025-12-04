@@ -395,7 +395,7 @@ export default function CartDrawer({ onCheckout }: CartDrawerProps) {
                 disabled={hasIncompleteRentals || cart.isLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors cursor-pointer"
               >
-                {cart.isLoading ? "Loading..." : "Proceed to Checkout"}
+                {cart.isLoading ? "Loading..." : "Request Quote"}
               </button>
               {hasIncompleteRentals && (
                 <p className="text-xs text-gray-500 text-center">

@@ -23,15 +23,11 @@ import {
   Calendar,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
   CircleDot,
   Clock,
-  DollarSign,
-  FileText,
   Info,
   Mail,
   Pencil,
-  Phone,
   Plus,
   Printer,
   ShoppingCart,
@@ -45,7 +41,9 @@ import { AcceptQuoteDialog } from "./components/AcceptQuoteDialog";
 import { DeleteQuoteLineItemDialog } from "./components/DeleteQuoteLineItemDialog";
 import { EditQuoteLineItemDialog } from "./components/EditQuoteLineItemDialog";
 import { PriceHit, PriceSearchModal } from "./components/PriceSearchModal";
+import { SelectSubmissionLineItemDialog } from "./components/SelectSubmissionLineItemDialog";
 import { SendQuoteDialog } from "./components/SendQuoteDialog";
+import { SourceSubmissionCard } from "./components/SourceSubmissionCard";
 
 // GraphQL Mutation for PDF generation
 graphql(`
@@ -142,6 +140,39 @@ graphql(`
         name
         email
         companyName
+        lineItems {
+          id
+          description
+          quantity
+          type
+          pimCategoryId
+          pimCategory {
+            id
+            name
+          }
+          priceId
+          price {
+            ... on RentalPrice {
+              id
+              name
+              pricePerDayInCents
+              pricePerWeekInCents
+              pricePerMonthInCents
+            }
+            ... on SalePrice {
+              id
+              name
+              unitCostInCents
+            }
+          }
+          customPriceName
+          rentalStartDate
+          rentalEndDate
+          deliveryMethod
+          deliveryLocation
+          deliveryNotes
+          durationInDays
+        }
       }
       sellersBuyerContactId
       sellersBuyerContact {
@@ -294,7 +325,15 @@ graphql(`
       }
       validUntil
       createdAt
+      createdByUser {
+        firstName
+        lastName
+      }
       updatedAt
+      updatedByUser {
+        firstName
+        lastName
+      }
     }
   }
 `);
@@ -362,7 +401,6 @@ export default function SalesQuoteDetailPage() {
   const params = useParams();
   const quoteId = params?.quote_id as string;
   const workspaceId = params?.workspace_id as string;
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [acceptDialogOpen, setAcceptDialogOpen] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
@@ -381,6 +419,14 @@ export default function SalesQuoteDetailPage() {
   const [addLineItemPriceSearchOpen, setAddLineItemPriceSearchOpen] = React.useState(false);
   const [addLineItemDialogOpen, setAddLineItemDialogOpen] = React.useState(false);
   const [newLineItemPrice, setNewLineItemPrice] = React.useState<any>(null);
+  const [selectSubmissionLineItemDialogOpen, setSelectSubmissionLineItemDialogOpen] =
+    React.useState(false);
+  const [selectedSubmissionLineItem, setSelectedSubmissionLineItem] = React.useState<any>(null);
+  const [priceSearchCategoryFilter, setPriceSearchCategoryFilter] = React.useState<{
+    pimCategoryId?: string;
+    pimCategoryName?: string;
+    priceType?: "RENTAL" | "SALE";
+  } | null>(null);
 
   const toggleItemExpansion = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -448,6 +494,19 @@ export default function SalesQuoteDetailPage() {
     setDeleteLineItemDialogOpen(true);
   };
 
+  // Compute unlinked submission line items (those not yet associated with a quote line item)
+  const unlinkedSubmissionLineItems = React.useMemo(() => {
+    if (!quote?.intakeFormSubmission?.lineItems) return [];
+    const linkedIds = new Set(
+      quote.currentRevision?.lineItems
+        ?.map((li: any) => li.intakeFormSubmissionLineItemId)
+        .filter(Boolean) || [],
+    );
+    return quote.intakeFormSubmission.lineItems.filter(
+      (sli: any) => !linkedIds.has(sli.id),
+    ) as any[];
+  }, [quote?.intakeFormSubmission?.lineItems, quote?.currentRevision?.lineItems]);
+
   // Convert line item to mutation input format
   const lineItemToInput = (item: any) => ({
     id: item.id,
@@ -463,6 +522,7 @@ export default function SalesQuoteDetailPage() {
     deliveryLocation: item.deliveryLocation,
     deliveryMethod: item.deliveryMethod,
     deliveryNotes: item.deliveryNotes,
+    intakeFormSubmissionLineItemId: item.intakeFormSubmissionLineItemId || null,
   });
 
   // Save line items (either update existing revision or create new one)
@@ -527,6 +587,79 @@ export default function SalesQuoteDetailPage() {
     await handleSaveLineItems(updatedLineItems, createNewRevision);
   };
 
+  // Handle "Add Item" button click
+  const handleAddItemClick = () => {
+    // If there are unlinked submission line items and quote has a submission, show selection dialog
+    if (quote?.intakeFormSubmissionId && unlinkedSubmissionLineItems.length > 0) {
+      setSelectSubmissionLineItemDialogOpen(true);
+    } else {
+      // No submission or all items linked - go directly to price search
+      setSelectedSubmissionLineItem(null);
+      setPriceSearchCategoryFilter(null);
+      setAddLineItemPriceSearchOpen(true);
+    }
+  };
+
+  // Handle submission line item selection from dialog
+  const handleSubmissionLineItemSelected = async (submissionLineItem: any | null) => {
+    setSelectSubmissionLineItemDialogOpen(false);
+
+    if (submissionLineItem === null) {
+      // User selected "None" - go to full price search
+      setSelectedSubmissionLineItem(null);
+      setPriceSearchCategoryFilter(null);
+      setAddLineItemPriceSearchOpen(true);
+      return;
+    }
+
+    // Store the selected submission line item
+    setSelectedSubmissionLineItem(submissionLineItem);
+
+    // Check if submission line item has a priceId
+    if (submissionLineItem.priceId) {
+      // Has a price - create line item directly and open edit dialog
+      const price = submissionLineItem.price;
+      const isRental = submissionLineItem.type === "RENTAL";
+
+      const newLineItem = {
+        id: `new-${Date.now()}`,
+        type: submissionLineItem.type as "RENTAL" | "SALE",
+        description: price?.name || submissionLineItem.description || "",
+        quantity: submissionLineItem.quantity || 1,
+        pimCategoryId: submissionLineItem.pimCategoryId,
+        pimCategory: submissionLineItem.pimCategory,
+        sellersPriceId: submissionLineItem.priceId,
+        price: price
+          ? {
+              id: price.id,
+              name: price.name || "",
+              pricePerDayInCents: isRental ? price.pricePerDayInCents : undefined,
+              pricePerWeekInCents: isRental ? price.pricePerWeekInCents : undefined,
+              pricePerMonthInCents: isRental ? price.pricePerMonthInCents : undefined,
+              unitCostInCents: !isRental ? price.unitCostInCents : undefined,
+            }
+          : null,
+        rentalStartDate: null,
+        rentalEndDate: null,
+        subtotalInCents: 0,
+        deliveryMethod: null,
+        deliveryLocation: null,
+        deliveryNotes: null,
+        intakeFormSubmissionLineItemId: submissionLineItem.id,
+      };
+      setNewLineItemPrice(newLineItem);
+      setAddLineItemDialogOpen(true);
+    } else {
+      // No priceId - open price search filtered by category
+      setPriceSearchCategoryFilter({
+        pimCategoryId: submissionLineItem.pimCategoryId,
+        pimCategoryName: submissionLineItem.pimCategory?.name,
+        priceType: submissionLineItem.type === "RENTAL" ? "RENTAL" : "SALE",
+      });
+      setAddLineItemPriceSearchOpen(true);
+    }
+  };
+
   // Add line item - price selected handler
   const handleAddLineItemPriceSelected = (price: PriceHit) => {
     // Create a new line item skeleton based on the selected price
@@ -534,7 +667,7 @@ export default function SalesQuoteDetailPage() {
       id: `new-${Date.now()}`, // Temporary ID
       type: price.priceType as "RENTAL" | "SALE",
       description: price.name || "",
-      quantity: 1,
+      quantity: selectedSubmissionLineItem?.quantity || 1,
       pimCategoryId: price.pimCategoryId,
       pimCategory: price.pimCategoryName ? { name: price.pimCategoryName } : null,
       sellersPriceId: price.objectID,
@@ -552,9 +685,12 @@ export default function SalesQuoteDetailPage() {
       deliveryMethod: null,
       deliveryLocation: null,
       deliveryNotes: null,
+      // Link to submission line item if one was selected
+      intakeFormSubmissionLineItemId: selectedSubmissionLineItem?.id || null,
     };
     setNewLineItemPrice(newLineItem);
     setAddLineItemPriceSearchOpen(false);
+    setPriceSearchCategoryFilter(null);
     setAddLineItemDialogOpen(true);
   };
 
@@ -564,6 +700,7 @@ export default function SalesQuoteDetailPage() {
     await handleSaveLineItems(updatedLineItems, createNewRevision);
     setAddLineItemDialogOpen(false);
     setNewLineItemPrice(null);
+    setSelectedSubmissionLineItem(null);
   };
 
   // Calculate totals
@@ -677,57 +814,44 @@ export default function SalesQuoteDetailPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-100 text-green-600 p-3 rounded-lg">
-                <DollarSign className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                <p className="text-2xl font-bold text-gray-900">{formatPrice(totalAmount)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Valid Until</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatDate(quote.validUntil)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-100 text-purple-600 p-3 rounded-lg">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Created</p>
-                <p className="text-lg font-semibold text-gray-900">{formatDate(quote.createdAt)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <div className="flex items-center gap-4">
-              <div className="bg-amber-100 text-amber-600 p-3 rounded-lg">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Revision</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  #{quote.currentRevision?.revisionNumber || 1}
-                </p>
-              </div>
+        {/* Quote Summary Bar */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3 mb-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {/* Contact */}
+            {quote.sellersBuyerContact && (
+              <>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">
+                    {quote.sellersBuyerContact.__typename === "PersonContact"
+                      ? quote.sellersBuyerContact.name
+                      : quote.sellersBuyerContact.__typename === "BusinessContact"
+                        ? quote.sellersBuyerContact.name
+                        : "—"}
+                  </span>
+                </div>
+                <div className="h-4 w-px bg-gray-200 hidden sm:block" />
+              </>
+            )}
+            {/* Project */}
+            {quote.sellersProject && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">
+                    {quote.sellersProject.name}
+                  </span>
+                </div>
+                <div className="h-4 w-px bg-gray-200 hidden sm:block" />
+              </>
+            )}
+            {/* Valid Until */}
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-gray-500">Valid Until:</span>
+              <span className="text-sm font-semibold text-gray-900">
+                {formatDate(quote.validUntil)}
+              </span>
             </div>
           </div>
         </div>
@@ -741,7 +865,7 @@ export default function SalesQuoteDetailPage() {
                 <h2 className="text-xl font-semibold text-gray-900">Line Items</h2>
                 {canEditItems && (
                   <button
-                    onClick={() => setAddLineItemPriceSearchOpen(true)}
+                    onClick={handleAddItemClick}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
@@ -1085,185 +1209,52 @@ export default function SalesQuoteDetailPage() {
 
           {/* Sidebar - Right Column */}
           <div className="space-y-6">
-            {/* Buyer Contact */}
-            {quote.sellersBuyerContact && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <User className="w-5 h-5 text-gray-600" />
-                  Buyer Contact
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {quote.sellersBuyerContact.__typename === "PersonContact"
-                        ? quote.sellersBuyerContact.name
-                        : quote.sellersBuyerContact.__typename === "BusinessContact"
-                          ? quote.sellersBuyerContact.name
-                          : "Unknown"}
-                    </p>
-                    {quote.sellersBuyerContact.__typename === "PersonContact" &&
-                      quote.sellersBuyerContact.business?.name && (
-                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                          <Building2 className="w-3 h-3" />
-                          {quote.sellersBuyerContact.business.name}
-                        </p>
-                      )}
-                  </div>
-                  {quote.sellersBuyerContact.__typename === "PersonContact" && (
-                    <>
-                      {quote.sellersBuyerContact.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="w-4 h-4" />
-                          <a
-                            href={`mailto:${quote.sellersBuyerContact.email}`}
-                            className="hover:text-blue-600"
-                          >
-                            {quote.sellersBuyerContact.email}
-                          </a>
-                        </div>
-                      )}
-                      {quote.sellersBuyerContact.phone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="w-4 h-4" />
-                          <a
-                            href={`tel:${quote.sellersBuyerContact.phone}`}
-                            className="hover:text-blue-600"
-                          >
-                            {quote.sellersBuyerContact.phone}
-                          </a>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {quote.sellersBuyerContact.__typename === "BusinessContact" &&
-                    quote.sellersBuyerContact.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4" />
-                        <a
-                          href={`tel:${quote.sellersBuyerContact.phone}`}
-                          className="hover:text-blue-600"
-                        >
-                          {quote.sellersBuyerContact.phone}
-                        </a>
-                      </div>
+            {/* Quote Details - always at top */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quote Details</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Revision</span>
+                  <span className="font-medium text-gray-900">
+                    #{quote.currentRevision?.revisionNumber || 1}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Created</span>
+                  <div className="text-right">
+                    <span className="text-gray-900">{formatDate(quote.createdAt)}</span>
+                    {quote.createdByUser && (
+                      <p className="text-xs text-gray-500">
+                        by {quote.createdByUser.firstName} {quote.createdByUser.lastName}
+                      </p>
                     )}
-                </div>
-              </div>
-            )}
-
-            {/* Project Information */}
-            {quote.sellersProject && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-gray-600" />
-                  Project
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900">{quote.sellersProject.name}</p>
-                  {quote.sellersProject.project_code && (
-                    <p className="text-xs text-gray-600 font-mono">
-                      {quote.sellersProject.project_code}
-                    </p>
-                  )}
-                  {quote.sellersProject.description && (
-                    <div className="mt-2">
-                      <div className="relative">
-                        <p
-                          className={`text-sm text-gray-600 whitespace-pre-wrap ${
-                            isDescriptionExpanded ? "" : "max-h-32 overflow-hidden"
-                          }`}
-                        >
-                          {quote.sellersProject.description}
-                        </p>
-                        {!isDescriptionExpanded && (
-                          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                        className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
-                      >
-                        {isDescriptionExpanded ? (
-                          <>
-                            <ChevronUp className="w-3 h-3" />
-                            Show less
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-3 h-3" />
-                            Show more
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Source Submission - show if quote was generated from intake form */}
-            {quote.intakeFormSubmissionId && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-gray-600" />
-                  Source Submission
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Submission ID</p>
-                    <Link
-                      href={`/app/${workspaceId}/intake-forms?submissionId=${quote.intakeFormSubmissionId}`}
-                      className="text-sm font-mono text-blue-600 hover:underline mt-1 block"
-                    >
-                      {quote.intakeFormSubmissionId}
-                    </Link>
                   </div>
-                  {quote.intakeFormSubmission?.name && (
-                    <div className="border-t border-gray-200 pt-3">
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">Submitted By</p>
-                      <p className="text-sm text-gray-900 mt-1">
-                        {quote.intakeFormSubmission.name}
-                      </p>
-                    </div>
-                  )}
-                  {quote.intakeFormSubmission?.email && (
-                    <div className="border-t border-gray-200 pt-3">
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                      <p className="text-sm text-gray-900 mt-1">
-                        {quote.intakeFormSubmission.email}
-                      </p>
-                    </div>
-                  )}
-                  {quote.intakeFormSubmission?.companyName && (
-                    <div className="border-t border-gray-200 pt-3">
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">Company</p>
-                      <p className="text-sm text-gray-900 mt-1">
-                        {quote.intakeFormSubmission.companyName}
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Metadata */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Quote ID</p>
-                  <p className="text-sm font-mono text-gray-900 mt-1">{quote.id}</p>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Updated</span>
+                  <div className="text-right">
+                    <span className="text-gray-900">{formatDate(quote.updatedAt)}</span>
+                    {quote.updatedByUser && (
+                      <p className="text-xs text-gray-500">
+                        by {quote.updatedByUser.firstName} {quote.updatedByUser.lastName}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="border-t border-gray-200 pt-3">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Created</p>
-                  <p className="text-sm text-gray-900 mt-1">{formatDate(quote.createdAt)}</p>
-                </div>
-                <div className="border-t border-gray-200 pt-3">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Last Updated</p>
-                  <p className="text-sm text-gray-900 mt-1">{formatDate(quote.updatedAt)}</p>
+                <div className="pt-2 border-t border-gray-100">
+                  <span className="text-xs text-gray-400 font-mono break-all">{quote.id}</span>
                 </div>
               </div>
             </div>
+
+            {/* Source Submission - show if quote was generated from intake form */}
+            {quote.intakeFormSubmissionId && quote.intakeFormSubmission && (
+              <SourceSubmissionCard
+                submission={quote.intakeFormSubmission as any}
+                quoteLineItems={(quote.currentRevision?.lineItems as any[]) || []}
+                workspaceId={workspaceId}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1317,12 +1308,26 @@ export default function SalesQuoteDetailPage() {
         />
       )}
 
+      {/* Select Submission Line Item Dialog - shown when adding line item with linked submission */}
+      <SelectSubmissionLineItemDialog
+        open={selectSubmissionLineItemDialogOpen}
+        onClose={() => setSelectSubmissionLineItemDialogOpen(false)}
+        unlinkedLineItems={unlinkedSubmissionLineItems}
+        onSelect={handleSubmissionLineItemSelected}
+      />
+
       {/* Add Line Item - Price Search Modal */}
       <PriceSearchModal
         open={addLineItemPriceSearchOpen}
-        onClose={() => setAddLineItemPriceSearchOpen(false)}
+        onClose={() => {
+          setAddLineItemPriceSearchOpen(false);
+          setPriceSearchCategoryFilter(null);
+        }}
         onSelect={handleAddLineItemPriceSelected}
         workspaceId={workspaceId}
+        pimCategoryId={priceSearchCategoryFilter?.pimCategoryId}
+        pimCategoryName={priceSearchCategoryFilter?.pimCategoryName}
+        priceType={priceSearchCategoryFilter?.priceType}
       />
 
       {/* Add Line Item - Details Dialog */}
@@ -1332,6 +1337,7 @@ export default function SalesQuoteDetailPage() {
           onClose={() => {
             setAddLineItemDialogOpen(false);
             setNewLineItemPrice(null);
+            setSelectedSubmissionLineItem(null);
           }}
           lineItem={newLineItemPrice}
           allLineItems={[...(quote.currentRevision.lineItems as any[]), newLineItemPrice]}
@@ -1342,6 +1348,7 @@ export default function SalesQuoteDetailPage() {
           workspaceId={workspaceId}
           onSave={handleAddLineItemSave}
           mode="add"
+          linkedSubmissionLineItem={selectedSubmissionLineItem}
         />
       )}
     </div>

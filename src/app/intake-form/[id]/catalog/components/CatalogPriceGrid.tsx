@@ -21,7 +21,7 @@ function CatalogPriceCard({ hit, onClick }: CatalogPriceCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col h-full">
       {/* Image */}
       <div className="relative w-full pt-[75%] bg-gray-100">
         <GeneratedImage
@@ -48,7 +48,7 @@ function CatalogPriceCard({ hit, onClick }: CatalogPriceCardProps) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
           {priceName}
         </h3>
@@ -58,8 +58,8 @@ function CatalogPriceCard({ hit, onClick }: CatalogPriceCardProps) {
           <p className="text-xs text-gray-500 mb-3 truncate">{hit.pimCategoryName}</p>
         )}
 
-        {/* Pricing */}
-        <div className="border-t border-gray-100 pt-3 mb-3">
+        {/* Pricing - flex-grow to push button to bottom */}
+        <div className="border-t border-gray-100 pt-3 mb-3 flex-grow">
           {priceType === "RENTAL" ? (
             <div className="space-y-1 text-xs">
               <div className="flex justify-between items-center">

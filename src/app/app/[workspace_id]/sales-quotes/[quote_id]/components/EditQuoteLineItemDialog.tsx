@@ -1,5 +1,6 @@
 "use client";
 
+import { IntakeFormLineItem } from "@/graphql/graphql";
 import { GeneratedImage } from "@/ui/GeneratedImage";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -62,6 +63,8 @@ interface EditQuoteLineItemDialogProps {
   workspaceId: string;
   onSave: (updatedLineItems: LineItem[], createNewRevision: boolean) => Promise<void>;
   mode?: "edit" | "add";
+  /** When adding a new line item, this is the submission line item to link to and pre-populate from */
+  linkedSubmissionLineItem?: IntakeFormLineItem | null;
 }
 
 export function EditQuoteLineItemDialog({
@@ -76,6 +79,7 @@ export function EditQuoteLineItemDialog({
   workspaceId,
   onSave,
   mode = "edit",
+  linkedSubmissionLineItem,
 }: EditQuoteLineItemDialogProps) {
   // Form state
   const [description, setDescription] = React.useState(lineItem.description);
@@ -98,18 +102,39 @@ export function EditQuoteLineItemDialog({
   const [loading, setLoading] = React.useState(false);
   const [priceSearchOpen, setPriceSearchOpen] = React.useState(false);
 
-  // Reset form when lineItem changes
+  // Reset form when lineItem changes or linkedSubmissionLineItem is provided
   React.useEffect(() => {
-    setDescription(lineItem.description);
-    setQuantity(lineItem.quantity);
-    setRentalStartDate(lineItem.rentalStartDate ? new Date(lineItem.rentalStartDate) : null);
-    setRentalEndDate(lineItem.rentalEndDate ? new Date(lineItem.rentalEndDate) : null);
-    setDeliveryMethod(lineItem.deliveryMethod || "");
-    setDeliveryLocation(lineItem.deliveryLocation || "");
-    setDeliveryNotes(lineItem.deliveryNotes || "");
-    setSelectedPriceId(lineItem.sellersPriceId || "");
-    setSelectedPrice(null);
-  }, [lineItem]);
+    // If we have a linked submission line item (when adding), pre-populate from it
+    if (linkedSubmissionLineItem && mode === "add") {
+      setDescription(lineItem.description); // Use price name from lineItem (already set)
+      setQuantity(linkedSubmissionLineItem.quantity);
+      setRentalStartDate(
+        linkedSubmissionLineItem.rentalStartDate
+          ? new Date(linkedSubmissionLineItem.rentalStartDate)
+          : null,
+      );
+      setRentalEndDate(
+        linkedSubmissionLineItem.rentalEndDate
+          ? new Date(linkedSubmissionLineItem.rentalEndDate)
+          : null,
+      );
+      setDeliveryMethod(linkedSubmissionLineItem.deliveryMethod || "");
+      setDeliveryLocation(linkedSubmissionLineItem.deliveryLocation || "");
+      setDeliveryNotes(linkedSubmissionLineItem.deliveryNotes || "");
+      setSelectedPriceId(lineItem.sellersPriceId || "");
+      setSelectedPrice(null);
+    } else {
+      setDescription(lineItem.description);
+      setQuantity(lineItem.quantity);
+      setRentalStartDate(lineItem.rentalStartDate ? new Date(lineItem.rentalStartDate) : null);
+      setRentalEndDate(lineItem.rentalEndDate ? new Date(lineItem.rentalEndDate) : null);
+      setDeliveryMethod(lineItem.deliveryMethod || "");
+      setDeliveryLocation(lineItem.deliveryLocation || "");
+      setDeliveryNotes(lineItem.deliveryNotes || "");
+      setSelectedPriceId(lineItem.sellersPriceId || "");
+      setSelectedPrice(null);
+    }
+  }, [lineItem, linkedSubmissionLineItem, mode]);
 
   const handlePriceSelect = (price: PriceHit) => {
     setSelectedPriceId(price.objectID);
@@ -138,6 +163,9 @@ export function EditQuoteLineItemDialog({
         deliveryMethod: deliveryMethod || null,
         deliveryLocation: deliveryLocation || null,
         deliveryNotes: deliveryNotes || null,
+        // Include the linked submission line item ID if provided
+        intakeFormSubmissionLineItemId:
+          linkedSubmissionLineItem?.id || lineItem.intakeFormSubmissionLineItemId || null,
       };
 
       const updatedLineItems = allLineItems.map((item) =>
@@ -170,6 +198,9 @@ export function EditQuoteLineItemDialog({
         deliveryMethod: deliveryMethod || null,
         deliveryLocation: deliveryLocation || null,
         deliveryNotes: deliveryNotes || null,
+        // Include the linked submission line item ID if provided
+        intakeFormSubmissionLineItemId:
+          linkedSubmissionLineItem?.id || lineItem.intakeFormSubmissionLineItemId || null,
       };
 
       // Update the line items array
