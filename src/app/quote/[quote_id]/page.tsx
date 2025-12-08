@@ -213,7 +213,7 @@ export default function BuyerQuoteReviewPage() {
           </div>
           <h1 className="text-2xl font-semibold text-slate-900 mb-3">Quote Accepted!</h1>
           <p className="text-slate-600 text-sm leading-relaxed mb-8">
-            This quote has been accepted. A sales order has been created and you'll receive a
+            This quote has been accepted. A sales order has been created and you&apos;ll receive a
             confirmation email shortly.
           </p>
         </div>
