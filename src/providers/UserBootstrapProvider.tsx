@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useSyncCurrentUserMutation } from "@/graphql/hooks";
+import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useEffect, useRef } from "react";
 
 graphql(`
@@ -27,9 +28,10 @@ interface UserBootstrapProviderProps {
 export function UserBootstrapProvider({ children }: UserBootstrapProviderProps) {
   const hasCalledSync = useRef(false);
   const [syncCurrentUser] = useSyncCurrentUserMutation();
+  const { user } = useAuth0ErpUser();
 
   useEffect(() => {
-    if (hasCalledSync.current) {
+    if (hasCalledSync.current || !user) {
       return;
     }
 
@@ -37,7 +39,7 @@ export function UserBootstrapProvider({ children }: UserBootstrapProviderProps) 
     syncCurrentUser().catch((error) => {
       console.error("Failed to sync current user:", error);
     });
-  }, [syncCurrentUser]);
+  }, [syncCurrentUser, user]);
 
   return children;
 }

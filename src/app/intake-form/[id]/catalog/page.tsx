@@ -421,13 +421,15 @@ export default function IntakeFormCatalogPage() {
   // Initialize search client
   useEffect(() => {
     async function initializeSearch() {
+      let token = "";
       try {
-        const token = await getAccessTokenSilently({ cacheMode: "on" });
-        const client = createSearchClient(token, config.searchApiUrl, workspaceId);
-        setSearchClient(client);
+        token = await getAccessTokenSilently({ cacheMode: "on" });
       } catch (err) {
-        console.error("Error initializing search client:", err);
+        console.error(err);
       }
+
+      const client = createSearchClient(token, config.searchApiUrl, workspaceId);
+      setSearchClient(client);
     }
 
     if (workspaceId) {

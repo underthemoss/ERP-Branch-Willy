@@ -1,5 +1,6 @@
 "use client";
 
+import { RequireAuth } from "@/providers/AuthWall";
 import { ProviderComposer } from "@/providers/ProviderComposer";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Box, CircularProgress, Typography } from "@mui/joy";
@@ -65,7 +66,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProviderComposer>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
+      <RequireAuth>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </RequireAuth>
     </ProviderComposer>
   );
 }

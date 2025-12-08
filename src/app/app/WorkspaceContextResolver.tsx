@@ -1,18 +1,15 @@
 "use client";
 
-import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
 import { WorkspaceSelectionScreen } from "@/ui/workspace/WorkspaceSelectionScreen";
 import { alpha, Box, Fade, LinearProgress, Typography, useTheme } from "@mui/material";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
-interface AppContextResolverProps {
+interface WorkspaceContextResolverProps {
   children: ReactNode;
 }
 
-// Unified loading component
 interface LoadingScreenProps {
   message: string;
 }
@@ -92,46 +89,25 @@ function LoadingScreen({ message }: LoadingScreenProps) {
   );
 }
 
-// Main component - now much simpler
-export function AppContextResolver({ children }: AppContextResolverProps) {
-  const pathname = usePathname();
-  const { user } = useAuth0ErpUser();
+/**
+ * WorkspaceContextResolver handles workspace loading and selection for /app routes.
+ *
+ * Shows:
+ * - Loading screen while workspaces are being fetched
+ * - Workspace selection screen if no workspace is selected
+ * - Children once a workspace is selected
+ */
+export function WorkspaceContextResolver({ children }: WorkspaceContextResolverProps) {
   const { workspaces, isLoadingWorkspaces } = useWorkspace();
   const selectedWorkspace = useSelectedWorkspace();
 
-  // Check if user is platform admin accessing admin routes
-  const isAdminRoute = pathname?.startsWith("/admin");
-  const isIntakeFormRoute = pathname?.startsWith("/intake-form");
-  if (isIntakeFormRoute) {
-    // Bypass all checks and render children directly for intake form routes
-    return <>{children}</>;
-  }
-  const isPlatformAdminOnAdminRoute = user?.isPlatformAdmin && isAdminRoute;
-
-  // Skip workspace selection for platform admins on admin routes
-  if (isPlatformAdminOnAdminRoute && !isLoadingWorkspaces) {
-    return <>{children}</>;
-  }
-
-  // Show loading screen if loading workspaces
   if (isLoadingWorkspaces) {
     return <LoadingScreen message="Loading workspaces" />;
   }
 
-  // Check if we're on a workspace route but no workspace is selected in context
-  const isWorkspaceRoute = pathname?.startsWith("/app/");
-
-  // Show workspace selection if no workspace is selected and we're not on a workspace route
-  // OR if we have workspaces but none is selected
-  if (workspaces && !selectedWorkspace && !isWorkspaceRoute) {
+  if (workspaces && !selectedWorkspace) {
     return <WorkspaceSelectionScreen />;
   }
 
-  // If we have a selected workspace or we're on a workspace route, render children
-  if (workspaces && (selectedWorkspace || isWorkspaceRoute)) {
-    return <>{children}</>;
-  }
-
-  // Fallback loading state
-  return <LoadingScreen message="Loading" />;
+  return <>{children}</>;
 }

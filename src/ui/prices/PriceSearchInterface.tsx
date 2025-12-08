@@ -935,7 +935,7 @@ export function PriceSearchInterface({ workspaceId }: PriceSearchInterfaceProps)
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb", marginTop: -16 }}>
       <InstantSearch searchClient={searchClient} indexName="es_erp_prices" routing={routing}>
-        <Configure hitsPerPage={24} />
+        <Configure hitsPerPage={24} filters={`workspaceId:${workspaceId}`} />
 
         {/* Header with Search */}
         <div

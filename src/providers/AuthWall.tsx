@@ -7,7 +7,30 @@ import { useEffect } from "react";
 import { useConfig } from "./ConfigProvider";
 import { useJwtOverride } from "./JwtOverrideContext";
 
-export const AuthWall: React.FC<{
+/**
+ * RequireAuth enforces authentication for a route.
+ * Wrap route content with this component to require users to be authenticated.
+ *
+ * - Obtains Auth0 access token (or uses JWT override from URL hash)
+ * - Exchanges token for HTTP-only cookie for server-side auth
+ * - Redirects to login if not authenticated
+ * - Redirects to error pages for auth failures
+ *
+ * @example
+ * ```tsx
+ * // In a layout.tsx file for protected routes:
+ * export default function ProtectedLayout({ children }) {
+ *   return (
+ *     <ProviderComposer>
+ *       <RequireAuth>
+ *         {children}
+ *       </RequireAuth>
+ *     </ProviderComposer>
+ *   );
+ * }
+ * ```
+ */
+export const RequireAuth: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const { loginWithRedirect, getAccessTokenSilently } = useAuth0();
@@ -28,6 +51,7 @@ export const AuthWall: React.FC<{
         exchangeTokenForCookie(token, setCookieUrl);
       })
       .catch((e) => {
+        debugger;
         console.error("Auth0 error:", e);
 
         if (e.error === "login_required") {
@@ -43,7 +67,6 @@ export const AuthWall: React.FC<{
         // Check for specific error message about USER role
         if (e.message && e.message.includes("User must have the USER role to authenticate")) {
           redirect("/auth/no-access");
-          return;
         }
 
         // Redirect to error page with error details
@@ -62,3 +85,8 @@ export const AuthWall: React.FC<{
 
   return children;
 };
+
+/**
+ * @deprecated Use RequireAuth instead. This alias exists for backwards compatibility.
+ */
+export const AuthWall = RequireAuth;

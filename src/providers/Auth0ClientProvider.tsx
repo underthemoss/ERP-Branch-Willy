@@ -37,7 +37,7 @@ export const Auth0ClientProvider: React.FC<{
     return <JwtOverrideProvider jwt={jwt}>{children}</JwtOverrideProvider>;
   }
 
-  // Otherwise, proceed with Auth0Provider/AuthWall and provide null JWT
+  // Otherwise, proceed with Auth0Provider and provide null JWT
   return (
     <JwtOverrideProvider jwt={null}>
       <Auth0Provider
