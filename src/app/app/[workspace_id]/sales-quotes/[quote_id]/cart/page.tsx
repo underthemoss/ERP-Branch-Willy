@@ -1555,7 +1555,7 @@ export default function CartPage() {
     <CartProvider quoteData={quoteData}>
       <div className="min-h-screen bg-gray-50">
         <InstantSearch searchClient={searchClient} indexName="es_erp_prices" routing={routing}>
-          <Configure hitsPerPage={24} />
+          <Configure hitsPerPage={24} filters={`workspaceId:${workspaceId}`} />
 
           {/* Header */}
           <HeaderWithCartButton />

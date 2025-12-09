@@ -247,12 +247,14 @@ function CatalogContent({
   companyName,
   logoUrl,
   pricebookId,
+  workspaceId,
 }: {
   formId: string;
   projectName: string;
   companyName: string;
   logoUrl?: string;
   pricebookId?: string;
+  workspaceId: string;
 }) {
   const cart = useCart();
   const [selectedPrice, setSelectedPrice] = useState<PriceHit | null>(null);
@@ -366,9 +368,9 @@ function CatalogContent({
       {/* Checkout Modal */}
       <CheckoutModal open={isCheckoutOpen} onClose={handleCheckoutClose} />
 
-      {/* Pricebook Filter */}
+      {/* Workspace and Pricebook Filters - workspaceId is always required */}
       <Configure
-        filters={pricebookId ? `priceBookId:${pricebookId}` : undefined}
+        filters={pricebookId ? `priceBookId:${pricebookId}` : `workspaceId:${workspaceId}`}
         hitsPerPage={24}
       />
     </div>
@@ -537,6 +539,7 @@ export default function IntakeFormCatalogPage() {
           companyName={intakeForm?.workspace?.name || ""}
           logoUrl={intakeForm?.workspace?.logoUrl || undefined}
           pricebookId={pricebookId || undefined}
+          workspaceId={workspaceId || ""}
         />
       </InstantSearch>
     </CartProvider>

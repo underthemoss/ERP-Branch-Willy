@@ -484,10 +484,11 @@ export function PriceSearchModal({
     initializeSearch();
   }, [open, getAccessTokenSilently, config.searchApiUrl, workspaceId]);
 
-  // Build category filter if provided
+  // Build filters - workspaceId is always required, category and type are optional
+  const workspaceFilter = `workspaceId:${workspaceId}`;
   const categoryFilter = pimCategoryId ? `pimCategoryId:${pimCategoryId}` : undefined;
   const typeFilter = priceType ? `priceType:${priceType}` : undefined;
-  const filters = [categoryFilter, typeFilter].filter(Boolean).join(" AND ");
+  const filters = [workspaceFilter, categoryFilter, typeFilter].filter(Boolean).join(" AND ");
 
   if (!open) return null;
 
