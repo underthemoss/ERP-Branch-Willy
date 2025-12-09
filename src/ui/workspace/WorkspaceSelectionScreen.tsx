@@ -7,7 +7,6 @@ import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Add,
-  AdminPanelSettings,
   ArrowForward,
   Business,
   HourglassEmpty,
@@ -21,7 +20,6 @@ import {
   Button,
   CircularProgress,
   Container,
-  Divider,
   List,
   ListItem,
   ListItemButton,
@@ -115,7 +113,7 @@ export function WorkspaceSelectionScreen() {
               minHeight: 200,
             }}
           >
-            {isLoadingWorkspaces ? (
+            {isLoadingWorkspaces || isLoadingJoinableWorkspaces ? (
               <Box
                 sx={{
                   display: "flex",
@@ -132,8 +130,44 @@ export function WorkspaceSelectionScreen() {
               </Box>
             ) : (
               <List sx={{ py: 0 }}>
+                {/* Create New Workspace - always at the top */}
+                <ListItem
+                  disablePadding
+                  sx={{
+                    borderBottom:
+                      (workspaces && workspaces.length > 0) ||
+                      (joinableWorkspaces && joinableWorkspaces.length > 0)
+                        ? `1px solid ${alpha(theme.palette.divider, 0.1)}`
+                        : "none",
+                    bgcolor: alpha(theme.palette.background.default, 0.5),
+                  }}
+                >
+                  <ListItemButton
+                    onClick={() => setShowCreateFlow(true)}
+                    sx={{
+                      py: 2.5,
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      },
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Add color="primary" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ fontWeight: 600, color: "primary.main" }}>
+                          Create New Workspace
+                        </Typography>
+                      }
+                      secondary="Start fresh with your own workspace"
+                    />
+                  </ListItemButton>
+                </ListItem>
+
                 {/* Show existing workspaces */}
-                {workspaces && workspaces.length > 0 ? (
+                {workspaces &&
+                  workspaces.length > 0 &&
                   workspaces.map((workspace: any, index: number) => (
                     <ListItem
                       key={workspace.id}
@@ -250,27 +284,7 @@ export function WorkspaceSelectionScreen() {
                         <ArrowForward sx={{ color: "text.secondary" }} />
                       </ListItemButton>
                     </ListItem>
-                  ))
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      py: 6,
-                      px: 3,
-                    }}
-                  >
-                    <HourglassEmpty sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      No workspaces yet
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" align="center">
-                      Create your first workspace to get started
-                    </Typography>
-                  </Box>
-                )}
+                  ))}
 
                 {/* Show joinable workspaces */}
                 {joinableWorkspaces &&
@@ -410,40 +424,28 @@ export function WorkspaceSelectionScreen() {
                     </ListItem>
                   ))}
 
-                {/* Create New Workspace */}
-                <ListItem
-                  disablePadding
-                  sx={{
-                    borderTop:
-                      (workspaces && workspaces.length > 0) ||
-                      (joinableWorkspaces && joinableWorkspaces.length > 0)
-                        ? `1px solid ${alpha(theme.palette.divider, 0.1)}`
-                        : "none",
-                    bgcolor: alpha(theme.palette.background.default, 0.5),
-                  }}
-                >
-                  <ListItemButton
-                    onClick={() => setShowCreateFlow(true)}
-                    sx={{
-                      py: 2.5,
-                      "&:hover": {
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                      },
-                    }}
-                  >
-                    <ListItemIcon>
-                      <Add color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography sx={{ fontWeight: 600, color: "primary.main" }}>
-                          Create New Workspace
-                        </Typography>
-                      }
-                      secondary="Start fresh with your own workspace"
-                    />
-                  </ListItemButton>
-                </ListItem>
+                {/* Show empty state only if no workspaces AND no joinable workspaces */}
+                {(!workspaces || workspaces.length === 0) &&
+                  (!joinableWorkspaces || joinableWorkspaces.length === 0) && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        py: 6,
+                        px: 3,
+                      }}
+                    >
+                      <HourglassEmpty sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+                      <Typography variant="h6" sx={{ mb: 1 }}>
+                        No workspaces yet
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" align="center">
+                        Create your first workspace to get started
+                      </Typography>
+                    </Box>
+                  )}
               </List>
             )}
           </Paper>

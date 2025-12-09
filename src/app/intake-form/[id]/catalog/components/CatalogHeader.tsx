@@ -1,6 +1,7 @@
 "use client";
 
-import { ClipboardList, Printer, ShoppingCart, X } from "lucide-react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { ClipboardList, LogIn, LogOut, Printer, ShoppingCart, X } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useSearchBox } from "react-instantsearch";
@@ -76,6 +77,19 @@ export default function CatalogHeader({
 }: CatalogHeaderProps) {
   const cart = useCart();
   const totalItems = cart.getTotalItems();
+  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
+
+  const handleLogin = () => {
+    loginWithRedirect({
+      appState: {
+        returnTo: window.location.pathname + window.location.search,
+      },
+    });
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
@@ -123,6 +137,30 @@ export default function CatalogHeader({
               <Printer className="w-4 h-4" />
               <span>Print Flyer</span>
             </Link>
+
+            {/* Login/Logout Button */}
+            {!isLoading && (
+              <>
+                {isAuthenticated ? (
+                  <button
+                    onClick={handleLogout}
+                    className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                    title={user?.email || "Logout"}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden md:inline">Logout</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleLogin}
+                    className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden md:inline">Login</span>
+                  </button>
+                )}
+              </>
+            )}
 
             {/* Cart Icon Button */}
             <button

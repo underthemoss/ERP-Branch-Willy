@@ -123,6 +123,7 @@ interface CartContextType {
   submitRequest: (contactInfo: ContactInfo) => Promise<void>;
   isSubmitting: boolean;
   isSubmitted: boolean;
+  submittedContactInfo: ContactInfo | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -153,6 +154,7 @@ export function CartProvider({ children, formId, workspaceId }: CartProviderProp
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedContactInfo, setSubmittedContactInfo] = useState<ContactInfo | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [itemSubtotals, setItemSubtotals] = useState<Record<string, number>>({});
 
@@ -446,6 +448,7 @@ export function CartProvider({ children, formId, workspaceId }: CartProviderProp
         });
 
         setIsSubmitted(true);
+        setSubmittedContactInfo(contactInfo);
       } catch (error) {
         console.error("Error submitting request:", error);
         throw error;
@@ -521,6 +524,7 @@ export function CartProvider({ children, formId, workspaceId }: CartProviderProp
         submitRequest,
         isSubmitting,
         isSubmitted,
+        submittedContactInfo,
       }}
     >
       {children}

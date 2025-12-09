@@ -1,22 +1,59 @@
 "use client";
 
+import { useAuth0 } from "@auth0/auth0-react";
 import { Box, Button, Container, Paper, Typography } from "@mui/material";
-import { CheckCircle, Package } from "lucide-react";
+import { CheckCircle, UserPlus } from "lucide-react";
 import React from "react";
+import { useCart } from "../context/CartContext";
+import { IntakeFormAuthBanner } from "./IntakeFormAuthBanner";
+import OrderConfirmationSummary from "./OrderConfirmationSummary";
 
 interface OrderConfirmationProps {
   projectName: string;
   companyName: string;
+  formId: string;
 }
 
-export default function OrderConfirmation({ projectName, companyName }: OrderConfirmationProps) {
+export default function OrderConfirmation({
+  projectName,
+  companyName,
+  formId,
+}: OrderConfirmationProps) {
+  const cart = useCart();
+  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+
+  const handleSignUp = () => {
+    loginWithRedirect({
+      authorizationParams: {
+        screen_hint: "signup",
+        ...(cart.submittedContactInfo?.email && {
+          login_hint: cart.submittedContactInfo.email,
+        }),
+      },
+      appState: {
+        returnTo: `/intake-form/${formId}/orders`,
+      },
+    });
+  };
+
+  const handleViewOrders = () => {
+    window.location.href = `/intake-form/${formId}/orders`;
+  };
+
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", py: 8 }}>
-      <Container maxWidth="sm">
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+      {/* Auth Banner for anonymous users */}
+      {!isLoading && !isAuthenticated && (
+        <IntakeFormAuthBanner email={cart.submittedContactInfo?.email} formId={formId} />
+      )}
+
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        {/* Success Header */}
         <Paper
           elevation={0}
           sx={{
-            p: 6,
+            p: 4,
+            mb: 3,
             textAlign: "center",
             borderRadius: 2,
             border: "1px solid",
@@ -46,58 +83,71 @@ export default function OrderConfirmation({ projectName, companyName }: OrderCon
           </Typography>
 
           {/* Description */}
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
             Thank you for your equipment request. We&apos;ve received your submission and will be in
             touch shortly.
           </Typography>
 
           {/* Project Info */}
-          <Box
-            sx={{
-              p: 3,
-              bgcolor: "grey.50",
-              borderRadius: 2,
-              mb: 4,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1,
-                mb: 1,
-              }}
+          <Typography variant="body2" color="text.secondary">
+            {projectName} &bull; {companyName}
+          </Typography>
+        </Paper>
+
+        {/* Order Summary */}
+        {cart.submissionId && cart.submittedContactInfo && (
+          <OrderConfirmationSummary
+            submissionId={cart.submissionId}
+            items={cart.items}
+            contactInfo={cart.submittedContactInfo}
+            totalInCents={cart.getCartTotal()}
+          />
+        )}
+
+        {/* What's Next */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mt: 3,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "grey.200",
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+            What happens next?
+          </Typography>
+          <Box component="ul" sx={{ pl: 2, m: 0 }}>
+            <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              You&apos;ll receive a confirmation email with your request details
+            </Typography>
+            <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Our team will review your request and confirm availability
+            </Typography>
+            <Typography component="li" variant="body2" color="text.secondary">
+              We&apos;ll contact you with pricing and next steps
+            </Typography>
+          </Box>
+        </Paper>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 4, flexWrap: "wrap" }}>
+          {!isLoading && !isAuthenticated && (
+            <Button
+              variant="contained"
+              onClick={handleSignUp}
+              startIcon={<UserPlus className="w-4 h-4" />}
+              sx={{ textTransform: "none" }}
             >
-              <Package size={20} className="text-gray-600" />
-              <Typography variant="subtitle1" fontWeight="medium">
-                {projectName}
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              {companyName}
-            </Typography>
-          </Box>
-
-          {/* What's Next */}
-          <Box sx={{ textAlign: "left", mb: 4 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              What happens next?
-            </Typography>
-            <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                You&apos;ll receive a confirmation email with your request details
-              </Typography>
-              <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Our team will review your request and confirm availability
-              </Typography>
-              <Typography component="li" variant="body2" color="text.secondary">
-                We&apos;ll contact you with pricing and next steps
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Action Button */}
+              Create Account to Track Orders
+            </Button>
+          )}
+          {!isLoading && isAuthenticated && (
+            <Button variant="contained" onClick={handleViewOrders} sx={{ textTransform: "none" }}>
+              View All Orders
+            </Button>
+          )}
           <Button
             variant="outlined"
             onClick={() => window.location.reload()}
@@ -105,7 +155,7 @@ export default function OrderConfirmation({ projectName, companyName }: OrderCon
           >
             Submit Another Request
           </Button>
-        </Paper>
+        </Box>
       </Container>
     </Box>
   );

@@ -29,6 +29,7 @@ import CheckoutModal from "./components/CheckoutModal";
 import DeliveryDetailsDialog from "./components/DeliveryDetailsDialog";
 import OrderConfirmation from "./components/OrderConfirmation";
 import RequestUnlistedItemDialog from "./components/RequestUnlistedItemDialog";
+import SubmittedOrderConfirmation from "./components/SubmittedOrderConfirmation";
 import { CartProvider, PriceHit, useCart } from "./context/CartContext";
 
 // Category Breadcrumbs Component
@@ -290,7 +291,9 @@ function CatalogContent({
 
   // Show confirmation if submitted
   if (cart.isSubmitted) {
-    return <OrderConfirmation projectName={projectName} companyName={companyName} />;
+    return (
+      <OrderConfirmation projectName={projectName} companyName={companyName} formId={formId} />
+    );
   }
 
   return (
@@ -385,7 +388,7 @@ export default function IntakeFormCatalogPage() {
   const formId = params.id as string;
   const submissionId = searchParams.get("submissionId");
   const config = useConfig();
-  const { getAccessTokenSilently, loginWithRedirect, user } = useAuth0();
+  const { getAccessTokenSilently, loginWithRedirect, user, isAuthenticated } = useAuth0();
   const [searchClient, setSearchClient] = useState<ReturnType<typeof createSearchClient> | null>(
     null,
   );
@@ -408,12 +411,12 @@ export default function IntakeFormCatalogPage() {
     skip: !submissionId,
   });
 
-  // Redirect to orders page if submission is already submitted
+  // Redirect to orders page if submission is already submitted (only for authenticated users)
   useEffect(() => {
-    if (submissionData?.getIntakeFormSubmissionById?.status === "SUBMITTED") {
+    if (isAuthenticated && submissionData?.getIntakeFormSubmissionById?.status === "SUBMITTED") {
       router.replace(`/intake-form/${formId}/orders/${submissionId}`);
     }
-  }, [submissionData, formId, submissionId, router]);
+  }, [submissionData, formId, submissionId, router, isAuthenticated]);
 
   // Extract form details
   const intakeForm = intakeFormData?.getIntakeFormById;
@@ -451,8 +454,8 @@ export default function IntakeFormCatalogPage() {
     );
   }
 
-  // Don't render if redirecting to orders page
-  if (submissionData?.getIntakeFormSubmissionById?.status === "SUBMITTED") {
+  // Don't render if redirecting to orders page (only for authenticated users)
+  if (isAuthenticated && submissionData?.getIntakeFormSubmissionById?.status === "SUBMITTED") {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
@@ -460,6 +463,22 @@ export default function IntakeFormCatalogPage() {
           <Typography sx={{ mt: 2 }}>Redirecting to your order...</Typography>
         </Paper>
       </Container>
+    );
+  }
+
+  // Show order confirmation for anonymous users with submitted orders
+  if (
+    !isAuthenticated &&
+    submissionId &&
+    submissionData?.getIntakeFormSubmissionById?.status === "SUBMITTED"
+  ) {
+    return (
+      <SubmittedOrderConfirmation
+        submissionId={submissionId}
+        formId={formId}
+        projectName={intakeForm?.project?.name || "Equipment Request"}
+        companyName={intakeForm?.workspace?.name || ""}
+      />
     );
   }
 
