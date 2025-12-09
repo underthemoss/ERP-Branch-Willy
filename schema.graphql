@@ -1735,6 +1735,7 @@ type Mutation {
 
   """Admin mutations (Admin only)"""
   admin: AdminMutationNamespace
+  archiveWorkspace(workspaceId: String!): Workspace
   assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
@@ -1846,6 +1847,7 @@ type Mutation {
   syncCurrentUser: User
   toggleSearchFavorite(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   touchAllContacts(batchSize: Int): TouchAllContactsResult
+  unarchiveWorkspace(workspaceId: String!): Workspace
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessBrandId(brandId: ID!, id: ID!): BusinessContact

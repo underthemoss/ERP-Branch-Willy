@@ -3,7 +3,9 @@
 import { graphql } from "@/graphql";
 import { WorkspaceAccessType } from "@/graphql/graphql";
 import {
+  useArchiveWorkspaceMutation,
   useGetBrandByDomainLazyQuery,
+  useUnarchiveWorkspaceMutation,
   useUpdateWorkspaceAccessTypeMutation,
   useUpdateWorkspaceSettingsMutation,
   useValidEnterpriseDomainLazyQuery,
@@ -12,6 +14,7 @@ import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
 import {
   AddPhotoAlternate,
+  ArchiveOutlined,
   Business,
   CheckCircle,
   Domain,
@@ -22,6 +25,7 @@ import {
   LinkedIn,
   Lock,
   Public,
+  RestoreOutlined,
   Save,
   Twitter,
   Warning,
@@ -47,7 +51,9 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ArchiveWorkspaceDialog from "./components/ArchiveWorkspaceDialog";
 
 // Define the GraphQL queries (reusing from CreateWorkspaceFlow)
 graphql(`
@@ -139,13 +145,40 @@ graphql(`
   }
 `);
 
+graphql(`
+  mutation ArchiveWorkspace($workspaceId: String!) {
+    archiveWorkspace(workspaceId: $workspaceId) {
+      id
+      name
+      archived
+      archivedAt
+    }
+  }
+`);
+
+graphql(`
+  mutation UnarchiveWorkspace($workspaceId: String!) {
+    unarchiveWorkspace(workspaceId: $workspaceId) {
+      id
+      name
+      archived
+      archivedAt
+    }
+  }
+`);
+
 export default function WorkspaceSettingsPage() {
   const theme = useTheme();
+  const router = useRouter();
   const { user } = useAuth0ErpUser();
   const currentWorkspace = useSelectedWorkspace();
   const { permissions, isLoadingPermissions } = useWorkspace();
 
   const [activeTab, setActiveTab] = useState(0);
+
+  // Archive dialog state
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   // Form 1: Workspace Settings (General + Visual Identity)
   const [workspaceName, setWorkspaceName] = useState(currentWorkspace?.name || "");
@@ -192,6 +225,8 @@ export default function WorkspaceSettingsPage() {
   // GraphQL mutation hooks
   const [updateWorkspaceSettings] = useUpdateWorkspaceSettingsMutation();
   const [updateWorkspaceAccessType] = useUpdateWorkspaceAccessTypeMutation();
+  const [archiveWorkspace] = useArchiveWorkspaceMutation();
+  const [unarchiveWorkspace] = useUnarchiveWorkspaceMutation();
 
   // Extract domain from user email
   const userDomain = user?.email ? user.email.split("@")[1] : "";
@@ -333,6 +368,59 @@ export default function WorkspaceSettingsPage() {
     setShowSuccess(false);
   };
 
+  const handleArchiveConfirm = async () => {
+    if (!currentWorkspace?.id) return;
+
+    setIsArchiving(true);
+    setErrorMessage(null);
+
+    try {
+      if (currentWorkspace.archived) {
+        // Unarchive
+        await unarchiveWorkspace({
+          variables: { workspaceId: currentWorkspace.id },
+        });
+
+        setSuccessMessage(`Workspace '${currentWorkspace.name}' has been restored successfully!`);
+        setShowSuccess(true);
+        setArchiveDialogOpen(false);
+      } else {
+        // Archive
+        await archiveWorkspace({
+          variables: { workspaceId: currentWorkspace.id },
+        });
+
+        setSuccessMessage(`Workspace '${currentWorkspace.name}' has been archived successfully!`);
+        setShowSuccess(true);
+        setArchiveDialogOpen(false);
+
+        // Redirect to root after archiving
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
+      }
+    } catch (error: any) {
+      console.error("Error archiving/unarchiving workspace:", error);
+
+      let userMessage = currentWorkspace.archived
+        ? "Failed to unarchive workspace. Please try again."
+        : "Failed to archive workspace. Please try again.";
+
+      if (error?.message) {
+        if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          userMessage = "You don't have permission to archive this workspace.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          userMessage = "Network error. Please check your connection and try again.";
+        }
+      }
+
+      setErrorMessage(userMessage);
+      setShowError(true);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   if (!currentWorkspace) {
     return (
       <Box sx={{ p: 4 }}>
@@ -436,6 +524,7 @@ export default function WorkspaceSettingsPage() {
           <Tab label="General Information" />
           <Tab label="Visual Identity" />
           <Tab label="Access & Invitations" />
+          <Tab label="Archive" />
         </Tabs>
 
         <CardContent sx={{ p: 4 }}>
@@ -928,8 +1017,76 @@ export default function WorkspaceSettingsPage() {
               </Box>
             </Box>
           )}
+
+          {/* Archive Tab */}
+          {activeTab === 3 && (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 3 }}>
+                Archive Workspace
+              </Typography>
+
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  Archived workspaces are hidden from members but can be restored anytime.
+                </Typography>
+              </Alert>
+
+              <Card
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <CardContent>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                        {currentWorkspace.archived ? "Unarchive Workspace" : "Archive Workspace"}
+                      </Typography>
+                      {currentWorkspace.archived ? (
+                        <Typography variant="body2" color="text.secondary">
+                          Restore workspace access for all members.
+                        </Typography>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Hide this workspace from members. All data is preserved.
+                        </Typography>
+                      )}
+                      {currentWorkspace.archived && currentWorkspace.archivedAt && (
+                        <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
+                          Archived on: {new Date(currentWorkspace.archivedAt).toLocaleString()}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Button
+                      variant={currentWorkspace.archived ? "contained" : "outlined"}
+                      startIcon={
+                        currentWorkspace.archived ? <RestoreOutlined /> : <ArchiveOutlined />
+                      }
+                      onClick={() => setArchiveDialogOpen(true)}
+                      sx={{ ml: 2 }}
+                    >
+                      {currentWorkspace.archived ? "Unarchive" : "Archive"}
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
         </CardContent>
       </Card>
+
+      {/* Archive Workspace Dialog */}
+      <ArchiveWorkspaceDialog
+        open={archiveDialogOpen}
+        onClose={() => setArchiveDialogOpen(false)}
+        workspaceName={currentWorkspace.name || ""}
+        isArchived={currentWorkspace.archived || false}
+        onConfirm={handleArchiveConfirm}
+        isLoading={isArchiving}
+      />
 
       {/* Success Snackbar */}
       <Snackbar
