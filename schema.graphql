@@ -3,6 +3,11 @@ input AcceptQuoteInput {
   If the seller accepts on behalf of the buyer, provide confirmation details here.
   """
   approvalConfirmation: String
+
+  """
+  Buyer's full legal name as provided in the agreement for compliance purposes
+  """
+  buyerAcceptedFullLegalName: String
   quoteId: String!
 
   """Base64 encoded signature image (PNG or JPEG, optional)"""
@@ -1735,6 +1740,7 @@ type Mutation {
 
   """Admin mutations (Admin only)"""
   admin: AdminMutationNamespace
+  archiveWorkspace(workspaceId: String!): Workspace
   assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
   cancelInvoice(input: CancelInvoiceInput!): Invoice!
@@ -1846,6 +1852,7 @@ type Mutation {
   syncCurrentUser: User
   toggleSearchFavorite(searchDocumentId: String!, workspaceId: String!): SearchUserState!
   touchAllContacts(batchSize: Int): TouchAllContactsResult
+  unarchiveWorkspace(workspaceId: String!): Workspace
   unassignInventoryFromRentalFulfilment(fulfilmentId: ID!): RentalFulfilment
   updateBusinessAddress(address: String!, id: ID!): BusinessContact
   updateBusinessBrandId(brandId: ID!, id: ID!): BusinessContact
@@ -2503,6 +2510,8 @@ type Query {
 }
 
 type Quote {
+  """Buyer's full legal name as provided when accepting the quote"""
+  buyerAcceptedFullLegalName: String
   buyerUserId: String
   buyerWorkspaceId: String
   buyersProject: Project
