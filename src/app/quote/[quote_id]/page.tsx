@@ -138,16 +138,11 @@ export default function BuyerQuoteReviewPage() {
 
   const handleAcceptWithSignature = async (signatureData: SignatureData): Promise<void> => {
     try {
-      // TODO: Update mutation to include signature data once API supports it
       const result = await acceptQuote({
         variables: {
           input: {
             quoteId,
-            // TODO: Add signature fields when API supports them
-            // signature: signatureData.signature,
-            // signatureType: signatureData.signatureType,
-            // signerName: signatureData.name,
-            // signedAt: signatureData.date,
+            signature: signatureData.signature,
           },
         },
       });

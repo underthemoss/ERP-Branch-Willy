@@ -99,6 +99,7 @@ const GET_QUOTE_FOR_PRINT = graphql(`
       validUntil
       createdAt
       updatedAt
+      signatureUrl
     }
 
     # Fetch workspace branding
@@ -609,6 +610,36 @@ export default function SalesQuotePrintPage() {
             </div>
           </div>
         </div>
+
+        {/* Signature Block - Only show for accepted quotes */}
+        {quote.status === "ACCEPTED" && quote.signatureUrl && (
+          <div className="avoid-break mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-end">
+              <div className="w-80">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  Authorized Signature
+                </h3>
+                <div className="border border-gray-300 rounded-lg bg-gray-50 p-4 mb-3">
+                  <img
+                    src={quote.signatureUrl}
+                    alt="Authorized signature"
+                    className="max-h-24 w-auto mx-auto"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center pb-1 border-b border-gray-300">
+                    <span className="text-xs text-gray-900 font-medium">
+                      {quote.sellersBuyerContact?.name || "—"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 text-right">
+                    Accepted on {formatDate(quote.updatedAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-6 pt-3 border-t border-gray-200 text-center text-xs text-gray-500">

@@ -4,6 +4,9 @@ input AcceptQuoteInput {
   """
   approvalConfirmation: String
   quoteId: String!
+
+  """Base64 encoded signature image (PNG or JPEG, optional)"""
+  signature: String
 }
 
 type AcceptQuoteResult {
@@ -2522,6 +2525,9 @@ type Quote {
   sellersBuyerContactId: String!
   sellersProject: Project
   sellersProjectId: String!
+
+  """Temporary signed URL to view the signature (valid for 15 minutes)"""
+  signatureUrl: String
   status: QuoteStatus!
   updatedAt: DateTime!
   updatedBy: String!
