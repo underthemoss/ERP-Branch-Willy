@@ -143,6 +143,7 @@ export default function BuyerQuoteReviewPage() {
           input: {
             quoteId,
             signature: signatureData.signature,
+            buyerAcceptedFullLegalName: signatureData.buyerFullLegalName,
           },
         },
       });

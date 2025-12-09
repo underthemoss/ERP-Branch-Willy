@@ -15,6 +15,7 @@ interface SignatureAcceptanceDialogProps {
 
 export interface SignatureData {
   signature: string;
+  buyerFullLegalName: string;
 }
 
 type SignatureMode = "draw" | "type";
@@ -133,7 +134,7 @@ export function SignatureAcceptanceDialog({
     setErrorMessage("");
 
     try {
-      await onAccept({ signature });
+      await onAccept({ signature, buyerFullLegalName: name });
       setShowSuccess(true);
     } catch (err: unknown) {
       const message =
