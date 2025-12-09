@@ -51,16 +51,19 @@ export const RequireAuth: React.FC<{
         exchangeTokenForCookie(token, setCookieUrl);
       })
       .catch((e) => {
-        debugger;
         console.error("Auth0 error:", e);
 
         if (e.error === "login_required") {
-          loginWithRedirect();
+          loginWithRedirect({
+            appState: { returnTo: window.location.pathname + window.location.search },
+          });
           return;
         }
 
         if (e.error === "consent_required") {
-          loginWithRedirect();
+          loginWithRedirect({
+            appState: { returnTo: window.location.pathname + window.location.search },
+          });
           return;
         }
 
