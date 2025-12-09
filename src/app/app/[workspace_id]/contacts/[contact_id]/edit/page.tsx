@@ -223,7 +223,8 @@ export default function EditContactPage() {
               <div>
                 <h3 className="text-lg font-semibold text-red-900">Contact Not Found</h3>
                 <p className="text-sm text-red-700 mt-1">
-                  The contact you're looking for doesn't exist or you don't have access to it.
+                  The contact you&apos;re looking for doesn&apos;t exist or you don&apos;t have
+                  access to it.
                 </p>
               </div>
             </div>
