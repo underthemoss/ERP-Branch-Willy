@@ -180,22 +180,6 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       icon: <ContactsOutlinedIcon fontSize="small" />,
       selected: pathname === `/app/${currentWorkspace?.id}/contacts`,
       testId: "nav-contacts",
-      subitems: [
-        {
-          text: "Businesses",
-          href: `/app/${currentWorkspace?.id}/contacts/businesses`,
-          icon: <BusinessOutlinedIcon fontSize="small" />,
-          selected: pathname === `/app/${currentWorkspace?.id}/contacts/businesses`,
-          testId: "nav-contacts-businesses",
-        },
-        {
-          text: "Employees",
-          href: `/app/${currentWorkspace?.id}/contacts/employees`,
-          icon: <PeopleOutlineIcon fontSize="small" />,
-          selected: pathname === `/app/${currentWorkspace?.id}/contacts/employees`,
-          testId: "nav-contacts-employees",
-        },
-      ],
     },
   ];
 
