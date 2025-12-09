@@ -212,7 +212,19 @@ graphql(`
         ... on BusinessContact {
           id
           name
+          phone
+          address
           profilePicture
+          brand {
+            name
+            logos {
+              type
+              theme
+              formats {
+                src
+              }
+            }
+          }
         }
       }
     }
