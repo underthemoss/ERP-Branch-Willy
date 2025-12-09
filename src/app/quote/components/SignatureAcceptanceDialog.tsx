@@ -15,10 +15,6 @@ interface SignatureAcceptanceDialogProps {
 
 export interface SignatureData {
   signature: string;
-  signatureType: "draw" | "type";
-  name: string;
-  date: string;
-  agreedToTerms: boolean;
 }
 
 type SignatureMode = "draw" | "type";
@@ -91,24 +87,53 @@ export function SignatureAcceptanceDialog({
   const canSubmit =
     !isSignatureEmpty() && name.trim() && agreedToTerms && !loading && !isSubmitting;
 
+  /**
+   * Convert typed signature to a Base64 PNG image
+   */
+  const convertTypedSignatureToImage = (text: string): string => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+
+    // Set canvas size
+    canvas.width = 600;
+    canvas.height = 200;
+
+    // Fill with white background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set text styling to match the preview
+    ctx.font = '48px "Dancing Script", cursive';
+    ctx.fillStyle = "#1e293b"; // slate-800
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Draw the text
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    // Convert to Base64 PNG
+    return canvas.toDataURL("image/png");
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
-    const signatureData: SignatureData = {
-      signature:
-        signatureMode === "draw" ? signatureCanvasRef.current!.toDataURL() : typedSignature,
-      signatureType: signatureMode,
-      name: name.trim(),
-      date: today,
-      agreedToTerms,
-    };
+    // Convert both drawn and typed signatures to Base64 PNG images (with data URL prefix)
+    const dataUrl =
+      signatureMode === "draw"
+        ? signatureCanvasRef.current!.toDataURL("image/png")
+        : convertTypedSignatureToImage(typedSignature);
+
+    // Strip the data URL prefix (e.g., "data:image/png;base64,") to get pure Base64
+    // Backend expects pure Base64 string, not a data URL
+    const signature = dataUrl.split(",")[1];
 
     setIsSubmitting(true);
     setShowError(false);
     setErrorMessage("");
 
     try {
-      await onAccept(signatureData);
+      await onAccept({ signature });
       setShowSuccess(true);
     } catch (err: unknown) {
       const message =
