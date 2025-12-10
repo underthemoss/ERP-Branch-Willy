@@ -9,8 +9,9 @@ import {
   useGetPriceBookByIdQuery,
   useImportPricesMutation,
 } from "@/ui/prices/api";
+import { EditPriceBookDialog } from "@/ui/prices/EditPriceBookDialog";
 import { PricesTable } from "@/ui/prices/PriceBookPricesTable";
-import { Download, FileUp, Trash2, X } from "lucide-react";
+import { Download, FileUp, Pencil, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -20,6 +21,7 @@ export default function PriceBook() {
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [deletePriceBook] = useDeletePriceBookByIdMutation();
 
@@ -48,6 +50,14 @@ export default function PriceBook() {
             <p className="text-gray-600">View and manage price book details</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setEditDialogOpen(true)}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </button>
             <button
               onClick={async () => {
                 try {
@@ -80,7 +90,8 @@ export default function PriceBook() {
             </button>
             <button
               onClick={() => setDeleteDialogOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" />
               Delete
@@ -367,6 +378,22 @@ export default function PriceBook() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Price Book Dialog */}
+        {priceBook && (
+          <EditPriceBookDialog
+            open={editDialogOpen}
+            onClose={() => setEditDialogOpen(false)}
+            priceBook={{
+              id: priceBook.id,
+              name: priceBook.name,
+              notes: priceBook.notes || undefined,
+              location: priceBook.location || undefined,
+              businessContactId: priceBook.businessContact?.id,
+              projectId: priceBook.project?.id,
+            }}
+          />
         )}
       </div>
     </div>
