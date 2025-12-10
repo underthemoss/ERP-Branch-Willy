@@ -93,8 +93,18 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
     }
   };
 
+  // Navigation menu items type
+  type NavItem = {
+    text: string;
+    href: string;
+    icon: React.ReactElement;
+    selected: boolean;
+    testId: string;
+    subitems?: NavItem[];
+  };
+
   // Navigation menu items
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       text: "Home",
       href: `/app/${currentWorkspace?.id}`,
