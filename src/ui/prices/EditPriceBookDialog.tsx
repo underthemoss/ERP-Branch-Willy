@@ -31,7 +31,9 @@ interface EditPriceBookFields {
   location?: string;
 }
 
-interface EditPriceBookDialogProps extends DialogProps {
+interface EditPriceBookDialogProps {
+  open: boolean;
+  onClose: () => void;
   priceBook: {
     id: string;
     name: string;
