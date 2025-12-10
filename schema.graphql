@@ -1883,6 +1883,7 @@ type Mutation {
   updatePersonPhone(id: ID!, phone: String!): PersonContact
   updatePersonResourceMap(id: ID!, resourceMapIds: [ID!]!): PersonContact
   updatePersonRole(id: ID!, role: String!): PersonContact
+  updatePriceBook(input: UpdatePriceBookInput!): PriceBook
   updateProject(id: String, input: ProjectInput): Project
   updateProjectCode(id: String!, project_code: String!): Project
   updateProjectContacts(id: String!, project_contacts: [ProjectContactInput!]!): Project
@@ -3766,6 +3767,15 @@ input UpdatePersonContactInput {
   profilePicture: String
   resourceMapIds: [ID!]
   role: String
+}
+
+input UpdatePriceBookInput {
+  businessContactId: ID
+  id: ID!
+  location: String
+  name: String
+  notes: String
+  projectId: ID
 }
 
 input UpdatePurchaseOrderInput {
