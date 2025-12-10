@@ -1,7 +1,7 @@
 "use client";
 
 import { useConfig } from "@/providers/ConfigProvider";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ImageSize = "list" | "card" | "preview" | "full";
 
@@ -15,6 +15,7 @@ interface GeneratedImageProps {
   height?: number | string;
   style?: React.CSSProperties;
   showIllustrativeBanner?: boolean;
+  lazy?: boolean;
 }
 
 const FALLBACK_IMAGE_URL = "https://appcdn.equipmentshare.com/img/cogplaceholder.png";
@@ -46,10 +47,42 @@ export function GeneratedImage({
   height,
   style,
   showIllustrativeBanner = true,
+  lazy = false,
 }: GeneratedImageProps) {
   const { graphqlUrl } = useConfig();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isInView, setIsInView] = useState(!lazy); // If not lazy, always in view
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    if (!lazy || isInView) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsInView(true);
+          }
+        });
+      },
+      {
+        rootMargin: "100px", // Start loading 100px before entering viewport
+        threshold: 0.01,
+      },
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, [lazy, isInView]);
 
   const imageUrl = useMemo(() => {
     // Build entity-specific image URL
@@ -86,7 +119,15 @@ export function GeneratedImage({
   };
 
   return (
-    <div style={{ ...style, position: style?.position || "relative" }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: style?.position || "relative",
+        width: style?.width || width,
+        height: style?.height || height,
+        ...style,
+      }}
+    >
       {/* Fallback image - always visible */}
       <img
         src={FALLBACK_IMAGE_URL}
@@ -101,42 +142,47 @@ export function GeneratedImage({
         }}
       />
 
-      {/* Loading shimmer overlay */}
-      {isLoading && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background:
-              "linear-gradient(90deg, rgba(255,255,255,0.6) 25%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.6) 75%)",
-            backgroundSize: "200% 100%",
-            animation: "shimmer 2s infinite ease-in-out",
-          }}
-        />
-      )}
+      {/* Only load images when in viewport (or not lazy) */}
+      {isInView && (
+        <>
+          {/* Loading shimmer overlay */}
+          {isLoading && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0.6) 25%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.6) 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 2s infinite ease-in-out",
+              }}
+            />
+          )}
 
-      {/* Generated image - fades in when loaded */}
-      {!hasError && (
-        <img
-          src={imageUrl}
-          alt={alt}
-          className={className}
-          width={width}
-          height={height}
-          style={{
-            ...style,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            opacity: isLoading ? 0 : 1,
-            transition: "opacity 0.3s ease-in-out",
-          }}
-          onLoad={handleLoad}
-          onError={handleError}
-        />
+          {/* Generated image - fades in when loaded */}
+          {!hasError && (
+            <img
+              src={imageUrl}
+              alt={alt}
+              className={className}
+              width={width}
+              height={height}
+              style={{
+                ...style,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: isLoading ? 0 : 1,
+                transition: "opacity 0.3s ease-in-out",
+              }}
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          )}
+        </>
       )}
 
       {/* Illustrative banner - horizontal bar at 75% down the image */}

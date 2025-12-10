@@ -2,32 +2,24 @@
 
 import { PriceType } from "@/graphql/graphql";
 import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
+import { AutoCompleteSelect } from "@/ui/AutoCompleteSelect";
+import { GeneratedImage } from "@/ui/GeneratedImage";
+import { useListPricesQuery, type RentalPriceFields, type SalePriceFields } from "@/ui/prices/api";
 import {
-  useDeletePriceByIdMutation,
-  useListPricesQuery,
-  type RentalPriceFields,
-  type SalePriceFields,
-} from "@/ui/prices/api";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import {
-  Autocomplete,
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { DataGridPro, GridColDef } from "@mui/x-data-grid-pro";
+  ArrowUpDown,
+  Calendar,
+  Copy,
+  Pencil,
+  Plus,
+  Search,
+  ShoppingCart,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import * as React from "react";
 import { AddNewPriceDialog } from "./AddNewPriceDialog";
+import { DeletePriceDialog } from "./DeletePriceDialog";
 import { DuplicatePriceDialog } from "./DuplicatePriceDialog";
 import { EditRentalPriceDialog } from "./EditRentalPriceDialog";
 import { EditSalePriceDialog } from "./EditSalePriceDialog";
@@ -39,131 +31,17 @@ function formatCentsToUSD(cents: number): string {
   }).format(cents / 100);
 }
 
-const createColumns = (
-  handleEditPrice: (price: RentalPriceFields | SalePriceFields) => void,
-  handleDeletePrice: (price: RentalPriceFields | SalePriceFields) => void,
-  handleDuplicatePrice: (price: RentalPriceFields | SalePriceFields) => void,
-): GridColDef[] => [
-  { field: "pimCategoryName", headerName: "Category", width: 230 },
-  {
-    field: "name",
-    headerName: "Class",
-    width: 230,
-    renderCell: ({ row }) => {
-      return row.name || <span>&mdash;</span>;
-    },
-  },
-  // Rental columns
-  {
-    field: "pricePerDayInCents",
-    headerName: "Day",
-    type: "number",
-    renderCell: (params) => {
-      const { row } = params;
-      if (row.__typename === "RentalPrice" && row.pricePerDayInCents != null) {
-        return formatCentsToUSD(row.pricePerDayInCents);
-      }
-      return <span>&mdash;</span>;
-    },
-  },
-  {
-    field: "pricePerWeekInCents",
-    headerName: "Week",
-    type: "number",
-    renderCell: (params) => {
-      const { row } = params;
-      if (row.__typename === "RentalPrice" && row.pricePerWeekInCents != null) {
-        return formatCentsToUSD(row.pricePerWeekInCents);
-      }
-      return <span>&mdash;</span>;
-    },
-  },
-  {
-    field: "pricePerMonthInCents",
-    headerName: "4-Week",
-    type: "number",
-    renderCell: (params) => {
-      const { row } = params;
-      if (row.__typename === "RentalPrice" && row.pricePerMonthInCents != null) {
-        return formatCentsToUSD(row.pricePerMonthInCents);
-      }
-      return <span>&mdash;</span>;
-    },
-  },
-  // Sale column
-  {
-    field: "unitCostInCents",
-    headerName: "Unit Cost",
-    type: "number",
-    renderCell: (params) => {
-      const { row } = params;
-      if (row.__typename === "SalePrice" && row.unitCostInCents != null) {
-        return formatCentsToUSD(row.unitCostInCents);
-      }
-      return <span>&mdash;</span>;
-    },
-  },
-  {
-    field: "created",
-    headerName: "Created",
-    width: 260,
-    renderCell: (params) => {
-      const createdAt = params.row.createdAt ? new Date(params.row.createdAt).toLocaleString() : "";
-      return <span>{createdAt}</span>;
-    },
-  },
-  {
-    field: "updated",
-    headerName: "Updated",
-    width: 260,
-    renderCell: (params) => {
-      const updatedAt = params.row.updatedAt ? new Date(params.row.updatedAt).toLocaleString() : "";
-      return <span>{updatedAt}</span>;
-    },
-  },
-  {
-    field: "actions",
-    headerName: "Actions",
-    width: 120,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => (
-      <Box display="flex" gap={0.5}>
-        <IconButton
-          onClick={() => handleEditPrice(params.row)}
-          size="small"
-          aria-label="edit price"
-        >
-          <EditIcon />
-        </IconButton>
-        <IconButton
-          onClick={() => handleDuplicatePrice(params.row)}
-          size="small"
-          aria-label="duplicate price"
-        >
-          <ContentCopyIcon />
-        </IconButton>
-        <IconButton
-          onClick={() => handleDeletePrice(params.row)}
-          size="small"
-          aria-label="delete price"
-          color="error"
-        >
-          <DeleteIcon />
-        </IconButton>
-      </Box>
-    ),
-  },
-];
-
 export function PricesTable() {
   const workspaceId = useSelectedWorkspaceId() as string;
   const { price_book_id } = useParams<{ price_book_id: string }>();
 
-  // State for selected category and class
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = React.useState<string | null>(null);
+  // State for filters
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState<string>("");
+  const [selectedClass, setSelectedClass] = React.useState<string>("");
   const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
+  const [sortField, setSortField] = React.useState<string | null>(null);
+  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc");
 
   // State for edit dialogs
   const [editingRentalPrice, setEditingRentalPrice] = React.useState<RentalPriceFields | null>(
@@ -171,26 +49,22 @@ export function PricesTable() {
   );
   const [editingSalePrice, setEditingSalePrice] = React.useState<SalePriceFields | null>(null);
 
-  // State for delete confirmation
-  const [priceToDelete, setPriceToDelete] = React.useState<
-    (RentalPriceFields | SalePriceFields) | null
-  >(null);
+  // State for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deletePriceId, setDeletePriceId] = React.useState<string | null>(null);
+  const [deletePriceName, setDeletePriceName] = React.useState<string>("");
+  const [deletePriceCategory, setDeletePriceCategory] = React.useState<string>("");
+  const [deletePriceType, setDeletePriceType] = React.useState<string>("");
 
   // State for duplicate dialog
   const [priceToDuplicate, setPriceToDuplicate] = React.useState<
     (RentalPriceFields | SalePriceFields) | null
   >(null);
 
-  // Delete mutation
-  const [deletePrice] = useDeletePriceByIdMutation();
+  // State for Add Price dialog
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
 
-  const priceTypeOptions = [
-    { label: "Rental", value: PriceType.Rental },
-    { label: "Sale", value: PriceType.Sale },
-  ];
-
-  // Fetch prices, filter by selected category and price type (server-side)
+  // Fetch prices
   const { data, loading, error } = useListPricesQuery({
     variables: {
       workspaceId,
@@ -198,52 +72,82 @@ export function PricesTable() {
       ...(selectedClass ? { name: selectedClass } : {}),
       ...(selectedCategory ? { pimCategoryId: selectedCategory } : {}),
       ...(selectedPriceTypes.length === 1 ? { priceType: selectedPriceTypes[0] } : {}),
-      shouldListPriceBooks: false, // We don't need price books here
+      shouldListPriceBooks: false,
       page: {
-        size: 100,
+        size: 1000,
       },
     },
+    fetchPolicy: "cache-and-network",
   });
 
-  // Use fetched categories for dropdown
+  // Categories for dropdown
   const allCategories = React.useMemo(() => {
     if (!data?.listPriceBookCategories) return [];
     return data.listPriceBookCategories.map((cat: { id: string; name: string }) => ({
-      id: cat.id,
-      name: cat.name,
+      value: cat.id,
+      label: cat.name,
+      icon: <Tag className="w-4 h-4 text-blue-600" />,
     }));
   }, [data]);
 
+  // Classes for dropdown
   const allClasses = React.useMemo(() => {
     if (!data?.listPriceNames) return [];
-    return data.listPriceNames.filter(Boolean).sort();
+    return data.listPriceNames.filter(Boolean).map((name) => ({
+      value: name,
+      label: name,
+    }));
   }, [data]);
 
-  // Filter rows by selected class (category is now server-side)
+  // Transform rows
   const rows = React.useMemo<(RentalPriceFields | SalePriceFields)[]>(() => {
-    if (loading) return [];
-    if (error) {
-      console.error("Error loading prices:", error);
-      return [];
-    }
-    if (!data || !data.listPrices || !data.listPrices.items) {
-      console.warn("No prices found or data is undefined");
-      return [];
-    }
-    // Include both RentalPrice and SalePrice
-    let allRows = data.listPrices.items.filter(
+    if (loading || !data?.listPrices?.items) return [];
+    return data.listPrices.items.filter(
       (item) => item.__typename === "RentalPrice" || item.__typename === "SalePrice",
     ) as (RentalPriceFields | SalePriceFields)[];
-    if (selectedClass) {
-      allRows = allRows.filter((item) => item.name === selectedClass);
+  }, [data, loading]);
+
+  // Filter and sort rows
+  const filteredRows = React.useMemo(() => {
+    let filtered = rows;
+
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter((row) =>
+        Object.values(row).some((value) => (value ?? "").toString().toLowerCase().includes(lower)),
+      );
     }
-    return allRows;
-  }, [data, loading, error, selectedClass]);
 
-  // State for Add Price dialog
-  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = a[sortField as keyof typeof a];
+        const bValue = b[sortField as keyof typeof b];
 
-  // Handle edit price
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+        }
+
+        const aStr = String(aValue);
+        const bStr = String(bValue);
+        return sortDirection === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      });
+    }
+
+    return filtered;
+  }, [rows, searchTerm, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   const handleEditPrice = (price: RentalPriceFields | SalePriceFields) => {
     if (price.__typename === "RentalPrice") {
       setEditingRentalPrice(price as RentalPriceFields);
@@ -252,111 +156,287 @@ export function PricesTable() {
     }
   };
 
-  // Handle delete price
   const handleDeletePrice = (price: RentalPriceFields | SalePriceFields) => {
-    setPriceToDelete(price);
+    setDeletePriceId(price.id);
+    setDeletePriceName(price.name || "");
+    setDeletePriceCategory(price.pimCategoryName || "");
+    setDeletePriceType(price.__typename === "RentalPrice" ? "Rental" : "Sale");
     setDeleteDialogOpen(true);
   };
 
-  // Handle duplicate price
+  const handleDeleteSuccess = () => {
+    setDeleteDialogOpen(false);
+    setDeletePriceId(null);
+    setDeletePriceName("");
+    setDeletePriceCategory("");
+    setDeletePriceType("");
+  };
+
   const handleDuplicatePrice = (price: RentalPriceFields | SalePriceFields) => {
     setPriceToDuplicate(price);
   };
 
-  // Confirm delete
-  const confirmDelete = async () => {
-    if (!priceToDelete) return;
-
-    try {
-      await deletePrice({
-        variables: {
-          id: priceToDelete.id,
-        },
-      });
-      setDeleteDialogOpen(false);
-      setPriceToDelete(null);
-    } catch (error) {
-      console.error("Error deleting price:", error);
-    }
-  };
-
-  // Create columns with the edit, delete, and duplicate handlers
-  const columns = React.useMemo(
-    () => createColumns(handleEditPrice, handleDeletePrice, handleDuplicatePrice),
-    [],
-  );
-
   return (
-    <Box>
-      {/* Add Price Button and Filters - aligned in a single row */}
-      <Box mb={2} display="flex" alignItems="center" gap={2} flexWrap="wrap">
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setAddDialogOpen(true)}
-          sx={{ height: 40 }}
-        >
-          Add Price
-        </Button>
-        <Autocomplete
-          options={allCategories}
-          getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
-          value={allCategories.find((cat) => cat.id === selectedCategory) || null}
-          onChange={(_, newValue) => {
-            setSelectedCategory(newValue ? newValue.id : null);
-          }}
-          loading={loading}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Filter by Category"
-              variant="outlined"
-              placeholder="Type to search"
-              error={!!error}
-              helperText={error ? "Failed to load categories" : ""}
+    <div>
+      {/* Search and Filters Bar */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+          <div className="relative flex-1 w-full lg:max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search prices..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
-          )}
-          clearOnEscape
-          isOptionEqualToValue={(option, value) =>
-            (typeof option === "string" ? option : option.id) ===
-            (typeof value === "string" ? value : value?.id)
-          }
-          sx={{ minWidth: 220 }}
-        />
-        <Autocomplete
-          options={allClasses}
-          value={selectedClass}
-          onChange={(_, newValue) => setSelectedClass(newValue)}
-          loading={loading}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Filter by Class"
-              variant="outlined"
-              placeholder="Type to search"
-              error={!!error}
-              helperText={error ? "Failed to load classes" : ""}
+          </div>
+          <div className="flex gap-2 flex-shrink-0 overflow-x-auto items-center">
+            <AutoCompleteSelect
+              className="w-56"
+              placeholder="All Categories"
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              options={allCategories}
             />
-          )}
-          clearOnEscape
-          isOptionEqualToValue={(option, value) => option === value}
-          sx={{ minWidth: 220 }}
-        />
-        <Autocomplete
-          multiple
-          options={priceTypeOptions}
-          getOptionLabel={(option) => option.label}
-          value={priceTypeOptions.filter((opt) => selectedPriceTypes.includes(opt.value))}
-          onChange={(_, newValue) => {
-            setSelectedPriceTypes(newValue.map((opt) => opt.value));
-          }}
-          renderInput={(params) => (
-            <TextField {...params} label="Filter by type" variant="outlined" />
-          )}
-          disableCloseOnSelect
-          sx={{ minWidth: 180 }}
-        />
-      </Box>
+            <AutoCompleteSelect
+              className="w-56"
+              placeholder="All Classes"
+              value={selectedClass}
+              onChange={setSelectedClass}
+              options={allClasses}
+            />
+            <AutoCompleteSelect
+              className="w-40"
+              placeholder="All Types"
+              value={selectedPriceTypes.length === 1 ? selectedPriceTypes[0] : ""}
+              onChange={(value) => {
+                setSelectedPriceTypes(value ? [value as PriceType] : []);
+              }}
+              options={[
+                {
+                  value: PriceType.Rental,
+                  label: "Rental",
+                  icon: <Calendar className="w-4 h-4 text-green-600" />,
+                },
+                {
+                  value: PriceType.Sale,
+                  label: "Sale",
+                  icon: <ShoppingCart className="w-4 h-4 text-blue-600" />,
+                },
+              ]}
+            />
+            <button
+              onClick={() => setAddDialogOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" />
+              Add Price
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort("pimCategoryName")}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-gray-900"
+                >
+                  Image / Name
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort("pimCategoryName")}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-gray-900"
+                >
+                  Category
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort("name")}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-gray-900"
+                >
+                  Class
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Pricing
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort("createdAt")}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-gray-900"
+                >
+                  Created
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort("updatedAt")}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-gray-900"
+                >
+                  Updated
+                  <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  Loading prices...
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-red-600">
+                  Error loading prices: {error.message}
+                </td>
+              </tr>
+            ) : filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  {searchTerm
+                    ? "No prices found matching your search."
+                    : "No prices yet. Add your first price to get started."}
+                </td>
+              </tr>
+            ) : (
+              filteredRows.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <GeneratedImage
+                        entity="price"
+                        entityId={row.id}
+                        size="list"
+                        lazy={true}
+                        className="rounded-lg"
+                        width={40}
+                        height={40}
+                        alt={row.name || "Price"}
+                        showIllustrativeBanner={false}
+                      />
+                      <span
+                        className="text-sm font-medium text-gray-900 truncate max-w-xs"
+                        title={row.name || ""}
+                      >
+                        {row.name || "-"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-600">{row.pimCategoryName || "-"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-600">{row.name || "-"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {row.__typename === "RentalPrice" && (
+                        <>
+                          {row.pricePerDayInCents != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                              <span className="font-semibold">1D</span>
+                              <span className="text-gray-900">
+                                ${(row.pricePerDayInCents / 100).toFixed(0)}
+                              </span>
+                            </span>
+                          )}
+                          {row.pricePerWeekInCents != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                              <span className="font-semibold">7D</span>
+                              <span className="text-gray-900">
+                                ${(row.pricePerWeekInCents / 100).toFixed(0)}
+                              </span>
+                            </span>
+                          )}
+                          {row.pricePerMonthInCents != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                              <span className="font-semibold">28D</span>
+                              <span className="text-gray-900">
+                                ${(row.pricePerMonthInCents / 100).toFixed(0)}
+                              </span>
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {row.__typename === "SalePrice" && row.unitCostInCents != null && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                          <span className="font-semibold">Unit</span>
+                          <span className="text-gray-900">
+                            ${(row.unitCostInCents / 100).toFixed(0)}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-600">
+                      {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "-"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-600">
+                      {row.updatedAt ? new Date(row.updatedAt).toLocaleDateString() : "-"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEditPrice(row)}
+                        className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Edit Price"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDuplicatePrice(row)}
+                        className="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                        title="Duplicate Price"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePrice(row)}
+                        className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete Price"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Results Summary */}
+      {filteredRows.length > 0 && (
+        <div className="p-4 border-t border-gray-200">
+          <p className="text-sm text-gray-600">
+            Showing {filteredRows.length} of {rows.length} prices
+          </p>
+        </div>
+      )}
+
       {/* Add Price Dialog */}
       <AddNewPriceDialog
         open={addDialogOpen}
@@ -364,16 +444,6 @@ export function PricesTable() {
         priceBookId={price_book_id}
         onSuccess={() => setAddDialogOpen(false)}
       />
-      {/* {loading && <Typography>Loading prices...</Typography>} */}
-      {error && <Typography color="error">Error: {error.message}</Typography>}
-      <div style={{ height: 600, width: "100%" }}>
-        <DataGridPro
-          rows={rows}
-          columns={columns}
-          loading={loading}
-          pinnedColumns={{ right: ["actions"] }}
-        />
-      </div>
 
       {/* Edit Rental Price Dialog */}
       {editingRentalPrice && (
@@ -403,50 +473,16 @@ export function PricesTable() {
         onSuccess={() => setPriceToDuplicate(null)}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      {/* Delete Price Dialog */}
+      <DeletePriceDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete this price? This action cannot be undone.
-            {priceToDelete && (
-              <Box mt={2}>
-                <Typography variant="body2">
-                  <strong>Category:</strong> {priceToDelete.pimCategoryName}
-                </Typography>
-                {priceToDelete.name && (
-                  <Typography variant="body2">
-                    <strong>Class:</strong> {priceToDelete.name}
-                  </Typography>
-                )}
-                {priceToDelete.__typename === "RentalPrice" && (
-                  <Typography variant="body2">
-                    <strong>Type:</strong> Rental
-                  </Typography>
-                )}
-                {priceToDelete.__typename === "SalePrice" && (
-                  <Typography variant="body2">
-                    <strong>Type:</strong> Sale
-                  </Typography>
-                )}
-              </Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        priceId={deletePriceId}
+        priceName={deletePriceName}
+        priceCategory={deletePriceCategory}
+        priceType={deletePriceType}
+        onSuccess={handleDeleteSuccess}
+      />
+    </div>
   );
 }
