@@ -88,7 +88,13 @@ export default function CatalogHeader({
   };
 
   const handleLogout = () => {
-    logout();
+    // Store the return URL in sessionStorage so the root page can redirect back after logout
+    sessionStorage.setItem("logoutReturnTo", window.location.pathname + window.location.search);
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin,
+      },
+    });
   };
 
   return (
