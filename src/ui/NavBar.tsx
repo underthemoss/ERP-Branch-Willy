@@ -93,8 +93,18 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
     }
   };
 
+  // Navigation menu items type
+  type NavItem = {
+    text: string;
+    href: string;
+    icon: React.ReactElement;
+    selected: boolean;
+    testId: string;
+    subitems?: NavItem[];
+  };
+
   // Navigation menu items
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       text: "Home",
       href: `/app/${currentWorkspace?.id}`,
@@ -155,17 +165,8 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       text: "Prices",
       href: `/app/${currentWorkspace?.id}/prices`,
       icon: <AttachMoneyIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/prices`,
+      selected: pathname.startsWith(`/app/${currentWorkspace?.id}/prices`),
       testId: "nav-prices",
-      subitems: [
-        {
-          text: "Price Books",
-          href: `/app/${currentWorkspace?.id}/prices/price-books`,
-          icon: <BusinessOutlinedIcon fontSize="small" />,
-          selected: pathname === `/app/${currentWorkspace?.id}/prices/price-books`,
-          testId: "nav-prices-price-books",
-        },
-      ],
     },
     {
       text: "Projects",
