@@ -140,7 +140,9 @@ export default function PricingPage() {
     return priceBooksData.listPriceBooks.items.map((item) => ({
       id: item.id,
       name: item.name,
+      parentPriceBookId: item.parentPriceBook?.id || "",
       parentPriceBookName: item.parentPriceBook?.name || "",
+      parentPriceBookPercentageFactor: item.parentPriceBookPercentageFactor || null,
       businessContactName: item.businessContact?.name || "",
       projectName: item.project?.name || "",
       location: item.location || "",
@@ -627,6 +629,12 @@ export default function PricingPage() {
                       </button>
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Parent Price Book
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Factor
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Business Contact
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -652,7 +660,7 @@ export default function PricingPage() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredPriceBooks.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                         {searchTerm
                           ? "No price books found matching your search."
                           : "No price books yet. Create your first price book to get started."}
@@ -670,8 +678,45 @@ export default function PricingPage() {
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100 text-purple-600">
                               <BookOpen className="w-5 h-5" />
                             </div>
-                            <span className="text-sm font-medium text-gray-900">{row.name}</span>
+                            <span
+                              className="text-sm font-medium text-gray-900 truncate max-w-xs"
+                              title={row.name}
+                            >
+                              {row.name}
+                            </span>
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.parentPriceBookId ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/app/${workspace_id}/prices/price-books/${row.parentPriceBookId}`,
+                                );
+                              }}
+                              className="text-sm text-blue-600 hover:underline truncate max-w-xs block"
+                              title={row.parentPriceBookName}
+                            >
+                              {row.parentPriceBookName}
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.parentPriceBookId && row.parentPriceBookPercentageFactor !== null ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-900 font-medium">
+                                {row.parentPriceBookPercentageFactor.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ({(row.parentPriceBookPercentageFactor * 100).toFixed(0)}%)
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5 text-sm text-gray-600">
