@@ -13,8 +13,7 @@ import {
 import { DeletePriceDialog } from "@/ui/prices/DeletePriceDialog";
 import { EditRentalPriceDialog } from "@/ui/prices/EditRentalPriceDialog";
 import { EditSalePriceDialog } from "@/ui/prices/EditSalePriceDialog";
-import { NewPriceBookDialog } from "@/ui/prices/NewPriceBookDialog";
-import { useDialogs } from "@toolpad/core/useDialogs";
+import { PriceBookDialog } from "@/ui/prices/PriceBookDialog";
 import {
   ArrowUpDown,
   BookOpen,
@@ -38,7 +37,6 @@ type Tab = "prices" | "price-books";
 export default function PricingPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
-  const dialogs = useDialogs();
 
   // Tab state with localStorage persistence
   const [activeTab, setActiveTab] = React.useState<Tab>("prices");
@@ -52,8 +50,9 @@ export default function PricingPage() {
   const [selectedClass, setSelectedClass] = React.useState<string>("");
   const [selectedPriceTypes, setSelectedPriceTypes] = React.useState<PriceType[]>([]);
 
-  // Dialog state for AddNewPriceDialog
+  // Dialog state
   const [addPriceDialogOpen, setAddPriceDialogOpen] = React.useState(false);
+  const [priceBookDialogOpen, setPriceBookDialogOpen] = React.useState(false);
 
   // State for edit dialogs
   const [editingRentalPrice, setEditingRentalPrice] = React.useState<RentalPriceFields | null>(
@@ -426,7 +425,7 @@ export default function PricingPage() {
                 )}
                 {activeTab === "price-books" && (
                   <button
-                    onClick={() => dialogs.open(NewPriceBookDialog)}
+                    onClick={() => setPriceBookDialogOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     <Plus className="w-4 h-4" />
@@ -777,6 +776,13 @@ export default function PricingPage() {
         priceCategory={deletePriceCategory}
         priceType={deletePriceType}
         onSuccess={handleDeleteSuccess}
+      />
+
+      {/* Price Book Dialog */}
+      <PriceBookDialog
+        open={priceBookDialogOpen}
+        onClose={() => setPriceBookDialogOpen(false)}
+        mode="create"
       />
     </div>
   );

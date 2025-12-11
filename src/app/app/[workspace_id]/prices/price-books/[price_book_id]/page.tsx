@@ -9,12 +9,46 @@ import {
   useGetPriceBookByIdQuery,
   useImportPricesMutation,
 } from "@/ui/prices/api";
-import { EditPriceBookDialog } from "@/ui/prices/EditPriceBookDialog";
+import { PriceBookDialog } from "@/ui/prices/PriceBookDialog";
 import { PricesTable } from "@/ui/prices/PriceBookPricesTable";
-import { Download, FileUp, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, FileUp, Pencil, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
+
+// Helper component for expandable notes
+function NotesSection({ notes }: { notes: string }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const shouldTruncate = notes.length > 150;
+  const displayText = shouldTruncate && !isExpanded ? notes.slice(0, 150) + "..." : notes;
+
+  return (
+    <div>
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Notes</label>
+      <div className="mt-1">
+        <p className="text-sm text-gray-900 whitespace-pre-wrap">{displayText}</p>
+        {shouldTruncate && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Show more
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function PriceBook() {
   const { price_book_id, workspace_id } = useParams();
@@ -223,6 +257,7 @@ export default function PriceBook() {
                     </p>
                   </div>
                 </div>
+                {priceBook.notes && <NotesSection notes={priceBook.notes} />}
               </div>
 
               {/* System Information (Right) */}
@@ -382,9 +417,10 @@ export default function PriceBook() {
 
         {/* Edit Price Book Dialog */}
         {priceBook && (
-          <EditPriceBookDialog
+          <PriceBookDialog
             open={editDialogOpen}
             onClose={() => setEditDialogOpen(false)}
+            mode="edit"
             priceBook={{
               id: priceBook.id,
               name: priceBook.name,
