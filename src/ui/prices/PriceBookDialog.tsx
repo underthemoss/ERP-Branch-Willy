@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { Controller, SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { AutoCompleteSelect } from "../AutoCompleteSelect";
-import { useListBusinessContactsQuery } from "../contacts/api";
+import { BusinessSelector } from "../contacts/BusinessSelector";
 import { ProjectSelector } from "../ProjectSelector";
 import {
   useCreatePriceBookMutation,
@@ -55,13 +55,6 @@ export function PriceBookDialog({ open, onClose, mode, priceBook }: PriceBookDia
   const { data: priceBooksData, loading: priceBooksLoading } = useListPriceBooksQuery({
     variables: { page: { number: 1, size: 100 }, filter: { workspaceId: workspace_id! } },
     skip: mode === "edit", // Only load for create mode
-  });
-
-  const { data: companiesData, loading: companiesLoading } = useListBusinessContactsQuery({
-    variables: {
-      workspaceId: workspace_id,
-      page: { number: 1, size: 100 },
-    },
   });
 
   const { control, handleSubmit, setValue, reset } = useForm<PriceBookFormFields>({
@@ -167,14 +160,6 @@ export function PriceBookDialog({ open, onClose, mode, priceBook }: PriceBookDia
       value: pb.id,
       label: pb.name,
       icon: <BookOpen className="w-4 h-4 text-purple-600" />,
-    })) || [];
-
-  // Prepare company options for AutoCompleteSelect
-  const companyOptions =
-    companiesData?.listContacts?.items?.map((company: any) => ({
-      value: company.id,
-      label: company.name,
-      icon: <Building2 className="w-4 h-4 text-blue-600" />,
     })) || [];
 
   // Close on Escape key
@@ -346,10 +331,7 @@ export function PriceBookDialog({ open, onClose, mode, priceBook }: PriceBookDia
 
             {/* Company */}
             <div>
-              <label
-                htmlFor="businessContactId"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 <div className="flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-gray-500" />
                   Company
@@ -359,11 +341,10 @@ export function PriceBookDialog({ open, onClose, mode, priceBook }: PriceBookDia
                 name="businessContactId"
                 control={control}
                 render={({ field }) => (
-                  <AutoCompleteSelect
-                    options={companyOptions}
+                  <BusinessSelector
                     value={field.value || ""}
                     onChange={field.onChange}
-                    placeholder={companiesLoading ? "Loading companies..." : "Select a company"}
+                    workspaceId={workspace_id}
                   />
                 )}
               />
