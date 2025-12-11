@@ -12,28 +12,22 @@ import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
 import { ReferenceNumbersSection } from "@/ui/reference-numbers";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import EditIcon from "@mui/icons-material/Edit";
+import { format } from "date-fns";
 import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  Grid,
-  IconButton,
-  Paper,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+  AlertCircle,
+  ArrowUp,
+  Briefcase,
+  CheckCircle,
+  Copy,
+  Edit,
+  FileText,
+  FolderOpen,
+  HelpCircle,
+  Plus,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -115,59 +109,6 @@ graphql(`
   }
 `);
 
-function ProjectKanbanCard({
-  project,
-  onClick,
-}: {
-  project: {
-    id: string;
-    name: string;
-    project_code: string;
-    status?: string | null;
-    deleted?: boolean | null;
-  };
-  onClick?: () => void;
-}) {
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 2,
-        mb: 2,
-        bgcolor: "#f8f9fa",
-        border: project.deleted ? "1px solid #ccc" : "1.5px solid #1976d2",
-        cursor: onClick ? "pointer" : "default",
-        transition: "box-shadow 0.2s",
-        "&:hover": onClick ? { boxShadow: 8 } : undefined,
-        minWidth: 220,
-        maxWidth: 340,
-      }}
-      onClick={onClick}
-      data-testid="project-kanban-card"
-    >
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-        <Typography variant="subtitle1" fontWeight={600} noWrap>
-          {project.name}
-        </Typography>
-        <Chip
-          label={project.deleted ? "Deleted" : project.status || "Active"}
-          color={project.deleted ? "default" : "info"}
-          size="small"
-          sx={{
-            fontWeight: 600,
-            fontFamily: "monospace",
-            letterSpacing: 0.5,
-            ml: 1,
-          }}
-        />
-      </Box>
-      <Typography variant="body2" color="text.secondary" noWrap>
-        Code: <b>{project.project_code}</b>
-      </Typography>
-    </Paper>
-  );
-}
-
 export default function ProjectDetailAltPage() {
   const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
@@ -210,9 +151,6 @@ export default function ProjectDetailAltPage() {
     skip: !parentProjectId,
   });
 
-  // Helper to format ISO date strings
-  // (Replaced by parseDate utility below)
-
   const handleDelete = async () => {
     if (!project?.id) return;
     try {
@@ -224,588 +162,374 @@ export default function ProjectDetailAltPage() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
-      {/* Go to parent project link */}
-      {project?.parent_project && parentData?.getProjectById && (
-        <Box mb={3}>
-          <Link
-            href={`/app/${workspace_id}/projects/${project.parent_project}`}
-            style={{ textDecoration: "none" }}
-          >
-            <Typography
-              variant="body1"
-              color="primary"
-              sx={{
-                fontWeight: 600,
-                display: "inline-block",
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto max-w-7xl px-4 py-6">
+        {/* Go to parent project link */}
+        {project?.parent_project && parentData?.getProjectById && (
+          <div className="mb-4">
+            <Link
+              href={`/app/${workspace_id}/projects/${project.parent_project}`}
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold hover:underline"
             >
-              ↑ Go to parent project: {parentData.getProjectById.name}
-            </Typography>
-          </Link>
-        </Box>
-      )}
-      {loading && (
-        <Typography variant="body1" color="text.secondary">
-          Loading project details...
-        </Typography>
-      )}
-      {(error || !project) && !loading && (
-        <Typography variant="body1" color="error">
-          Project not found.
-        </Typography>
-      )}
-      {project && (
-        <Grid container spacing={3}>
-          {/* Main Content */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            {/* Top Card: Project Overview */}
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-              <Grid container alignItems="center" justifyContent="space-between">
-                <Grid size={{ xs: 12, md: 8 }}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="h4" gutterBottom>
-                      {project.name}
-                    </Typography>
-                    <Chip
-                      label={project.deleted ? "Deleted" : "Active"}
-                      color={project.deleted ? "default" : "success"}
-                      sx={{ fontWeight: 600, fontSize: "1rem" }}
-                    />
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { md: "right", xs: "left" } }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    sx={{ mr: 1 }}
-                    data-testid="edit-project"
-                    startIcon={<EditIcon />}
-                    onClick={() => router.push(`/app/${workspace_id}/projects/${project.id}/edit`)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    data-testid="delete-project"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    Delete
-                  </Button>
-                </Grid>
-              </Grid>
-              <Divider sx={{ my: 2 }} />
-              <Box display="flex" flexDirection="column" gap={1.5}>
-                {/* Project Code */}
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ minWidth: 100, flexShrink: 0 }}
-                  >
-                    Project Code:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500} sx={{ mr: 0.5 }}>
-                    {project.project_code}
-                  </Typography>
-                  <Tooltip title="Copy Project Code" arrow>
-                    <IconButton
-                      size="small"
-                      aria-label="Copy Project Code"
-                      data-testid="project-details-copy-code"
-                      onClick={() => {
-                        navigator.clipboard.writeText(project.project_code);
-                      }}
-                    >
-                      <ContentCopyIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                {/* Status */}
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ minWidth: 100, flexShrink: 0 }}
-                  >
-                    Status:
-                  </Typography>
-                  {project.status ? (
-                    <Tooltip title={statusDescMap[project.status] || ""} arrow>
-                      <Chip
-                        label={project.status}
-                        size="small"
-                        sx={{
-                          fontFamily: "monospace",
-                          fontWeight: 600,
-                          bgcolor: "info.light",
-                          color: "info.contrastText",
-                          letterSpacing: 0.5,
-                        }}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Typography variant="body2" fontWeight={500}>
-                      —
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
+              <ArrowUp className="w-4 h-4" />
+              Go to parent project: {parentData.getProjectById.name}
+            </Link>
+          </div>
+        )}
 
-            {/* Details Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Project Details
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  <strong>Description:</strong> {project.description || "—"}
-                </Typography>
-                <Box>
-                  <Typography sx={{ mb: 1 }}>
-                    <strong>Scope of Work:</strong>
-                  </Typography>
-                  {project.scope_of_work && project.scope_of_work.length > 0 ? (
-                    <Box display="flex" flexWrap="wrap" gap={1}>
-                      {project.scope_of_work.filter(Boolean).map((code) => (
-                        <Tooltip
-                          key={code as string}
-                          title={scopeOfWorkDescMap[code as string] || ""}
-                          arrow
-                        >
-                          <Chip
-                            label={code as string}
-                            size="small"
-                            sx={{
-                              fontFamily: "monospace",
-                              fontWeight: 600,
-                              bgcolor: "primary.light",
-                              color: "primary.contrastText",
-                              letterSpacing: 0.5,
-                            }}
-                          />
-                        </Tooltip>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      —
-                    </Typography>
-                  )}
-                </Box>
-                <Typography>
-                  <strong>Project Contacts:</strong>
-                </Typography>
-                {project.project_contacts && project.project_contacts.length > 0 ? (
-                  <Box>
-                    {project.project_contacts
-                      .filter(
-                        (c: any) =>
-                          c &&
-                          c.contact &&
-                          c.contact.__typename === "PersonContact" &&
-                          c.contact.id &&
-                          c.contact.name,
-                      )
-                      .map((c: any) => (
-                        <Box
-                          key={c.contact_id}
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                          sx={{ mb: 1 }}
-                        >
-                          <Avatar
-                            src={c.contact.profilePicture || undefined}
-                            sx={{ width: 32, height: 32 }}
-                          >
-                            {c.contact.name[0]}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1" fontWeight={500}>
-                              {c.contact.name}
-                            </Typography>
-                            {c.contact.role && (
-                              <Typography variant="body2" color="text.secondary">
-                                {c.contact.role}
-                              </Typography>
-                            )}
-                          </Box>
-                          <Chip
-                            label={c.relation_to_project.replace(/_/g, " ")}
-                            size="small"
-                            color="info"
-                            sx={{
-                              fontFamily: "monospace",
-                              fontWeight: 600,
-                              ml: { xs: 0, sm: 2 },
-                              mt: { xs: 0.5, sm: 0 },
-                            }}
-                          />
-                        </Box>
-                      ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No contacts assigned.
-                  </Typography>
-                )}
-              </Box>
-            </Paper>
+        {loading && <p className="text-gray-600">Loading project details...</p>}
 
-            {/* Reference Numbers Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <ReferenceNumbersSection projectId={project.id} />
-            </Paper>
+        {(error || !project) && !loading && <p className="text-red-600">Project not found.</p>}
 
-            {/* Sub Projects Section (moved to bottom) */}
-            <Paper elevation={2} sx={{ p: 2, mt: 3, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Sub Projects
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box display="flex" flexWrap="wrap" gap={2}>
-                {project.sub_projects &&
-                  project.sub_projects.length > 0 &&
-                  project.sub_projects
-                    .filter(Boolean)
-                    .map(
-                      (child) =>
-                        child && (
-                          <ChildProjectCard
-                            key={child.id}
-                            project={child}
-                            workspaceId={workspace_id}
-                          />
-                        ),
-                    )}
-                <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
-              </Box>
-            </Paper>
-            {/* Attached Files Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Attached Files
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <AttachedFilesSection entityId={project.id} entityType={ResourceTypes.ErpProject} />
-            </Paper>
-            {/* Notes Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <NotesSection entityId={project.id} workspaceId={workspace_id} />
-            </Paper>
-          </Grid>
-
-          {/* Sidebar */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            {/* Metadata Card */}
-            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Metadata
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Project ID
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {project.id}
-                    </Typography>
-                    <Tooltip title="Copy Project ID" arrow>
-                      <IconButton
-                        size="small"
-                        aria-label="Copy Project ID"
-                        data-testid="project-details-copy-id"
-                        onClick={() => {
-                          navigator.clipboard.writeText(project.id);
-                        }}
+        {project && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Top Card: Project Overview */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                      <Briefcase className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border mt-1 ${
+                          project.deleted
+                            ? "bg-red-100 text-red-700 border-red-200"
+                            : "bg-green-100 text-green-700 border-green-200"
+                        }`}
                       >
-                        <ContentCopyIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Created By
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {project.created_by_user
-                      ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
-                      : "—"}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {(() => {
-                      const date = parseDate(project.created_at);
-                      return date ? format(date, "MMM d, yyyy, h:mm a") : "";
-                    })()}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Updated By
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {project.updated_by_user
-                      ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
-                      : "—"}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {(() => {
-                      const date = parseDate(project.updated_at);
-                      return date ? format(date, "MMM d, yyyy, h:mm a") : "";
-                    })()}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Status
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {project.deleted ? "Deleted" : "Active"}
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
+                        {project.deleted ? (
+                          <>
+                            <Trash2 className="w-3 h-3" />
+                            Deleted
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-3 h-3" />
+                            Active
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() =>
+                        router.push(`/app/${workspace_id}/projects/${project.id}/edit`)
+                      }
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      data-testid="edit-project"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                      data-testid="delete-project"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
 
-            {/* Stubbed Help/Support Card */}
-            <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "#fffbe6" }}>
-              <Typography variant="body1" sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box
-                  component="span"
-                  sx={{
-                    display: "inline-block",
-                    width: 24,
-                    height: 24,
-                    bgcolor: "#ffe082",
-                    borderRadius: "50%",
-                    mr: 1,
-                    textAlign: "center",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ?
-                </Box>
-                Need help with this project?
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Our team would be happy to help you with any kind of problem you might have!
-              </Typography>
-              <Button variant="contained" color="warning" size="small" disabled>
-                Get Help (stub)
-              </Button>
-            </Paper>
+                <div className="h-px bg-gray-200 my-4" />
 
-            {/* Stubbed Quick Links */}
-            <Paper elevation={1} sx={{ p: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Quick Links
-              </Typography>
-              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                Invite Team (stub)
-              </Button>
-              <Button variant="outlined" size="small" sx={{ mb: 1, width: "100%" }} disabled>
-                View All Projects (stub)
-              </Button>
-              <Button variant="outlined" size="small" sx={{ width: "100%" }} disabled>
-                Upgrade Plan (stub)
-              </Button>
-            </Paper>
-          </Grid>
-        </Grid>
-      )}
-      <DeleteConfirmationDialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={handleDelete}
-        deleting={deleting}
-        errorMsg={errorMsg}
-      />
-    </Container>
+                <div className="space-y-3">
+                  {/* Project Code */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 min-w-[120px]">Project Code:</span>
+                    <span className="text-sm font-medium text-gray-900 font-mono">
+                      {project.project_code}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(project.project_code)}
+                      className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Copy Project Code"
+                      data-testid="project-details-copy-code"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Status */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 min-w-[120px]">Status:</span>
+                    {project.status ? (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 font-mono"
+                        title={statusDescMap[project.status] || ""}
+                      >
+                        {project.status}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Details Card */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h2>
+                <div className="h-px bg-gray-200 mb-4" />
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Description:</h3>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {project.description || "—"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Scope of Work:</h3>
+                    {project.scope_of_work && project.scope_of_work.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {project.scope_of_work.filter(Boolean).map((code) => (
+                          <span
+                            key={code as string}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 font-mono"
+                            title={scopeOfWorkDescMap[code as string] || ""}
+                          >
+                            {code as string}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">—</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Project Contacts:</h3>
+                    {project.project_contacts && project.project_contacts.length > 0 ? (
+                      <div className="space-y-2">
+                        {project.project_contacts
+                          .filter(
+                            (c: any) =>
+                              c &&
+                              c.contact &&
+                              c.contact.__typename === "PersonContact" &&
+                              c.contact.id &&
+                              c.contact.name,
+                          )
+                          .map((c: any) => (
+                            <div
+                              key={c.contact_id}
+                              className="flex items-center gap-3 p-2 rounded-lg bg-gray-50"
+                            >
+                              {c.contact.profilePicture ? (
+                                <img
+                                  src={c.contact.profilePicture}
+                                  alt={c.contact.name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                                  {c.contact.name[0]}
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {c.contact.name}
+                                </p>
+                                {c.contact.role && (
+                                  <p className="text-xs text-gray-500">{c.contact.role}</p>
+                                )}
+                              </div>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 font-mono">
+                                {c.relation_to_project.replace(/_/g, " ")}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No contacts assigned.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Reference Numbers Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <ReferenceNumbersSection projectId={project.id} />
+              </div>
+
+              {/* Sub Projects Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Sub Projects</h2>
+                <div className="h-px bg-gray-200 mb-4" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {project.sub_projects &&
+                    project.sub_projects.length > 0 &&
+                    project.sub_projects
+                      .filter(Boolean)
+                      .map(
+                        (child) =>
+                          child && (
+                            <ChildProjectCard
+                              key={child.id}
+                              project={child}
+                              workspaceId={workspace_id}
+                            />
+                          ),
+                      )}
+                  <AddSubProjectCard workspaceId={workspace_id} parentId={project.id} />
+                </div>
+              </div>
+
+              {/* Attached Files Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Attached Files</h2>
+                <div className="h-px bg-gray-200 mb-4" />
+                <AttachedFilesSection entityId={project.id} entityType={ResourceTypes.ErpProject} />
+              </div>
+
+              {/* Notes Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <NotesSection entityId={project.id} workspaceId={workspace_id} />
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Metadata Card */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h2>
+                <div className="h-px bg-gray-200 mb-4" />
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Project ID</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-mono text-gray-900 break-all">{project.id}</p>
+                      <button
+                        onClick={() => copyToClipboard(project.id)}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                        title="Copy Project ID"
+                        data-testid="project-details-copy-id"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Created By</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {project.created_by_user
+                        ? `${project.created_by_user.firstName} ${project.created_by_user.lastName}`
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(() => {
+                        const date = parseDate(project.created_at);
+                        return date ? format(date, "MMM d, yyyy, h:mm a") : "";
+                      })()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Updated By</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {project.updated_by_user
+                        ? `${project.updated_by_user.firstName} ${project.updated_by_user.lastName}`
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(() => {
+                        const date = parseDate(project.updated_at);
+                        return date ? format(date, "MMM d, yyyy, h:mm a") : "";
+                      })()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Status</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {project.deleted ? "Deleted" : "Active"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={handleDelete}
+          deleting={deleting}
+          errorMsg={errorMsg}
+        />
+      </div>
+    </div>
   );
 }
 
-/** Child Project Card styled to match the provided screenshot */
+/** Child Project Card */
 function ChildProjectCard({ project, workspaceId }: { project: any; workspaceId: string }) {
   return (
     <Link
       href={`/app/${workspaceId}/projects/${project.id}`}
-      style={{ textDecoration: "none", display: "block" }}
-      tabIndex={0}
+      className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
     >
-      <Paper
-        elevation={4}
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 260,
-          maxWidth: 340,
-          p: 2.5,
-          borderRadius: 3,
-          boxShadow: "0 4px 24px 0 rgba(30, 34, 40, 0.10)",
-          border: "1.5px solid #e3e8ef",
-          position: "relative",
-          bgcolor: "#fff",
-          overflow: "hidden",
-          transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
-          cursor: "pointer",
-          "&:hover, &:focus": {
-            boxShadow: "0 8px 32px 0 rgba(30, 34, 40, 0.16)",
-            borderColor: "#1976d2",
-            background: "#f5faff",
-          },
-        }}
-      >
+      <div className="relative bg-white border-2 border-blue-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all">
         {/* Left accent bar */}
-        <Box
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 6,
-            bgcolor: "#1976d2",
-            borderTopLeftRadius: 12,
-            borderBottomLeftRadius: 12,
-          }}
-        />
-        <Box sx={{ pl: 2, pr: 0.5, pt: 0.5, pb: 0.5, position: "relative" }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-            <Typography
-              variant="subtitle1"
-              fontWeight={700}
-              sx={{ fontSize: 17, lineHeight: 1.2, pr: 1 }}
-              noWrap
-            >
-              {project.name}
-            </Typography>
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />
+
+        <div className="pl-2">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 className="text-sm font-bold text-gray-900 line-clamp-2 flex-1">{project.name}</h3>
             {project.status && (
-              <Chip
-                label={project.status}
-                size="small"
-                color="info"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: 13,
-                  px: 1,
-                  height: 22,
-                  bgcolor: "#1976d2",
-                  color: "#fff",
-                  ml: 1,
-                }}
-              />
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white whitespace-nowrap flex-shrink-0">
+                {project.status}
+              </span>
             )}
-          </Box>
-          <Typography variant="body2">
-            <b>Requested By:</b> {"—"}
-          </Typography>
-          <Typography variant="body2">{project.project_code}</Typography>
-        </Box>
-      </Paper>
+          </div>
+          <p className="text-xs text-gray-600 mb-1">
+            <span className="font-semibold">Requested By:</span> —
+          </p>
+          <p className="text-xs text-gray-600 font-mono">{project.project_code}</p>
+        </div>
+      </div>
     </Link>
   );
 }
 
-/** Add Sub Project Card (compact, with text) */
+/** Add Sub Project Card */
 function AddSubProjectCard({ workspaceId, parentId }: { workspaceId: string; parentId: string }) {
   return (
     <Link
       href={`/app/${workspaceId}/projects/create-project?parent_project=${parentId}`}
-      style={{ textDecoration: "none", display: "block" }}
-      tabIndex={0}
+      className="block group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
     >
-      <Paper
-        elevation={4}
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 260,
-          maxWidth: 340,
-          p: 2.5,
-          borderRadius: 3,
-          boxShadow: "0 4px 24px 0 rgba(30, 34, 40, 0.10)",
-          border: "2px dashed #1976d2",
-          position: "relative",
-          bgcolor: "#f5faff",
-          overflow: "hidden",
-          transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
-          cursor: "pointer",
-          "&:hover, &:focus": {
-            boxShadow: "0 8px 32px 0 rgba(30, 34, 40, 0.16)",
-            borderColor: "#1565c0",
-            background: "#e3f2fd",
-          },
-        }}
-      >
+      <div className="relative bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-100 transition-all min-h-[140px] flex flex-col items-center justify-center">
         {/* Left accent bar */}
-        <Box
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 6,
-            bgcolor: "#1976d2",
-            borderTopLeftRadius: 12,
-            borderBottomLeftRadius: 12,
-          }}
-        />
-        <Box
-          sx={{
-            pl: 2,
-            pr: 0.5,
-            pt: 0.5,
-            pb: 0.5,
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: 140,
-          }}
-        >
-          <Box
-            sx={{
-              fontSize: 40,
-              fontWeight: 700,
-              color: "#1976d2",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              bgcolor: "#e3f2fd",
-              mb: 1.5,
-            }}
-          >
-            +
-          </Box>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: 17, mb: 0.5 }}>
-            Add Sub Project
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ fontSize: 14, textAlign: "center", px: 1 }}
-          >
-            Create a new sub project
-          </Typography>
-        </Box>
-      </Paper>
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />
+
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center mb-2">
+            <Plus className="w-6 h-6 text-blue-700" />
+          </div>
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Add Sub Project</h3>
+          <p className="text-xs text-gray-600">Create a new sub project</p>
+        </div>
+      </div>
     </Link>
   );
 }
 
-// Add the confirmation dialog at the end of the component
+/** Delete Confirmation Dialog */
 function DeleteConfirmationDialog({
   open,
   onClose,
@@ -819,27 +543,50 @@ function DeleteConfirmationDialog({
   deleting?: boolean;
   errorMsg?: string | null;
 }) {
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Delete Project</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          Are you sure you want to delete this project? This action cannot be undone.
-        </DialogContentText>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Delete Project</h2>
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete this project? This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
         {errorMsg && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {errorMsg}
-          </Alert>
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{errorMsg}</p>
+          </div>
         )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={deleting}>
-          Cancel
-        </Button>
-        <Button onClick={onConfirm} color="error" variant="contained" disabled={deleting}>
-          {deleting ? "Deleting..." : "Delete"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

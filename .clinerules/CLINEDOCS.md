@@ -15,7 +15,7 @@ This is a typescript project, always use typescript. Never use `any` to fix a ty
 
 This is a NextJs app router project.
 
-This project uses prettier. After finishing a task, always run `npm run prettier:fix`
+This project uses prettier, but do not run `npm run prettier:fix` - the user will run this when they are ready.
 
 Unless told otherwise default to "use client" on UI files.
 
