@@ -588,6 +588,9 @@ type BulkMarkInventoryReceivedResult {
 type BusinessContact {
   accountsPayableContactId: String
   address: String
+
+  """All price books associated with this business contact"""
+  associatedPriceBooks: ListPriceBooksResult
   brand: Brand
   brandId: String
   contactType: ContactType!
@@ -1193,6 +1196,8 @@ type IntakeFormProject {
 }
 
 type IntakeFormSubmission {
+  buyerWorkspace: IntakeFormWorkspace
+  buyerWorkspaceId: String
   companyName: String
   createdAt: DateTime!
   email: String
@@ -1215,6 +1220,7 @@ type IntakeFormSubmission {
 }
 
 input IntakeFormSubmissionInput {
+  buyerWorkspaceId: String
   companyName: String
   email: String
   formId: ID!
@@ -2145,6 +2151,8 @@ enum PriceType {
 }
 
 type Project {
+  """All price books associated with this project"""
+  associatedPriceBooks: ListPriceBooksResult
   comments: [Note!]!
   created_at: String!
   created_by: String!
@@ -3744,6 +3752,7 @@ input UpdateIntakeFormInput {
 }
 
 input UpdateIntakeFormSubmissionInput {
+  buyerWorkspaceId: String
   companyName: String
   email: String
   name: String

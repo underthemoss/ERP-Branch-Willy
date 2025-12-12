@@ -31,7 +31,7 @@ graphql(`
       scope_of_work
       status
     }
-  }PORT
+  }
 `);
 
 export default function ProjectsPage() {

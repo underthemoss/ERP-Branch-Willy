@@ -244,17 +244,31 @@ export default function PriceBook() {
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Business Contact
                     </label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {priceBook.businessContact ? priceBook.businessContact.name : "-"}
-                    </p>
+                    {priceBook.businessContact ? (
+                      <Link
+                        href={`/app/${workspace_id}/contacts/${priceBook.businessContact.id}`}
+                        className="text-sm text-blue-600 hover:underline mt-1 block"
+                      >
+                        {priceBook.businessContact.name}
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-gray-900 mt-1">-</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Project
                     </label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {priceBook.project ? priceBook.project.name : "-"}
-                    </p>
+                    {priceBook.project ? (
+                      <Link
+                        href={`/app/${workspace_id}/projects/${priceBook.project.id}`}
+                        className="text-sm text-blue-600 hover:underline mt-1 block"
+                      >
+                        {priceBook.project.name}
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-gray-900 mt-1">-</p>
+                    )}
                   </div>
                 </div>
                 {priceBook.notes && <NotesSection notes={priceBook.notes} />}
