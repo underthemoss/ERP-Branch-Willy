@@ -120,6 +120,13 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
       testId: "nav-intake-forms",
     },
     {
+      text: "My Submissions",
+      href: `/app/${currentWorkspace?.id}/submissions`,
+      icon: <AssignmentIcon fontSize="small" />,
+      selected: pathname === `/app/${currentWorkspace?.id}/submissions`,
+      testId: "nav-submissions",
+    },
+    {
       text: "Sales Orders",
       href: `/app/${currentWorkspace?.id}/sales-orders`,
       icon: <SyncAltIcon fontSize="small" />,

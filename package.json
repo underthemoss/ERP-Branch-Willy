@@ -17,7 +17,7 @@
     "codegen:update-schema": "graphql-codegen --config codegen.update-schema.ts",
     "codegen:update-schema-local": "NEXT_PUBLIC_GQL_URL=http://localhost:5000/graphql graphql-codegen --config codegen.update-schema.ts",
     "depcheck": "npx depcheck",
-    "test:depcheck": "depcheck | tee /dev/tty | grep -q 'No depcheck issue' || (echo 'Unused dependencies found' && exit 1)",
+    "test:depcheck": "OUTPUT=$(depcheck 2>&1); echo \"$OUTPUT\"; echo \"$OUTPUT\" | grep -q 'No depcheck issue' || (echo 'Unused dependencies found' && exit 1)",
     "test:playwright": "npx playwright test",
     "prettier:check": "npx prettier . --check",
     "prettier:fix": "npx prettier . -w",

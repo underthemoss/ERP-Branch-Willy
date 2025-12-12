@@ -1201,6 +1201,7 @@ type IntakeFormSubmission {
   companyName: String
   createdAt: DateTime!
   email: String
+  form: IntakeForm
   formId: ID!
   id: ID!
   lineItems: [IntakeFormLineItem!]
@@ -2020,6 +2021,7 @@ enum PermissionType {
   ERP_SALES_ORDER_UPDATE
   ERP_WORKSPACE_ADD_USER
   ERP_WORKSPACE_CAN_JOIN
+  ERP_WORKSPACE_CAN_MANAGE_BUYER_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_MANAGE_CHARGES
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS
   ERP_WORKSPACE_CAN_MANAGE_FILES
@@ -2034,6 +2036,7 @@ enum PermissionType {
   ERP_WORKSPACE_CAN_MANAGE_REFERENCE_NUMBER_TEMPLATES
   ERP_WORKSPACE_CAN_MANAGE_RFQS
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS
+  ERP_WORKSPACE_CAN_READ_BUYER_INTAKE_FORM_SUBMISSIONS
   ERP_WORKSPACE_CAN_READ_CHARGES
   ERP_WORKSPACE_CAN_READ_CONTACTS
   ERP_WORKSPACE_CAN_READ_FILES
@@ -2450,6 +2453,9 @@ type Query {
 
   """List all intake form submissions for a workspace with pagination"""
   listIntakeFormSubmissions(excludeWithSalesOrder: Boolean, intakeFormId: String, limit: Int, page: Int, workspaceId: String!): IntakeFormSubmissionPage
+
+  """List all intake form submissions for a buyer workspace with pagination"""
+  listIntakeFormSubmissionsAsBuyer(buyerWorkspaceId: String!, intakeFormId: String, limit: Int, page: Int): IntakeFormSubmissionPage
 
   """List all intake forms for a workspace with pagination"""
   listIntakeForms(limit: Int, page: Int, workspaceId: String!): IntakeFormPage
@@ -4041,6 +4047,7 @@ type UserPermissionMap {
   ERP_SALES_ORDER_UPDATE: Boolean
   ERP_WORKSPACE_ADD_USER: Boolean
   ERP_WORKSPACE_CAN_JOIN: Boolean
+  ERP_WORKSPACE_CAN_MANAGE_BUYER_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_CHARGES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_FILES: Boolean
@@ -4055,6 +4062,7 @@ type UserPermissionMap {
   ERP_WORKSPACE_CAN_MANAGE_REFERENCE_NUMBER_TEMPLATES: Boolean
   ERP_WORKSPACE_CAN_MANAGE_RFQS: Boolean
   ERP_WORKSPACE_CAN_MANAGE_SALES_ORDERS: Boolean
+  ERP_WORKSPACE_CAN_READ_BUYER_INTAKE_FORM_SUBMISSIONS: Boolean
   ERP_WORKSPACE_CAN_READ_CHARGES: Boolean
   ERP_WORKSPACE_CAN_READ_CONTACTS: Boolean
   ERP_WORKSPACE_CAN_READ_FILES: Boolean
@@ -4173,6 +4181,8 @@ Roles a user can have in a workspace (auto-generated from SpiceDB schema)
 enum WorkspaceUserRole {
   admin
   all_resources_reader
+  buyer_intake_form_submissions_manager
+  buyer_intake_form_submissions_reader
   charge_manager
   charge_reader
   contact_manager
