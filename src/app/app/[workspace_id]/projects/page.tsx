@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { useListTopLevelProjectsQuery } from "@/graphql/hooks";
 import { parseDate } from "@/lib/parseDate";
+import { ProjectDialog } from "@/ui/projects/ProjectDialog";
 import { format, formatDistanceToNow } from "date-fns";
 import { ArrowUpDown, Briefcase, Eye, FolderOpen, Pencil, Plus, Search } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -30,14 +31,14 @@ graphql(`
       scope_of_work
       status
     }
-  }
+  }PORT
 `);
 
 export default function ProjectsPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const router = useRouter();
 
-  const { data, loading } = useListTopLevelProjectsQuery({
+  const { data, loading, refetch } = useListTopLevelProjectsQuery({
     variables: { workspaceId: workspace_id },
     fetchPolicy: "cache-and-network",
   });
@@ -45,6 +46,9 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortField, setSortField] = React.useState<string | null>(null);
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc");
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [editingProjectId, setEditingProjectId] = React.useState<string | null>(null);
 
   const rows = React.useMemo(() => {
     return (
@@ -122,7 +126,8 @@ export default function ProjectsPage() {
 
   const handleEdit = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    router.push(`/app/${workspace_id}/projects/${projectId}/edit`);
+    setEditingProjectId(projectId);
+    setEditDialogOpen(true);
   };
 
   if (loading && !data) {
@@ -170,7 +175,7 @@ export default function ProjectsPage() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <button
-                onClick={() => router.push(`/app/${workspace_id}/projects/create-project`)}
+                onClick={() => setCreateDialogOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
@@ -336,6 +341,36 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Create Dialog */}
+      <ProjectDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        mode="create"
+        workspaceId={workspace_id}
+        onSuccess={() => {
+          // Refetch the list to show the new project
+          refetch();
+        }}
+      />
+
+      {/* Edit Dialog */}
+      {editingProjectId && (
+        <ProjectDialog
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setEditingProjectId(null);
+          }}
+          mode="edit"
+          workspaceId={workspace_id}
+          projectId={editingProjectId}
+          onSuccess={() => {
+            // Refetch the list to show updated data
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

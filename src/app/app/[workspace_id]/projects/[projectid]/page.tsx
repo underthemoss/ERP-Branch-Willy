@@ -11,6 +11,7 @@ import {
 import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
 import NotesSection from "@/ui/notes/NotesSection";
+import { ProjectDialog } from "@/ui/projects/ProjectDialog";
 import { ReferenceNumbersSection } from "@/ui/reference-numbers";
 import { format } from "date-fns";
 import {
@@ -113,8 +114,10 @@ export default function ProjectDetailAltPage() {
   const { projectid, workspace_id } = useParams<{ projectid: string; workspace_id: string }>();
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [deleteProject, { loading: deleting }] = useDeleteProjectMutation();
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
 
   const { data, loading, error } = useGetProjectByIdForDisplayQuery({
     variables: { id: projectid ?? "" },
@@ -222,9 +225,7 @@ export default function ProjectDetailAltPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() =>
-                        router.push(`/app/${workspace_id}/projects/${project.id}/edit`)
-                      }
+                      onClick={() => setEditDialogOpen(true)}
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       data-testid="edit-project"
                     >
@@ -285,9 +286,27 @@ export default function ProjectDetailAltPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">Description:</h3>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {project.description || "—"}
-                    </p>
+                    {project.description ? (
+                      <>
+                        <p
+                          className={`text-sm text-gray-700 whitespace-pre-wrap ${
+                            !isDescriptionExpanded ? "line-clamp-3" : ""
+                          }`}
+                        >
+                          {project.description}
+                        </p>
+                        {project.description.length > 150 && (
+                          <button
+                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                          >
+                            {isDescriptionExpanded ? "Show less" : "Show more"}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-500">—</p>
+                    )}
                   </div>
 
                   <div>
@@ -470,6 +489,18 @@ export default function ProjectDetailAltPage() {
           onConfirm={handleDelete}
           deleting={deleting}
           errorMsg={errorMsg}
+        />
+
+        <ProjectDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          mode="edit"
+          workspaceId={workspace_id}
+          projectId={projectid}
+          onSuccess={() => {
+            // Refresh the page to show updated data
+            router.refresh();
+          }}
         />
       </div>
     </div>
