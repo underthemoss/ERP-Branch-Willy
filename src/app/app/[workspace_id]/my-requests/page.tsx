@@ -178,7 +178,7 @@ export default function SubmissionsPage() {
       <div className="container mx-auto max-w-7xl px-4 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Submissions</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Requests</h1>
           <p className="text-gray-600">Track equipment requests you&apos;ve submitted to sellers</p>
         </div>
 

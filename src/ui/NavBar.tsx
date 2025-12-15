@@ -7,57 +7,61 @@ import {
 } from "@/providers/WorkspaceProvider";
 import { WorkspaceAccessIcon } from "@/ui/workspace/WorkspaceAccessIcon";
 import { useAuth0 } from "@auth0/auth0-react";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
-import CheckIcon from "@mui/icons-material/Check";
-import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import InventoryIcon from "@mui/icons-material/Inventory";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import LogoutIcon from "@mui/icons-material/Logout";
-import MailIcon from "@mui/icons-material/Mail";
-import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
-import SearchIcon from "@mui/icons-material/Search";
-import SettingsIcon from "@mui/icons-material/Settings";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import SyncAltIcon from "@mui/icons-material/SyncAlt";
-import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import {
-  Avatar,
-  Box,
-  Divider,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+  ArrowLeftRight,
+  Building2,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  DollarSign,
+  FileQuestion,
+  FileText,
+  FolderOpen,
+  Home,
+  LogOut,
+  Mail,
+  Package,
+  Receipt,
+  Search,
+  Settings,
+  Shield,
+  ShoppingCart,
+  TrendingUp,
+  Truck,
+  User,
+  Users,
+  X,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface NavBarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
 
-const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
+// Theme configuration
+const theme = {
+  sidebar: "bg-white",
+  text: "text-gray-900",
+  textMuted: "text-gray-500",
+  textSecondary: "text-gray-600",
+  hover: "hover:bg-gray-50",
+  selected: "bg-gray-100",
+  selectedText: "text-blue-600 font-medium",
+  border: "border-gray-200",
+  divider: "bg-gray-200",
+  avatar: "bg-gray-100",
+  dropdown: "bg-white",
+  dropdownHover: "hover:bg-gray-100",
+  submenuBg: "bg-gray-100",
+};
+
+const NavBarContent: React.FC<{
+  onNavigate?: () => void;
+}> = ({ onNavigate }) => {
   const currentWorkspace = useSelectedWorkspace();
   const currentWorkspaceId = useSelectedWorkspaceId();
   const { workspaces, selectWorkspace } = useWorkspace();
@@ -65,32 +69,34 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
   const pathname = usePathname();
   const router = useRouter();
 
-  // Check if user has PLATFORM_ADMIN role in the specific claim
+  // Check if user has PLATFORM_ADMIN role
   const roles = user?.["https://erp.estrack.com/es_erp_roles"] || [];
   const isPlatformAdmin = roles.includes("PLATFORM_ADMIN");
-  const [expandedNav, setExpandedNav] = React.useState<string | null>(null);
-  const [expandedWorkspaces, setExpandedWorkspaces] = React.useState(false);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const [expandedNav, setExpandedNav] = useState<Set<string>>(new Set());
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
-    handleMenuClose();
+    setUserMenuOpen(false);
   };
 
   const handleNavigation = (href: string) => {
     router.push(href);
-    if (onNavigate) {
-      onNavigate();
-    }
+    onNavigate?.();
   };
 
   // Navigation menu items type
@@ -108,84 +114,112 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
     {
       text: "Home",
       href: `/app/${currentWorkspace?.id}`,
-      icon: <HomeOutlinedIcon fontSize="small" />,
+      icon: <Home size={18} />,
       selected: pathname === `/app/${currentWorkspace?.id}`,
       testId: "nav-home",
     },
     {
-      text: "Intake Forms",
-      href: `/app/${currentWorkspace?.id}/intake-forms`,
-      icon: <MailIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/intake-forms`,
-      testId: "nav-intake-forms",
-    },
-    {
-      text: "My Submissions",
-      href: `/app/${currentWorkspace?.id}/submissions`,
-      icon: <AssignmentIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/submissions`,
-      testId: "nav-submissions",
-    },
-    {
-      text: "Sales Orders",
+      text: "Sales",
       href: `/app/${currentWorkspace?.id}/sales-orders`,
-      icon: <SyncAltIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
-      testId: "nav-sales-order",
+      icon: <TrendingUp size={18} />,
+      selected:
+        pathname === `/app/${currentWorkspace?.id}/sales-orders` ||
+        pathname === `/app/${currentWorkspace?.id}/invoices` ||
+        pathname === `/app/${currentWorkspace?.id}/sales-quotes` ||
+        pathname === `/app/${currentWorkspace?.id}/intake-forms`,
+      testId: "nav-sales",
+      subitems: [
+        {
+          text: "Requests",
+          href: `/app/${currentWorkspace?.id}/intake-forms`,
+          icon: <Mail size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/intake-forms`,
+          testId: "nav-intake-forms",
+        },
+        {
+          text: "Sales Orders",
+          href: `/app/${currentWorkspace?.id}/sales-orders`,
+          icon: <ArrowLeftRight size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
+          testId: "nav-sales-order",
+        },
+        {
+          text: "Invoices",
+          href: `/app/${currentWorkspace?.id}/invoices`,
+          icon: <Receipt size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/invoices`,
+          testId: "nav-invoices",
+        },
+      ],
     },
     {
-      text: "Purchase Orders",
+      text: "Purchasing",
       href: `/app/${currentWorkspace?.id}/purchase-orders`,
-      icon: <DescriptionOutlinedIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
-      testId: "nav-purchase-order",
+      icon: <ShoppingCart size={18} />,
+      selected:
+        pathname === `/app/${currentWorkspace?.id}/purchase-orders` ||
+        pathname === `/app/${currentWorkspace?.id}/my-requests`,
+      testId: "nav-purchasing",
+      subitems: [
+        {
+          text: "My Requests",
+          href: `/app/${currentWorkspace?.id}/my-requests`,
+          icon: <ClipboardList size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/my-requests`,
+          testId: "nav-my-requests",
+        },
+        {
+          text: "Purchase Orders",
+          href: `/app/${currentWorkspace?.id}/purchase-orders`,
+          icon: <FileText size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
+          testId: "nav-purchase-order",
+        },
+      ],
     },
-    // {
-    //   text: "Sale Fulfillments",
-    //   href: `/app/${currentWorkspace?.id}/fulfillment`,
-    //   icon: <LocalShippingIcon fontSize="small" />,
-    //   selected: pathname === `/app/${currentWorkspace?.id}/fulfillment`,
-    //   testId: "nav-fulfillment",
-    // },
     {
-      text: "Rental Fulfillments",
+      text: "Fulfillment",
       href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
-      icon: <EventNoteIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
-      testId: "nav-rental-fulfillment",
-    },
-    {
-      text: "Invoices",
-      href: `/app/${currentWorkspace?.id}/invoices`,
-      icon: <ReceiptLongIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/invoices`,
-      testId: "nav-invoices",
-    },
-    {
-      text: "Inventory",
-      href: `/app/${currentWorkspace?.id}/inventory`,
-      icon: <InventoryIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
-      testId: "nav-inventory",
+      icon: <Truck size={18} />,
+      selected:
+        pathname === `/app/${currentWorkspace?.id}/rental-fulfillments` ||
+        pathname === `/app/${currentWorkspace?.id}/inventory`,
+      testId: "nav-fulfillment",
+      subitems: [
+        {
+          text: "Rental Fulfillments",
+          href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
+          icon: <CalendarDays size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
+          testId: "nav-rental-fulfillment",
+        },
+        {
+          text: "Inventory",
+          href: `/app/${currentWorkspace?.id}/inventory`,
+          icon: <Package size={18} />,
+          selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
+          testId: "nav-inventory",
+        },
+      ],
     },
     {
       text: "Prices",
       href: `/app/${currentWorkspace?.id}/prices`,
-      icon: <AttachMoneyIcon fontSize="small" />,
+      icon: <DollarSign size={18} />,
       selected: pathname.startsWith(`/app/${currentWorkspace?.id}/prices`),
       testId: "nav-prices",
     },
     {
       text: "Projects",
       href: `/app/${currentWorkspace?.id}/projects`,
-      icon: <FolderOpenIcon fontSize="small" />,
+      icon: <FolderOpen size={18} />,
       selected: pathname === `/app/${currentWorkspace?.id}/projects`,
       testId: "nav-projects",
     },
     {
       text: "Contacts",
       href: `/app/${currentWorkspace?.id}/contacts`,
-      icon: <ContactsOutlinedIcon fontSize="small" />,
+      icon: <Users size={18} />,
       selected: pathname === `/app/${currentWorkspace?.id}/contacts`,
       testId: "nav-contacts",
     },
@@ -193,59 +227,63 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
 
   // Add admin-only menu items
   if (isPlatformAdmin) {
-    navItems.splice(1, 0, {
-      text: "Sales Quotes",
-      href: `/app/${currentWorkspace?.id}/sales-quotes`,
-      icon: <RequestQuoteIcon fontSize="small" />,
-      selected: pathname === `/app/${currentWorkspace?.id}/sales-quotes`,
-      testId: "nav-sales-quotes",
-    });
+    const salesGroup = navItems[1];
+    if (salesGroup.subitems) {
+      // Insert Sales Quotes at index 1 (after Requests)
+      salesGroup.subitems.splice(1, 0, {
+        text: "Sales Quotes",
+        href: `/app/${currentWorkspace?.id}/sales-quotes`,
+        icon: <FileQuestion size={18} />,
+        selected: pathname === `/app/${currentWorkspace?.id}/sales-quotes`,
+        testId: "nav-sales-quotes",
+      });
+    }
     navItems.splice(3, 0, {
       text: "Search",
       href: `/app/${currentWorkspace?.id}/search/assets`,
-      icon: <SearchIcon fontSize="small" />,
+      icon: <Search size={18} />,
       selected: pathname.startsWith(`/app/${currentWorkspace?.id}/search`),
       testId: "nav-search",
       subitems: [
         {
           text: "Assets",
           href: `/app/${currentWorkspace?.id}/search/assets`,
-          icon: <InventoryIcon fontSize="small" />,
+          icon: <Package size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/assets`,
           testId: "nav-search-assets",
         },
         {
           text: "Orders",
           href: `/app/${currentWorkspace?.id}/search/orders`,
-          icon: <DescriptionOutlinedIcon fontSize="small" />,
+          icon: <FileText size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/orders`,
           testId: "nav-search-orders",
         },
         {
           text: "Rentals",
           href: `/app/${currentWorkspace?.id}/search/rentals`,
-          icon: <EventNoteIcon fontSize="small" />,
+          icon: <CalendarDays size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/rentals`,
           testId: "nav-search-rentals",
         },
         {
           text: "Products",
           href: `/app/${currentWorkspace?.id}/search/products`,
-          icon: <BusinessOutlinedIcon fontSize="small" />,
+          icon: <Building2 size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/products`,
           testId: "nav-search-products",
         },
         {
           text: "Categories",
           href: `/app/${currentWorkspace?.id}/search/categories`,
-          icon: <FolderOpenIcon fontSize="small" />,
+          icon: <FolderOpen size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/categories`,
           testId: "nav-search-categories",
         },
         {
           text: "Prices",
           href: `/app/${currentWorkspace?.id}/search/prices`,
-          icon: <AttachMoneyIcon fontSize="small" />,
+          icon: <DollarSign size={18} />,
           selected: pathname === `/app/${currentWorkspace?.id}/search/prices`,
           testId: "nav-search-prices",
         },
@@ -253,701 +291,317 @@ const NavBarContent: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) =>
     });
   }
 
+  const toggleNavExpand = (text: string) => {
+    setExpandedNav((prev) => {
+      const next = new Set(prev);
+      if (next.has(text)) {
+        next.delete(text);
+      } else {
+        next.add(text);
+      }
+      return next;
+    });
+  };
+
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        pt: "18px",
-        pb: 2,
-        px: 2,
-        bgcolor: "#F5F5F5",
-        height: "100%",
-        width: "100%",
-        position: "relative",
-      }}
-    >
-      <Box className="workspaceSwitcher" sx={{ width: "100%" }}>
-        {/* Current Workspace Header */}
-        <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
-          <Avatar
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: "transparent",
-              borderRadius: "10px",
-              boxShadow: "0px 0px 40px rgba(0, 0, 0, 0.04)",
-            }}
+    <aside className={`h-full w-full flex flex-col ${theme.sidebar}`}>
+      {/* Header: Workspace + User */}
+      <div className={`p-4 border-b ${theme.border}`}>
+        <div className="flex items-center gap-2">
+          {/* Workspace Avatar */}
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden ${theme.avatar} shadow-sm flex-shrink-0`}
           >
             {currentWorkspace?.logoUrl ? (
               <img
                 src={currentWorkspace.logoUrl}
                 alt=""
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "10px",
-                }}
+                className="w-full h-full object-cover rounded-lg"
               />
             ) : (
-              <Typography
-                sx={{
-                  fontWeight: 700,
-                  fontSize: "14px",
-                  letterSpacing: "-0.08px",
-                }}
-              >
+              <span className={`text-sm font-bold ${theme.text}`}>
                 {currentWorkspace?.name?.slice(0, 1)}
-              </Typography>
+              </span>
             )}
-          </Avatar>
+          </div>
 
-          <Box
-            className="ws-name-and-email"
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              marginLeft: "6px",
-              flex: 1,
-              gap: "6px",
-              minWidth: 0,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
-              <Typography
-                noWrap
-                sx={{
-                  fontFamily: "Inter",
-                  fontSize: "14px",
-                  fontStyle: "normal",
-                  fontWeight: "500",
-                  lineHeight: "18px",
-                  letterSpacing: "-0.2px",
-                  color: "#2F2B43",
-                }}
-              >
+          {/* Workspace Name & Email */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <span className={`text-sm font-medium truncate ${theme.text}`}>
                 {currentWorkspace?.name}
-              </Typography>
+              </span>
               <WorkspaceAccessIcon
                 accessType={currentWorkspace?.accessType}
                 size={14}
                 color="#8B919E"
               />
-            </Box>
+            </div>
+            <span className={`text-xs truncate block ${theme.textMuted}`}>{user?.email}</span>
+          </div>
 
-            <Typography
-              noWrap
-              sx={{
-                color: "#8B919E",
-                fontFamily: "Inter",
-                fontSize: "12px",
-                fontStyle: "normal",
-                fontWeight: "400",
-                lineHeight: "16px",
-                letterSpacing: "-0.2px",
-              }}
-            >
-              {user?.email}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
+          {/* Workspace Expand */}
+          <button
+            onClick={() => setExpandedWorkspaces(!expandedWorkspaces)}
+            data-testid="expand-workspaces"
+            className={`p-1.5 rounded-lg transition-colors ${theme.hover} ${theme.textMuted}`}
           >
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandedWorkspaces(!expandedWorkspaces);
-              }}
-              data-testid="expand-workspaces"
-              sx={{
-                color: "grey.400",
-                borderRadius: "8px",
-              }}
+            {expandedWorkspaces ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+
+          {/* User Menu */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className={`p-1.5 rounded-lg transition-colors ${theme.hover} ${theme.textMuted}`}
             >
-              {expandedWorkspaces ? (
-                <ExpandLess fontSize="small" />
+              {user?.picture ? (
+                <img src={user.picture} alt="" className="w-5 h-5 rounded-full" />
               ) : (
-                <ExpandMore fontSize="small" />
+                <User size={18} />
               )}
-            </IconButton>
-            <IconButton
-              size="small"
-              className="brian"
-              onClick={handleMenuClick}
-              aria-controls={open ? "account-menu" : undefined}
-              aria-haspopup="true"
-              aria-expanded={open ? "true" : undefined}
-            >
-              <UnfoldMoreIcon fontSize="small" />
-            </IconButton>
-            <Menu
-              id="account-menu"
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleMenuClose}
-              onClick={handleMenuClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: "visible",
-                  filter: "drop-shadow(0px 0px 40px rgba(0, 0, 0, 0.08))",
-                  mt: 1,
-                  borderRadius: "12px",
-                  minWidth: 200,
-                  bgcolor: "white",
-                  "& .MuiList-root": {
-                    py: 1,
-                  },
-                  "&:before": {
-                    content: '""',
-                    display: "block",
-                    position: "absolute",
-                    top: 0,
-                    right: 20,
-                    width: 10,
-                    height: 10,
-                    bgcolor: "background.paper",
-                    transform: "translateY(-50%) rotate(45deg)",
-                    zIndex: 0,
-                  },
-                },
-              }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            >
-              <MenuItem
-                disabled
-                onClick={handleMenuClose}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  fontSize: "14px",
-                  color: "#8B919E",
-                  "&.Mui-disabled": {
-                    opacity: 1,
-                  },
-                  display: "flex",
-                  alignItems: "center",
-                }}
+            </button>
+
+            {/* User Dropdown */}
+            {userMenuOpen && (
+              <div
+                className={`absolute right-0 top-full mt-2 w-52 rounded-xl shadow-lg ${theme.dropdown} border ${theme.border} py-1 z-50`}
               >
-                <ListItemIcon sx={{ minWidth: "32px", color: "#8B919E" }}>
+                <div className={`px-3 py-2 ${theme.textMuted} text-sm flex items-center gap-2`}>
                   {user?.picture ? (
-                    <Avatar
-                      src={user.picture}
-                      alt={user?.name || user?.email}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                      }}
-                    />
+                    <img src={user.picture} alt="" className="w-6 h-6 rounded-full" />
                   ) : (
-                    <PersonOutlineIcon fontSize="small" />
+                    <User size={18} />
                   )}
-                </ListItemIcon>
-                <Typography
-                  noWrap
-                  sx={{
-                    fontSize: "14px",
-                    color: "#8B919E",
-                    maxWidth: "180px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                  <span className="truncate">{user?.name || "Profile"}</span>
+                </div>
+                <div className={`h-px ${theme.divider} my-1`} />
+                <button
+                  onClick={() => {
+                    handleNavigation("/");
+                    setUserMenuOpen(false);
                   }}
+                  className={`w-full px-3 py-2 text-left text-sm ${theme.text} ${theme.dropdownHover} flex items-center gap-2 transition-colors`}
                 >
-                  {user?.name || "Profile"}
-                </Typography>
-              </MenuItem>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem
-                onClick={() => {
-                  handleNavigation("/");
-                  handleMenuClose();
-                }}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  fontSize: "14px",
-                  color: "#2F2B43",
-                  "&:hover": {
-                    bgcolor: "#F5F5F5",
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
-                  <SwapHorizIcon fontSize="small" />
-                </ListItemIcon>
-                Switch Workspace
-              </MenuItem>
-              <MenuItem
-                onClick={handleLogout}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  fontSize: "14px",
-                  color: "#2F2B43",
-                  "&:hover": {
-                    bgcolor: "#F5F5F5",
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: "32px", color: "#2F2B43" }}>
-                  <LogoutIcon fontSize="small" />
-                </ListItemIcon>
-                Logout
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Box>
+                  <ArrowLeftRight size={18} />
+                  Switch Workspace
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className={`w-full px-3 py-2 text-left text-sm ${theme.text} ${theme.dropdownHover} flex items-center gap-2 transition-colors`}
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Expanded Workspaces List */}
         {expandedWorkspaces && workspaces && workspaces.length > 0 && (
-          <Box sx={{ mt: 2, mb: 1 }}>
-            <Typography
-              sx={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#8B919E",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                mb: 1,
-                px: 1,
-              }}
+          <div className="mt-4">
+            <span
+              className={`text-xs font-semibold uppercase tracking-wider ${theme.textMuted} px-2`}
             >
               Workspaces
-            </Typography>
-            <List disablePadding>
+            </span>
+            <ul className="mt-2 space-y-1">
               {workspaces.map((workspace) => (
-                <ListItem key={workspace.id} disablePadding>
-                  <ListItemButton
+                <li key={workspace.id}>
+                  <button
                     onClick={() => {
                       if (workspace.id && workspace.id !== currentWorkspaceId) {
                         selectWorkspace(workspace.id);
-                        if (onNavigate) {
-                          onNavigate();
-                        }
+                        onNavigate?.();
                       }
                     }}
-                    selected={workspace.id === currentWorkspaceId}
                     data-testid={`workspace-${workspace.id}`}
-                    sx={{
-                      px: 1,
-                      py: 0.75,
-                      borderRadius: "8px",
-                      mb: 0.5,
-                      "&:hover": {
-                        bgcolor: "rgba(0, 0, 0, 0.04)",
-                      },
-                      "&.Mui-selected": {
-                        bgcolor: "rgba(25, 118, 210, 0.08)",
-                        "&:hover": {
-                          bgcolor: "rgba(25, 118, 210, 0.12)",
-                        },
-                      },
-                    }}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+                      workspace.id === currentWorkspaceId
+                        ? `${theme.selected} ${theme.selectedText}`
+                        : `${theme.hover} ${theme.text}`
+                    }`}
                   >
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: "transparent",
-                        borderRadius: "8px",
-                        boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.04)",
-                        mr: 1.5,
-                      }}
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden ${theme.avatar} shadow-sm flex-shrink-0`}
                     >
                       {workspace.logoUrl ? (
                         <img
                           src={workspace.logoUrl}
                           alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: "8px",
-                          }}
+                          className="w-full h-full object-cover rounded-lg"
                         />
                       ) : (
-                        <Typography
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "12px",
-                            letterSpacing: "-0.08px",
-                            color:
-                              workspace.id === currentWorkspaceId
-                                ? "primary.main"
-                                : "text.secondary",
-                          }}
-                        >
-                          {workspace.name?.slice(0, 1)}
-                        </Typography>
+                        <span className="text-xs font-bold">{workspace.name?.slice(0, 1)}</span>
                       )}
-                    </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
-                        <Typography
-                          noWrap
-                          sx={{
-                            fontFamily: "Inter",
-                            fontSize: "13px",
-                            fontWeight: workspace.id === currentWorkspaceId ? 600 : 500,
-                            lineHeight: "16px",
-                            letterSpacing: "-0.1px",
-                            color: workspace.id === currentWorkspaceId ? "primary.main" : "#2F2B43",
-                          }}
-                        >
-                          {workspace.name}
-                        </Typography>
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium truncate">{workspace.name}</span>
                         <WorkspaceAccessIcon
                           accessType={workspace.accessType}
                           size={14}
-                          color={workspace.id === currentWorkspaceId ? "primary.main" : "#8B919E"}
+                          color={workspace.id === currentWorkspaceId ? "#1d4ed8" : "#8B919E"}
                         />
-                      </Box>
+                      </div>
                       {workspace.description && (
-                        <Typography
-                          noWrap
-                          sx={{
-                            fontSize: "11px",
-                            color: "#8B919E",
-                            lineHeight: "14px",
-                            mt: 0.25,
-                          }}
-                        >
+                        <span className={`text-xs ${theme.textMuted} truncate block`}>
                           {workspace.description}
-                        </Typography>
+                        </span>
                       )}
-                    </Box>
+                    </div>
                     {workspace.id === currentWorkspaceId && (
-                      <CheckIcon
-                        sx={{
-                          fontSize: 16,
-                          color: "primary.main",
-                          ml: 1,
-                        }}
-                      />
+                      <Check size={18} className="flex-shrink-0" />
                     )}
-                  </ListItemButton>
-                </ListItem>
+                  </button>
+                </li>
               ))}
-            </List>
-          </Box>
+            </ul>
+          </div>
         )}
-      </Box>
+      </div>
 
-      <Divider sx={{ width: "100%", my: "12px" }} />
-
-      <Box
-        className="navmenu"
-        sx={{
-          width: "100%",
-          flex: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-        }}
-      >
-        <List
-          disablePadding
-          sx={{
-            overflow: "auto",
-            flex: 1,
-            "&::-webkit-scrollbar": {
-              width: "6px",
-            },
-            "&::-webkit-scrollbar-track": {
-              background: "transparent",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              background: "#ccc",
-              borderRadius: "3px",
-            },
-            "&::-webkit-scrollbar-thumb:hover": {
-              background: "#999",
-            },
-          }}
-        >
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-2">
+        <ul className="space-y-1">
           {navItems.map((item, index) => (
-            <React.Fragment key={index}>
-              <ListItem disablePadding>
-                {item.subitems ? (
-                  <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
-                    <ListItemButton
+            <li key={index}>
+              {item.subitems ? (
+                <>
+                  <div className="flex items-center">
+                    <button
                       onClick={() => handleNavigation(item.href)}
-                      selected={item.selected}
                       data-testid={item.testId}
-                      sx={{
-                        px: "12px",
-                        borderRadius: "8px",
-                        color: item.selected ? "text.primary" : "grey.400",
-                        flex: 1,
-                        minWidth: 0,
-                      }}
+                      className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        item.selected ? theme.selectedText : `${theme.textSecondary} ${theme.hover}`
+                      }`}
                     >
-                      <ListItemIcon
-                        sx={{
-                          color: item.selected ? "text.primary" : "grey.400",
-                          minWidth: "30px",
-                        }}
-                      >
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText
-                        disableTypography
-                        sx={{
-                          color: item.selected ? "text.primary" : "grey.400",
-                          fontFamily: "Inter",
-                          fontSize: "14px",
-                          fontStyle: "normal",
-                          fontWeight: 500,
-                          lineHeight: "21px",
-                          letterSpacing: "0.28px",
-                        }}
-                      >
-                        {item.text}
-                      </ListItemText>
-                    </ListItemButton>
-                    <IconButton
-                      size="small"
+                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span>{item.text}</span>
+                    </button>
+                    <button
+                      onClick={() => toggleNavExpand(item.text)}
                       data-testid={`expand-nav-${item.text.toLowerCase().replace(/\s+/g, "-")}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedNav(expandedNav === item.text ? null : item.text);
-                      }}
-                      sx={{
-                        ml: 0.5,
-                        color: item.selected ? "text.primary" : "grey.400",
-                        borderRadius: "8px",
-                      }}
+                      className={`p-1.5 rounded-lg transition-colors ${theme.hover} ${
+                        item.selected ? theme.selectedText : theme.textMuted
+                      }`}
                     >
-                      {expandedNav === item.text ? (
-                        <ExpandLess fontSize="small" />
+                      {expandedNav.has(item.text) ? (
+                        <ChevronUp size={16} />
                       ) : (
-                        <ExpandMore fontSize="small" />
+                        <ChevronDown size={16} />
                       )}
-                    </IconButton>
-                  </Box>
-                ) : (
-                  <ListItemButton
-                    onClick={() => handleNavigation(item.href)}
-                    selected={item.selected}
-                    data-testid={item.testId}
-                    sx={{
-                      px: "12px",
-                      borderRadius: "8px",
-                      color: item.selected ? "text.primary" : "grey.400",
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{ color: item.selected ? "text.primary" : "grey.400", minWidth: "30px" }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      disableTypography
-                      sx={{
-                        color: item.selected ? "text.primary" : "grey.400",
-                        fontFamily: "Inter",
-                        fontSize: "14px",
-                        fontStyle: "normal",
-                        fontWeight: 500,
-                        lineHeight: "21px",
-                        letterSpacing: "0.28px",
-                      }}
-                    >
-                      {item.text}
-                    </ListItemText>
-                  </ListItemButton>
-                )}
-              </ListItem>
-              {item.subitems &&
-                expandedNav === item.text &&
-                item.subitems.map((subitem, subindex) => (
-                  <ListItem disablePadding key={subindex}>
-                    <ListItemButton
-                      onClick={() => handleNavigation(subitem.href)}
-                      selected={subitem.selected}
-                      data-testid={subitem.testId}
-                      sx={{
-                        pl: "48px",
-                        borderRadius: "8px",
-                        color: subitem.selected ? "text.primary" : "grey.400",
-                      }}
-                    >
-                      {subitem.icon && (
-                        <ListItemIcon
-                          sx={{
-                            color: subitem.selected ? "text.primary" : "grey.400",
-                            minWidth: "30px",
-                          }}
-                        >
-                          {subitem.icon}
-                        </ListItemIcon>
-                      )}
-                      <ListItemText
-                        disableTypography
-                        sx={{
-                          color: subitem.selected ? "text.primary" : "grey.400",
-                          fontFamily: "Inter",
-                          fontSize: "13px",
-                          fontStyle: "normal",
-                          fontWeight: 400,
-                          lineHeight: "19px",
-                          letterSpacing: "0.26px",
-                        }}
-                      >
-                        {subitem.text}
-                      </ListItemText>
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-            </React.Fragment>
+                    </button>
+                  </div>
+                  {expandedNav.has(item.text) && (
+                    <div className={`mt-1 ml-2 ${theme.submenuBg} rounded-lg p-1`}>
+                      <ul className="space-y-0.5">
+                        {item.subitems.map((subitem, subindex) => (
+                          <li key={subindex}>
+                            <button
+                              onClick={() => handleNavigation(subitem.href)}
+                              data-testid={subitem.testId}
+                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                                subitem.selected
+                                  ? theme.selectedText
+                                  : `${theme.textMuted} hover:bg-white`
+                              }`}
+                            >
+                              {subitem.text}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => handleNavigation(item.href)}
+                  data-testid={item.testId}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    item.selected
+                      ? `${theme.selected} ${theme.selectedText}`
+                      : `${theme.textSecondary} ${theme.hover}`
+                  }`}
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span>{item.text}</span>
+                </button>
+              )}
+            </li>
           ))}
-        </List>
-      </Box>
+        </ul>
+      </nav>
 
-      <Divider sx={{ width: "100%", mt: "12px" }} />
-
-      <Box
-        sx={{
-          width: "100%",
-          p: 1.5,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          bgcolor: "#F5F5F5",
-          flexShrink: 0,
-        }}
-      >
+      {/* Footer */}
+      <div className={`p-2 border-t ${theme.border}`}>
         {isPlatformAdmin && (
-          <ListItemButton
+          <button
             onClick={() => handleNavigation("/admin")}
-            selected={pathname.startsWith("/admin")}
             data-testid="nav-platform-admin"
-            sx={{
-              px: "12px",
-              borderRadius: "8px",
-              color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
-              width: "100%",
-              mb: 0.5,
-            }}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-1 ${
+              pathname.startsWith("/admin")
+                ? `${theme.selected} ${theme.selectedText}`
+                : `${theme.textSecondary} ${theme.hover}`
+            }`}
           >
-            <ListItemIcon
-              sx={{
-                color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
-                minWidth: "30px",
-              }}
-            >
-              <AdminPanelSettingsIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              disableTypography
-              sx={{
-                color: pathname.startsWith("/admin") ? "text.primary" : "grey.400",
-                fontFamily: "Inter",
-                fontSize: "14px",
-                fontStyle: "normal",
-                fontWeight: 500,
-                lineHeight: "21px",
-                letterSpacing: "0.28px",
-              }}
-            >
-              Platform Admin
-            </ListItemText>
-          </ListItemButton>
+            <Shield size={18} />
+            <span>Platform Admin</span>
+          </button>
         )}
-        <ListItemButton
+        <button
           onClick={() => handleNavigation(`/app/${currentWorkspace?.id}/settings`)}
-          selected={pathname === `/app/${currentWorkspace?.id}/settings`}
           data-testid="nav-settings"
-          sx={{
-            px: "12px",
-            borderRadius: "8px",
-            color:
-              pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
-            width: "100%",
-          }}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            pathname === `/app/${currentWorkspace?.id}/settings`
+              ? `${theme.selected} ${theme.selectedText}`
+              : `${theme.textSecondary} ${theme.hover}`
+          }`}
         >
-          <ListItemIcon
-            sx={{
-              color:
-                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
-              minWidth: "30px",
-            }}
-          >
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText
-            disableTypography
-            sx={{
-              color:
-                pathname === `/app/${currentWorkspace?.id}/settings` ? "text.primary" : "grey.400",
-              fontFamily: "Inter",
-              fontSize: "14px",
-              fontStyle: "normal",
-              fontWeight: 500,
-              lineHeight: "21px",
-              letterSpacing: "0.28px",
-            }}
-          >
-            Settings
-          </ListItemText>
-        </ListItemButton>
-      </Box>
-    </Box>
+          <Settings size={18} />
+          <span>Settings</span>
+        </button>
+      </div>
+    </aside>
   );
 };
 
 export const NavBar: React.FC<NavBarProps> = ({ mobileOpen = false, onMobileClose }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
-  const drawerWidth = 288;
-
-  if (isMobile) {
-    return (
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={onMobileClose}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          display: { xs: "block", md: "none" },
-          "& .MuiDrawer-paper": {
-            boxSizing: "border-box",
-            width: drawerWidth,
-            bgcolor: "#F5F5F5",
-          },
-        }}
-      >
-        <NavBarContent onNavigate={onMobileClose} />
-      </Drawer>
-    );
-  }
-
   return (
-    <Box
-      className="navbar"
-      sx={{
-        display: { xs: "none", md: "flex" },
-        flexDirection: "column",
-        alignItems: "flex-start",
-        bgcolor: "#F5F5F5",
-        height: "100vh",
-        width: drawerWidth,
-        position: "relative",
-        flexShrink: 0,
-      }}
-    >
-      <NavBarContent />
-    </Box>
+    <>
+      {/* Mobile Drawer */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div
+            className={`fixed inset-y-0 left-0 w-72 z-50 md:hidden transform transition-transform duration-300 ${
+              mobileOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className={`h-full ${theme.sidebar}`}>
+              <button
+                onClick={onMobileClose}
+                className={`absolute top-4 right-4 p-1.5 rounded-lg ${theme.hover} ${theme.textMuted}`}
+              >
+                <X size={20} />
+              </button>
+              <NavBarContent onNavigate={onMobileClose} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Desktop Sidebar */}
+      <div className={`hidden md:flex flex-col h-screen w-72 flex-shrink-0 ${theme.sidebar}`}>
+        <NavBarContent />
+      </div>
+    </>
   );
 };
