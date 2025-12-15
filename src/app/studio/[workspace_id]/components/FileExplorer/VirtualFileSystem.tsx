@@ -147,10 +147,8 @@ export function VirtualFileSystem({
 
   // Build tree when both queries complete
   React.useEffect(() => {
-    console.log("VirtualFileSystem data:", { priceBookData, projectsData });
     if (priceBookData && projectsData) {
       const treeData = buildFileTree(priceBookData, projectsData);
-      console.log("Built tree data:", treeData);
       onTreeDataReady(treeData);
     }
   }, [priceBookData, projectsData, onTreeDataReady]);

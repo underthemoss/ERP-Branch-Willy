@@ -42,18 +42,12 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
   }, [isRefreshing]);
 
   useEffect(() => {
-    console.log("FileExplorer treeData:", treeData);
-    console.log("FileExplorer dimensions:", dimensions);
-  }, [treeData, dimensions]);
-
-  useEffect(() => {
     if (!containerRef.current) return;
 
     // Initial manual measurement
     const updateDimensions = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        console.log("Manual measurement:", rect);
         if (rect.width > 0 && rect.height > 0) {
           setDimensions({ width: rect.width, height: rect.height });
         }
@@ -69,7 +63,6 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        console.log("ResizeObserver measurement:", { width, height });
         if (width > 0 && height > 0) {
           setDimensions({ width, height });
         }

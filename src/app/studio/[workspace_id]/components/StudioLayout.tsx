@@ -67,13 +67,15 @@ export function StudioLayout({ workspaceId }: StudioLayoutProps) {
             cursor: "col-resize",
             transition: "background 150ms ease",
           }}
-          onMouseEnter={(e: any) => {
-            e.target.style.background = "#007ACC";
-            e.target.style.width = "2px";
+          onMouseEnter={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = "#007ACC";
+            target.style.width = "2px";
           }}
-          onMouseLeave={(e: any) => {
-            e.target.style.background = "#E5E5E5";
-            e.target.style.width = "1px";
+          onMouseLeave={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = "#E5E5E5";
+            target.style.width = "1px";
           }}
         />
 
@@ -99,13 +101,15 @@ export function StudioLayout({ workspaceId }: StudioLayoutProps) {
             cursor: "col-resize",
             transition: "background 150ms ease",
           }}
-          onMouseEnter={(e: any) => {
-            e.target.style.background = "#007ACC";
-            e.target.style.width = "2px";
+          onMouseEnter={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = "#007ACC";
+            target.style.width = "2px";
           }}
-          onMouseLeave={(e: any) => {
-            e.target.style.background = "#E5E5E5";
-            e.target.style.width = "1px";
+          onMouseLeave={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = "#E5E5E5";
+            target.style.width = "1px";
           }}
         />
 

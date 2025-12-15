@@ -24,8 +24,8 @@ export const useTabStore = create<TabStore>((set) => ({
 
   openTab: (type, entityId, label) => {
     set((state) => {
-      // Check if tab already exists
-      const existingTab = state.tabs.find((tab) => tab.entityId === entityId);
+      // Check if tab already exists (must match both type AND entityId)
+      const existingTab = state.tabs.find((tab) => tab.entityId === entityId && tab.type === type);
       if (existingTab) {
         return { activeTabId: existingTab.id };
       }
