@@ -1,15 +1,12 @@
 "use client";
 
+import "./studio.css";
 import { RequireAuth } from "@/providers/AuthWall";
 import { ProviderComposer } from "@/providers/ProviderComposer";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import { WorkspaceContextResolver } from "../app/WorkspaceContextResolver";
 
-export default function StudioLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProviderComposer>
       <RequireAuth>

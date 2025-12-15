@@ -1,20 +1,14 @@
 "use client";
 
-import React from "react";
 import { graphql } from "@/graphql";
-import {
-  useGetStudioDataQuery,
-  useGetProjectsAndContactsQuery,
-} from "@/graphql/hooks";
+import { useGetProjectsAndContactsQuery, useGetStudioDataQuery } from "@/graphql/hooks";
+import React from "react";
 import { FileNode } from "./types";
 
 // GraphQL Queries
 graphql(`
   query GetStudioData($workspaceId: ID!) {
-    listPriceBooks(
-      filter: { workspaceId: $workspaceId }
-      page: { number: 1, size: 100 }
-    ) {
+    listPriceBooks(filter: { workspaceId: $workspaceId }, page: { number: 1, size: 100 }) {
       items {
         id
         name
@@ -22,10 +16,7 @@ graphql(`
         parentPriceBookId
       }
     }
-    listPrices(
-      filter: { workspaceId: $workspaceId }
-      page: { number: 1, size: 1000 }
-    ) {
+    listPrices(filter: { workspaceId: $workspaceId }, page: { number: 1, size: 1000 }) {
       items {
         __typename
         ... on RentalPrice {
@@ -106,21 +97,43 @@ graphql(`
 interface VirtualFileSystemProps {
   workspaceId: string;
   onTreeDataReady: (data: FileNode[]) => void;
+  onRefreshReady?: (refetchFn: () => void) => void;
 }
 
 export function VirtualFileSystem({
   workspaceId,
   onTreeDataReady,
+  onRefreshReady,
 }: VirtualFileSystemProps) {
-  const { data: priceBookData, error: priceBookError, loading: priceBookLoading } = useGetStudioDataQuery({
+  const {
+    data: priceBookData,
+    error: priceBookError,
+    loading: priceBookLoading,
+    refetch: refetchPriceBook,
+  } = useGetStudioDataQuery({
     variables: { workspaceId },
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: projectsData, error: projectsError, loading: projectsLoading } = useGetProjectsAndContactsQuery({
+  const {
+    data: projectsData,
+    error: projectsError,
+    loading: projectsLoading,
+    refetch: refetchProjects,
+  } = useGetProjectsAndContactsQuery({
     variables: { workspaceId },
     fetchPolicy: "cache-and-network",
   });
+
+  // Provide refresh function to parent
+  React.useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(() => {
+        refetchPriceBook();
+        refetchProjects();
+      });
+    }
+  }, [onRefreshReady, refetchPriceBook, refetchProjects]);
 
   // Log errors
   React.useEffect(() => {
@@ -149,7 +162,7 @@ export function VirtualFileSystem({
 function buildFileTree(priceBookData: any, projectsData: any): FileNode[] {
   const prices = priceBookData.listPrices?.items || [];
   const priceBooks = priceBookData.listPriceBooks?.items || [];
-  
+
   const root: FileNode[] = [
     {
       id: "root-pricebooks",
@@ -177,9 +190,7 @@ function buildFileTree(priceBookData: any, projectsData: any): FileNode[] {
 function buildPriceBookNodes(priceBooks: any[], prices: any[]): FileNode[] {
   return priceBooks.map((pb) => {
     // Find all prices belonging to this price book
-    const priceBookPrices = prices.filter(
-      (price: any) => price.priceBook?.id === pb.id
-    );
+    const priceBookPrices = prices.filter((price: any) => price.priceBook?.id === pb.id);
 
     return {
       id: `pricebook-${pb.id}`,
@@ -203,8 +214,7 @@ function buildPriceBookNodes(priceBooks: any[], prices: any[]): FileNode[] {
 
 function buildProjectNodes(projects: any[]): FileNode[] {
   return projects.map((project) => {
-    const hasChildren =
-      project.sub_projects && project.sub_projects.length > 0;
+    const hasChildren = project.sub_projects && project.sub_projects.length > 0;
 
     return {
       id: `project-${project.id}`,
@@ -212,9 +222,7 @@ function buildProjectNodes(projects: any[]): FileNode[] {
       type: "entity",
       entityType: "project",
       entityId: project.id,
-      children: hasChildren
-        ? buildProjectNodes(project.sub_projects)
-        : undefined,
+      children: hasChildren ? buildProjectNodes(project.sub_projects) : undefined,
       isLazyLoaded: true, // First level is already loaded
       hasUnloadedChildren: hasChildren,
     };

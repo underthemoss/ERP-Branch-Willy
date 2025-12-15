@@ -1,14 +1,10 @@
 "use client";
 
 import { Box } from "@mui/material";
-import {
-  Panel,
-  PanelGroup,
-  PanelResizeHandle,
-} from "react-resizable-panels";
-import { FileExplorer } from "./FileExplorer/FileExplorer";
-import { ContentArea } from "./ContentArea/ContentArea";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { AgentPanel } from "./AgentPanel/AgentPlaceholder";
+import { ContentArea } from "./ContentArea/ContentArea";
+import { FileExplorer } from "./FileExplorer/FileExplorer";
 
 interface StudioLayoutProps {
   workspaceId: string;
@@ -18,7 +14,7 @@ export function StudioLayout({ workspaceId }: StudioLayoutProps) {
   return (
     <Box
       sx={{
-        height: "calc(100vh - 64px)",
+        height: "100vh",
         width: "100%",
         display: "flex",
         flexDirection: "column",

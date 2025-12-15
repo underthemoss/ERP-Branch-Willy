@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Loader2, Folder, FileText, Building2, User, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  Loader2,
+  RefreshCw,
+  User,
+} from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Tree } from "react-arborist";
+import { useTabStore } from "../../store/tabStore";
 import { FileNode } from "./types";
 import { VirtualFileSystem } from "./VirtualFileSystem";
-import { useTabStore } from "../../store/tabStore";
 
 interface FileExplorerProps {
   workspaceId: string;
@@ -14,8 +23,23 @@ interface FileExplorerProps {
 export function FileExplorer({ workspaceId }: FileExplorerProps) {
   const [treeData, setTreeData] = useState<FileNode[]>([]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const refreshFnRef = useRef<(() => void) | null>(null);
   const openTab = useTabStore((state) => state.openTab);
+
+  const handleRefreshReady = useCallback((refetchFn: () => void) => {
+    refreshFnRef.current = refetchFn;
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    if (refreshFnRef.current && !isRefreshing) {
+      setIsRefreshing(true);
+      refreshFnRef.current();
+      // Reset after a short delay
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  }, [isRefreshing]);
 
   useEffect(() => {
     console.log("FileExplorer treeData:", treeData);
@@ -82,9 +106,7 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
           }
         }}
       >
-        <div
-          className="flex items-center gap-1 pr-2 h-[22px] cursor-pointer transition-colors text-[13px] text-[#383838] hover:bg-[#E8E8E8]"
-        >
+        <div className="flex items-center gap-1 pr-2 h-[22px] cursor-pointer transition-colors text-[13px] text-[#383838] hover:bg-[#E8E8E8]">
           <div
             className="toggle-arrow flex items-center justify-center w-4 h-4 transition-transform"
             onClick={(e) => {
@@ -115,16 +137,12 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
 
   const getIcon = (node: FileNode) => {
     const iconClass = "w-4 h-4 flex-shrink-0";
-    
+
     if (node.type === "folder") return <Folder className={iconClass} />;
     if (node.entityType === "pricebook") return <FileText className={iconClass} />;
     if (node.entityType === "project") return <Folder className={iconClass} />;
     if (node.entityType === "contact") {
-      return node.children ? (
-        <Building2 className={iconClass} />
-      ) : (
-        <User className={iconClass} />
-      );
+      return node.children ? <Building2 className={iconClass} /> : <User className={iconClass} />;
     }
     return <FileText className={iconClass} />;
   };
@@ -135,6 +153,7 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
         <VirtualFileSystem
           workspaceId={workspaceId}
           onTreeDataReady={setTreeData}
+          onRefreshReady={handleRefreshReady}
         />
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
@@ -146,13 +165,24 @@ export function FileExplorer({ workspaceId }: FileExplorerProps) {
       <VirtualFileSystem
         workspaceId={workspaceId}
         onTreeDataReady={setTreeData}
+        onRefreshReady={handleRefreshReady}
       />
-      
+
       {/* Header */}
-      <div className="p-2 px-3 bg-white border-b border-[#E5E5E5]">
+      <div className="p-2 px-3 bg-white border-b border-[#E5E5E5] flex items-center justify-between">
         <span className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
           Explorer
         </span>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="p-1 hover:bg-[#E8E8E8] rounded transition-colors disabled:opacity-50"
+          title="Refresh"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 text-gray-500 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+        </button>
       </div>
 
       {/* Tree Area */}

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
 import { X } from "lucide-react";
+import React, { useState } from "react";
 import { useTabStore } from "../../store/tabStore";
 
 export function ContentArea() {
@@ -122,20 +122,14 @@ export function ContentArea() {
             </div>
 
             {/* Entity title */}
-            <h2 className="text-xl font-semibold text-[#383838] mb-1">
-              {activeTab.label}
-            </h2>
+            <h2 className="text-xl font-semibold text-[#383838] mb-1">{activeTab.label}</h2>
 
             {/* Entity ID */}
-            <p className="text-xs text-gray-500 font-mono mb-3">
-              Entity ID: {activeTab.entityId}
-            </p>
+            <p className="text-xs text-gray-500 font-mono mb-3">Entity ID: {activeTab.entityId}</p>
 
             {/* Placeholder content */}
             <div className="mt-3 p-4 bg-[#F8F8F8] border border-[#E5E5E5] rounded">
-              <p className="text-[13px] text-gray-500 mb-1">
-                Read-only view coming soon...
-              </p>
+              <p className="text-[13px] text-gray-500 mb-1">Read-only view coming soon...</p>
               <p className="text-xs text-gray-400">
                 This is a placeholder for the {activeTab.type} entity viewer.
               </p>
