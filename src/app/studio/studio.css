@@ -1,0 +1,130 @@
+/* Studio-specific styles */
+
+/* Agent chat markdown styling */
+.agent-markdown {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.agent-markdown p {
+  margin: 0.5em 0;
+}
+
+.agent-markdown p:first-child {
+  margin-top: 0;
+}
+
+.agent-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.agent-markdown ul,
+.agent-markdown ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.agent-markdown ul {
+  list-style-type: disc;
+}
+
+.agent-markdown ol {
+  list-style-type: decimal;
+}
+
+.agent-markdown li {
+  margin: 0.25em 0;
+}
+
+.agent-markdown code {
+  background-color: #f1f5f9;
+  padding: 0.125em 0.375em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.agent-markdown pre {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 0.75em 1em;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.agent-markdown pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.8125em;
+}
+
+.agent-markdown strong {
+  font-weight: 600;
+}
+
+.agent-markdown em {
+  font-style: italic;
+}
+
+.agent-markdown a {
+  color: #007acc;
+  text-decoration: underline;
+}
+
+.agent-markdown h1,
+.agent-markdown h2,
+.agent-markdown h3,
+.agent-markdown h4 {
+  font-weight: 600;
+  margin: 0.75em 0 0.5em;
+}
+
+.agent-markdown h1 {
+  font-size: 1.25em;
+}
+
+.agent-markdown h2 {
+  font-size: 1.125em;
+}
+
+.agent-markdown h3 {
+  font-size: 1em;
+}
+
+.agent-markdown blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.75em;
+  margin: 0.5em 0;
+  color: #6b7280;
+}
+
+.agent-markdown table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: max-content;
+  min-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.agent-markdown th,
+.agent-markdown td {
+  border: 1px solid #e5e7eb;
+  padding: 0.375em 0.5em;
+  text-align: left;
+}
+
+.agent-markdown th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.agent-markdown hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1em 0;
+}

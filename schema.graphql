@@ -2184,6 +2184,9 @@ type Project {
 
   """List of sub-projects (children) for this project."""
   sub_projects: [Project]
+
+  """Total count of all descendants (subprojects at all levels)"""
+  totalDescendantCount: Int!
   updated_at: String!
   updated_by: String!
   updated_by_user: User
