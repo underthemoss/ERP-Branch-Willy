@@ -1,5 +1,6 @@
 "use client";
 
+import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
 import { createSearchClient } from "@/lib/searchClient";
 import { useConfig } from "@/providers/ConfigProvider";
 import {
@@ -388,7 +389,13 @@ export default function IntakeFormCatalogPage() {
   const formId = params.id as string;
   const submissionId = searchParams.get("submissionId");
   const config = useConfig();
-  const { getAccessTokenSilently, loginWithRedirect, user, isAuthenticated } = useAuth0();
+  const {
+    getAccessTokenSilently,
+    loginWithRedirect,
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+  } = useAuth0();
   const [searchClient, setSearchClient] = useState<ReturnType<typeof createSearchClient> | null>(
     null,
   );
@@ -403,6 +410,16 @@ export default function IntakeFormCatalogPage() {
     fetchPolicy: "cache-and-network",
     skip: !formId,
   });
+
+  // Fetch user's workspaces (only if authenticated) for buyerWorkspaceId
+  const { data: workspacesData } = useWorkspaceProviderListWorkspacesQuery({
+    fetchPolicy: "cache-and-network",
+    skip: !isAuthenticated || authLoading,
+  });
+
+  // Get the first workspace ID as the buyer workspace (auto-select)
+  const userWorkspaces = workspacesData?.listWorkspaces?.items || [];
+  const buyerWorkspaceId = userWorkspaces.length > 0 ? userWorkspaces[0].id : null;
 
   // Query to check if submission is already submitted
   const { data: submissionData, loading: loadingSubmission } = useGetIntakeFormSubmissionByIdQuery({
@@ -550,7 +567,11 @@ export default function IntakeFormCatalogPage() {
   }
 
   return (
-    <CartProvider formId={formId} workspaceId={workspaceId || ""}>
+    <CartProvider
+      formId={formId}
+      workspaceId={workspaceId || ""}
+      buyerWorkspaceId={buyerWorkspaceId}
+    >
       <InstantSearch searchClient={searchClient} indexName="es_erp_prices">
         <CatalogContent
           formId={formId}

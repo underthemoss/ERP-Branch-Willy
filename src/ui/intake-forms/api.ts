@@ -23,6 +23,7 @@ export {
   useGetIntakeFormSubmissionByIdQuery,
   useListIntakeFormSubmissionsQuery,
   useListIntakeFormSubmissionsByFormIdQuery,
+  useListIntakeFormSubmissionsAsBuyerQuery,
   useListIntakeFormSubmissionLineItemsQuery,
   useCreateIntakeFormSubmissionMutation,
   useUpdateIntakeFormSubmissionMutation,
@@ -89,6 +90,26 @@ export const IntakeFormSubmissionFieldsFragment = graphql(`
     userId
     purchaseOrderId
     totalInCents
+    buyerWorkspaceId
+    buyerWorkspace {
+      id
+      name
+      logoUrl
+    }
+    form {
+      id
+      workspaceId
+      projectId
+      project {
+        id
+        name
+      }
+      workspace {
+        id
+        name
+        logoUrl
+      }
+    }
     salesOrder {
       id
       status
@@ -258,6 +279,35 @@ graphql(`
 graphql(`
   query ListIntakeFormSubmissionsByFormId($workspaceId: String!, $intakeFormId: String!) {
     listIntakeFormSubmissions(workspaceId: $workspaceId, intakeFormId: $intakeFormId) {
+      items {
+        ...IntakeFormSubmissionFields
+        lineItems {
+          ...IntakeFormSubmissionLineItemFields
+        }
+      }
+      page {
+        number
+        size
+        totalItems
+        totalPages
+      }
+    }
+  }
+`);
+
+graphql(`
+  query ListIntakeFormSubmissionsAsBuyer(
+    $buyerWorkspaceId: String!
+    $intakeFormId: String
+    $page: Int
+    $limit: Int
+  ) {
+    listIntakeFormSubmissionsAsBuyer(
+      buyerWorkspaceId: $buyerWorkspaceId
+      intakeFormId: $intakeFormId
+      page: $page
+      limit: $limit
+    ) {
       items {
         ...IntakeFormSubmissionFields
         lineItems {

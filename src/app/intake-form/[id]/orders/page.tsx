@@ -1,10 +1,12 @@
 "use client";
 
 import { IntakeFormSubmissionLineItemFieldsFragment } from "@/graphql/graphql";
+import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
 import {
   useGetIntakeFormByIdQuery,
-  useListIntakeFormSubmissionsByFormIdQuery,
+  useListIntakeFormSubmissionsAsBuyerQuery,
 } from "@/ui/intake-forms/api";
+import { WorkspaceSelector, WorkspaceSelectorWorkspace } from "@/ui/workspace/WorkspaceSelector";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Box,
@@ -23,6 +25,7 @@ import {
 import { CheckCircle, Clock, Edit3, FileQuestion, Package, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import OrdersHeader from "./components/OrdersHeader";
 
 // Helper to determine line item status
@@ -102,8 +105,11 @@ function StatusChip({ status }: { status: "draft" | "pending" | "processing" | "
 
 export default function OrdersListPage() {
   const params = useParams();
-  const { loginWithRedirect, user } = useAuth0();
+  const { loginWithRedirect, user, isAuthenticated, isLoading: authLoading } = useAuth0();
   const formId = params.id as string;
+
+  // State for selected buyer workspace
+  const [selectedBuyerWorkspaceId, setSelectedBuyerWorkspaceId] = useState<string | null>(null);
 
   // Query to get the intake form
   const {
@@ -117,29 +123,73 @@ export default function OrdersListPage() {
   });
 
   const intakeForm = intakeFormData?.getIntakeFormById;
-  const workspaceId = intakeForm?.workspaceId;
 
-  // Query to get submissions for this form
+  // Fetch user's workspaces (only if authenticated)
+  const { data: workspacesData, loading: loadingWorkspaces } =
+    useWorkspaceProviderListWorkspacesQuery({
+      fetchPolicy: "cache-and-network",
+      skip: !isAuthenticated || authLoading,
+    });
+
+  const userWorkspaces: WorkspaceSelectorWorkspace[] = useMemo(
+    () => workspacesData?.listWorkspaces?.items || [],
+    [workspacesData?.listWorkspaces?.items],
+  );
+
+  // Auto-select first workspace when workspaces load
+  useEffect(() => {
+    if (userWorkspaces.length > 0 && !selectedBuyerWorkspaceId) {
+      setSelectedBuyerWorkspaceId(userWorkspaces[0].id);
+    }
+  }, [userWorkspaces, selectedBuyerWorkspaceId]);
+
+  // Query to get submissions for this form using the buyer query
   const { data: submissionsData, loading: loadingSubmissions } =
-    useListIntakeFormSubmissionsByFormIdQuery({
+    useListIntakeFormSubmissionsAsBuyerQuery({
       variables: {
-        workspaceId: workspaceId || "",
+        buyerWorkspaceId: selectedBuyerWorkspaceId || "",
         intakeFormId: formId,
       },
       fetchPolicy: "cache-and-network",
-      skip: !workspaceId || !formId,
+      skip: !selectedBuyerWorkspaceId || !formId,
     });
 
   // Show all submissions (both draft and submitted)
-  const submissions = submissionsData?.listIntakeFormSubmissions?.items || [];
+  const submissions = submissionsData?.listIntakeFormSubmissionsAsBuyer?.items || [];
 
   // Loading state
-  if (loadingForm || loadingSubmissions) {
+  if (loadingForm || loadingWorkspaces || authLoading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
           <CircularProgress />
           <Typography sx={{ mt: 2 }}>Loading orders...</Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
+  // If user is not authenticated, prompt to login
+  if (!isAuthenticated) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h6" gutterBottom>
+            Sign in to view your orders
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            You need to be signed in to view your orders for this form.
+          </Typography>
+          <button
+            onClick={() =>
+              loginWithRedirect({
+                appState: { returnTo: window.location.pathname },
+              })
+            }
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Sign In
+          </button>
         </Paper>
       </Container>
     );
@@ -193,16 +243,36 @@ export default function OrdersListPage() {
 
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Your Orders
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Track the status of your equipment requests
-          </Typography>
+        <Box
+          sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
+        >
+          <Box>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              Your Orders
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Track the status of your equipment requests
+            </Typography>
+          </Box>
+
+          {/* Workspace selector - only shown if user has multiple workspaces */}
+          {userWorkspaces.length > 1 && (
+            <WorkspaceSelector
+              workspaces={userWorkspaces}
+              selectedWorkspaceId={selectedBuyerWorkspaceId}
+              onWorkspaceChange={setSelectedBuyerWorkspaceId}
+              label="Viewing orders for"
+              hideIfSingle={true}
+            />
+          )}
         </Box>
 
-        {submissions.length === 0 ? (
+        {loadingSubmissions ? (
+          <Paper elevation={1} sx={{ p: 6, textAlign: "center" }}>
+            <CircularProgress size={48} sx={{ mb: 2 }} />
+            <Typography color="text.secondary">Loading your orders...</Typography>
+          </Paper>
+        ) : submissions.length === 0 ? (
           <Paper elevation={1} sx={{ p: 6, textAlign: "center" }}>
             <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
             <Typography variant="h6" gutterBottom>

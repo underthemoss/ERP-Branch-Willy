@@ -10,4 +10,5 @@ ignores:
   - autoprefixer
   - postcss
   - tailwindcss
+  - notistack
 skip-missing: true

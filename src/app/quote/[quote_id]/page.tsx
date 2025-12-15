@@ -198,24 +198,7 @@ export default function BuyerQuoteReviewPage() {
   }
 
   const quote = data.quoteById;
-
-  // Already accepted state
-  if (accepted || quote.status === "ACCEPTED") {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20 animate-bounce">
-            <CheckCircle2 className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-semibold text-slate-900 mb-3">Quote Accepted!</h1>
-          <p className="text-slate-600 text-sm leading-relaxed mb-8">
-            This quote has been accepted. A sales order has been created and you&apos;ll receive a
-            confirmation email shortly.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const isAccepted = accepted || quote.status === "ACCEPTED";
 
   // Quote rejected/cancelled/expired
   if (["REJECTED", "CANCELLED", "EXPIRED"].includes(quote.status)) {
@@ -240,33 +223,59 @@ export default function BuyerQuoteReviewPage() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Review Your Quote</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            {isAccepted ? "Quote Accepted" : "Review Your Quote"}
+          </h1>
           <p className="text-slate-600">
-            Please review the details below and accept to proceed with your order
+            {isAccepted
+              ? "This quote has been accepted. A sales order has been created."
+              : "Please review the details below and accept to proceed with your order"}
           </p>
         </div>
+
+        {/* Accepted Banner */}
+        {isAccepted && (
+          <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/20">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-900">Quote Accepted</h3>
+                <p className="text-xs text-emerald-700">
+                  A sales order has been created and you should receive a confirmation email
+                  shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quote Display */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 mb-6">
           <QuoteDisplay quoteId={quoteId} />
         </div>
 
-        {/* Accept Button */}
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center sm:text-left">
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Ready to proceed?</h3>
-              <p className="text-sm text-slate-600">Accept this quote to create your sales order</p>
+        {/* Accept Button - only show if not accepted */}
+        {!isAccepted && (
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">Ready to proceed?</h3>
+                <p className="text-sm text-slate-600">
+                  Accept this quote to create your sales order
+                </p>
+              </div>
+              <button
+                onClick={() => setAcceptDialogOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                Accept & Sign Quote
+              </button>
             </div>
-            <button
-              onClick={() => setAcceptDialogOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              Accept & Sign Quote
-            </button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Signature Dialog */}

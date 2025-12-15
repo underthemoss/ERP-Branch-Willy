@@ -240,6 +240,8 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
           bannerImageUrl: selectedBannerUrl || defaultBannerUrl || undefined,
           archived: false,
         },
+        refetchQueries: ["WorkspaceProviderListWorkspaces"],
+        awaitRefetchQueries: true,
       });
 
       if (data?.createWorkspace?.id) {

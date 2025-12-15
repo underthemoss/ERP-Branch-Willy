@@ -140,9 +140,15 @@ interface CartProviderProps {
   children: React.ReactNode;
   formId: string;
   workspaceId: string;
+  buyerWorkspaceId?: string | null;
 }
 
-export function CartProvider({ children, formId, workspaceId }: CartProviderProps) {
+export function CartProvider({
+  children,
+  formId,
+  workspaceId,
+  buyerWorkspaceId,
+}: CartProviderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const existingSubmissionId = searchParams.get("submissionId");
@@ -259,6 +265,8 @@ export function CartProvider({ children, formId, workspaceId }: CartProviderProp
               input: {
                 formId,
                 workspaceId,
+                // Include buyerWorkspaceId if user is authenticated and has a workspace
+                buyerWorkspaceId: buyerWorkspaceId || undefined,
               },
             },
           });
@@ -333,7 +341,16 @@ export function CartProvider({ children, formId, workspaceId }: CartProviderProp
         setIsLoading(false);
       }
     },
-    [submissionId, items.length, formId, workspaceId, createSubmission, createLineItem, router],
+    [
+      submissionId,
+      items.length,
+      formId,
+      workspaceId,
+      buyerWorkspaceId,
+      createSubmission,
+      createLineItem,
+      router,
+    ],
   );
 
   // Update item
