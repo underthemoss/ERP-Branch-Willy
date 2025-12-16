@@ -4,30 +4,38 @@ This module implements an AI agent that can interact with workspace data using n
 
 ## Architecture
 
+The frontend agent behaves like an MCP client (similar to Cline), fetching available tools from the backend MCP server and executing them via MCP protocol.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           Frontend (Next.js)                         │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌───────────────┐ │
-│  │   AgentPanel    │────▶│  useAgentChat   │────▶│ TOOL_EXECUTORS│ │
-│  │  (UI Component) │     │    (Hook)       │     │  (GraphQL)    │ │
-│  └─────────────────┘     └────────┬────────┘     └───────────────┘ │
-│                                   │                                 │
-└───────────────────────────────────┼─────────────────────────────────┘
-                                    │ HTTP + SSE Streaming
-                                    ▼
+│  │   AgentPanel    │────▶│  useAgentChat   │────▶│   McpClient   │ │
+│  │  (UI Component) │     │    (Hook)       │     │               │ │
+│  └─────────────────┘     └────────┬────────┘     └───────┬───────┘ │
+│                                   │                       │         │
+└───────────────────────────────────┼───────────────────────┼─────────┘
+                                    │                       │
+                     HTTP + SSE     │        MCP Protocol   │
+                     Streaming      │        (JSON-RPC)     │
+                                    ▼                       ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          Backend (Fastify)                           │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │                   Agent Plugin (/api/agent)                     ││
-│  │  ┌──────────────┐                                               ││
-│  │  │ chatHandler  │ ───────▶ OpenAI API (with streaming)          ││
-│  │  └──────────────┘                                               ││
-│  └─────────────────────────────────────────────────────────────────┘│
-│                                                                      │
+│  ┌────────────────────────────┐   ┌────────────────────────────────┐│
+│  │  Agent Plugin              │   │       MCP Server               ││
+│  │  POST /api/agent/chat      │   │       POST /api/mcp            ││
+│  │  ┌──────────────────────┐  │   │  ┌──────────────────────────┐  ││
+│  │  │  chatHandler         │  │   │  │  Tools (GraphQL-based)   │  ││
+│  │  │  (OpenAI proxy)      │  │   │  │  - list_projects         │  ││
+│  │  └──────────────────────┘  │   │  │  - list_contacts         │  ││
+│  └────────────────────────────┘   │  │  - list_workspaces       │  ││
+│                                   │  │  - (add more here)       │  ││
+│                                   │  └──────────────────────────┘  ││
+│                                   └────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -35,23 +43,45 @@ This module implements an AI agent that can interact with workspace data using n
 
 ### Frontend (es-erp)
 
-- `src/lib/agent/tools.ts` - Tool definitions and executors
-- `src/lib/agent/useAgentChat.ts` - Chat hook with streaming support
-- `src/app/studio/[workspace_id]/components/AgentPanel/AgentPlaceholder.tsx` - UI
+- `src/lib/agent/mcpClient.ts` - MCP client for communicating with backend MCP server
+- `src/lib/agent/useAgentChat.ts` - Chat hook with streaming and MCP tool execution
+- `src/lib/agent/fileParser.ts` - File parsing utilities for context
+- `src/app/studio/[workspace_id]/components/AgentPanel/` - UI components
 
 ### Backend (es-erp-api)
 
-- `src/plugins/agent/index.ts` - Fastify plugin registration
-- `src/plugins/agent/handlers/chat.ts` - Chat handler with SSE streaming
+- `src/plugins/agent/` - OpenAI proxy for chat completions
+- `src/plugins/mcp/` - MCP server with tool definitions
+  - `tools/` - Individual tool implementations (GraphQL-based)
+  - `server-factory.ts` - MCP server factory
+  - `index.ts` - Fastify plugin registration
 
 ## Flow
 
-1. **User sends message** → `AgentPanel` → `useAgentChat.sendMessage()`
-2. **Request to backend** → `POST /api/agent/chat` with auth token
-3. **Backend proxies to OpenAI** → Streams response via SSE
-4. **If tool call requested** → Frontend executes GraphQL query locally
-5. **Tool result sent back** → OpenAI generates final response
-6. **Response displayed** → Real-time token streaming in UI
+1. **Initialization**: `useAgentChat` creates an `McpClient` and fetches available tools from the MCP server
+2. **User sends message** → `AgentPanel` → `useAgentChat.sendMessage()`
+3. **Request to backend** → `POST /api/agent/chat` with auth token and MCP tools
+4. **Backend proxies to OpenAI** → Streams response via SSE
+5. **If tool call requested** → Frontend calls MCP server (`POST /api/mcp`) to execute
+6. **Tool result sent back** → OpenAI generates final response
+7. **Response displayed** → Real-time token streaming in UI
+
+## MCP Integration
+
+The frontend acts as an MCP client:
+
+```typescript
+// Initialize MCP client
+const client = new McpClient(graphqlUrl, getAuthToken);
+await client.initialize();
+
+// Fetch available tools
+const mcpTools = await client.listTools();
+const openaiTools = mcpToolsToOpenAI(mcpTools);
+
+// Execute a tool
+const result = await client.callTool("list_projects", { workspaceId: "..." });
+```
 
 ## Streaming
 
@@ -63,7 +93,7 @@ The agent supports Server-Sent Events (SSE) streaming:
 Enable/disable with the `stream` option:
 
 ```typescript
-const { messages, sendMessage } = useAgentChat({
+const { messages, sendMessage, availableTools, isInitialized } = useAgentChat({
   workspaceId,
   stream: true, // default
 });
@@ -71,50 +101,67 @@ const { messages, sendMessage } = useAgentChat({
 
 ## Adding New Tools
 
-1. **Add GraphQL query** in `tools.ts`:
+Tools are defined in the **backend MCP server** (`es-erp-api/src/plugins/mcp/tools/`).
+
+1. **Create a new tool file** (e.g., `create_project.ts`):
 
 ```typescript
-graphql(`
-  query AgentListContacts($workspaceId: String!) {
-    listContacts(workspaceId: $workspaceId) {
+import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { gql } from "graphql-request";
+import { z } from "zod";
+import type { Sdk } from "../generated/graphql";
+import { McpTool } from "./types";
+
+// GraphQL operation (picked up by codegen)
+gql`
+  mutation McpCreateProject($input: ProjectInput!) {
+    createProject(input: $input) {
       id
       name
     }
   }
-`);
-```
+`;
 
-2. **Run codegen**: `npm run codegen`
-
-3. **Add tool definition** to `AGENT_TOOLS`:
-
-```typescript
-{
-  type: "function" as const,
-  function: {
-    name: "list_contacts",
-    description: "Get all contacts in the workspace",
-    parameters: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
+export const createProjectTool: McpTool = {
+  name: "create_project",
+  description: "Create a new project in the workspace",
+  inputSchema: {
+    workspaceId: z.string().describe("The workspace ID"),
+    name: z.string().describe("Project name"),
+    project_code: z.string().describe("Unique project code"),
   },
-}
-```
+  handler: async (sdk: Sdk, args): Promise<CallToolResult> => {
+    const result = await sdk.McpCreateProject({
+      input: {
+        workspaceId: args.workspaceId,
+        name: args.name,
+        project_code: args.project_code,
+      },
+    });
 
-4. **Add executor** to `TOOL_EXECUTORS`:
-
-```typescript
-list_contacts: async (args, apolloClient) => {
-  const result = await apolloClient.query({
-    query: AgentListContactsDocument,
-    variables: { workspaceId: args.workspaceId },
-    fetchPolicy: "network-only",
-  });
-  return result.data.listContacts;
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  },
 };
 ```
+
+2. **Register the tool** in `tools/index.ts`:
+
+```typescript
+import { createProjectTool } from "./create_project";
+
+export const mcpTools: McpTool[] = [
+  listProjectsTool,
+  listContactsTool,
+  listWorkspacesTool,
+  createProjectTool, // Add here
+];
+```
+
+3. **Run codegen** in es-erp-api: `npm run codegen`
+
+The frontend will automatically pick up new tools on the next page load!
 
 ## Environment Variables
 
@@ -131,6 +178,13 @@ OPENAI_API_KEY=sk-...
 ## Security
 
 - **Authentication**: All requests require valid JWT token
-- **Workspace scoping**: LLM is unaware of workspace - injected by frontend
+- **MCP server**: Authenticates requests, uses user's GraphQL permissions
 - **Tool execution**: Runs in user's context with their permissions
-- **API key**: Stored securely on backend only
+- **API key**: OpenAI key stored securely on backend only
+
+## Benefits of MCP Architecture
+
+- ✅ **Single source of truth**: Tools defined once in backend, used by web app AND external AI assistants (Cline, Claude Desktop)
+- ✅ **Cline-like behavior**: Frontend agent behaves like a proper MCP client
+- ✅ **Easy to extend**: Add new tools in one place
+- ✅ **Consistent authorization**: All tool calls go through GraphQL with user's auth

@@ -7,7 +7,7 @@ import {
   ParsedFile,
   parseFile,
 } from "@/lib/agent/fileParser";
-import { FileContext, ToolCallInfo, useAgentChat } from "@/lib/agent/useAgentChat";
+import { FileContext, PendingToolCall, ToolCallInfo, useAgentChat } from "@/lib/agent/useAgentChat";
 import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import {
   Bot,
@@ -113,6 +113,143 @@ function ToolCallSection({ toolCalls }: ToolCallSectionProps) {
   );
 }
 
+interface PendingToolApprovalProps {
+  pendingToolCalls: PendingToolCall[];
+  allowedTools: Set<string>;
+  onApprove: (toolsToAlwaysAllow?: string[]) => void;
+  onReject: () => void;
+}
+
+function PendingToolApproval({
+  pendingToolCalls,
+  allowedTools,
+  onApprove,
+  onReject,
+}: PendingToolApprovalProps) {
+  const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
+  // Track which tools to "always allow" - pre-checked if already in allowedTools
+  const [toolsToAllow, setToolsToAllow] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    pendingToolCalls.forEach((tc) => {
+      if (allowedTools.has(tc.name)) {
+        initial.add(tc.name);
+      }
+    });
+    return initial;
+  });
+
+  const toggleTool = (id: string) => {
+    setExpandedTools((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleApprove = () => {
+    // Get list of newly checked tools (not already in allowedTools)
+    const newToolsToAllow = Array.from(toolsToAllow).filter((t) => !allowedTools.has(t));
+    onApprove(newToolsToAllow.length > 0 ? newToolsToAllow : undefined);
+  };
+
+  return (
+    <div className="mb-2 space-y-1">
+      {pendingToolCalls.map((tc) => {
+        const isExpanded = expandedTools.has(tc.id);
+        const isAlreadyAllowed = allowedTools.has(tc.name);
+        const willAllow = toolsToAllow.has(tc.name);
+
+        return (
+          <div key={tc.id} className="border border-[#E5E5E5] rounded bg-[#FAFAFA] text-[12px]">
+            <div className="flex items-center">
+              <button
+                onClick={() => toggleTool(tc.id)}
+                className="flex-1 flex items-center gap-2 px-2 py-1.5 hover:bg-[#F0F0F0] transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                )}
+                <Wrench className="w-3 h-3 text-[#007ACC] flex-shrink-0" />
+                <span className="font-mono text-[11px] text-gray-700 flex-1 text-left truncate">
+                  {tc.name}
+                </span>
+                {isAlreadyAllowed ? (
+                  <span className="text-[9px] text-green-600 uppercase tracking-wide">allowed</span>
+                ) : (
+                  <span className="text-[9px] text-gray-400 uppercase tracking-wide">pending</span>
+                )}
+              </button>
+              {/* Always allow checkbox */}
+              <label
+                className="flex items-center gap-1 px-2 py-1.5 cursor-pointer hover:bg-[#F0F0F0]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={willAllow}
+                  onChange={() =>
+                    setToolsToAllow((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(tc.name)) {
+                        next.delete(tc.name);
+                      } else {
+                        next.add(tc.name);
+                      }
+                      return next;
+                    })
+                  }
+                  disabled={isAlreadyAllowed}
+                  className="w-3 h-3 rounded border-gray-300 text-[#007ACC] focus:ring-[#007ACC] focus:ring-1 disabled:opacity-50"
+                />
+                <span className="text-[9px] text-gray-500 whitespace-nowrap">Always allow</span>
+              </label>
+            </div>
+
+            {isExpanded && (
+              <div className="px-2 pb-2 pt-1 border-t border-[#E5E5E5] space-y-2">
+                <div>
+                  <div className="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+                    Arguments
+                  </div>
+                  <pre className="text-[10px] font-mono bg-[#1e293b] text-[#e2e8f0] p-2 rounded overflow-x-auto max-h-24">
+                    {JSON.stringify(tc.arguments, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Compact action bar */}
+      <div className="flex items-center gap-2 pt-1">
+        <span className="text-[10px] text-gray-500">
+          {pendingToolCalls.length} tool{pendingToolCalls.length > 1 ? "s" : ""} require approval
+        </span>
+        <div className="flex-1" />
+        <button
+          onClick={onReject}
+          className="px-2 py-1 text-[11px] font-medium text-gray-600 bg-white border border-[#D4D4D4] rounded hover:bg-gray-50 transition-colors"
+        >
+          Reject
+        </button>
+        <button
+          onClick={handleApprove}
+          className="px-2 py-1 text-[11px] font-medium text-white bg-[#007ACC] rounded hover:bg-[#005A9E] transition-colors"
+        >
+          Approve
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface AttachedFileProps {
   file: File;
   parsedFile: ParsedFile | null;
@@ -185,14 +322,27 @@ export function AgentPanel() {
   const [isParsing, setIsParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const { messages, isLoading, sendMessage } = useAgentChat({
+  // Auto-approve state
+  const [autoApprove, setAutoApprove] = useState(false);
+
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    pendingToolCalls,
+    isAwaitingApproval,
+    approveToolCalls,
+    rejectToolCalls,
+    allowedTools,
+  } = useAgentChat({
     workspaceId: workspaceId || "",
+    requireToolApproval: !autoApprove,
   });
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or pending tools appear
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, pendingToolCalls]);
 
   // Parse file when attached
   useEffect(() => {
@@ -293,6 +443,16 @@ export function AgentPanel() {
           <span className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
             AI Agent
           </span>
+          <div className="flex-1" />
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoApprove}
+              onChange={(e) => setAutoApprove(e.target.checked)}
+              className="w-3 h-3 rounded border-gray-300 text-[#007ACC] focus:ring-[#007ACC] focus:ring-1"
+            />
+            <span className="text-[10px] text-gray-500">Auto-approve all</span>
+          </label>
         </div>
       </div>
 
@@ -365,6 +525,17 @@ export function AgentPanel() {
                 </div>
               );
             })}
+
+            {/* Pending tool approval UI */}
+            {isAwaitingApproval && pendingToolCalls.length > 0 && (
+              <PendingToolApproval
+                pendingToolCalls={pendingToolCalls}
+                allowedTools={allowedTools}
+                onApprove={approveToolCalls}
+                onReject={rejectToolCalls}
+              />
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}
@@ -372,8 +543,16 @@ export function AgentPanel() {
 
       {/* Input Area */}
       <div className="p-3 border-t border-[#E5E5E5] bg-white space-y-2">
+        {/* Awaiting approval indicator */}
+        {isAwaitingApproval && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded text-[11px] bg-[#F5F5F5] border border-[#E0E0E0]">
+            <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
+            <span className="text-gray-600">Awaiting tool approval</span>
+          </div>
+        )}
+
         {/* Attached file preview */}
-        {(attachedFile || parseError) && (
+        {(attachedFile || parseError) && !isAwaitingApproval && (
           <AttachedFile
             file={attachedFile!}
             parsedFile={parsedFile}
@@ -397,7 +576,7 @@ export function AgentPanel() {
           {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || isParsing}
+            disabled={isLoading || isParsing || isAwaitingApproval}
             className="p-2 text-gray-500 hover:text-[#007ACC] hover:bg-[#F0F0F0] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Attach PDF or CSV"
           >
@@ -407,17 +586,24 @@ export function AgentPanel() {
           {/* Text input */}
           <input
             type="text"
-            placeholder={attachedFile ? "Ask about this file..." : "Ask me anything..."}
+            placeholder={
+              isAwaitingApproval
+                ? "Approve or reject the tool request above..."
+                : attachedFile
+                  ? "Ask about this file..."
+                  : "Ask me anything..."
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
-            className="flex-1 px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#007ACC]"
+            disabled={isAwaitingApproval}
+            className="flex-1 px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#007ACC] disabled:bg-gray-50 disabled:text-gray-400"
           />
 
           {/* Send button */}
           <button
             onClick={handleSend}
-            disabled={isLoading || !input.trim() || isParsing}
+            disabled={isLoading || !input.trim() || isParsing || isAwaitingApproval}
             className="px-4 py-2 bg-[#007ACC] text-white text-[13px] font-medium rounded hover:bg-[#005A9E] disabled:bg-[#007ACC]/50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {isLoading ? (
