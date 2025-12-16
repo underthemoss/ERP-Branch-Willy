@@ -271,7 +271,7 @@ export function SourceSubmissionCard({
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-wider">Submission ID</p>
           <Link
-            href={`/app/${workspaceId}/intake-forms?submissionId=${submission.id}`}
+            href={`/app/${workspaceId}/requests/${submission.id}`}
             className="text-sm font-mono text-blue-600 hover:underline mt-1 block"
           >
             {submission.id}

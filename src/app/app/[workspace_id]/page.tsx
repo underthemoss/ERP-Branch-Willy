@@ -415,7 +415,7 @@ export default function DashboardMainSection() {
                 transition: "transform 0.2s",
                 "&:hover": { transform: "translateY(-2px)" },
               }}
-              onClick={() => router.push(`/app/${workspaceId}/intake-forms`)}
+              onClick={() => router.push(`/app/${workspaceId}/requests`)}
             >
               <CardContent sx={{ p: 3 }}>
                 <Stack direction="row" alignItems="center" spacing={2}>

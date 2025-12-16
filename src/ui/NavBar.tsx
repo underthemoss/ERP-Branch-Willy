@@ -123,31 +123,31 @@ const NavBarContent: React.FC<{
       href: `/app/${currentWorkspace?.id}/sales-orders`,
       icon: <TrendingUp size={18} />,
       selected:
-        pathname === `/app/${currentWorkspace?.id}/sales-orders` ||
-        pathname === `/app/${currentWorkspace?.id}/invoices` ||
-        pathname === `/app/${currentWorkspace?.id}/sales-quotes` ||
-        pathname === `/app/${currentWorkspace?.id}/intake-forms`,
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/sales-orders`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/invoices`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/sales-quotes`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/requests`),
       testId: "nav-sales",
       subitems: [
         {
           text: "Requests",
-          href: `/app/${currentWorkspace?.id}/intake-forms`,
+          href: `/app/${currentWorkspace?.id}/requests`,
           icon: <Mail size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/intake-forms`,
-          testId: "nav-intake-forms",
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/requests`),
+          testId: "nav-requests",
         },
         {
           text: "Sales Orders",
           href: `/app/${currentWorkspace?.id}/sales-orders`,
           icon: <ArrowLeftRight size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/sales-orders`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/sales-orders`),
           testId: "nav-sales-order",
         },
         {
           text: "Invoices",
           href: `/app/${currentWorkspace?.id}/invoices`,
           icon: <Receipt size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/invoices`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/invoices`),
           testId: "nav-invoices",
         },
       ],
@@ -157,22 +157,22 @@ const NavBarContent: React.FC<{
       href: `/app/${currentWorkspace?.id}/purchase-orders`,
       icon: <ShoppingCart size={18} />,
       selected:
-        pathname === `/app/${currentWorkspace?.id}/purchase-orders` ||
-        pathname === `/app/${currentWorkspace?.id}/my-requests`,
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/purchase-orders`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/my-requests`),
       testId: "nav-purchasing",
       subitems: [
         {
           text: "My Requests",
           href: `/app/${currentWorkspace?.id}/my-requests`,
           icon: <ClipboardList size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/my-requests`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/my-requests`),
           testId: "nav-my-requests",
         },
         {
           text: "Purchase Orders",
           href: `/app/${currentWorkspace?.id}/purchase-orders`,
           icon: <FileText size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/purchase-orders`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/purchase-orders`),
           testId: "nav-purchase-order",
         },
       ],
@@ -182,22 +182,22 @@ const NavBarContent: React.FC<{
       href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
       icon: <Truck size={18} />,
       selected:
-        pathname === `/app/${currentWorkspace?.id}/rental-fulfillments` ||
-        pathname === `/app/${currentWorkspace?.id}/inventory`,
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/rental-fulfillments`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/inventory`),
       testId: "nav-fulfillment",
       subitems: [
         {
           text: "Rental Fulfillments",
           href: `/app/${currentWorkspace?.id}/rental-fulfillments`,
           icon: <CalendarDays size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/rental-fulfillments`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/rental-fulfillments`),
           testId: "nav-rental-fulfillment",
         },
         {
           text: "Inventory",
           href: `/app/${currentWorkspace?.id}/inventory`,
           icon: <Package size={18} />,
-          selected: pathname === `/app/${currentWorkspace?.id}/inventory`,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/inventory`),
           testId: "nav-inventory",
         },
       ],
@@ -213,15 +213,31 @@ const NavBarContent: React.FC<{
       text: "Projects",
       href: `/app/${currentWorkspace?.id}/projects`,
       icon: <FolderOpen size={18} />,
-      selected: pathname === `/app/${currentWorkspace?.id}/projects`,
+      selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/projects`),
       testId: "nav-projects",
     },
     {
       text: "Contacts",
       href: `/app/${currentWorkspace?.id}/contacts`,
       icon: <Users size={18} />,
-      selected: pathname === `/app/${currentWorkspace?.id}/contacts`,
+      selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/contacts`),
       testId: "nav-contacts",
+    },
+    {
+      text: "Sales Channels",
+      href: `/app/${currentWorkspace?.id}/store-fronts`,
+      icon: <Building2 size={18} />,
+      selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/store-fronts`),
+      testId: "nav-sales-channels",
+      subitems: [
+        {
+          text: "Store Fronts",
+          href: `/app/${currentWorkspace?.id}/store-fronts`,
+          icon: <Building2 size={18} />,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/store-fronts`),
+          testId: "nav-store-fronts",
+        },
+      ],
     },
   ];
 
@@ -234,7 +250,7 @@ const NavBarContent: React.FC<{
         text: "Sales Quotes",
         href: `/app/${currentWorkspace?.id}/sales-quotes`,
         icon: <FileQuestion size={18} />,
-        selected: pathname === `/app/${currentWorkspace?.id}/sales-quotes`,
+        selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/sales-quotes`),
         testId: "nav-sales-quotes",
       });
     }
@@ -290,6 +306,57 @@ const NavBarContent: React.FC<{
       ],
     });
   }
+
+  // Auto-expand nav groups when their children are selected
+  useEffect(() => {
+    // Check which nav groups have selected children and expand them
+    const workspaceBase = `/app/${currentWorkspace?.id}`;
+    const groupsToExpand: string[] = [];
+
+    // Check Sales group
+    if (
+      pathname?.startsWith(`${workspaceBase}/sales-orders`) ||
+      pathname?.startsWith(`${workspaceBase}/invoices`) ||
+      pathname?.startsWith(`${workspaceBase}/sales-quotes`) ||
+      pathname?.startsWith(`${workspaceBase}/requests`)
+    ) {
+      groupsToExpand.push("Sales");
+    }
+
+    // Check Purchasing group
+    if (
+      pathname?.startsWith(`${workspaceBase}/purchase-orders`) ||
+      pathname?.startsWith(`${workspaceBase}/my-requests`)
+    ) {
+      groupsToExpand.push("Purchasing");
+    }
+
+    // Check Fulfillment group
+    if (
+      pathname?.startsWith(`${workspaceBase}/rental-fulfillments`) ||
+      pathname?.startsWith(`${workspaceBase}/inventory`)
+    ) {
+      groupsToExpand.push("Fulfillment");
+    }
+
+    // Check Search group (admin only)
+    if (pathname?.startsWith(`${workspaceBase}/search`)) {
+      groupsToExpand.push("Search");
+    }
+
+    // Check Sales Channels group
+    if (pathname?.startsWith(`${workspaceBase}/store-fronts`)) {
+      groupsToExpand.push("Sales Channels");
+    }
+
+    if (groupsToExpand.length > 0) {
+      setExpandedNav((prev) => {
+        const next = new Set(prev);
+        groupsToExpand.forEach((group) => next.add(group));
+        return next;
+      });
+    }
+  }, [pathname, currentWorkspace?.id]);
 
   const toggleNavExpand = (text: string) => {
     setExpandedNav((prev) => {
