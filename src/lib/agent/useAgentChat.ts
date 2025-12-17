@@ -1,10 +1,38 @@
 "use client";
 
 import { useConfig } from "@/providers/ConfigProvider";
-import { useApolloClient } from "@apollo/client";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useCallback, useState } from "react";
-import { AGENT_TOOLS, TOOL_EXECUTORS } from "./tools";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  executeLocalTool,
+  getLocalToolDefinitions,
+  isLocalTool,
+  isPendingUserOptionsResult,
+  isPresentOptionsTool,
+  UserOption,
+} from "./localTools";
+import { McpClient, mcpToolsToOpenAI, OpenAITool, parseToolResult } from "./mcpClient";
+
+/**
+ * Trusted tools that are always auto-approved (no user approval needed)
+ * These are safe, read-only, or UI-only operations
+ *
+ * Add tool names here to bypass the approval UI
+ */
+const TRUSTED_TOOLS = new Set([
+  // Local tools (UI interactions)
+  "present_options",
+
+  // MCP tools - read-only operations (add more as needed)
+  "list_projects",
+  "list_contacts",
+  "list_workspaces",
+  "get_project",
+  "get_contact",
+  "brave_search",
+  "traverse_pim",
+  "search_pim",
+]);
 
 export interface ToolCallInfo {
   id: string;
@@ -16,7 +44,7 @@ export interface ToolCallInfo {
 }
 
 export interface ChatMessage {
-  role: "user" | "assistant" | "tool" | "tool_display";
+  role: "user" | "assistant" | "tool" | "tool_display" | "system";
   content: string | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
@@ -35,13 +63,89 @@ export interface ToolCall {
 
 export interface UseAgentChatOptions {
   workspaceId: string;
+  workspaceName?: string;
   model?: string;
   stream?: boolean;
+  requireToolApproval?: boolean;
+  systemPrompt?: string;
+}
+
+/**
+ * Generate the default system prompt for the ERP assistant
+ */
+function getDefaultSystemPrompt(workspaceId: string, workspaceName?: string): string {
+  const workspaceInfo = workspaceName
+    ? `**Current Workspace: ${workspaceName}** (ID: ${workspaceId})`
+    : `**Current Workspace ID: ${workspaceId}**`;
+
+  return `You are an ERP Assistant helping users manage their workspace in an equipment rental and sales platform.
+
+${workspaceInfo}
+Always use this workspace ID when making tool calls that require it.
+
+## Your Capabilities
+
+You can help users with:
+- **Projects**: Create, update, search, and manage projects (construction, rental, etc.)
+- **Contacts**: Manage business contacts and person contacts
+- **Sales Orders & Purchase Orders**: Create, view, and manage orders
+- **Quotes & RFQs**: Generate quotes, manage quote revisions, handle RFQs
+- **Inventory**: Track inventory items, manage stock levels
+- **Invoices**: Create and manage invoices, add tax line items
+- **Pricing**: Manage price books, rental prices, and sale prices
+- **Fulfilments**: Track rental, sale, and service fulfilments
+- **Intake Forms**: Manage intake form submissions
+- **Web Search**: Use the brave_search tool to look up information about people, businesses, projects, industry news, and other external data. Eagerly use this when creating or updating entities to gather additional context and enrich records with relevant details
+
+## User Interaction & Decision Points
+
+**IMPORTANT: Use the \`present_options\` tool frequently to give users clear choices.**
+
+The \`present_options\` tool shows clickable buttons to the user, making interactions smoother and faster. Use it whenever:
+
+1. **Multiple matches found**: "I found 3 projects matching 'Downtown'. Which one would you like to work with?"
+2. **Ambiguous requests**: "Would you like me to create a new quote or update an existing one?"
+3. **Confirmation before changes**: "I'm about to create a new contact. Should I proceed or would you like to modify the details first?"
+4. **Offering next steps**: After completing an action, offer logical follow-up options
+5. **Clarifying intent**: When the user's request could be interpreted multiple ways
+
+Example usage:
+- After listing items: Offer options to filter, view details, or create new
+- After creating something: Offer to view it, create another, or do related tasks
+- When user says something vague: Present the most likely interpretations as options
+
+This creates a guided, conversational experience where users can simply click to proceed.
+
+## Guidelines
+
+1. Always include the workspace ID (${workspaceId}) in relevant tool calls
+2. Be helpful and proactive in suggesting actions
+3. When searching or listing data, provide clear summaries
+4. **Use present_options liberally** - it's better to offer choices than to assume
+5. Format responses clearly with appropriate structure
+6. After completing tasks, always offer relevant next steps using present_options
+7. **Only suggest actions you can perform** - Don't recommend next steps or capabilities that require tools you don't have. Stay within your actual capabilities based on the tools provided to you.`;
+}
+
+export interface PendingToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  rawArguments: string;
 }
 
 export interface FileContext {
   fileName: string;
   formattedContent: string;
+}
+
+/**
+ * Pending user options state - shown when agent calls present_options tool
+ */
+export interface PendingUserOptions {
+  question: string;
+  options: UserOption[];
+  toolCallId: string;
 }
 
 export interface UseAgentChatReturn {
@@ -51,6 +155,19 @@ export interface UseAgentChatReturn {
   sendMessage: (content: string, fileContext?: FileContext) => Promise<void>;
   clearMessages: () => void;
   toolCallHistory: ToolCallInfo[];
+  availableTools: OpenAITool[];
+  isInitialized: boolean;
+  // Tool approval
+  pendingToolCalls: PendingToolCall[];
+  isAwaitingApproval: boolean;
+  approveToolCalls: (toolsToAlwaysAllow?: string[]) => void;
+  rejectToolCalls: () => void;
+  // Allowed tools (pre-approved for future use)
+  allowedTools: Set<string>;
+  // User options (present_options tool)
+  pendingUserOptions: PendingUserOptions | null;
+  selectOption: (optionId: string) => void;
+  cancelUserOptions: () => void;
 }
 
 /**
@@ -129,33 +246,235 @@ function accumulateToolCall(
 }
 
 /**
- * Custom hook for agent chat with tool execution and streaming support
+ * Custom hook for agent chat with MCP tool execution and streaming support
  *
  * This manages the conversation loop:
- * 1. Send user message to backend API (which proxies to OpenAI)
- * 2. If streaming, display tokens as they arrive
- * 3. If OpenAI requests a tool call, execute it locally via GraphQL
- * 4. Send tool result back to OpenAI
- * 5. Get final response and display to user
+ * 1. Initialize MCP client and fetch available tools
+ * 2. Send user message to backend API (which proxies to OpenAI)
+ * 3. If streaming, display tokens as they arrive
+ * 4. If OpenAI requests a tool call, execute it via MCP server
+ * 5. Send tool result back to OpenAI
+ * 6. Get final response and display to user
  */
 export function useAgentChat({
   workspaceId,
+  workspaceName,
   model = "gpt-5.2",
   stream = true,
+  requireToolApproval = true,
+  systemPrompt,
 }: UseAgentChatOptions): UseAgentChatReturn {
+  // Generate the system prompt (use custom or default)
+  const effectiveSystemPrompt = systemPrompt ?? getDefaultSystemPrompt(workspaceId, workspaceName);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toolCallHistory, setToolCallHistory] = useState<ToolCallInfo[]>([]);
-  const apolloClient = useApolloClient();
+  const [availableTools, setAvailableTools] = useState<OpenAITool[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Tool approval state
+  const [pendingToolCalls, setPendingToolCalls] = useState<PendingToolCall[]>([]);
+  const [isAwaitingApproval, setIsAwaitingApproval] = useState(false);
+  const [allowedTools, setAllowedTools] = useState<Set<string>>(new Set());
+
+  // User options state (for present_options tool)
+  const [pendingUserOptions, setPendingUserOptions] = useState<PendingUserOptions | null>(null);
+
   const { getAccessTokenSilently } = useAuth0();
   const config = useConfig();
 
   const agentApiUrl = getAgentApiUrl(config.graphqlUrl);
 
+  // MCP client ref - persists across renders
+  const mcpClientRef = useRef<McpClient | null>(null);
+
+  // Refs for approval flow - allows async loop to wait for user decision
+  const approvalResolverRef = useRef<((approved: boolean) => void) | null>(null);
+  const pendingRawToolCallsRef = useRef<ToolCall[]>([]);
+
+  // Refs for user options flow (present_options tool)
+  const userOptionResolverRef = useRef<((selectedOptionId: string) => void) | null>(null);
+
+  // Ref to access current allowedTools in async functions
+  const allowedToolsRef = useRef<Set<string>>(allowedTools);
+  useEffect(() => {
+    allowedToolsRef.current = allowedTools;
+  }, [allowedTools]);
+
+  // Auto-approve pending tool calls when requireToolApproval is disabled mid-conversation
+  useEffect(() => {
+    if (!requireToolApproval && isAwaitingApproval && approvalResolverRef.current) {
+      // Auto-approve pending tool calls
+      approvalResolverRef.current(true);
+      approvalResolverRef.current = null;
+      setPendingToolCalls([]);
+      setIsAwaitingApproval(false);
+    }
+  }, [requireToolApproval, isAwaitingApproval]);
+
+  // Initialize MCP client and fetch tools (merges local + server tools)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initializeMcp() {
+      try {
+        const getToken = () => getAccessTokenSilently({ cacheMode: "on" });
+        const client = new McpClient(config.graphqlUrl, getToken);
+
+        // Initialize the MCP connection
+        await client.initialize();
+
+        // Fetch server MCP tools
+        const mcpTools = await client.listTools();
+        const openaiMcpTools = mcpToolsToOpenAI(mcpTools);
+
+        // Get local frontend tools
+        const localToolDefs = getLocalToolDefinitions();
+
+        // Merge local + MCP tools (local tools take precedence if same name)
+        const localToolNames = new Set(localToolDefs.map((t) => t.function.name));
+        const filteredMcpTools = openaiMcpTools.filter((t) => !localToolNames.has(t.function.name));
+        const allTools = [...localToolDefs, ...filteredMcpTools];
+
+        if (!cancelled) {
+          mcpClientRef.current = client;
+          setAvailableTools(allTools);
+          setIsInitialized(true);
+        }
+      } catch (err) {
+        console.error("Failed to initialize MCP client:", err);
+        if (!cancelled) {
+          setError("Failed to initialize AI tools. Please refresh the page.");
+        }
+      }
+    }
+
+    initializeMcp();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config.graphqlUrl, getAccessTokenSilently]);
+
+  /**
+   * Execute tools and return results with tracking info
+   * Routes local tools to local execution, MCP tools to MCP server
+   * Special handling for present_options tool to pause for user selection
+   */
+  const executeTools = useCallback(
+    async (
+      toolCalls: ToolCall[],
+    ): Promise<{ toolResults: ChatMessage[]; toolInfos: ToolCallInfo[] }> => {
+      const client = mcpClientRef.current;
+
+      const results = await Promise.all(
+        toolCalls.map(async (toolCall) => {
+          const functionName = toolCall.function.name;
+          const timestamp = Date.now();
+          let parsedArgs: Record<string, unknown> = {};
+
+          try {
+            parsedArgs = JSON.parse(toolCall.function.arguments);
+          } catch {
+            parsedArgs = { raw: toolCall.function.arguments };
+          }
+
+          try {
+            let result: unknown;
+
+            // Special handling for present_options tool
+            if (isPresentOptionsTool(functionName)) {
+              const localResult = await executeLocalTool(functionName, parsedArgs);
+              const parsedResult = parseToolResult(localResult);
+
+              // Check if this is a pending user options result
+              if (isPendingUserOptionsResult(parsedResult)) {
+                // Show the options UI and wait for user selection
+                setPendingUserOptions({
+                  question: parsedResult.question,
+                  options: parsedResult.options,
+                  toolCallId: toolCall.id,
+                });
+
+                // Wait for user to select an option
+                const selectedOptionId = await new Promise<string>((resolve) => {
+                  userOptionResolverRef.current = resolve;
+                });
+
+                // Find the selected option label
+                const selectedOption = parsedResult.options.find(
+                  (opt: UserOption) => opt.id === selectedOptionId,
+                );
+
+                result = {
+                  selected_option_id: selectedOptionId,
+                  selected_option_label: selectedOption?.label || selectedOptionId,
+                  question: parsedResult.question,
+                };
+              } else {
+                result = parsedResult;
+              }
+            } else if (isLocalTool(functionName)) {
+              // Execute locally - no server round-trip
+              const localResult = await executeLocalTool(functionName, parsedArgs);
+              result = parseToolResult(localResult);
+            } else {
+              // Execute via MCP server
+              if (!client) {
+                throw new Error("MCP client not initialized");
+              }
+              const mcpResult = await client.callTool(functionName, parsedArgs);
+              result = parseToolResult(mcpResult);
+            }
+
+            return {
+              message: {
+                role: "tool" as const,
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(result),
+              },
+              info: {
+                id: toolCall.id,
+                name: functionName,
+                arguments: parsedArgs,
+                result,
+                timestamp,
+              },
+            };
+          } catch (error) {
+            console.error(`Error executing tool ${functionName}:`, error);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            return {
+              message: {
+                role: "tool" as const,
+                tool_call_id: toolCall.id,
+                content: JSON.stringify({ error: errorMsg }),
+              },
+              info: {
+                id: toolCall.id,
+                name: functionName,
+                arguments: parsedArgs,
+                error: errorMsg,
+                timestamp,
+              },
+            };
+          }
+        }),
+      );
+
+      return {
+        toolResults: results.map((r) => r.message),
+        toolInfos: results.map((r) => r.info),
+      };
+    },
+    [],
+  );
+
   const sendMessage = useCallback(
     async (content: string, fileContext?: FileContext) => {
-      if (!content.trim() || isLoading) return;
+      if (!content.trim() || isLoading || !isInitialized) return;
 
       // Build the full message content (user message + optional file context)
       let fullContent = content;
@@ -184,7 +503,12 @@ export function useAgentChat({
         const validMessages = messages.filter(
           (m) => !m.content?.startsWith("❌ Error:") && m.role !== "tool_display",
         );
-        const conversationMessages = [...validMessages, userMessage];
+
+        // Create system message as the first message in the conversation
+        const systemMessage: ChatMessage = { role: "system", content: effectiveSystemPrompt };
+
+        // Build conversation: system prompt first, then history, then new user message
+        const conversationMessages = [systemMessage, ...validMessages, userMessage];
         let iterations = 0;
         const maxIterations = 1000; // Prevent infinite loops
 
@@ -195,7 +519,7 @@ export function useAgentChat({
           // For tool call iterations, don't stream (need complete response)
           const shouldStream = stream && iterations === 1;
 
-          // Send to backend API
+          // Send to backend API with MCP tools
           const response = await fetch(agentApiUrl, {
             method: "POST",
             headers: {
@@ -205,7 +529,7 @@ export function useAgentChat({
             body: JSON.stringify({
               model,
               messages: conversationMessages,
-              tools: AGENT_TOOLS,
+              tools: availableTools.length > 0 ? availableTools : undefined,
               stream: shouldStream,
             }),
           });
@@ -289,15 +613,65 @@ export function useAgentChat({
                 tool_calls: normalizedToolCalls,
               });
 
-              // Execute tools and continue loop
-              const { toolResults, toolInfos } = await executeToolsWithInfo(
-                normalizedToolCalls,
-                workspaceId,
-                apolloClient,
-                () => getAccessTokenSilently({ cacheMode: "on" }),
-                config.graphqlUrl,
-              );
+              // If approval is required, wait for user decision
+              if (requireToolApproval) {
+                // Check if all tools are trusted or already in the allowed list
+                const currentAllowedTools = allowedToolsRef.current;
+                const allToolsAllowed = normalizedToolCalls.every(
+                  (tc) =>
+                    currentAllowedTools.has(tc.function.name) ||
+                    TRUSTED_TOOLS.has(tc.function.name),
+                );
+
+                // Only show approval UI if not all tools are pre-approved or trusted
+                if (!allToolsAllowed) {
+                  // Store raw tool calls for execution later
+                  pendingRawToolCallsRef.current = normalizedToolCalls;
+
+                  // Convert to pending tool calls for display
+                  const pendingCalls: PendingToolCall[] = normalizedToolCalls.map((tc) => {
+                    let parsedArgs: Record<string, unknown> = {};
+                    try {
+                      parsedArgs = JSON.parse(tc.function.arguments);
+                    } catch {
+                      parsedArgs = { raw: tc.function.arguments };
+                    }
+                    return {
+                      id: tc.id,
+                      name: tc.function.name,
+                      arguments: parsedArgs,
+                      rawArguments: tc.function.arguments,
+                    };
+                  });
+
+                  setPendingToolCalls(pendingCalls);
+                  setIsAwaitingApproval(true);
+
+                  // Wait for user approval
+                  const approved = await new Promise<boolean>((resolve) => {
+                    approvalResolverRef.current = resolve;
+                  });
+
+                  if (!approved) {
+                    // User rejected - inform the AI and get a new response
+                    conversationMessages.push({
+                      role: "tool" as const,
+                      tool_call_id: normalizedToolCalls[0].id,
+                      content: JSON.stringify({
+                        error:
+                          "User rejected the tool call request. Please respond without using tools.",
+                      }),
+                    });
+                    continue;
+                  }
+                }
+                // If all tools are allowed, skip approval and continue to execution
+              }
+
+              // Execute tools (local or MCP) and continue loop
+              const { toolResults, toolInfos } = await executeTools(normalizedToolCalls);
               conversationMessages.push(...toolResults);
+
               // Add tool call display to messages
               setMessages((prev) => [
                 ...prev,
@@ -335,15 +709,64 @@ export function useAgentChat({
               tool_calls: normalizedToolCalls,
             });
 
-            // Execute tools
-            const { toolResults, toolInfos } = await executeToolsWithInfo(
-              normalizedToolCalls,
-              workspaceId,
-              apolloClient,
-              () => getAccessTokenSilently({ cacheMode: "on" }),
-              config.graphqlUrl,
-            );
+            // If approval is required, wait for user decision
+            if (requireToolApproval) {
+              // Check if all tools are trusted or already in the allowed list
+              const currentAllowedTools = allowedToolsRef.current;
+              const allToolsAllowed = normalizedToolCalls.every(
+                (tc: ToolCall) =>
+                  currentAllowedTools.has(tc.function.name) || TRUSTED_TOOLS.has(tc.function.name),
+              );
+
+              // Only show approval UI if not all tools are pre-approved or trusted
+              if (!allToolsAllowed) {
+                // Store raw tool calls for execution later
+                pendingRawToolCallsRef.current = normalizedToolCalls;
+
+                // Convert to pending tool calls for display
+                const pendingCalls: PendingToolCall[] = normalizedToolCalls.map((tc: ToolCall) => {
+                  let parsedArgs: Record<string, unknown> = {};
+                  try {
+                    parsedArgs = JSON.parse(tc.function.arguments);
+                  } catch {
+                    parsedArgs = { raw: tc.function.arguments };
+                  }
+                  return {
+                    id: tc.id,
+                    name: tc.function.name,
+                    arguments: parsedArgs,
+                    rawArguments: tc.function.arguments,
+                  };
+                });
+
+                setPendingToolCalls(pendingCalls);
+                setIsAwaitingApproval(true);
+
+                // Wait for user approval
+                const approved = await new Promise<boolean>((resolve) => {
+                  approvalResolverRef.current = resolve;
+                });
+
+                if (!approved) {
+                  // User rejected - inform the AI and get a new response
+                  conversationMessages.push({
+                    role: "tool" as const,
+                    tool_call_id: normalizedToolCalls[0].id,
+                    content: JSON.stringify({
+                      error:
+                        "User rejected the tool call request. Please respond without using tools.",
+                    }),
+                  });
+                  continue;
+                }
+              }
+              // If all tools are allowed, skip approval and continue to execution
+            }
+
+            // Execute tools (local or MCP)
+            const { toolResults, toolInfos } = await executeTools(normalizedToolCalls);
             conversationMessages.push(...toolResults);
+
             // Add tool call display to messages
             setMessages((prev) => [
               ...prev,
@@ -390,13 +813,15 @@ export function useAgentChat({
     [
       messages,
       isLoading,
-      workspaceId,
+      isInitialized,
       model,
       stream,
-      apolloClient,
+      requireToolApproval,
+      availableTools,
       getAccessTokenSilently,
       agentApiUrl,
-      config.graphqlUrl,
+      executeTools,
+      effectiveSystemPrompt,
     ],
   );
 
@@ -404,6 +829,67 @@ export function useAgentChat({
     setMessages([]);
     setError(null);
     setToolCallHistory([]);
+    setPendingToolCalls([]);
+    setIsAwaitingApproval(false);
+  }, []);
+
+  /**
+   * Approve pending tool calls - triggers execution
+   * @param toolsToAlwaysAllow - optional array of tool names to add to allowed list for future auto-approval
+   */
+  const approveToolCalls = useCallback((toolsToAlwaysAllow?: string[]) => {
+    // Add tools to allowed list if specified
+    if (toolsToAlwaysAllow && toolsToAlwaysAllow.length > 0) {
+      setAllowedTools((prev) => {
+        const next = new Set(prev);
+        toolsToAlwaysAllow.forEach((tool) => next.add(tool));
+        return next;
+      });
+    }
+
+    if (approvalResolverRef.current) {
+      approvalResolverRef.current(true);
+      approvalResolverRef.current = null;
+    }
+    setPendingToolCalls([]);
+    setIsAwaitingApproval(false);
+  }, []);
+
+  /**
+   * Reject pending tool calls - cancels execution
+   */
+  const rejectToolCalls = useCallback(() => {
+    if (approvalResolverRef.current) {
+      approvalResolverRef.current(false);
+      approvalResolverRef.current = null;
+    }
+    setPendingToolCalls([]);
+    setIsAwaitingApproval(false);
+    pendingRawToolCallsRef.current = [];
+  }, []);
+
+  /**
+   * Select an option from pending user options (present_options tool)
+   * @param optionId - The ID of the selected option
+   */
+  const selectOption = useCallback((optionId: string) => {
+    if (userOptionResolverRef.current) {
+      userOptionResolverRef.current(optionId);
+      userOptionResolverRef.current = null;
+    }
+    setPendingUserOptions(null);
+  }, []);
+
+  /**
+   * Cancel user options selection - tells AI the user cancelled
+   */
+  const cancelUserOptions = useCallback(() => {
+    if (userOptionResolverRef.current) {
+      // Send a special "cancelled" response
+      userOptionResolverRef.current("__cancelled__");
+      userOptionResolverRef.current = null;
+    }
+    setPendingUserOptions(null);
   }, []);
 
   return {
@@ -413,99 +899,18 @@ export function useAgentChat({
     sendMessage,
     clearMessages,
     toolCallHistory,
-  };
-}
-
-/**
- * Execute tool calls and return results with tracking info
- */
-async function executeToolsWithInfo(
-  toolCalls: ToolCall[],
-  workspaceId: string,
-  apolloClient: ReturnType<typeof useApolloClient>,
-  getAuthToken: () => Promise<string>,
-  graphqlUrl: string,
-): Promise<{ toolResults: ChatMessage[]; toolInfos: ToolCallInfo[] }> {
-  const results = await Promise.all(
-    toolCalls.map(async (toolCall) => {
-      const functionName = toolCall.function.name;
-      const executor = TOOL_EXECUTORS[functionName];
-      const timestamp = Date.now();
-      let parsedArgs: Record<string, unknown> = {};
-
-      try {
-        parsedArgs = JSON.parse(toolCall.function.arguments);
-      } catch {
-        parsedArgs = { raw: toolCall.function.arguments };
-      }
-
-      if (!executor) {
-        const errorMsg = `Unknown tool: ${functionName}`;
-        return {
-          message: {
-            role: "tool" as const,
-            tool_call_id: toolCall.id,
-            content: JSON.stringify({ error: errorMsg }),
-          },
-          info: {
-            id: toolCall.id,
-            name: functionName,
-            arguments: parsedArgs,
-            error: errorMsg,
-            timestamp,
-          },
-        };
-      }
-
-      try {
-        // Inject workspace context and auth for tools that need it
-        const argsWithContext = {
-          ...parsedArgs,
-          workspaceId,
-          _getAuthToken: getAuthToken,
-          _graphqlUrl: graphqlUrl,
-        };
-
-        // Execute the tool
-        const result = await executor(argsWithContext, apolloClient as any);
-
-        return {
-          message: {
-            role: "tool" as const,
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(result),
-          },
-          info: {
-            id: toolCall.id,
-            name: functionName,
-            arguments: parsedArgs,
-            result,
-            timestamp,
-          },
-        };
-      } catch (error) {
-        console.error(`Error executing tool ${functionName}:`, error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        return {
-          message: {
-            role: "tool" as const,
-            tool_call_id: toolCall.id,
-            content: JSON.stringify({ error: errorMsg }),
-          },
-          info: {
-            id: toolCall.id,
-            name: functionName,
-            arguments: parsedArgs,
-            error: errorMsg,
-            timestamp,
-          },
-        };
-      }
-    }),
-  );
-
-  return {
-    toolResults: results.map((r) => r.message),
-    toolInfos: results.map((r) => r.info),
+    availableTools,
+    isInitialized,
+    // Tool approval
+    pendingToolCalls,
+    isAwaitingApproval,
+    approveToolCalls,
+    rejectToolCalls,
+    // Allowed tools
+    allowedTools,
+    // User options (present_options tool)
+    pendingUserOptions,
+    selectOption,
+    cancelUserOptions,
   };
 }
