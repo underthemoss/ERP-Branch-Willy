@@ -44,7 +44,8 @@ The frontend agent behaves like an MCP client (similar to Cline), fetching avail
 ### Frontend (es-erp)
 
 - `src/lib/agent/mcpClient.ts` - MCP client for communicating with backend MCP server
-- `src/lib/agent/useAgentChat.ts` - Chat hook with streaming and MCP tool execution
+- `src/lib/agent/useAgentChat.ts` - Chat hook with streaming and tool execution (local + MCP)
+- `src/lib/agent/localTools.ts` - Local frontend-only tools (no server round-trip)
 - `src/lib/agent/fileParser.ts` - File parsing utilities for context
 - `src/app/studio/[workspace_id]/components/AgentPanel/` - UI components
 
@@ -182,9 +183,78 @@ OPENAI_API_KEY=sk-...
 - **Tool execution**: Runs in user's context with their permissions
 - **API key**: OpenAI key stored securely on backend only
 
+## Local Tools (Frontend-Only)
+
+The agent includes a local tool that executes entirely in the browser:
+
+### `present_options` Tool
+
+This tool enables interactive decision-making during conversations. When the AI needs user input, it calls this tool to show clickable options.
+
+**How it works:**
+1. AI calls `present_options` with a question and options
+2. Hook pauses and sets `pendingUserOptions` state
+3. UI renders the options as clickable buttons
+4. User clicks an option
+5. UI calls `selectOption(optionId)`
+6. Hook resumes with the selected option
+7. AI continues based on user's choice
+
+**Example AI tool call:**
+```json
+{
+  "question": "I found 3 projects. Which one would you like to work with?",
+  "options": [
+    { "id": "proj_123", "label": "Downtown Construction" },
+    { "id": "proj_456", "label": "Airport Expansion" },
+    { "id": "proj_789", "label": "Highway Repair" }
+  ]
+}
+```
+
+### UI Integration
+
+The `useAgentChat` hook exposes:
+
+```typescript
+const {
+  pendingUserOptions,  // { question, options, toolCallId } | null
+  selectOption,        // (optionId: string) => void
+  // ... other fields
+} = useAgentChat({ workspaceId });
+
+// In your UI component:
+{pendingUserOptions && (
+  <div className="user-options">
+    <p>{pendingUserOptions.question}</p>
+    <div className="options-grid">
+      {pendingUserOptions.options.map((opt) => (
+        <button 
+          key={opt.id}
+          onClick={() => selectOption(opt.id)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+```
+
+### When AI Uses This Tool
+
+The system prompt encourages using `present_options` for:
+- Multiple matches found (choose which item)
+- Ambiguous requests (clarify intent)
+- Confirmation before changes
+- Offering next steps after completing an action
+
+This creates a guided, conversational experience where users click to proceed.
+
 ## Benefits of MCP Architecture
 
 - ✅ **Single source of truth**: Tools defined once in backend, used by web app AND external AI assistants (Cline, Claude Desktop)
 - ✅ **Cline-like behavior**: Frontend agent behaves like a proper MCP client
 - ✅ **Easy to extend**: Add new tools in one place
 - ✅ **Consistent authorization**: All tool calls go through GraphQL with user's auth
+- ✅ **Hybrid local/server**: Frontend tools for browser operations, server tools for data

@@ -3,7 +3,36 @@
 import { useConfig } from "@/providers/ConfigProvider";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  executeLocalTool,
+  getLocalToolDefinitions,
+  isLocalTool,
+  isPendingUserOptionsResult,
+  isPresentOptionsTool,
+  UserOption,
+} from "./localTools";
 import { McpClient, mcpToolsToOpenAI, OpenAITool, parseToolResult } from "./mcpClient";
+
+/**
+ * Trusted tools that are always auto-approved (no user approval needed)
+ * These are safe, read-only, or UI-only operations
+ *
+ * Add tool names here to bypass the approval UI
+ */
+const TRUSTED_TOOLS = new Set([
+  // Local tools (UI interactions)
+  "present_options",
+
+  // MCP tools - read-only operations (add more as needed)
+  "list_projects",
+  "list_contacts",
+  "list_workspaces",
+  "get_project",
+  "get_contact",
+  "brave_search",
+  "traverse_pim",
+  "search_pim",
+]);
 
 export interface ToolCallInfo {
   id: string;
@@ -15,7 +44,7 @@ export interface ToolCallInfo {
 }
 
 export interface ChatMessage {
-  role: "user" | "assistant" | "tool" | "tool_display";
+  role: "user" | "assistant" | "tool" | "tool_display" | "system";
   content: string | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
@@ -34,9 +63,68 @@ export interface ToolCall {
 
 export interface UseAgentChatOptions {
   workspaceId: string;
+  workspaceName?: string;
   model?: string;
   stream?: boolean;
   requireToolApproval?: boolean;
+  systemPrompt?: string;
+}
+
+/**
+ * Generate the default system prompt for the ERP assistant
+ */
+function getDefaultSystemPrompt(workspaceId: string, workspaceName?: string): string {
+  const workspaceInfo = workspaceName
+    ? `**Current Workspace: ${workspaceName}** (ID: ${workspaceId})`
+    : `**Current Workspace ID: ${workspaceId}**`;
+
+  return `You are an ERP Assistant helping users manage their workspace in an equipment rental and sales platform.
+
+${workspaceInfo}
+Always use this workspace ID when making tool calls that require it.
+
+## Your Capabilities
+
+You can help users with:
+- **Projects**: Create, update, search, and manage projects (construction, rental, etc.)
+- **Contacts**: Manage business contacts and person contacts
+- **Sales Orders & Purchase Orders**: Create, view, and manage orders
+- **Quotes & RFQs**: Generate quotes, manage quote revisions, handle RFQs
+- **Inventory**: Track inventory items, manage stock levels
+- **Invoices**: Create and manage invoices, add tax line items
+- **Pricing**: Manage price books, rental prices, and sale prices
+- **Fulfilments**: Track rental, sale, and service fulfilments
+- **Intake Forms**: Manage intake form submissions
+- **Web Search**: Use the brave_search tool to look up information about people, businesses, projects, industry news, and other external data. Eagerly use this when creating or updating entities to gather additional context and enrich records with relevant details
+
+## User Interaction & Decision Points
+
+**IMPORTANT: Use the \`present_options\` tool frequently to give users clear choices.**
+
+The \`present_options\` tool shows clickable buttons to the user, making interactions smoother and faster. Use it whenever:
+
+1. **Multiple matches found**: "I found 3 projects matching 'Downtown'. Which one would you like to work with?"
+2. **Ambiguous requests**: "Would you like me to create a new quote or update an existing one?"
+3. **Confirmation before changes**: "I'm about to create a new contact. Should I proceed or would you like to modify the details first?"
+4. **Offering next steps**: After completing an action, offer logical follow-up options
+5. **Clarifying intent**: When the user's request could be interpreted multiple ways
+
+Example usage:
+- After listing items: Offer options to filter, view details, or create new
+- After creating something: Offer to view it, create another, or do related tasks
+- When user says something vague: Present the most likely interpretations as options
+
+This creates a guided, conversational experience where users can simply click to proceed.
+
+## Guidelines
+
+1. Always include the workspace ID (${workspaceId}) in relevant tool calls
+2. Be helpful and proactive in suggesting actions
+3. When searching or listing data, provide clear summaries
+4. **Use present_options liberally** - it's better to offer choices than to assume
+5. Format responses clearly with appropriate structure
+6. After completing tasks, always offer relevant next steps using present_options
+7. **Only suggest actions you can perform** - Don't recommend next steps or capabilities that require tools you don't have. Stay within your actual capabilities based on the tools provided to you.`;
 }
 
 export interface PendingToolCall {
@@ -49,6 +137,15 @@ export interface PendingToolCall {
 export interface FileContext {
   fileName: string;
   formattedContent: string;
+}
+
+/**
+ * Pending user options state - shown when agent calls present_options tool
+ */
+export interface PendingUserOptions {
+  question: string;
+  options: UserOption[];
+  toolCallId: string;
 }
 
 export interface UseAgentChatReturn {
@@ -67,6 +164,10 @@ export interface UseAgentChatReturn {
   rejectToolCalls: () => void;
   // Allowed tools (pre-approved for future use)
   allowedTools: Set<string>;
+  // User options (present_options tool)
+  pendingUserOptions: PendingUserOptions | null;
+  selectOption: (optionId: string) => void;
+  cancelUserOptions: () => void;
 }
 
 /**
@@ -157,10 +258,15 @@ function accumulateToolCall(
  */
 export function useAgentChat({
   workspaceId,
+  workspaceName,
   model = "gpt-5.2",
   stream = true,
   requireToolApproval = true,
+  systemPrompt,
 }: UseAgentChatOptions): UseAgentChatReturn {
+  // Generate the system prompt (use custom or default)
+  const effectiveSystemPrompt = systemPrompt ?? getDefaultSystemPrompt(workspaceId, workspaceName);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +278,9 @@ export function useAgentChat({
   const [pendingToolCalls, setPendingToolCalls] = useState<PendingToolCall[]>([]);
   const [isAwaitingApproval, setIsAwaitingApproval] = useState(false);
   const [allowedTools, setAllowedTools] = useState<Set<string>>(new Set());
+
+  // User options state (for present_options tool)
+  const [pendingUserOptions, setPendingUserOptions] = useState<PendingUserOptions | null>(null);
 
   const { getAccessTokenSilently } = useAuth0();
   const config = useConfig();
@@ -185,13 +294,27 @@ export function useAgentChat({
   const approvalResolverRef = useRef<((approved: boolean) => void) | null>(null);
   const pendingRawToolCallsRef = useRef<ToolCall[]>([]);
 
+  // Refs for user options flow (present_options tool)
+  const userOptionResolverRef = useRef<((selectedOptionId: string) => void) | null>(null);
+
   // Ref to access current allowedTools in async functions
   const allowedToolsRef = useRef<Set<string>>(allowedTools);
   useEffect(() => {
     allowedToolsRef.current = allowedTools;
   }, [allowedTools]);
 
-  // Initialize MCP client and fetch tools
+  // Auto-approve pending tool calls when requireToolApproval is disabled mid-conversation
+  useEffect(() => {
+    if (!requireToolApproval && isAwaitingApproval && approvalResolverRef.current) {
+      // Auto-approve pending tool calls
+      approvalResolverRef.current(true);
+      approvalResolverRef.current = null;
+      setPendingToolCalls([]);
+      setIsAwaitingApproval(false);
+    }
+  }, [requireToolApproval, isAwaitingApproval]);
+
+  // Initialize MCP client and fetch tools (merges local + server tools)
   useEffect(() => {
     let cancelled = false;
 
@@ -203,17 +326,28 @@ export function useAgentChat({
         // Initialize the MCP connection
         await client.initialize();
 
-        // Fetch available tools
+        // Fetch server MCP tools
         const mcpTools = await client.listTools();
-        const openaiTools = mcpToolsToOpenAI(mcpTools);
+        const openaiMcpTools = mcpToolsToOpenAI(mcpTools);
+
+        // Get local frontend tools
+        const localToolDefs = getLocalToolDefinitions();
+
+        // Merge local + MCP tools (local tools take precedence if same name)
+        const localToolNames = new Set(localToolDefs.map((t) => t.function.name));
+        const filteredMcpTools = openaiMcpTools.filter((t) => !localToolNames.has(t.function.name));
+        const allTools = [...localToolDefs, ...filteredMcpTools];
 
         if (!cancelled) {
           mcpClientRef.current = client;
-          setAvailableTools(openaiTools);
+          setAvailableTools(allTools);
           setIsInitialized(true);
           console.log(
-            `🔧 MCP initialized with ${openaiTools.length} tools:`,
-            openaiTools.map((t) => t.function.name),
+            `🔧 Agent initialized with ${localToolDefs.length} local tools + ${filteredMcpTools.length} MCP tools:`,
+            {
+              local: localToolDefs.map((t) => t.function.name),
+              mcp: filteredMcpTools.map((t) => t.function.name),
+            },
           );
         }
       } catch (err) {
@@ -232,16 +366,15 @@ export function useAgentChat({
   }, [config.graphqlUrl, getAccessTokenSilently]);
 
   /**
-   * Execute tools via MCP server and return results with tracking info
+   * Execute tools and return results with tracking info
+   * Routes local tools to local execution, MCP tools to MCP server
+   * Special handling for present_options tool to pause for user selection
    */
-  const executeToolsViaMcp = useCallback(
+  const executeTools = useCallback(
     async (
       toolCalls: ToolCall[],
     ): Promise<{ toolResults: ChatMessage[]; toolInfos: ToolCallInfo[] }> => {
       const client = mcpClientRef.current;
-      if (!client) {
-        throw new Error("MCP client not initialized");
-      }
 
       const results = await Promise.all(
         toolCalls.map(async (toolCall) => {
@@ -256,9 +389,55 @@ export function useAgentChat({
           }
 
           try {
-            // Call the tool via MCP server
-            const mcpResult = await client.callTool(functionName, parsedArgs);
-            const result = parseToolResult(mcpResult);
+            let result: unknown;
+
+            // Special handling for present_options tool
+            if (isPresentOptionsTool(functionName)) {
+              console.log(`🎯 Executing present_options tool - waiting for user selection`);
+              const localResult = await executeLocalTool(functionName, parsedArgs);
+              const parsedResult = parseToolResult(localResult);
+
+              // Check if this is a pending user options result
+              if (isPendingUserOptionsResult(parsedResult)) {
+                // Show the options UI and wait for user selection
+                setPendingUserOptions({
+                  question: parsedResult.question,
+                  options: parsedResult.options,
+                  toolCallId: toolCall.id,
+                });
+
+                // Wait for user to select an option
+                const selectedOptionId = await new Promise<string>((resolve) => {
+                  userOptionResolverRef.current = resolve;
+                });
+
+                // Find the selected option label
+                const selectedOption = parsedResult.options.find(
+                  (opt: UserOption) => opt.id === selectedOptionId,
+                );
+
+                result = {
+                  selected_option_id: selectedOptionId,
+                  selected_option_label: selectedOption?.label || selectedOptionId,
+                  question: parsedResult.question,
+                };
+              } else {
+                result = parsedResult;
+              }
+            } else if (isLocalTool(functionName)) {
+              // Execute locally - no server round-trip!
+              console.log(`🏠 Executing local tool: ${functionName}`);
+              const localResult = await executeLocalTool(functionName, parsedArgs);
+              result = parseToolResult(localResult);
+            } else {
+              // Execute via MCP server
+              if (!client) {
+                throw new Error("MCP client not initialized");
+              }
+              console.log(`🌐 Executing MCP tool: ${functionName}`);
+              const mcpResult = await client.callTool(functionName, parsedArgs);
+              result = parseToolResult(mcpResult);
+            }
 
             return {
               message: {
@@ -334,7 +513,12 @@ export function useAgentChat({
         const validMessages = messages.filter(
           (m) => !m.content?.startsWith("❌ Error:") && m.role !== "tool_display",
         );
-        const conversationMessages = [...validMessages, userMessage];
+
+        // Create system message as the first message in the conversation
+        const systemMessage: ChatMessage = { role: "system", content: effectiveSystemPrompt };
+
+        // Build conversation: system prompt first, then history, then new user message
+        const conversationMessages = [systemMessage, ...validMessages, userMessage];
         let iterations = 0;
         const maxIterations = 1000; // Prevent infinite loops
 
@@ -441,13 +625,15 @@ export function useAgentChat({
 
               // If approval is required, wait for user decision
               if (requireToolApproval) {
-                // Check if all tools are already in the allowed list
+                // Check if all tools are trusted or already in the allowed list
                 const currentAllowedTools = allowedToolsRef.current;
-                const allToolsAllowed = normalizedToolCalls.every((tc) =>
-                  currentAllowedTools.has(tc.function.name),
+                const allToolsAllowed = normalizedToolCalls.every(
+                  (tc) =>
+                    currentAllowedTools.has(tc.function.name) ||
+                    TRUSTED_TOOLS.has(tc.function.name),
                 );
 
-                // Only show approval UI if not all tools are pre-approved
+                // Only show approval UI if not all tools are pre-approved or trusted
                 if (!allToolsAllowed) {
                   // Store raw tool calls for execution later
                   pendingRawToolCallsRef.current = normalizedToolCalls;
@@ -492,8 +678,8 @@ export function useAgentChat({
                 // If all tools are allowed, skip approval and continue to execution
               }
 
-              // Execute tools via MCP server and continue loop
-              const { toolResults, toolInfos } = await executeToolsViaMcp(normalizedToolCalls);
+              // Execute tools (local or MCP) and continue loop
+              const { toolResults, toolInfos } = await executeTools(normalizedToolCalls);
               conversationMessages.push(...toolResults);
 
               // Add tool call display to messages
@@ -535,13 +721,15 @@ export function useAgentChat({
 
             // If approval is required, wait for user decision
             if (requireToolApproval) {
-              // Check if all tools are already in the allowed list
+              // Check if all tools are trusted or already in the allowed list
               const currentAllowedTools = allowedToolsRef.current;
-              const allToolsAllowed = normalizedToolCalls.every((tc: ToolCall) =>
-                currentAllowedTools.has(tc.function.name),
+              const allToolsAllowed = normalizedToolCalls.every(
+                (tc: ToolCall) =>
+                  currentAllowedTools.has(tc.function.name) ||
+                  TRUSTED_TOOLS.has(tc.function.name),
               );
 
-              // Only show approval UI if not all tools are pre-approved
+              // Only show approval UI if not all tools are pre-approved or trusted
               if (!allToolsAllowed) {
                 // Store raw tool calls for execution later
                 pendingRawToolCallsRef.current = normalizedToolCalls;
@@ -586,8 +774,8 @@ export function useAgentChat({
               // If all tools are allowed, skip approval and continue to execution
             }
 
-            // Execute tools via MCP server
-            const { toolResults, toolInfos } = await executeToolsViaMcp(normalizedToolCalls);
+            // Execute tools (local or MCP)
+            const { toolResults, toolInfos } = await executeTools(normalizedToolCalls);
             conversationMessages.push(...toolResults);
 
             // Add tool call display to messages
@@ -643,7 +831,8 @@ export function useAgentChat({
       availableTools,
       getAccessTokenSilently,
       agentApiUrl,
-      executeToolsViaMcp,
+      executeTools,
+      effectiveSystemPrompt,
     ],
   );
 
@@ -690,6 +879,30 @@ export function useAgentChat({
     pendingRawToolCallsRef.current = [];
   }, []);
 
+  /**
+   * Select an option from pending user options (present_options tool)
+   * @param optionId - The ID of the selected option
+   */
+  const selectOption = useCallback((optionId: string) => {
+    if (userOptionResolverRef.current) {
+      userOptionResolverRef.current(optionId);
+      userOptionResolverRef.current = null;
+    }
+    setPendingUserOptions(null);
+  }, []);
+
+  /**
+   * Cancel user options selection - tells AI the user cancelled
+   */
+  const cancelUserOptions = useCallback(() => {
+    if (userOptionResolverRef.current) {
+      // Send a special "cancelled" response
+      userOptionResolverRef.current("__cancelled__");
+      userOptionResolverRef.current = null;
+    }
+    setPendingUserOptions(null);
+  }, []);
+
   return {
     messages,
     isLoading,
@@ -706,5 +919,9 @@ export function useAgentChat({
     rejectToolCalls,
     // Allowed tools
     allowedTools,
+    // User options (present_options tool)
+    pendingUserOptions,
+    selectOption,
+    cancelUserOptions,
   };
 }

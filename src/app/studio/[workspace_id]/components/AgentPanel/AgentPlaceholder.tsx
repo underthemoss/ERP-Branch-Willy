@@ -7,8 +7,14 @@ import {
   ParsedFile,
   parseFile,
 } from "@/lib/agent/fileParser";
-import { FileContext, PendingToolCall, ToolCallInfo, useAgentChat } from "@/lib/agent/useAgentChat";
-import { useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
+import {
+  FileContext,
+  PendingToolCall,
+  PendingUserOptions,
+  ToolCallInfo,
+  useAgentChat,
+} from "@/lib/agent/useAgentChat";
+import { useSelectedWorkspace, useSelectedWorkspaceId } from "@/providers/WorkspaceProvider";
 import {
   Bot,
   CheckCircle,
@@ -250,6 +256,56 @@ function PendingToolApproval({
   );
 }
 
+interface UserOptionsSectionProps {
+  pendingUserOptions: PendingUserOptions;
+  onSelectOption: (optionId: string) => void;
+  onCancel: () => void;
+}
+
+function UserOptionsSection({ pendingUserOptions, onSelectOption, onCancel }: UserOptionsSectionProps) {
+  // Defensive check - ensure options is an array
+  const options = Array.isArray(pendingUserOptions.options) ? pendingUserOptions.options : [];
+  const question = pendingUserOptions.question || "Choose an option:";
+
+  return (
+    <div className="mb-2 space-y-1">
+      {/* Question header */}
+      <div className="border border-[#E5E5E5] rounded bg-[#FAFAFA] text-[12px]">
+        <div className="flex items-center gap-2 px-2 py-1.5">
+          <Bot className="w-3 h-3 text-[#007ACC] flex-shrink-0" />
+          <span className="text-[11px] text-gray-700">{question}</span>
+        </div>
+      </div>
+
+      {/* Options */}
+      {options.map((option) => (
+        <button
+          key={option.id}
+          onClick={() => onSelectOption(option.id)}
+          className="w-full flex items-center gap-2 px-2 py-1.5 border border-[#E5E5E5] rounded bg-[#FAFAFA] text-[12px] hover:bg-[#007ACC] hover:text-white hover:border-[#007ACC] transition-colors"
+        >
+          <ChevronRight className="w-3 h-3 flex-shrink-0" />
+          <span className="text-[11px] flex-1 text-left">{option.label || option.id}</span>
+        </button>
+      ))}
+
+      {/* Action bar */}
+      <div className="flex items-center gap-2 pt-0.5">
+        <span className="text-[10px] text-gray-500">
+          {options.length} option{options.length !== 1 ? "s" : ""} available
+        </span>
+        <div className="flex-1" />
+        <button
+          onClick={onCancel}
+          className="px-2 py-1 text-[11px] font-medium text-gray-600 bg-white border border-[#D4D4D4] rounded hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface AttachedFileProps {
   file: File;
   parsedFile: ParsedFile | null;
@@ -312,6 +368,7 @@ function AttachedFile({ file, parsedFile, isParsing, parseError, onRemove }: Att
 
 export function AgentPanel() {
   const workspaceId = useSelectedWorkspaceId();
+  const workspace = useSelectedWorkspace();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -334,15 +391,22 @@ export function AgentPanel() {
     approveToolCalls,
     rejectToolCalls,
     allowedTools,
+    pendingUserOptions,
+    selectOption,
+    cancelUserOptions,
   } = useAgentChat({
     workspaceId: workspaceId || "",
+    workspaceName: workspace?.name || undefined,
     requireToolApproval: !autoApprove,
   });
 
-  // Auto-scroll to bottom when new messages arrive or pending tools appear
+  // Computed state: is the UI waiting for user to select an option?
+  const isAwaitingUserSelection = pendingUserOptions !== null;
+
+  // Auto-scroll to bottom when new messages arrive or pending tools/options appear
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, pendingToolCalls]);
+  }, [messages, pendingToolCalls, pendingUserOptions]);
 
   // Parse file when attached
   useEffect(() => {
@@ -536,6 +600,15 @@ export function AgentPanel() {
               />
             )}
 
+            {/* User options selection UI */}
+            {isAwaitingUserSelection && pendingUserOptions && (
+              <UserOptionsSection
+                pendingUserOptions={pendingUserOptions}
+                onSelectOption={selectOption}
+                onCancel={cancelUserOptions}
+              />
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}
@@ -551,8 +624,16 @@ export function AgentPanel() {
           </div>
         )}
 
+        {/* Awaiting user selection indicator */}
+        {isAwaitingUserSelection && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded text-[11px] bg-[#E8F4FD] border border-[#007ACC]/20">
+            <Bot className="w-3 h-3 text-[#007ACC]" />
+            <span className="text-[#007ACC]">Select an option above to continue</span>
+          </div>
+        )}
+
         {/* Attached file preview */}
-        {(attachedFile || parseError) && !isAwaitingApproval && (
+        {(attachedFile || parseError) && !isAwaitingApproval && !isAwaitingUserSelection && (
           <AttachedFile
             file={attachedFile!}
             parsedFile={parsedFile}
@@ -576,7 +657,7 @@ export function AgentPanel() {
           {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || isParsing || isAwaitingApproval}
+            disabled={isLoading || isParsing || isAwaitingApproval || isAwaitingUserSelection}
             className="p-2 text-gray-500 hover:text-[#007ACC] hover:bg-[#F0F0F0] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Attach PDF or CSV"
           >
@@ -587,26 +668,28 @@ export function AgentPanel() {
           <input
             type="text"
             placeholder={
-              isAwaitingApproval
-                ? "Approve or reject the tool request above..."
-                : attachedFile
-                  ? "Ask about this file..."
-                  : "Ask me anything..."
+              isAwaitingUserSelection
+                ? "Select an option above..."
+                : isAwaitingApproval
+                  ? "Approve or reject the tool request above..."
+                  : attachedFile
+                    ? "Ask about this file..."
+                    : "Ask me anything..."
             }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
-            disabled={isAwaitingApproval}
+            disabled={isAwaitingApproval || isAwaitingUserSelection}
             className="flex-1 px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#007ACC] disabled:bg-gray-50 disabled:text-gray-400"
           />
 
           {/* Send button */}
           <button
             onClick={handleSend}
-            disabled={isLoading || !input.trim() || isParsing || isAwaitingApproval}
+            disabled={isLoading || !input.trim() || isParsing || isAwaitingApproval || isAwaitingUserSelection}
             className="px-4 py-2 bg-[#007ACC] text-white text-[13px] font-medium rounded hover:bg-[#005A9E] disabled:bg-[#007ACC]/50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
-            {isLoading ? (
+            {isLoading && !isAwaitingUserSelection ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
