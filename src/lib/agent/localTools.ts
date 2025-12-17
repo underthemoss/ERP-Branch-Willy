@@ -209,11 +209,7 @@ export async function executeLocalTool(
  * Register a custom local tool at runtime
  */
 export function registerLocalTool(name: string, tool: LocalTool): void {
-  if (localTools.has(name)) {
-    console.warn(`⚠️ Overwriting existing local tool: ${name}`);
-  }
   localTools.set(name, tool);
-  console.log(`🔧 Registered local tool: ${name}`);
 }
 
 /**

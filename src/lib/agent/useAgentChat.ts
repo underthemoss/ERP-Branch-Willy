@@ -342,13 +342,6 @@ export function useAgentChat({
           mcpClientRef.current = client;
           setAvailableTools(allTools);
           setIsInitialized(true);
-          console.log(
-            `🔧 Agent initialized with ${localToolDefs.length} local tools + ${filteredMcpTools.length} MCP tools:`,
-            {
-              local: localToolDefs.map((t) => t.function.name),
-              mcp: filteredMcpTools.map((t) => t.function.name),
-            },
-          );
         }
       } catch (err) {
         console.error("Failed to initialize MCP client:", err);
@@ -393,7 +386,6 @@ export function useAgentChat({
 
             // Special handling for present_options tool
             if (isPresentOptionsTool(functionName)) {
-              console.log(`🎯 Executing present_options tool - waiting for user selection`);
               const localResult = await executeLocalTool(functionName, parsedArgs);
               const parsedResult = parseToolResult(localResult);
 
@@ -425,8 +417,7 @@ export function useAgentChat({
                 result = parsedResult;
               }
             } else if (isLocalTool(functionName)) {
-              // Execute locally - no server round-trip!
-              console.log(`🏠 Executing local tool: ${functionName}`);
+              // Execute locally - no server round-trip
               const localResult = await executeLocalTool(functionName, parsedArgs);
               result = parseToolResult(localResult);
             } else {
@@ -434,7 +425,6 @@ export function useAgentChat({
               if (!client) {
                 throw new Error("MCP client not initialized");
               }
-              console.log(`🌐 Executing MCP tool: ${functionName}`);
               const mcpResult = await client.callTool(functionName, parsedArgs);
               result = parseToolResult(mcpResult);
             }
