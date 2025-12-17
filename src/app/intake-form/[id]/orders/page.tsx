@@ -3,13 +3,16 @@
 import { IntakeFormSubmissionLineItemFieldsFragment } from "@/graphql/graphql";
 import { useWorkspaceProviderListWorkspacesQuery } from "@/graphql/hooks";
 import {
+  useAdoptOrphanedSubmissionsMutation,
   useGetIntakeFormByIdQuery,
   useListIntakeFormSubmissionsAsBuyerQuery,
 } from "@/ui/intake-forms/api";
+import { CreateWorkspaceFlow } from "@/ui/workspace/CreateWorkspaceFlow";
 import { WorkspaceSelector, WorkspaceSelectorWorkspace } from "@/ui/workspace/WorkspaceSelector";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   Container,
@@ -22,7 +25,15 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { CheckCircle, Clock, Edit3, FileQuestion, Package, ShoppingBag } from "lucide-react";
+import {
+  Building2,
+  CheckCircle,
+  Clock,
+  Edit3,
+  FileQuestion,
+  Package,
+  ShoppingBag,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -111,6 +122,12 @@ export default function OrdersListPage() {
   // State for selected buyer workspace
   const [selectedBuyerWorkspaceId, setSelectedBuyerWorkspaceId] = useState<string | null>(null);
 
+  // State for workspace onboarding flow (for users with no workspaces)
+  const [showWorkspaceOnboarding, setShowWorkspaceOnboarding] = useState(false);
+
+  // Mutation to adopt orphaned submissions to a workspace
+  const [adoptOrphanedSubmissions] = useAdoptOrphanedSubmissionsMutation();
+
   // Query to get the intake form
   const {
     data: intakeFormData,
@@ -125,11 +142,14 @@ export default function OrdersListPage() {
   const intakeForm = intakeFormData?.getIntakeFormById;
 
   // Fetch user's workspaces (only if authenticated)
-  const { data: workspacesData, loading: loadingWorkspaces } =
-    useWorkspaceProviderListWorkspacesQuery({
-      fetchPolicy: "cache-and-network",
-      skip: !isAuthenticated || authLoading,
-    });
+  const {
+    data: workspacesData,
+    loading: loadingWorkspaces,
+    refetch: refetchWorkspaces,
+  } = useWorkspaceProviderListWorkspacesQuery({
+    fetchPolicy: "cache-and-network",
+    skip: !isAuthenticated || authLoading,
+  });
 
   const userWorkspaces: WorkspaceSelectorWorkspace[] = useMemo(
     () => workspacesData?.listWorkspaces?.items || [],
@@ -144,18 +164,44 @@ export default function OrdersListPage() {
   }, [userWorkspaces, selectedBuyerWorkspaceId]);
 
   // Query to get submissions for this form using the buyer query
-  const { data: submissionsData, loading: loadingSubmissions } =
-    useListIntakeFormSubmissionsAsBuyerQuery({
-      variables: {
-        buyerWorkspaceId: selectedBuyerWorkspaceId || "",
-        intakeFormId: formId,
-      },
-      fetchPolicy: "cache-and-network",
-      skip: !selectedBuyerWorkspaceId || !formId,
-    });
+  const {
+    data: submissionsData,
+    loading: loadingSubmissions,
+    refetch: refetchSubmissions,
+  } = useListIntakeFormSubmissionsAsBuyerQuery({
+    variables: {
+      buyerWorkspaceId: selectedBuyerWorkspaceId || "",
+      intakeFormId: formId,
+    },
+    fetchPolicy: "cache-and-network",
+    skip: !selectedBuyerWorkspaceId || !formId,
+  });
 
   // Show all submissions (both draft and submitted)
   const submissions = submissionsData?.listIntakeFormSubmissionsAsBuyer?.items || [];
+
+  // Handler when workspace is created during onboarding
+  const handleWorkspaceCreated = async (workspaceId: string) => {
+    // Adopt orphaned submissions to the new workspace
+    try {
+      await adoptOrphanedSubmissions({ variables: { workspaceId } });
+    } catch (error) {
+      console.error("Failed to adopt submissions:", error);
+    }
+
+    // Set the selected workspace and close onboarding
+    setSelectedBuyerWorkspaceId(workspaceId);
+    setShowWorkspaceOnboarding(false);
+
+    // Refetch workspaces to update the list
+    await refetchWorkspaces();
+
+    // Refetch submissions to show newly adopted ones
+    // Use setTimeout to ensure the workspace ID state has been updated
+    setTimeout(() => {
+      refetchSubmissions();
+    }, 100);
+  };
 
   // Loading state
   if (loadingForm || loadingWorkspaces || authLoading) {
@@ -190,6 +236,55 @@ export default function OrdersListPage() {
           >
             Sign In
           </button>
+        </Paper>
+      </Container>
+    );
+  }
+
+  // If user is authenticated but has no workspaces, show workspace onboarding
+  if (userWorkspaces.length === 0) {
+    // Show the full workspace creation flow
+    if (showWorkspaceOnboarding) {
+      return (
+        <CreateWorkspaceFlow
+          onComplete={handleWorkspaceCreated}
+          onCancel={() => setShowWorkspaceOnboarding(false)}
+        />
+      );
+    }
+
+    // Show the prompt to set up a workspace
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              bgcolor: "primary.light",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 3,
+            }}
+          >
+            <Building2 size={32} className="text-blue-600" />
+          </Box>
+          <Typography variant="h6" gutterBottom>
+            Set Up Your Workspace
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            To view and track your orders, you need to create or join a workspace.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => setShowWorkspaceOnboarding(true)}
+            sx={{ textTransform: "none" }}
+          >
+            Get Started
+          </Button>
         </Paper>
       </Container>
     );

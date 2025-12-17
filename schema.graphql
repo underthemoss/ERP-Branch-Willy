@@ -274,6 +274,17 @@ type AdminQueryNamespace {
   ): EmailDetails
 }
 
+type AdoptOrphanedSubmissionsResult {
+  """Number of submissions that were adopted"""
+  adoptedCount: Int!
+
+  """List of adopted submission IDs"""
+  adoptedSubmissionIds: [ID!]!
+
+  """The submissions that were adopted (with full details)"""
+  adoptedSubmissions: [IntakeFormSubmission!]!
+}
+
 type Asset {
   category: AssetCategory
   class: AssetClass
@@ -1747,6 +1758,11 @@ type Mutation {
 
   """Admin mutations (Admin only)"""
   admin: AdminMutationNamespace
+
+  """
+  Adopt orphaned intake form submissions (with null buyerWorkspaceId) to the specified workspace. Only submissions created by the authenticated user will be adopted. Idempotent.
+  """
+  adoptOrphanedSubmissions(workspaceId: String!): AdoptOrphanedSubmissionsResult!
   archiveWorkspace(workspaceId: String!): Workspace
   assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!

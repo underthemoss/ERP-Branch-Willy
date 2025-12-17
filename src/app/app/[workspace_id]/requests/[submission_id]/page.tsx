@@ -534,6 +534,7 @@ export default function SubmissionDetailPage() {
         workspaceId={workspaceId}
         submissionEmail={submission.email}
         submissionName={submission.name}
+        formProjectId={submission.form?.projectId}
         onSuccess={() => refetch()}
       />
     </div>

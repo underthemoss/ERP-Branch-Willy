@@ -9,6 +9,7 @@ import {
 } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useNotification } from "@/providers/NotificationProvider";
+import { useAdoptOrphanedSubmissionsMutation } from "@/ui/intake-forms/api";
 import {
   Business,
   CheckCircle,
@@ -149,8 +150,9 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
     fetchPolicy: "cache-and-network",
   });
 
-  // GraphQL mutation hook
+  // GraphQL mutation hooks
   const [createWorkspace, { loading: createLoading }] = useCreateWorkspaceMutation();
+  const [adoptOrphanedSubmissions] = useAdoptOrphanedSubmissionsMutation();
 
   // Form state
   const [workspaceName, setWorkspaceName] = useState("");
@@ -245,8 +247,15 @@ export function CreateWorkspaceFlow({ onComplete, onCancel }: CreateWorkspaceFlo
       });
 
       if (data?.createWorkspace?.id) {
+        const workspaceId = data.createWorkspace.id;
+
+        // Adopt any orphaned submissions to this new workspace (fire-and-forget)
+        adoptOrphanedSubmissions({ variables: { workspaceId } }).catch((error) => {
+          console.error("Failed to adopt orphaned submissions:", error);
+        });
+
         notifySuccess("Workspace created successfully!");
-        onComplete(data.createWorkspace.id);
+        onComplete(workspaceId);
       } else {
         // Handle error case - workspace creation failed
         notifyError(

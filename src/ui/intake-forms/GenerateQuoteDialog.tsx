@@ -18,6 +18,8 @@ interface GenerateQuoteDialogProps {
   workspaceId: string;
   submissionEmail?: string | null;
   submissionName?: string | null;
+  /** Project ID from the intake form - will be pre-selected if provided */
+  formProjectId?: string | null;
   onSuccess?: () => void;
 }
 
@@ -28,6 +30,7 @@ export function GenerateQuoteDialog({
   workspaceId,
   submissionEmail,
   submissionName,
+  formProjectId,
   onSuccess,
 }: GenerateQuoteDialogProps) {
   const router = useRouter();
@@ -73,16 +76,22 @@ export function GenerateQuoteDialog({
     setContactMatchAttempted(true);
   }, [open, contactsData, submissionEmail, contactMatchAttempted]);
 
-  // Reset form when dialog closes
+  // Reset form when dialog opens/closes - pre-select project if formProjectId is provided
   React.useEffect(() => {
-    if (!open) {
+    if (open) {
+      // Pre-select the project from the intake form if available
+      if (formProjectId) {
+        setProjectId(formProjectId);
+      }
+    } else {
+      // Reset form when dialog closes
       setBuyerContactId("");
       setProjectId("");
       setValidForDays(30);
       setContactMatchAttempted(false);
       setNoContactMatchFound(false);
     }
-  }, [open]);
+  }, [open, formProjectId]);
 
   const handleClose = () => {
     onClose();
@@ -190,29 +199,25 @@ export function GenerateQuoteDialog({
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <ContactSelector
-                    workspaceId={workspaceId}
-                    contactId={buyerContactId}
-                    onChange={(id) => {
-                      setBuyerContactId(id);
-                      if (id) {
-                        setNoContactMatchFound(false);
-                      }
-                    }}
-                    type="any"
-                  />
-                </div>
-                {!buyerContactId && (
-                  <button
-                    onClick={() => setShowContactDialog(true)}
-                    className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer whitespace-nowrap"
-                  >
-                    + New
-                  </button>
-                )}
-              </div>
+              <ContactSelector
+                workspaceId={workspaceId}
+                contactId={buyerContactId}
+                onChange={(id) => {
+                  setBuyerContactId(id);
+                  if (id) {
+                    setNoContactMatchFound(false);
+                  }
+                }}
+                type="any"
+              />
+              {!buyerContactId && (
+                <button
+                  onClick={() => setShowContactDialog(true)}
+                  className="mt-2 px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                >
+                  + Create New Contact
+                </button>
+              )}
               {submissionEmail && buyerContactId && (
                 <p className="text-xs text-green-600 mt-1">
                   Contact matched by email: {submissionEmail}

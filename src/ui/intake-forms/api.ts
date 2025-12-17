@@ -29,6 +29,7 @@ export {
   useUpdateIntakeFormSubmissionMutation,
   useSubmitIntakeFormSubmissionMutation,
   useCreateQuoteFromIntakeFormSubmissionMutation,
+  useAdoptOrphanedSubmissionsMutation,
 } from "@/graphql/hooks";
 
 // ============================================================================
@@ -439,6 +440,24 @@ graphql(`
             intakeFormSubmissionLineItemId
           }
         }
+      }
+    }
+  }
+`);
+
+/**
+ * Adopt orphaned intake form submissions for the current authenticated user.
+ * Finds all submissions where userId = currentUser AND buyerWorkspaceId IS NULL,
+ * then updates them to set buyerWorkspaceId to the provided workspace.
+ * Idempotent - safe to call multiple times.
+ */
+graphql(`
+  mutation AdoptOrphanedSubmissions($workspaceId: String!) {
+    adoptOrphanedSubmissions(workspaceId: $workspaceId) {
+      adoptedCount
+      adoptedSubmissionIds
+      adoptedSubmissions {
+        ...IntakeFormSubmissionFields
       }
     }
   }

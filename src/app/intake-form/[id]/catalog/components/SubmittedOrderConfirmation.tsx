@@ -171,7 +171,7 @@ export default function SubmittedOrderConfirmation({
         {/* Order ID */}
         <Paper elevation={0} sx={{ p: 3, mb: 3, border: "1px solid", borderColor: "grey.200" }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Order #{submission.id.slice(0, 8)}
+            Order #{submission.id}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Submitted on {formatDate(submission.submittedAt)}

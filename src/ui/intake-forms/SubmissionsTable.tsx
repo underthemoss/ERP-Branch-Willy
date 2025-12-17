@@ -71,6 +71,9 @@ interface Submission {
   totalInCents: number;
   salesOrderId?: string | null;
   quoteId?: string | null;
+  form?: {
+    projectId?: string | null;
+  } | null;
 }
 
 interface SubmissionsTableProps {
@@ -590,6 +593,7 @@ export default function SubmissionsTable({
           workspaceId={workspaceId}
           submissionEmail={generateQuoteSubmission.email}
           submissionName={generateQuoteSubmission.name}
+          formProjectId={generateQuoteSubmission.form?.projectId}
           onSuccess={() => {
             onRefetch?.();
           }}

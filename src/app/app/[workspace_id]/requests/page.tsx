@@ -72,6 +72,7 @@ export default function RequestsPage() {
   const forms = (formsData?.listIntakeForms?.items as any[]) || [];
 
   // Fetch submissions - use different query based on whether we're filtering by form
+  // Use errorPolicy: "all" to be fault-tolerant and render partial data even if some fields error
   const { data: allSubmissionsData, loading: allSubmissionsLoading } =
     useListIntakeFormSubmissionsQuery({
       variables: {
@@ -79,6 +80,7 @@ export default function RequestsPage() {
         excludeWithSalesOrder: false,
       },
       fetchPolicy: "cache-and-network",
+      errorPolicy: "all", // Render partial data even if some nested fields have errors
       skip: !!selectedFormId, // Skip this query if we have a form filter
     });
 
@@ -89,6 +91,7 @@ export default function RequestsPage() {
         intakeFormId: selectedFormId,
       },
       fetchPolicy: "cache-and-network",
+      errorPolicy: "all", // Render partial data even if some nested fields have errors
       skip: !selectedFormId, // Skip this query if we don't have a form filter
     });
 

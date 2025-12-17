@@ -55,7 +55,7 @@ export default function OrderConfirmationSummary({
       {/* Order ID */}
       <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "grey.200" }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Order #{submissionId.slice(0, 8)}
+          Order #{submissionId}
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Submitted on{" "}

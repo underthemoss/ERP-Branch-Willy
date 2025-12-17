@@ -8,6 +8,7 @@ import {
   useWorkspaceProviderListUserResourcePermissionsQuery,
   useWorkspaceProviderListWorkspacesQuery,
 } from "@/graphql/hooks";
+import { useAdoptOrphanedSubmissionsMutation } from "@/ui/intake-forms/api";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { createContext, ReactNode, useCallback, useContext, useMemo } from "react";
 
@@ -207,6 +208,9 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   const [joinWorkspaceMutation] = useWorkspaceProviderJoinWorkspaceMutation();
 
+  // Mutation to adopt orphaned submissions when user joins a workspace
+  const [adoptOrphanedSubmissions] = useAdoptOrphanedSubmissionsMutation();
+
   const workspaces = data?.listWorkspaces?.items;
   const joinableWorkspaces = joinableData?.listJoinableWorkspaces?.items;
   const permissions = permissionsData?.listUserResourcePermissions?.permissions;
@@ -231,6 +235,11 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
         if (result.data?.joinWorkspace) {
           // Successfully joined workspace
+          // Adopt any orphaned submissions to this workspace (fire-and-forget)
+          adoptOrphanedSubmissions({ variables: { workspaceId } }).catch((error) => {
+            console.error("Failed to adopt orphaned submissions:", error);
+          });
+
           // Refetch both workspace lists to update the UI
           await Promise.all([refetchWorkspaces(), refetchJoinableWorkspaces()]);
 
@@ -243,7 +252,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
         // For now, just log the error
       }
     },
-    [joinWorkspaceMutation, refetchWorkspaces, refetchJoinableWorkspaces, router],
+    [
+      joinWorkspaceMutation,
+      adoptOrphanedSubmissions,
+      refetchWorkspaces,
+      refetchJoinableWorkspaces,
+      router,
+    ],
   );
 
   const value: WorkspaceContextType = {
