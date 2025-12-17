@@ -8,7 +8,6 @@
  *
  * Currently provides the `present_options` tool for user interaction.
  */
-
 import { OpenAITool } from "./mcpClient";
 
 // ============================================================================
@@ -107,7 +106,8 @@ Common use cases:
               properties: {
                 id: {
                   type: "string",
-                  description: "Unique identifier for this option (e.g., 'create_new', 'update_existing')",
+                  description:
+                    "Unique identifier for this option (e.g., 'create_new', 'update_existing')",
                 },
                 label: {
                   type: "string",

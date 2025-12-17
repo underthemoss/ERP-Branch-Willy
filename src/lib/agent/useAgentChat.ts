@@ -725,8 +725,7 @@ export function useAgentChat({
               const currentAllowedTools = allowedToolsRef.current;
               const allToolsAllowed = normalizedToolCalls.every(
                 (tc: ToolCall) =>
-                  currentAllowedTools.has(tc.function.name) ||
-                  TRUSTED_TOOLS.has(tc.function.name),
+                  currentAllowedTools.has(tc.function.name) || TRUSTED_TOOLS.has(tc.function.name),
               );
 
               // Only show approval UI if not all tools are pre-approved or trusted

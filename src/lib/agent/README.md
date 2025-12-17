@@ -192,6 +192,7 @@ The agent includes a local tool that executes entirely in the browser:
 This tool enables interactive decision-making during conversations. When the AI needs user input, it calls this tool to show clickable options.
 
 **How it works:**
+
 1. AI calls `present_options` with a question and options
 2. Hook pauses and sets `pendingUserOptions` state
 3. UI renders the options as clickable buttons
@@ -201,6 +202,7 @@ This tool enables interactive decision-making during conversations. When the AI 
 7. AI continues based on user's choice
 
 **Example AI tool call:**
+
 ```json
 {
   "question": "I found 3 projects. Which one would you like to work with?",
@@ -229,7 +231,7 @@ const {
     <p>{pendingUserOptions.question}</p>
     <div className="options-grid">
       {pendingUserOptions.options.map((opt) => (
-        <button 
+        <button
           key={opt.id}
           onClick={() => selectOption(opt.id)}
         >
@@ -244,6 +246,7 @@ const {
 ### When AI Uses This Tool
 
 The system prompt encourages using `present_options` for:
+
 - Multiple matches found (choose which item)
 - Ambiguous requests (clarify intent)
 - Confirmation before changes

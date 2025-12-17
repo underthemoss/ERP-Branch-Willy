@@ -262,7 +262,11 @@ interface UserOptionsSectionProps {
   onCancel: () => void;
 }
 
-function UserOptionsSection({ pendingUserOptions, onSelectOption, onCancel }: UserOptionsSectionProps) {
+function UserOptionsSection({
+  pendingUserOptions,
+  onSelectOption,
+  onCancel,
+}: UserOptionsSectionProps) {
   // Defensive check - ensure options is an array
   const options = Array.isArray(pendingUserOptions.options) ? pendingUserOptions.options : [];
   const question = pendingUserOptions.question || "Choose an option:";
@@ -526,15 +530,16 @@ export function AgentPanel() {
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-[280px]">
               <Bot className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-[#383838] mb-1">AI Agent</h3>
+              <h3 className="text-base font-semibold text-[#383838] mb-1">Workspace Assistant</h3>
               <p className="text-[13px] text-gray-500 mb-2 leading-relaxed">
-                Ask me about your workspace data. I can help you find projects, contacts, and more.
+                I can help you manage projects, contacts, orders, and more in your workspace.
               </p>
               <p className="text-[11px] text-gray-400 mb-1">Try asking:</p>
               <div className="text-xs text-gray-500 leading-relaxed text-left space-y-0.5">
-                <div>• &quot;Show me all projects&quot;</div>
-                <div>• &quot;List active contacts&quot;</div>
-                <div>• 📎 Attach a CSV or PDF for analysis</div>
+                <div>• &quot;List all my projects&quot;</div>
+                <div>• &quot;Find contacts in New York&quot;</div>
+                <div>• &quot;Create a new sales quote&quot;</div>
+                <div>• 📎 Attach a file for analysis</div>
               </div>
             </div>
           </div>
@@ -686,7 +691,13 @@ export function AgentPanel() {
           {/* Send button */}
           <button
             onClick={handleSend}
-            disabled={isLoading || !input.trim() || isParsing || isAwaitingApproval || isAwaitingUserSelection}
+            disabled={
+              isLoading ||
+              !input.trim() ||
+              isParsing ||
+              isAwaitingApproval ||
+              isAwaitingUserSelection
+            }
             className="px-4 py-2 bg-[#007ACC] text-white text-[13px] font-medium rounded hover:bg-[#005A9E] disabled:bg-[#007ACC]/50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {isLoading && !isAwaitingUserSelection ? (

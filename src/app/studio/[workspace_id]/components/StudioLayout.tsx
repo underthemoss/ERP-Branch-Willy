@@ -2,7 +2,7 @@
 
 import { Box } from "@mui/material";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { AgentPanel } from "./AgentPanel/AgentPlaceholder";
+import { AgentPanel } from "./AgentPanel/AgentPanel";
 import { ContentArea } from "./ContentArea/ContentArea";
 import { FileExplorer } from "./FileExplorer/FileExplorer";
 
