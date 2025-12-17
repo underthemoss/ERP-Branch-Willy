@@ -32,6 +32,9 @@ const TRUSTED_TOOLS = new Set([
   "brave_search",
   "traverse_pim",
   "search_pim",
+  "list_pricebooks",
+  "list_prices",
+  "search_prices",
 ]);
 
 export interface ToolCallInfo {
