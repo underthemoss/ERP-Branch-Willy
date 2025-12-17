@@ -2,19 +2,18 @@
 
 import { IntakeFormSubmissionStatus } from "@/graphql/graphql";
 import {
-  useListIntakeFormSubmissionsAsBuyerQuery,
+  useAdoptOrphanedSubmissionsMutation,
   useListMyOrphanedSubmissionsQuery,
 } from "@/ui/intake-forms/api";
 import {
-  AlertCircle,
-  ArrowRight,
+  ArrowLeft,
   ArrowUpDown,
+  Check,
   CheckCircle2,
   CircleDot,
-  Clock,
   DollarSign,
-  Eye,
   FileText,
+  Loader2,
   Pencil,
   Search,
 } from "lucide-react";
@@ -33,38 +32,31 @@ type SubmissionRow = {
   submittedAt: string;
   amount: number;
   amountFormatted: string;
-  quoteId: string | null;
-  quoteStatus: string | null;
   itemCount: number;
 };
 
-export default function SubmissionsPage() {
+export default function OrphanedSubmissionsPage() {
   const router = useRouter();
   const { workspace_id } = useParams<{ workspace_id: string }>();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortField, setSortField] = React.useState<keyof SubmissionRow | null>("createdAt");
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc");
-  const [statusFilter, setStatusFilter] = React.useState<IntakeFormSubmissionStatus | "ALL">("ALL");
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [isAdopting, setIsAdopting] = React.useState(false);
 
-  const { data, loading, error } = useListIntakeFormSubmissionsAsBuyerQuery({
-    variables: {
-      buyerWorkspaceId: workspace_id,
-      limit: 100,
-    },
+  const { data, loading, error, refetch } = useListMyOrphanedSubmissionsQuery({
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: orphanedData } = useListMyOrphanedSubmissionsQuery({
-    fetchPolicy: "cache-and-network",
+  const [adoptOrphanedSubmissions] = useAdoptOrphanedSubmissionsMutation({
+    refetchQueries: ["ListMyOrphanedSubmissions", "ListIntakeFormSubmissionsAsBuyer"],
   });
-
-  const orphanedCount = orphanedData?.listMyOrphanedSubmissions?.length ?? 0;
 
   // Transform data to table rows
   const rows: SubmissionRow[] = React.useMemo(() => {
-    if (!data?.listIntakeFormSubmissionsAsBuyer?.items) return [];
+    if (!data?.listMyOrphanedSubmissions) return [];
 
-    return data.listIntakeFormSubmissionsAsBuyer.items.map((submission): SubmissionRow => {
+    return data.listMyOrphanedSubmissions.map((submission): SubmissionRow => {
       const amountInCents = submission.totalInCents ?? 0;
       return {
         id: submission.id,
@@ -80,8 +72,6 @@ export default function SubmissionsPage() {
         amountFormatted: submission.totalInCents
           ? `$${(submission.totalInCents / 100).toLocaleString()}`
           : "Quote pending",
-        quoteId: submission.quote?.id || null,
-        quoteStatus: submission.quote?.status || null,
         itemCount: submission.lineItems?.length || 0,
       };
     });
@@ -91,27 +81,19 @@ export default function SubmissionsPage() {
   const stats = React.useMemo(() => {
     const draftCount = rows.filter((r) => r.status === "DRAFT").length;
     const submittedCount = rows.filter((r) => r.status === "SUBMITTED").length;
-    const totalValue = rows
-      .filter((r) => r.status === "SUBMITTED")
-      .reduce((sum, r) => sum + r.amount, 0);
-    const withQuotes = rows.filter((r) => r.quoteId !== null).length;
+    const totalValue = rows.reduce((sum, r) => sum + r.amount, 0);
 
     return {
       draftCount,
       submittedCount,
       totalValue,
-      withQuotes,
+      totalCount: rows.length,
     };
   }, [rows]);
 
   // Filter and sort rows
   const filteredRows = React.useMemo(() => {
     let filtered = rows;
-
-    // Apply status filter
-    if (statusFilter !== "ALL") {
-      filtered = filtered.filter((row) => row.status === statusFilter);
-    }
 
     // Apply search filter
     if (searchTerm) {
@@ -145,7 +127,7 @@ export default function SubmissionsPage() {
     }
 
     return filtered;
-  }, [rows, searchTerm, sortField, sortDirection, statusFilter]);
+  }, [rows, searchTerm, sortField, sortDirection]);
 
   const handleSort = (field: keyof SubmissionRow) => {
     if (sortField === field) {
@@ -156,11 +138,58 @@ export default function SubmissionsPage() {
     }
   };
 
-  const handleRowClick = (row: SubmissionRow) => {
-    if (row.status === "DRAFT") {
-      router.push(`/intake-form/${row.formId}/catalog?submissionId=${row.id}`);
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredRows.length) {
+      setSelectedIds(new Set());
     } else {
-      router.push(`/intake-form/${row.formId}/orders/${row.id}`);
+      setSelectedIds(new Set(filteredRows.map((r) => r.id)));
+    }
+  };
+
+  const handleSelectRow = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleAdoptSelected = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsAdopting(true);
+    try {
+      await adoptOrphanedSubmissions({
+        variables: {
+          workspaceId: workspace_id,
+          submissionIds: Array.from(selectedIds),
+        },
+      });
+      setSelectedIds(new Set());
+      await refetch();
+    } catch (err) {
+      console.error("Failed to adopt submissions:", err);
+    } finally {
+      setIsAdopting(false);
+    }
+  };
+
+  const handleAdoptAll = async () => {
+    setIsAdopting(true);
+    try {
+      await adoptOrphanedSubmissions({
+        variables: {
+          workspaceId: workspace_id,
+        },
+      });
+      setSelectedIds(new Set());
+      await refetch();
+    } catch (err) {
+      console.error("Failed to adopt submissions:", err);
+    } finally {
+      setIsAdopting(false);
     }
   };
 
@@ -168,7 +197,7 @@ export default function SubmissionsPage() {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="container mx-auto max-w-7xl">
-          <p className="text-gray-600">Loading submissions...</p>
+          <p className="text-gray-600">Loading orphaned submissions...</p>
         </div>
       </div>
     );
@@ -184,49 +213,105 @@ export default function SubmissionsPage() {
     );
   }
 
+  // If no orphaned submissions, show empty state with redirect option
+  if (rows.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto max-w-7xl px-4 py-6">
+          {/* Back button */}
+          <button
+            onClick={() => router.push(`/app/${workspace_id}/my-requests`)}
+            className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to My Requests
+          </button>
+
+          {/* Empty State */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">All caught up!</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              You don&apos;t have any orphaned submissions. All your requests are already linked to
+              this workspace.
+            </p>
+            <button
+              onClick={() => router.push(`/app/${workspace_id}/my-requests`)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              View My Requests
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto max-w-7xl px-4 py-6">
+        {/* Back button */}
+        <button
+          onClick={() => router.push(`/app/${workspace_id}/my-requests`)}
+          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to My Requests
+        </button>
+
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Requests</h1>
-          <p className="text-gray-600">Track equipment requests you&apos;ve submitted to sellers</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Orphaned Requests</h1>
+          <p className="text-gray-600">
+            These are requests you submitted before joining this workspace. Add them to your
+            workspace to track them here.
+          </p>
         </div>
 
-        {/* Orphaned Submissions Banner */}
-        {orphanedCount > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg shrink-0">
-                  <AlertCircle className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900">
-                    {orphanedCount} request{orphanedCount !== 1 ? "s" : ""} waiting to be added
-                  </h3>
-                  <p className="text-blue-700 text-sm">
-                    Requests you submitted before joining this workspace can be added here.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push(`/app/${workspace_id}/my-requests/orphaned`)}
-                className="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-              >
-                Review Requests
-                <ArrowRight className="w-4 h-4" />
-              </button>
+        {/* Info Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg shrink-0">
+              <FileText className="w-5 h-5 text-blue-600" />
             </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 mb-1">
+                {stats.totalCount} request{stats.totalCount !== 1 ? "s" : ""} found
+              </h3>
+              <p className="text-blue-700 text-sm">
+                These requests were submitted using your email address but weren&apos;t linked to
+                any workspace. Adding them will make them visible in your &quot;My Requests&quot;
+                section.
+              </p>
+            </div>
+            <button
+              onClick={handleAdoptAll}
+              disabled={isAdopting}
+              className="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isAdopting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Add All to Workspace
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <StatsCard
             icon={<FileText className="w-5 h-5" />}
-            label="Total Submissions"
-            value={rows.length.toString()}
+            label="Total Orphaned"
+            value={stats.totalCount.toString()}
             iconBgColor="bg-blue-100"
             iconColor="text-blue-600"
           />
@@ -244,16 +329,9 @@ export default function SubmissionsPage() {
             iconBgColor="bg-emerald-100"
             iconColor="text-emerald-600"
           />
-          <StatsCard
-            icon={<Clock className="w-5 h-5" />}
-            label="Drafts"
-            value={stats.draftCount.toString()}
-            iconBgColor="bg-amber-100"
-            iconColor="text-amber-600"
-          />
         </div>
 
-        {/* Search and Filter Bar */}
+        {/* Search Bar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 w-full sm:max-w-md">
@@ -266,19 +344,25 @@ export default function SubmissionsPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as IntakeFormSubmissionStatus | "ALL")
-                }
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleAdoptSelected}
+                disabled={isAdopting}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                <option value="ALL">All Statuses</option>
-                <option value="SUBMITTED">Submitted</option>
-                <option value="DRAFT">Draft</option>
-              </select>
-            </div>
+                {isAdopting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Add {selectedIds.size} Selected
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -288,6 +372,14 @@ export default function SubmissionsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="px-4 py-3 text-left w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === filteredRows.length && filteredRows.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left">
                     <button
                       onClick={() => handleSort("id")}
@@ -347,29 +439,16 @@ export default function SubmissionsPage() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Quote
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center">
+                    <td colSpan={8} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="w-12 h-12 text-gray-300" />
                         <p className="text-gray-500 font-medium">
-                          {searchTerm || statusFilter !== "ALL"
-                            ? "No submissions found matching your filters."
-                            : "No submissions yet"}
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                          {!searchTerm && statusFilter === "ALL"
-                            ? "Submissions you make through intake forms will appear here."
-                            : ""}
+                          No submissions found matching your search.
                         </p>
                       </div>
                     </td>
@@ -378,9 +457,16 @@ export default function SubmissionsPage() {
                   filteredRows.map((row) => (
                     <tr
                       key={row.id}
-                      onClick={() => handleRowClick(row)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className={`hover:bg-gray-50 transition-colors ${selectedIds.has(row.id) ? "bg-blue-50" : ""}`}
                     >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={() => handleSelectRow(row.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-medium text-gray-900 font-mono">
                           {row.id}
@@ -417,37 +503,6 @@ export default function SubmissionsPage() {
                           <span className="text-sm text-amber-600">Quote pending</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        {row.quoteId ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/quote/${row.quoteId}`);
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
-                          >
-                            View Quote
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(row);
-                          }}
-                          className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                          title={row.status === "DRAFT" ? "Continue Editing" : "View Details"}
-                        >
-                          {row.status === "DRAFT" ? (
-                            <Pencil className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-                      </td>
                     </tr>
                   ))
                 )}
@@ -459,7 +514,7 @@ export default function SubmissionsPage() {
         {/* Results Summary */}
         {filteredRows.length > 0 && (
           <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredRows.length} of {rows.length} submissions
+            Showing {filteredRows.length} of {rows.length} orphaned submissions
           </div>
         )}
       </div>
@@ -526,7 +581,7 @@ function StatusBadge({ status }: { status: IntakeFormSubmissionStatus }) {
 }
 
 function formatDate(dateString: string): string {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
   return date.toLocaleDateString(undefined, {

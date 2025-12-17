@@ -25,6 +25,7 @@ export {
   useListIntakeFormSubmissionsByFormIdQuery,
   useListIntakeFormSubmissionsAsBuyerQuery,
   useListIntakeFormSubmissionLineItemsQuery,
+  useListMyOrphanedSubmissionsQuery,
   useCreateIntakeFormSubmissionMutation,
   useUpdateIntakeFormSubmissionMutation,
   useSubmitIntakeFormSubmissionMutation,
@@ -333,6 +334,17 @@ graphql(`
   }
 `);
 
+graphql(`
+  query ListMyOrphanedSubmissions {
+    listMyOrphanedSubmissions {
+      ...IntakeFormSubmissionFields
+      lineItems {
+        ...IntakeFormSubmissionLineItemFields
+      }
+    }
+  }
+`);
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================
@@ -452,8 +464,8 @@ graphql(`
  * Idempotent - safe to call multiple times.
  */
 graphql(`
-  mutation AdoptOrphanedSubmissions($workspaceId: String!) {
-    adoptOrphanedSubmissions(workspaceId: $workspaceId) {
+  mutation AdoptOrphanedSubmissions($workspaceId: String!, $submissionIds: [ID!]) {
+    adoptOrphanedSubmissions(workspaceId: $workspaceId, submissionIds: $submissionIds) {
       adoptedCount
       adoptedSubmissionIds
       adoptedSubmissions {

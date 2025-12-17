@@ -1477,6 +1477,8 @@ input ListChargesFilter {
 }
 
 input ListContactsFilter {
+  """Filter person contacts by their employer business ID"""
+  businessId: ID
   contactType: ContactType
   workspaceId: String!
 }
@@ -1760,9 +1762,9 @@ type Mutation {
   admin: AdminMutationNamespace
 
   """
-  Adopt orphaned intake form submissions (with null buyerWorkspaceId) to the specified workspace. Only submissions created by the authenticated user will be adopted. Idempotent.
+  Adopt orphaned intake form submissions (with null buyerWorkspaceId) to the specified workspace. Only submissions created by the authenticated user will be adopted. If submissionIds is provided with items, only those specific submissions will be adopted. If submissionIds is omitted or empty, all orphaned submissions will be adopted. Idempotent.
   """
-  adoptOrphanedSubmissions(workspaceId: String!): AdoptOrphanedSubmissionsResult!
+  adoptOrphanedSubmissions(submissionIds: [ID!], workspaceId: String!): AdoptOrphanedSubmissionsResult!
   archiveWorkspace(workspaceId: String!): Workspace
   assignInventoryToRentalFulfilment(allowOverlappingReservations: Boolean = false, fulfilmentId: ID!, inventoryId: ID!): RentalFulfilment
   bulkMarkInventoryReceived(input: BulkMarkInventoryReceivedInput!): BulkMarkInventoryReceivedResult!
@@ -2486,6 +2488,11 @@ type Query {
   listInventoryReservations(filter: ListInventoryReservationsFilter, page: ListInventoryPage): InventoryReservationsResponse!
   listInvoices(query: ListInvoicesQuery): InvoicesResponse!
   listJoinableWorkspaces: ListWorkspacesResult!
+
+  """
+  List intake form submissions created by the authenticated user that have no buyer workspace assigned.
+  """
+  listMyOrphanedSubmissions: [IntakeFormSubmission!]!
   listNotesByEntityId(parent_entity_id: String!): [Note!]!
   listPimCategories(filter: ListPimCategoriesFilter, page: ListPimCategoriesPage): ListPimCategoriesResult
   listPimProducts(filter: ListPimProductsFilter, page: ListPimProductsPage): ListPimProductsResult

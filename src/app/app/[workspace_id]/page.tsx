@@ -7,17 +7,22 @@ import {
   useDashboardInvoicesQuery,
   useDashboardProjectsQuery,
   useDashboardSalesOrdersQuery,
+  useListMyOrphanedSubmissionsQuery,
 } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import MailIcon from "@mui/icons-material/Mail";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import {
+  Alert,
   Avatar,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -156,11 +161,16 @@ export default function DashboardMainSection() {
     fetchPolicy: "cache-and-network",
   });
 
+  const { data: orphanedData } = useListMyOrphanedSubmissionsQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
   // Calculate KPIs
   const activeRentals = rentalsData?.listRentalFulfilments?.page?.totalItems ?? 0;
   const totalOrders = salesOrdersData?.listSalesOrders?.total ?? 0;
   const totalInvoices = invoicesData?.listInvoices?.items?.length ?? 0;
   const totalProjects = projectsData?.listProjects?.length ?? 0;
+  const orphanedCount = orphanedData?.listMyOrphanedSubmissions?.length ?? 0;
 
   const isLoading =
     rentalsLoading || salesOrdersLoading || invoicesLoading || projectsLoading || intakeLoading;
@@ -243,6 +253,45 @@ export default function DashboardMainSection() {
       </Box>
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        {/* Orphaned Submissions Alert */}
+        {orphanedCount > 0 && (
+          <Alert
+            severity="info"
+            icon={<InfoOutlinedIcon />}
+            sx={{
+              mb: 3,
+              alignItems: "center",
+              "& .MuiAlert-message": {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              },
+            }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                endIcon={<ArrowForwardIcon />}
+                onClick={() => router.push(`/app/${workspaceId}/my-requests/orphaned`)}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                Review Requests
+              </Button>
+            }
+          >
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                You have {orphanedCount} request{orphanedCount !== 1 ? "s" : ""} waiting to be added
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Requests you submitted before joining this workspace can be added to track them
+                here.
+              </Typography>
+            </Box>
+          </Alert>
+        )}
+
         {/* Overview Copy */}
         <Box mb={3}>
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
