@@ -7,8 +7,8 @@
     "documents": "./src/**/*.{graphql,js,ts,jsx,tsx}"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:local-gql": "NEXT_PUBLIC_GQL_URL=http://localhost:5000/graphql next dev --turbopack",
+    "dev": "NODE_OPTIONS='--require ./scripts/preload-storage.js' next dev --turbopack",
+    "dev:local-gql": "NODE_OPTIONS='--require ./scripts/preload-storage.js' NEXT_PUBLIC_GQL_URL=http://localhost:5000/graphql next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

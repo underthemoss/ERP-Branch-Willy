@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   },
 
   reactStrictMode: false,
+
+  // Exclude browser-tabs-lock and auth0 packages from SSR bundling
+  // These packages access localStorage at module load time which breaks SSR
+  serverExternalPackages: ["browser-tabs-lock"],
 };
 
 export default nextConfig;

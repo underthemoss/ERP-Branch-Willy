@@ -6,6 +6,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import React from "react";
+import ClientApp from "./ClientApp";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           rel="stylesheet"
         ></link>
       </head>
-      <body>{children}</body>
+      <body>
+        <ClientApp>{children}</ClientApp>
+      </body>
     </html>
   );
 }

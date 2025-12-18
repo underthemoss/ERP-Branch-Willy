@@ -224,6 +224,22 @@ const NavBarContent: React.FC<{
       testId: "nav-contacts",
     },
     {
+      text: "Resources",
+      href: `/app/${currentWorkspace?.id}/resources/inventory`,
+      icon: <Package size={18} />,
+      selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/resources`),
+      testId: "nav-resources",
+      subitems: [
+        {
+          text: "Inventory",
+          href: `/app/${currentWorkspace?.id}/resources/inventory`,
+          icon: <Package size={18} />,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/resources/inventory`),
+          testId: "nav-resources-inventory",
+        },
+      ],
+    },
+    {
       text: "Sales Channels",
       href: `/app/${currentWorkspace?.id}/store-fronts`,
       icon: <Building2 size={18} />,
@@ -342,6 +358,11 @@ const NavBarContent: React.FC<{
     // Check Search group (admin only)
     if (pathname?.startsWith(`${workspaceBase}/search`)) {
       groupsToExpand.push("Search");
+    }
+
+    // Check Resources group
+    if (pathname?.startsWith(`${workspaceBase}/resources`)) {
+      groupsToExpand.push("Resources");
     }
 
     // Check Sales Channels group
