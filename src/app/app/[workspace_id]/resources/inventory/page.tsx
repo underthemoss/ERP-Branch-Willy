@@ -1,7 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
-import { PoLineItemStatus, PurchaseOrderStatus, InventoryStatus } from "@/graphql/graphql";
+import { InventoryStatus, PoLineItemStatus, PurchaseOrderStatus } from "@/graphql/graphql";
 import { useListResourcesInventoryQuery } from "@/graphql/hooks";
 import {
   ArrowUpDown,
@@ -363,10 +363,7 @@ export default function ResourcesInventoryPage() {
         if (statusFilter === "RECEIVED" && item.displayStatus !== "RECEIVED") return false;
         if (statusFilter === "ACTIVE" && item.displayStatus !== "ACTIVE") return false;
         if (statusFilter === "DRAFT" && item.displayStatus !== "DRAFT") return false;
-        if (
-          statusFilter === "PARTIALLY_RECEIVED" &&
-          item.displayStatus !== "PARTIALLY_RECEIVED"
-        )
+        if (statusFilter === "PARTIALLY_RECEIVED" && item.displayStatus !== "PARTIALLY_RECEIVED")
           return false;
         if (statusFilter === "RETURNED" && item.displayStatus !== "RETURNED") return false;
       }
@@ -392,8 +389,7 @@ export default function ResourcesInventoryPage() {
       .reduce((sum, item) => sum + item.quantity, 0);
     const pendingDelivery = inventoryItems
       .filter(
-        (item) =>
-          item.displayStatus === "ON_ORDER" || item.displayStatus === "PARTIALLY_RECEIVED",
+        (item) => item.displayStatus === "ON_ORDER" || item.displayStatus === "PARTIALLY_RECEIVED",
       )
       .reduce((sum, item) => sum + item.quantity, 0);
 
@@ -641,11 +637,11 @@ export default function ResourcesInventoryPage() {
             <div>
               <h3 className="font-medium text-blue-900">About Resources Inventory</h3>
               <p className="text-sm text-blue-700 mt-1">
-                This view shows line items from your purchase orders where your organization is
-                the buyer. Items progress from <strong>Draft</strong> → <strong>On Order</strong>{" "}
-                (when PO is submitted) → <strong>Received</strong> (when inventory is marked as
-                received). Rentals show as <strong>Active</strong> while on rent and{" "}
-                <strong>Returned</strong> when the rental period ends.
+                This view shows line items from your purchase orders where your organization is the
+                buyer. Items progress from <strong>Draft</strong> → <strong>On Order</strong> (when
+                PO is submitted) → <strong>Received</strong> (when inventory is marked as received).
+                Rentals show as <strong>Active</strong> while on rent and <strong>Returned</strong>{" "}
+                when the rental period ends.
               </p>
             </div>
           </div>

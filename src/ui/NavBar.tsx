@@ -22,6 +22,7 @@ import {
   Home,
   LogOut,
   Mail,
+  Map,
   Package,
   Receipt,
   Search,
@@ -227,7 +228,9 @@ const NavBarContent: React.FC<{
       text: "Resources",
       href: `/app/${currentWorkspace?.id}/resources/inventory`,
       icon: <Package size={18} />,
-      selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/resources`),
+      selected:
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/resources`) ||
+        pathname?.startsWith(`/app/${currentWorkspace?.id}/resource-map`),
       testId: "nav-resources",
       subitems: [
         {
@@ -236,6 +239,13 @@ const NavBarContent: React.FC<{
           icon: <Package size={18} />,
           selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/resources/inventory`),
           testId: "nav-resources-inventory",
+        },
+        {
+          text: "Resource Map",
+          href: `/app/${currentWorkspace?.id}/resource-map`,
+          icon: <Map size={18} />,
+          selected: pathname?.startsWith(`/app/${currentWorkspace?.id}/resource-map`),
+          testId: "nav-resource-map",
         },
       ],
     },
