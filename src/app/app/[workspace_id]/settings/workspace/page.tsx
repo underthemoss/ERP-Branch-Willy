@@ -522,6 +522,7 @@ export default function WorkspaceSettingsPage() {
           sx={{ borderBottom: 1, borderColor: "divider" }}
         >
           <Tab label="General Information" />
+          <Tab label="Organization" />
           <Tab label="Visual Identity" />
           <Tab label="Access & Invitations" />
           <Tab label="Archive" />
@@ -591,8 +592,45 @@ export default function WorkspaceSettingsPage() {
             </Box>
           )}
 
-          {/* Visual Identity Tab */}
+          {/* Organization Tab */}
           {activeTab === 1 && (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 3 }}>
+                Organization Business Contact
+              </Typography>
+
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  The organization business contact represents your company or organization. When
+                  creating employee contacts, they will be automatically associated with this
+                  business contact.
+                </Typography>
+              </Alert>
+
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>Coming Soon:</strong> This feature requires backend support that is not yet available.
+                  Once the backend is updated, you will be able to select a business contact to represent your organization.
+                </Typography>
+              </Alert>
+
+              <Box sx={{ opacity: 0.5, pointerEvents: "none" }}>
+                <TextField
+                  fullWidth
+                  label="Organization Business Contact"
+                  placeholder="Select a business contact..."
+                  helperText="Select the business contact that represents your organization"
+                  disabled
+                  InputProps={{
+                    startAdornment: <Business sx={{ ml: 1, mr: 0.5, color: "text.secondary" }} />,
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* Visual Identity Tab */}
+          {activeTab === 2 && (
             <Box>
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Visual Identity
@@ -901,7 +939,7 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {/* Access & Invitations Tab */}
-          {activeTab === 2 && (
+          {activeTab === 3 && (
             <Box>
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Access & Invitations
@@ -1019,7 +1057,7 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {/* Archive Tab */}
-          {activeTab === 3 && (
+          {activeTab === 4 && (
             <Box>
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Archive Workspace
