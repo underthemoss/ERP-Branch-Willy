@@ -1952,7 +1952,7 @@ type Mutation {
   updateTaxLineItem(input: UpdateTaxLineItemInput!): Invoice!
   updateWorkflowConfiguration(id: ID!, input: UpdateWorkflowConfigurationInput!): WorkflowConfiguration
   updateWorkspaceAccessType(accessType: WorkspaceAccessType!, workspaceId: String!): Workspace
-  updateWorkspaceSettings(bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String, workspaceId: String!): Workspace
+  updateWorkspaceSettings(bannerImageUrl: String, brandId: String, description: String, logoUrl: String, name: String, orgBusinessContactId: ID, workspaceId: String!): Workspace
   updateWorkspaceUserRoles(roles: [WorkspaceUserRole!]!, userId: String!, workspaceId: String!): WorkspaceMember
   upsertPimCategory(input: UpsertPimCategoryInput!): PimCategory
   upsertUser(id: String!, input: UserUpsertInput!): User
@@ -4308,7 +4308,7 @@ type WorkflowConfiguration {
 }
 
 type Workspace {
-  accessType: WorkspaceAccessType
+accessType: WorkspaceAccessType
   archived: Boolean
   archivedAt: String
   bannerImageUrl: String
@@ -4321,6 +4321,8 @@ type Workspace {
   id: ID!
   logoUrl: String
   name: String!
+  orgBusinessContact: BusinessContact
+  orgBusinessContactId: ID
   ownerId: String
   updatedAt: String
   updatedBy: String

@@ -28,6 +28,14 @@ graphql(`
         brandId
         domain
         logoUrl
+        orgBusinessContactId
+        orgBusinessContact {
+          id
+          name
+          address
+          phone
+          website
+        }
         ownerId
         createdAt
         createdBy

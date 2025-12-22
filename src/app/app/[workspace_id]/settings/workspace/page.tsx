@@ -54,6 +54,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ArchiveWorkspaceDialog from "./components/ArchiveWorkspaceDialog";
+import { BusinessSelector } from "@/ui/contacts/BusinessSelector";
 
 // Define the GraphQL queries (reusing from CreateWorkspaceFlow)
 graphql(`
@@ -115,6 +116,7 @@ graphql(`
     $logoUrl: String
     $bannerImageUrl: String
     $brandId: String
+    $orgBusinessContactId: ID
   ) {
     updateWorkspaceSettings(
       workspaceId: $workspaceId
@@ -123,6 +125,7 @@ graphql(`
       logoUrl: $logoUrl
       bannerImageUrl: $bannerImageUrl
       brandId: $brandId
+      orgBusinessContactId: $orgBusinessContactId
     ) {
       id
       name
@@ -130,6 +133,11 @@ graphql(`
       logoUrl
       bannerImageUrl
       brandId
+      orgBusinessContactId
+      orgBusinessContact {
+        id
+        name
+      }
       updatedAt
     }
   }
@@ -196,7 +204,14 @@ export default function WorkspaceSettingsPage() {
   const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-  // Form 2: Access Type
+  // Form 2: Organization
+  const [orgBusinessContactId, setOrgBusinessContactId] = useState<string>(
+    currentWorkspace?.orgBusinessContactId || "",
+  );
+  const [hasOrgChanges, setHasOrgChanges] = useState(false);
+  const [isSavingOrg, setIsSavingOrg] = useState(false);
+
+  // Form 3: Access Type
   const [accessType, setAccessType] = useState<"domain" | "invite">(
     currentWorkspace?.accessType === "SAME_DOMAIN" ? "domain" : "invite",
   );
@@ -257,6 +272,12 @@ export default function WorkspaceSettingsPage() {
     setHasSettingsChanges(nameChanged || descriptionChanged || logoChanged || bannerChanged);
   }, [workspaceName, workspaceDescription, selectedLogoUrl, selectedBannerUrl, currentWorkspace]);
 
+  // Check for org changes
+  useEffect(() => {
+    const orgChanged = orgBusinessContactId !== (currentWorkspace?.orgBusinessContactId || "");
+    setHasOrgChanges(orgChanged);
+  }, [orgBusinessContactId, currentWorkspace]);
+
   // Check for access changes
   useEffect(() => {
     const accessChanged =
@@ -314,6 +335,43 @@ export default function WorkspaceSettingsPage() {
       setShowError(true);
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const handleSaveOrg = async () => {
+    if (!currentWorkspace?.id) return;
+
+    setIsSavingOrg(true);
+    setErrorMessage(null);
+
+    try {
+      await updateWorkspaceSettings({
+        variables: {
+          workspaceId: currentWorkspace.id,
+          orgBusinessContactId: orgBusinessContactId || null,
+        },
+      });
+
+      setSuccessMessage("Organization settings saved successfully!");
+      setShowSuccess(true);
+      setHasOrgChanges(false);
+    } catch (error: any) {
+      console.error("Error saving organization settings:", error);
+
+      let userMessage = "Failed to save organization settings. Please try again.";
+
+      if (error?.message) {
+        if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          userMessage = "You don't have permission to update organization settings.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          userMessage = "Network error. Please check your connection and try again.";
+        }
+      }
+
+      setErrorMessage(userMessage);
+      setShowError(true);
+    } finally {
+      setIsSavingOrg(false);
     }
   };
 
@@ -607,24 +665,43 @@ export default function WorkspaceSettingsPage() {
                 </Typography>
               </Alert>
 
-              <Alert severity="warning" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Coming Soon:</strong> This feature requires backend support that is not yet available.
-                  Once the backend is updated, you will be able to select a business contact to represent your organization.
-                </Typography>
-              </Alert>
+              {currentWorkspace?.orgBusinessContact && (
+                <Alert severity="success" sx={{ mb: 3 }}>
+                  <Typography variant="body2">
+                    <strong>Current Organization:</strong> {currentWorkspace.orgBusinessContact.name}
+                  </Typography>
+                </Alert>
+              )}
 
-              <Box sx={{ opacity: 0.5, pointerEvents: "none" }}>
-                <TextField
-                  fullWidth
-                  label="Organization Business Contact"
-                  placeholder="Select a business contact..."
-                  helperText="Select the business contact that represents your organization"
-                  disabled
-                  InputProps={{
-                    startAdornment: <Business sx={{ ml: 1, mr: 0.5, color: "text.secondary" }} />,
-                  }}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+                  Select Organization Business Contact
+                </Typography>
+                <BusinessSelector
+                  value={orgBusinessContactId}
+                  onChange={setOrgBusinessContactId}
+                  workspaceId={currentWorkspace.id}
                 />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                  Select the business contact that represents your organization
+                </Typography>
+              </Box>
+
+              <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  variant="contained"
+                  startIcon={isSavingOrg ? <CircularProgress size={16} /> : <Save />}
+                  onClick={handleSaveOrg}
+                  disabled={!hasOrgChanges || isSavingOrg}
+                  sx={{
+                    bgcolor: primaryColor,
+                    "&:hover": {
+                      bgcolor: alpha(primaryColor, 0.9),
+                    },
+                  }}
+                >
+                  {isSavingOrg ? "Saving..." : "Save Organization Settings"}
+                </Button>
               </Box>
             </Box>
           )}
