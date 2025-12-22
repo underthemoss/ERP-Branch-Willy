@@ -33,7 +33,15 @@ export const PersonContactFieldsFragment = graphql(`
     email
     role
     businessId
+    resourceMapIds
     updatedAt
+    resource_map_entries {
+      id
+      value
+      parent_id
+      path
+      hierarchy_name
+    }
   }
 `);
 
@@ -53,6 +61,7 @@ export const BusinessContactFieldsFragment = graphql(`
     taxId
     website
     brandId
+    resourceMapIds
     brand {
       id
       name
@@ -77,20 +86,93 @@ export const BusinessContactFieldsFragment = graphql(`
         }
       }
     }
+    resource_map_entries {
+      id
+      value
+      parent_id
+      path
+      hierarchy_name
+    }
     updatedAt
   }
 `);
+
+// TODO: Re-export when backend supports listResourceMapEntriesByTagType query
+// export { useListResourceMapEntriesByTagTypeQuery } from "@/graphql/hooks";
 
 graphql(`
   query GetContactById($id: ID!) {
     getContactById(id: $id) {
       __typename
       ... on BusinessContact {
-        ...BusinessContactFields
+        __typename
+        id
+        contactType
+        notes
+        profilePicture
+        name
+        phone
+        address
+        latitude
+        longitude
+        placeId
+        taxId
+        website
+        brandId
+        resourceMapIds
+        updatedAt
+        brand {
+          id
+          name
+          domain
+          logos {
+            type
+            theme
+            formats {
+              src
+              format
+              width
+              height
+            }
+          }
+          images {
+            type
+            formats {
+              src
+              format
+              width
+              height
+            }
+          }
+        }
+        resource_map_entries {
+          id
+          value
+          parent_id
+          path
+          hierarchy_name
+        }
       }
       ... on PersonContact {
-        ...PersonContactFields
+        __typename
+        id
+        contactType
+        notes
+        profilePicture
+        name
+        phone
+        email
+        role
+        businessId
         resourceMapIds
+        updatedAt
+        resource_map_entries {
+          id
+          value
+          parent_id
+          path
+          hierarchy_name
+        }
       }
     }
   }
@@ -101,11 +183,55 @@ graphql(`
     listContacts(filter: { workspaceId: $workspaceId, contactType: $contactType }, page: $page) {
       items {
         ... on PersonContact {
-          ...PersonContactFields
+          __typename
+          id
+          contactType
+          notes
+          profilePicture
+          name
+          phone
+          email
+          role
+          businessId
+          resourceMapIds
+          updatedAt
         }
         ... on BusinessContact {
-          ...BusinessContactFields
+          __typename
+          id
+          contactType
+          notes
+          profilePicture
+          name
+          phone
+          address
+          taxId
+          website
+          brandId
+          resourceMapIds
+          updatedAt
+          brand {
+            id
+            name
+            domain
+            logos {
+              type
+              theme
+              formats {
+                src
+                format
+                width
+                height
+              }
+            }
+          }
         }
+      }
+      page {
+        number
+        size
+        totalItems
+        totalPages
       }
     }
   }
@@ -138,7 +264,14 @@ graphql(`
     listContacts(filter: { workspaceId: $workspaceId, contactType: PERSON }, page: $page) {
       items {
         ... on PersonContact {
-          ...PersonContactFields
+          __typename
+          id
+          name
+          phone
+          email
+          role
+          businessId
+          profilePicture
         }
       }
     }
@@ -185,8 +318,8 @@ graphql(`
     $name: String!
     $phone: String
     $email: String!
-    $role: String!
     $businessId: ID!
+    $role: String!
     $resourceMapIds: [ID!]
   ) {
     createPersonContact(
@@ -195,8 +328,8 @@ graphql(`
         name: $name
         phone: $phone
         email: $email
-        role: $role
         businessId: $businessId
+        role: $role
         resourceMapIds: $resourceMapIds
       }
     ) {

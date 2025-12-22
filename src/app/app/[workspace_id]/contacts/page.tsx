@@ -1,7 +1,6 @@
 "use client";
 
-import { ContactType } from "@/graphql/graphql";
-import { useListContactsQuery } from "@/ui/contacts/api";
+import { useListBusinessContactsQuery, useListPersonContactsQuery } from "@/ui/contacts/api";
 import {
   ArrowUpDown,
   Building2,
@@ -19,6 +18,31 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import { ContactCard } from "./components/ContactCard";
+
+interface ContactRow {
+  id: string;
+  name: string;
+  type: string;
+  phone: string;
+  email: string;
+  role: string;
+  businessId: string;
+  address: string;
+  taxId: string;
+  website: string;
+  notes: string;
+  profilePicture: string;
+  updatedAt: string;
+  brand: {
+    name: string | null;
+    logos: Array<{
+      type?: string | null;
+      theme?: string | null;
+      formats?: Array<{ src?: string | null }> | null;
+    }> | null;
+  } | null;
+  __typename: string;
+}
 
 export default function ContactsPage() {
   const { workspace_id } = useParams<{ workspace_id: string }>();
@@ -46,59 +70,94 @@ export default function ContactsPage() {
     localStorage.setItem("contacts-view", newView);
   };
 
-  const { data, loading } = useListContactsQuery({
+  // Use the WORKING queries from the organization dropdown
+  const { data: businessData, loading: businessLoading } = useListBusinessContactsQuery({
     variables: {
       workspaceId: workspace_id,
-      page: {
-        size: 10_000,
-      },
-      contactType:
-        contactTypeFilter === "All"
-          ? undefined
-          : contactTypeFilter === "PERSON"
-            ? ContactType.Person
-            : contactTypeFilter === "BUSINESS"
-              ? ContactType.Business
-              : undefined,
+      page: { size: 10000 },
     },
     fetchPolicy: "cache-and-network",
   });
 
-  const rows = React.useMemo(() => {
-    return (
-      data?.listContacts?.items?.map((contact) => {
-        const isPerson = contact?.__typename === "PersonContact";
-        const isBusiness = contact?.__typename === "BusinessContact";
-        return {
-          id: contact?.id ?? "",
-          name: contact?.name ?? "",
-          type: contact?.contactType ?? "",
-          phone: contact?.phone ?? "",
-          email: isPerson ? (contact?.email ?? "") : "",
-          role: isPerson ? (contact?.role ?? "") : "",
-          businessId: isPerson ? (contact?.businessId ?? "") : "",
-          address: isBusiness ? (contact?.address ?? "") : "",
-          taxId: isBusiness ? (contact?.taxId ?? "") : "",
-          website: isBusiness ? (contact?.website ?? "") : "",
-          notes: contact?.notes ?? "",
-          profilePicture: contact?.profilePicture ?? "",
-          updatedAt: contact?.updatedAt ?? "",
-          brand: isBusiness
-            ? contact?.brand
-              ? {
-                  name: contact.brand.name ?? null,
-                  logos: contact.brand.logos ?? null,
-                }
-              : null
+  const { data: personData, loading: personLoading } = useListPersonContactsQuery({
+    variables: {
+      workspaceId: workspace_id,
+      page: { size: 10000 },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const loading = businessLoading || personLoading;
+
+  // Combine business and person contacts
+  const rows = React.useMemo<ContactRow[]>(() => {
+    const businessRows: ContactRow[] = [];
+    const items = businessData?.listContacts?.items ?? [];
+    for (const item of items) {
+      if (item?.__typename === "BusinessContact") {
+        const contact = item as { id: string; name: string; phone?: string | null; address?: string | null; profilePicture?: string | null; brand?: { name?: string | null; logos?: Array<{ type?: string | null; theme?: string | null; formats?: Array<{ src?: string | null }> | null }> | null } | null };
+        businessRows.push({
+          id: contact.id,
+          name: contact.name,
+          type: "BUSINESS",
+          phone: contact.phone ?? "",
+          email: "",
+          role: "",
+          businessId: "",
+          address: contact.address ?? "",
+          taxId: "",
+          website: "",
+          notes: "",
+          profilePicture: contact.profilePicture ?? "",
+          updatedAt: "",
+          brand: contact.brand
+            ? {
+                name: contact.brand.name ?? null,
+                logos: contact.brand.logos ?? null,
+              }
             : null,
-          __typename: contact?.__typename,
-        };
-      }) ?? []
-    );
-  }, [data]);
+          __typename: "BusinessContact",
+        });
+      }
+    }
+
+    const personRows: ContactRow[] = [];
+    const personItems = personData?.listContacts?.items ?? [];
+    for (const item of personItems) {
+      if (item?.__typename === "PersonContact") {
+        const contact = item as { id: string; name: string; phone?: string | null; email?: string | null; role?: string | null; businessId?: string | null; profilePicture?: string | null };
+        personRows.push({
+          id: contact.id,
+          name: contact.name,
+          type: "PERSON",
+          phone: contact.phone ?? "",
+          email: contact.email ?? "",
+          role: contact.role ?? "",
+          businessId: contact.businessId ?? "",
+          address: "",
+          taxId: "",
+          website: "",
+          notes: "",
+          profilePicture: contact.profilePicture ?? "",
+          updatedAt: "",
+          brand: null,
+          __typename: "PersonContact",
+        });
+      }
+    }
+
+    return [...businessRows, ...personRows];
+  }, [businessData, personData]);
 
   const filteredRows = React.useMemo(() => {
     let filtered = rows;
+
+    // Apply contact type filter
+    if (contactTypeFilter === "PERSON") {
+      filtered = filtered.filter((row) => row.type === "PERSON");
+    } else if (contactTypeFilter === "BUSINESS") {
+      filtered = filtered.filter((row) => row.type === "BUSINESS");
+    }
 
     // Apply search filter
     if (searchTerm) {
@@ -111,8 +170,8 @@ export default function ContactsPage() {
     // Apply sorting
     if (sortField) {
       filtered = [...filtered].sort((a, b) => {
-        const aValue = a[sortField as keyof typeof a];
-        const bValue = b[sortField as keyof typeof b];
+        const aValue = a[sortField as keyof ContactRow];
+        const bValue = b[sortField as keyof ContactRow];
 
         if (aValue === null || aValue === undefined) return 1;
         if (bValue === null || bValue === undefined) return -1;
@@ -128,7 +187,7 @@ export default function ContactsPage() {
     }
 
     return filtered;
-  }, [rows, searchTerm, sortField, sortDirection]);
+  }, [rows, contactTypeFilter, searchTerm, sortField, sortDirection]);
 
   const stats = React.useMemo(() => {
     const total = rows.length;
@@ -155,7 +214,7 @@ export default function ContactsPage() {
     router.push(`/app/${workspace_id}/contacts/${contactId}/edit`);
   };
 
-  if (loading && !data) {
+  if (loading && rows.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="container mx-auto max-w-7xl">
@@ -327,7 +386,7 @@ export default function ContactsPage() {
                       const initials = row.name
                         ?.split(" ")
                         .slice(-2)
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join("")
                         .toUpperCase();
                       const businessLogo = row.brand?.logos?.find((l) => l?.type === "logo")

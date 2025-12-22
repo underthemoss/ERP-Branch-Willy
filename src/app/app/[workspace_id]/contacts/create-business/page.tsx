@@ -64,7 +64,7 @@ export default function CreateBusinessPage() {
       });
 
       if (result.data?.createBusinessContact?.id) {
-        router.push(`../contacts/${result.data.createBusinessContact.id}`);
+        router.push(`/app/${workspace_id}/contacts/${result.data.createBusinessContact.id}`);
       } else {
         setError("Failed to create business.");
       }

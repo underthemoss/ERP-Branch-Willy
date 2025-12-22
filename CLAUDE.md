@@ -93,3 +93,48 @@ Always run these commands to ensure code quality:
 - `npm run codegen` - Generate GraphQL types and hooks
 - `npm run codegen:watch` - Run codegen in watch mode
 - `npm run codegen:update-schema` - Pull latest schema version
+
+---
+
+## Feature Documentation
+
+For complex features with specific data models, refer to the documentation in `./docs/`:
+
+### Resource Map
+
+**Full documentation**: `./docs/RESOURCE_MAP.md`
+
+**Quick Reference** - The ResourceMap location field is a **nested discriminated union**, NOT a simple field:
+
+```typescript
+// ❌ WRONG - location is NOT a simple lat/lng
+location: { lat: 123, lng: 456 }
+
+// ✅ CORRECT - use nested structure with kind discriminator
+location: {
+  kind: 'LAT_LNG',
+  latLng: { lat: 123, lng: 456 }
+}
+
+// ✅ CORRECT - for address type
+location: {
+  kind: 'ADDRESS',
+  address: { line1: '123 Main St', city: 'Houston', state: 'TX' }
+}
+```
+
+**Key types**:
+
+- `ResourceMapTagType`: `LOCATION` | `BUSINESS_UNIT` | `ROLE`
+- `ResourceMapLocationType`: `ADDRESS` | `LAT_LNG` | `PLUS_CODE` | `GEOFENCE` | `INTERIOR`
+
+**Always query the full nested structure**:
+
+```graphql
+location {
+  kind
+  latLng { lat lng }
+  address { line1 city state postalCode country }
+  geofence { type center { lat lng } radiusMeters }
+}
+```

@@ -2,7 +2,16 @@ import { create } from "zustand";
 
 export interface Tab {
   id: string;
-  type: "pricebook" | "project" | "contact" | "price";
+  type:
+    | "pricebook"
+    | "project"
+    | "contact"
+    | "price"
+    | "file"
+    | "chat"
+    | "markdown"
+    | "csv"
+    | "json";
   entityId: string;
   label: string;
 }

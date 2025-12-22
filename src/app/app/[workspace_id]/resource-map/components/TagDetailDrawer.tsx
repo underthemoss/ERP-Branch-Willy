@@ -1,16 +1,21 @@
 "use client";
 
 import {
+  Barcode,
+  Box,
   Building2,
   ChevronRight,
   Globe,
   Hash,
   Map as MapIcon,
   MapPin,
+  Printer,
+  QrCode,
   Save,
   Target,
   Trash2,
   Users,
+  Warehouse,
   X,
 } from "lucide-react";
 import * as React from "react";
@@ -33,7 +38,10 @@ interface TagDetailDrawerProps {
     parentId?: string | null,
     locationMetadata?: LocationMetadata | null,
   ) => Promise<ResourceMapTag | null>;
+  updateTag?: (id: string, updates: Partial<ResourceMapTag>) => Promise<ResourceMapTag | null>;
+  deleteTag?: (id: string) => Promise<boolean>;
   allTags?: ResourceMapTag[];
+  initialParentId?: string | null;
 }
 
 // Get icon for tag type
@@ -71,7 +79,10 @@ export function TagDetailDrawer({
   tagType,
   onSave,
   createTag,
+  updateTag,
+  deleteTag,
   allTags = [],
+  initialParentId,
 }: TagDetailDrawerProps) {
   const [formData, setFormData] = React.useState({
     value: "",
@@ -84,7 +95,7 @@ export function TagDetailDrawer({
   const Icon = getTagIcon(tagType);
   const isNewTag = !tag;
 
-  // Reset form when tag changes
+  // Reset form when tag changes or initialParentId changes
   React.useEffect(() => {
     if (tag) {
       setFormData({
@@ -96,12 +107,12 @@ export function TagDetailDrawer({
     } else {
       setFormData({
         value: "",
-        parentId: null,
+        parentId: initialParentId ?? null,
         locationMetadata: null,
       });
       setIsEditing(true);
     }
-  }, [tag]);
+  }, [tag, initialParentId]);
 
   const handleSave = async () => {
     if (!formData.value.trim()) return;
@@ -112,9 +123,14 @@ export function TagDetailDrawer({
         // Create a new tag
         console.log("Creating tag:", formData);
         await createTag(formData.value, formData.parentId, formData.locationMetadata);
-      } else {
-        // TODO: Update existing tag
+      } else if (tag && updateTag) {
+        // Update existing tag
         console.log("Updating tag:", formData);
+        await updateTag(tag.id, {
+          value: formData.value,
+          parentId: formData.parentId,
+          locationMetadata: formData.locationMetadata,
+        });
       }
       onSave();
     } catch (error) {
@@ -130,9 +146,12 @@ export function TagDetailDrawer({
     }
 
     try {
-      // TODO: Call delete mutation
-      console.log("Deleting tag:", tag.id);
+      if (deleteTag) {
+        console.log("Deleting tag:", tag.id);
+        await deleteTag(tag.id);
+      }
       onSave();
+      onClose();
     } catch (error) {
       console.error("Failed to delete tag:", error);
     }
@@ -256,6 +275,92 @@ export function TagDetailDrawer({
               ) : (
                 <LocationMetadataDisplay metadata={tag?.locationMetadata} />
               )}
+            </div>
+          )}
+
+          {/* Barcode & QR Code Section - for all saved tags */}
+          {tag && tagType === "LOCATION" && !isEditing && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Barcode className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Identification Codes</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    // Open print dialog with barcode/QR
+                    const printWindow = window.open("", "_blank", "width=400,height=600");
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <title>Print Label - ${tag.value}</title>
+                          <style>
+                            body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; text-align: center; }
+                            .label { border: 2px dashed #ccc; padding: 20px; margin: 10px; display: inline-block; }
+                            .name { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+                            .path { font-size: 12px; color: #666; margin-bottom: 15px; }
+                            .barcode { font-family: monospace; font-size: 14px; letter-spacing: 2px; padding: 10px; background: #f5f5f5; margin: 10px 0; }
+                            .qr-placeholder { width: 150px; height: 150px; margin: 15px auto; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; }
+                            .id { font-size: 10px; color: #999; margin-top: 10px; }
+                            @media print { .no-print { display: none; } }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="label">
+                            <div class="name">${tag.value}</div>
+                            <div class="path">${tag.path.join(" > ")}</div>
+                            <div class="barcode">*${tag.id.substring(0, 12).toUpperCase()}*</div>
+                            <div class="qr-placeholder">QR Code<br/>(Use QR library)</div>
+                            <div class="id">ID: ${tag.id}</div>
+                          </div>
+                          <br/>
+                          <button class="no-print" onclick="window.print()" style="padding: 10px 20px; font-size: 14px; cursor: pointer;">Print Label</button>
+                        </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    }
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print
+                </button>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                {/* Barcode */}
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Barcode</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 p-3 bg-white rounded border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <Barcode className="w-5 h-5 text-gray-400" />
+                        <span className="font-mono text-sm tracking-wider text-gray-700">
+                          *{tag.id.substring(0, 12).toUpperCase()}*
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Auto-generated barcode identifier</p>
+                </div>
+
+                {/* QR Code */}
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">QR Code</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 bg-white rounded border border-gray-200 flex items-center justify-center">
+                      <QrCode className="w-16 h-16 text-gray-300" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 mb-1">QR Payload:</p>
+                      <p className="text-xs font-mono text-gray-600 break-all">{tag.id}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -423,6 +528,86 @@ function LocationMetadataDisplay({ metadata }: { metadata?: LocationMetadata | n
           )}
           {metadata.geofence.type === "POLYGON" && metadata.geofence.points && (
             <p className="text-gray-500 mt-1">{metadata.geofence.points.length} points</p>
+          )}
+        </div>
+      )}
+
+      {metadata.kind === "INTERIOR" && metadata.interior && (
+        <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+          {/* Space Type */}
+          <div className="flex items-center gap-2 text-sm">
+            <Warehouse className="w-4 h-4 text-gray-400" />
+            <span className="font-medium text-gray-700 capitalize">
+              {metadata.interior.spaceType?.toLowerCase().replace("_", " ") || "Interior Space"}
+            </span>
+          </div>
+
+          {/* Location Code */}
+          {metadata.interior.code && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-500">Code:</span>
+              <span className="font-mono bg-gray-200 px-2 py-0.5 rounded text-gray-700">
+                {metadata.interior.code}
+              </span>
+            </div>
+          )}
+
+          {/* Floor Info */}
+          {(metadata.interior.floor !== undefined || metadata.interior.floorLabel) && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-500">Floor:</span>
+              <span className="text-gray-700">
+                {metadata.interior.floorLabel || `Level ${metadata.interior.floor}`}
+                {metadata.interior.floorLabel && metadata.interior.floor !== undefined && (
+                  <span className="text-gray-400 ml-1">(#{metadata.interior.floor})</span>
+                )}
+              </span>
+            </div>
+          )}
+
+          {/* Barcode */}
+          {metadata.interior.barcode && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-500">Barcode:</span>
+              <span className="font-mono text-xs text-gray-700">{metadata.interior.barcode}</span>
+            </div>
+          )}
+
+          {/* Plus Code (geo-reference) */}
+          {metadata.interior.plusCode?.code && (
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex items-center gap-2 text-sm">
+                <Hash className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-500">Plus Code:</span>
+                <span className="font-mono text-gray-700">{metadata.interior.plusCode.code}</span>
+              </div>
+              {metadata.interior.plusCode.localArea && (
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  {metadata.interior.plusCode.localArea}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* QR Code */}
+          {metadata.interior.qrPayload && (
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-14 h-14 bg-white rounded border border-gray-200 flex items-center justify-center">
+                  {/* QR Code placeholder */}
+                  <Box className="w-8 h-8 text-gray-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-500 mb-1">QR Code</p>
+                  <p
+                    className="text-xs font-mono text-gray-600 truncate"
+                    title={metadata.interior.qrPayload}
+                  >
+                    {metadata.interior.qrPayload}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

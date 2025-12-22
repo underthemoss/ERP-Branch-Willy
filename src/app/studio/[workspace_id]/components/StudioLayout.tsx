@@ -2,7 +2,7 @@
 
 import { Box } from "@mui/material";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { AgentPanel } from "./AgentPanel/AgentPanel";
+import { AgentPanel } from "./AgentV3/AgentPanel";
 import { ContentArea } from "./ContentArea/ContentArea";
 import { FileExplorer } from "./FileExplorer/FileExplorer";
 
@@ -123,7 +123,7 @@ export function StudioLayout({ workspaceId }: StudioLayoutProps) {
               overflow: "hidden",
             }}
           >
-            <AgentPanel />
+            <AgentPanel workspaceId={workspaceId} />
           </Box>
         </Panel>
       </PanelGroup>

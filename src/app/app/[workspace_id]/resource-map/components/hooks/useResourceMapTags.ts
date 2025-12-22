@@ -2,9 +2,9 @@
 
 import { graphql } from "@/graphql";
 import {
+  ResourceMapTagType as GqlResourceMapTagType,
   ResourceMapGeofenceType,
   ResourceMapLocationType,
-  ResourceMapTagType as GqlResourceMapTagType,
   useCreateResourceMapTagMutation,
   useDeleteResourceMapTagMutation,
   useListResourceMapEntriesByTagTypeQuery,

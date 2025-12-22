@@ -22,6 +22,7 @@ import {
   FolderOpen,
   GripVertical,
   MapPin,
+  Plus,
   Users,
 } from "lucide-react";
 import * as React from "react";
@@ -33,6 +34,7 @@ interface TagHierarchyTreeProps {
   selectedTagId: string | null;
   onTagSelect: (tagId: string) => void;
   onTagMove: (tagId: string, newParentId: string | null) => Promise<void>;
+  onAddChild?: (parentId: string) => void;
   maxDepth?: number;
 }
 
@@ -88,6 +90,7 @@ interface SortableTreeNodeProps {
   selectedTagId: string | null;
   onTagSelect: (tagId: string) => void;
   onToggleExpand: (tagId: string) => void;
+  onAddChild?: (parentId: string) => void;
   isDragging?: boolean;
   isOverlay?: boolean;
   isDropTarget?: boolean;
@@ -100,6 +103,7 @@ function SortableTreeNode({
   selectedTagId,
   onTagSelect,
   onToggleExpand,
+  onAddChild,
   isDragging = false,
   isOverlay = false,
   isDropTarget = false,
@@ -196,9 +200,18 @@ function SortableTreeNode({
           </span>
         )}
 
-        {/* Drop indicator for nesting */}
-        {canHaveChildren && (
-          <div className="w-4 h-4 opacity-0 group-hover:opacity-30 text-blue-500">+</div>
+        {/* Add Child button */}
+        {canHaveChildren && onAddChild && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddChild(node.id);
+            }}
+            className="p-1 rounded hover:bg-blue-100 opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Add child location"
+          >
+            <Plus className="w-4 h-4 text-blue-500" />
+          </button>
         )}
       </div>
     </div>
@@ -222,6 +235,7 @@ export function TagHierarchyTree({
   selectedTagId,
   onTagSelect,
   onTagMove,
+  onAddChild,
   maxDepth = 10,
 }: TagHierarchyTreeProps) {
   const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
@@ -361,6 +375,7 @@ export function TagHierarchyTree({
                 selectedTagId={selectedTagId}
                 onTagSelect={onTagSelect}
                 onToggleExpand={handleToggleExpand}
+                onAddChild={onAddChild}
                 isDragging={activeId === node.id}
                 isDropTarget={overId === node.id && activeId !== node.id}
                 maxDepth={maxDepth}

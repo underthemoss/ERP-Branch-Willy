@@ -1,8 +1,120 @@
 "use client";
 
-import { X } from "lucide-react";
-import React, { useState } from "react";
+import * as studioFS from "@/lib/studio-fs";
+import { FileCode, FileSpreadsheet, FileText, MessageSquare, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useTabStore } from "../../store/tabStore";
+import { ChatViewer, CSVViewer, JSONViewer, MarkdownViewer, TextViewer } from "./renderers";
+
+/**
+ * Determine file type from path extension
+ */
+function getFileTypeFromPath(path: string): string {
+  const ext = path.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "md":
+    case "markdown":
+      return "markdown";
+    case "csv":
+      return "csv";
+    case "json":
+      return "json";
+    case "chat":
+      return "chat";
+    default:
+      return "text";
+  }
+}
+
+/**
+ * File content viewer - handles different file types
+ */
+function FileViewer({ path, type: propType }: { path: string; type: string }) {
+  // Prefer detected type from path extension
+  const type = getFileTypeFromPath(path) || propType;
+  const [content, setContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFile() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await studioFS.readFile(path);
+        if (!cancelled) {
+          setContent(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load file");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadFile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-sm text-red-500">Error: {error}</div>;
+  }
+
+  if (content === null) {
+    return <div className="text-sm text-gray-500">File not found</div>;
+  }
+
+  // Render based on file type
+  switch (type) {
+    case "markdown":
+      return <MarkdownViewer content={content} />;
+    case "csv":
+      return <CSVViewer content={content} />;
+    case "json":
+      return <JSONViewer content={content} />;
+    case "chat":
+      return <ChatViewer content={content} />;
+    default:
+      return <TextViewer content={content} />;
+  }
+}
+
+/**
+ * Get icon for tab type
+ */
+function getTabIcon(type: string, path?: string) {
+  const iconClass = "w-4 h-4 flex-shrink-0";
+
+  // Check extension for CSV
+  const ext = path?.split(".").pop()?.toLowerCase();
+  if (ext === "csv") {
+    return <FileSpreadsheet className={`${iconClass} text-[#41A35D]`} />;
+  }
+
+  switch (type) {
+    case "markdown":
+      return <FileText className={`${iconClass} text-[#519ABA]`} />;
+    case "csv":
+      return <FileSpreadsheet className={`${iconClass} text-[#41A35D]`} />;
+    case "chat":
+      return <MessageSquare className={`${iconClass} text-[#007ACC]`} />;
+    default:
+      return <FileCode className={`${iconClass} text-gray-500`} />;
+  }
+}
 
 export function ContentArea() {
   const {
@@ -57,9 +169,12 @@ export function ContentArea() {
   if (tabs.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-white">
-        <p className="text-[13px] text-gray-500">
-          Select an entity from the explorer to open it here
-        </p>
+        <div className="text-center">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-[13px] text-gray-500">
+            Select a file from the explorer to open it here
+          </p>
+        </div>
       </div>
     );
   }
@@ -79,17 +194,16 @@ export function ContentArea() {
               relative flex items-center gap-2 px-3 h-[35px] cursor-pointer 
               border-r border-[#E5E5E5] min-w-[120px] max-w-[200px] flex-shrink-0
               transition-colors duration-150 text-[13px] select-none
-              ${
-                tab.id === activeTabId
-                  ? "bg-white text-[#383838]"
-                  : "bg-transparent text-gray-500 hover:bg-[#E8E8E8]"
-              }
+              ${tab.id === activeTabId ? "bg-white text-[#383838]" : "bg-transparent text-gray-500 hover:bg-[#E8E8E8]"}
             `}
           >
             {/* Active tab indicator */}
             {tab.id === activeTabId && (
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#007ACC]" />
             )}
+
+            {/* Tab icon */}
+            {getTabIcon(tab.type, tab.entityId)}
 
             {/* Tab label */}
             <div className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -112,30 +226,7 @@ export function ContentArea() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-auto p-4 px-5 bg-white">
-        {activeTab && (
-          <div>
-            {/* Entity type badge */}
-            <div className="mb-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-[#007ACC] h-5">
-                {activeTab.type.toUpperCase()}
-              </span>
-            </div>
-
-            {/* Entity title */}
-            <h2 className="text-xl font-semibold text-[#383838] mb-1">{activeTab.label}</h2>
-
-            {/* Entity ID */}
-            <p className="text-xs text-gray-500 font-mono mb-3">Entity ID: {activeTab.entityId}</p>
-
-            {/* Placeholder content */}
-            <div className="mt-3 p-4 bg-[#F8F8F8] border border-[#E5E5E5] rounded">
-              <p className="text-[13px] text-gray-500 mb-1">Read-only view coming soon...</p>
-              <p className="text-xs text-gray-400">
-                This is a placeholder for the {activeTab.type} entity viewer.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab && <FileViewer path={activeTab.entityId} type={activeTab.type} />}
       </div>
 
       {/* Custom Context Menu */}

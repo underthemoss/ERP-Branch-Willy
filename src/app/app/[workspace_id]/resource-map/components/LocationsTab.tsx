@@ -17,6 +17,8 @@ interface LocationsTabProps {
 export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTabProps) {
   const [selectedTagId, setSelectedTagId] = React.useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [isCreatingNew, setIsCreatingNew] = React.useState(false);
+  const [newTagParentId, setNewTagParentId] = React.useState<string | null>(null);
   const [mapBounds, setMapBounds] = React.useState<{
     north: number;
     south: number;
@@ -24,11 +26,12 @@ export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTab
     west: number;
   } | null>(null);
 
-  const { tags, loading, refetch, updateTagParent } = useResourceMapTags({
-    workspaceId,
-    tagType: "LOCATION",
-    searchTerm,
-  });
+  const { tags, loading, refetch, createTag, updateTagParent, updateTag, deleteTag } =
+    useResourceMapTags({
+      workspaceId,
+      tagType: "LOCATION",
+      searchTerm,
+    });
 
   const selectedTag = tags.find((t) => t.id === selectedTagId);
 
@@ -39,6 +42,8 @@ export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTab
 
   const handleTagSelect = (tagId: string) => {
     setSelectedTagId(tagId);
+    setIsCreatingNew(false);
+    setNewTagParentId(null);
     setDrawerOpen(true);
   };
 
@@ -57,6 +62,15 @@ export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTab
 
   const handleMarkerClick = (tagId: string) => {
     setSelectedTagId(tagId);
+    setIsCreatingNew(false);
+    setNewTagParentId(null);
+    setDrawerOpen(true);
+  };
+
+  const handleAddChild = (parentId: string) => {
+    setSelectedTagId(null);
+    setIsCreatingNew(true);
+    setNewTagParentId(parentId);
     setDrawerOpen(true);
   };
 
@@ -88,6 +102,7 @@ export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTab
               selectedTagId={selectedTagId}
               onTagSelect={handleTagSelect}
               onTagMove={handleTagMove}
+              onAddChild={handleAddChild}
               maxDepth={10}
             />
           ) : (
@@ -131,13 +146,24 @@ export function LocationsTab({ workspaceId, viewMode, searchTerm }: LocationsTab
       {/* Detail Drawer */}
       <TagDetailDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          setIsCreatingNew(false);
+          setNewTagParentId(null);
+        }}
         tag={selectedTag || null}
         tagType="LOCATION"
         onSave={() => {
           refetch();
           setDrawerOpen(false);
+          setIsCreatingNew(false);
+          setNewTagParentId(null);
         }}
+        createTag={createTag}
+        updateTag={updateTag}
+        deleteTag={deleteTag}
+        allTags={tags}
+        initialParentId={isCreatingNew ? newTagParentId : undefined}
       />
     </div>
   );
