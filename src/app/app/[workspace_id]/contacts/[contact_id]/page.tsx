@@ -36,13 +36,17 @@ graphql(`
         phone
         notes
         email
-        role
         businessId
         resourceMapIds
         createdAt
         updatedAt
         resource_map_entries {
+          id
+          value
+          tagType
+          parent_id
           path
+          hierarchy_name
         }
         business {
           id
@@ -78,7 +82,6 @@ graphql(`
               id
               name
               email
-              role
               phone
             }
           }
@@ -118,14 +121,18 @@ graphql(`
         createdAt
         updatedAt
         resource_map_entries {
+          id
+          value
+          tagType
+          parent_id
           path
+          hierarchy_name
         }
         employees {
           items {
             id
             name
             email
-            role
             phone
           }
         }
@@ -193,6 +200,14 @@ export default function ContactDisplayPage() {
         : null;
 
   const employeeCount = isBusiness && contact.employees ? contact.employees.items.length : 0;
+
+  // Helper to get role from resource_map_entries (tagType === ROLE)
+  const getPersonRole = () => {
+    if (!isPerson || !contact.resource_map_entries) return null;
+    const roleEntry = contact.resource_map_entries.find((entry) => entry.tagType === "ROLE");
+    return roleEntry?.value || null;
+  };
+  const personRole = isPerson ? getPersonRole() : null;
 
   if (loading) {
     return (
@@ -320,10 +335,10 @@ export default function ContactDisplayPage() {
                       </a>
                     </div>
                   )}
-                  {contact.role && (
+                  {personRole && (
                     <div className="flex items-center gap-2 text-gray-700">
                       <Briefcase className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                      <span>{contact.role}</span>
+                      <span>{personRole}</span>
                     </div>
                   )}
                   {contact.business && (
@@ -491,12 +506,6 @@ export default function ContactDisplayPage() {
                             <p className="font-semibold text-gray-900 group-hover:text-[#0A66C2] transition-colors truncate">
                               {colleague.name}
                             </p>
-                            {colleague.role && (
-                              <p className="text-sm text-gray-600 truncate flex items-center gap-1 mt-1">
-                                <Briefcase className="w-3 h-3" />
-                                {colleague.role}
-                              </p>
-                            )}
                             {colleague.email && (
                               <p className="text-sm text-gray-500 truncate flex items-center gap-1 mt-1">
                                 <Mail className="w-3 h-3" />
@@ -549,12 +558,6 @@ export default function ContactDisplayPage() {
                           <p className="font-semibold text-gray-900 group-hover:text-[#0A66C2] transition-colors truncate">
                             {employee.name}
                           </p>
-                          {employee.role && (
-                            <p className="text-sm text-gray-600 truncate flex items-center gap-1 mt-1">
-                              <Briefcase className="w-3 h-3" />
-                              {employee.role}
-                            </p>
-                          )}
                           {employee.email && (
                             <p className="text-sm text-gray-500 truncate flex items-center gap-1 mt-1">
                               <Mail className="w-3 h-3" />

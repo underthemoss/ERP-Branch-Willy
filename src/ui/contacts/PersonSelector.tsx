@@ -2,6 +2,7 @@
 
 import { ContactType, ProjectContactRelationEnum } from "@/graphql/graphql";
 import { useListContactsQuery } from "@/graphql/hooks";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import { ChevronDown, Loader2, User, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -61,7 +62,7 @@ export function PersonSelector({
         .map((c: any) => ({
           id: c?.id ?? "",
           name: c?.name ?? "",
-          role: c?.role,
+          role: getRoleFromResourceMapEntries(c?.resource_map_entries ?? []),
           profilePicture: c?.profilePicture,
         })) as Array<{
         id: string;

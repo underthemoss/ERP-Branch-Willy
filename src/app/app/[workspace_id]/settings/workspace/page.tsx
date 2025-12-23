@@ -12,6 +12,7 @@ import {
 } from "@/graphql/hooks";
 import { useAuth0ErpUser } from "@/hooks/useAuth0ErpUser";
 import { useSelectedWorkspace, useWorkspace } from "@/providers/WorkspaceProvider";
+import { BusinessSelector } from "@/ui/contacts/BusinessSelector";
 import {
   AddPhotoAlternate,
   ArchiveOutlined,
@@ -54,7 +55,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ArchiveWorkspaceDialog from "./components/ArchiveWorkspaceDialog";
-import { BusinessSelector } from "@/ui/contacts/BusinessSelector";
 
 // Define the GraphQL queries (reusing from CreateWorkspaceFlow)
 graphql(`
@@ -116,7 +116,7 @@ graphql(`
     $logoUrl: String
     $bannerImageUrl: String
     $brandId: String
-    $orgBusinessContactId: ID
+    $orgBusinessContactId: String
   ) {
     updateWorkspaceSettings(
       workspaceId: $workspaceId
@@ -668,7 +668,8 @@ export default function WorkspaceSettingsPage() {
               {currentWorkspace?.orgBusinessContact && (
                 <Alert severity="success" sx={{ mb: 3 }}>
                   <Typography variant="body2">
-                    <strong>Current Organization:</strong> {currentWorkspace.orgBusinessContact.name}
+                    <strong>Current Organization:</strong>{" "}
+                    {currentWorkspace.orgBusinessContact.name}
                   </Typography>
                 </Alert>
               )}
@@ -682,7 +683,11 @@ export default function WorkspaceSettingsPage() {
                   onChange={setOrgBusinessContactId}
                   workspaceId={currentWorkspace.id}
                 />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 1, display: "block" }}
+                >
                   Select the business contact that represents your organization
                 </Typography>
               </Box>

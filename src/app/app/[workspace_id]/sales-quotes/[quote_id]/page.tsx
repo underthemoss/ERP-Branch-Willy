@@ -197,7 +197,11 @@ graphql(`
               id
               name
               email
-              role
+              resource_map_entries {
+                id
+                value
+                tagType
+              }
             }
           }
         }

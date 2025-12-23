@@ -10,6 +10,7 @@ import {
 } from "@/graphql/hooks";
 import { parseDate } from "@/lib/parseDate";
 import AttachedFilesSection from "@/ui/AttachedFilesSection";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import NotesSection from "@/ui/notes/NotesSection";
 import { ProjectDialog } from "@/ui/projects/ProjectDialog";
 import { ReferenceNumbersSection } from "@/ui/reference-numbers";
@@ -72,8 +73,12 @@ graphql(`
           ... on PersonContact {
             id
             name
-            role
             profilePicture
+            resource_map_entries {
+              id
+              value
+              tagType
+            }
           }
         }
       }
@@ -354,35 +359,38 @@ export default function ProjectDetailAltPage() {
                               c.contact.id &&
                               c.contact.name,
                           )
-                          .map((c: any) => (
-                            <div
-                              key={c.contact_id}
-                              className="flex items-center gap-3 p-2 rounded-lg bg-gray-50"
-                            >
-                              {c.contact.profilePicture ? (
-                                <img
-                                  src={c.contact.profilePicture}
-                                  alt={c.contact.name}
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                                  {c.contact.name[0]}
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {c.contact.name}
-                                </p>
-                                {c.contact.role && (
-                                  <p className="text-xs text-gray-500">{c.contact.role}</p>
+                          .map((c: any) => {
+                            const role = getRoleFromResourceMapEntries(
+                              c.contact?.resource_map_entries ?? [],
+                            );
+                            return (
+                              <div
+                                key={c.contact_id}
+                                className="flex items-center gap-3 p-2 rounded-lg bg-gray-50"
+                              >
+                                {c.contact.profilePicture ? (
+                                  <img
+                                    src={c.contact.profilePicture}
+                                    alt={c.contact.name}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                                    {c.contact.name[0]}
+                                  </div>
                                 )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {c.contact.name}
+                                  </p>
+                                  {role && <p className="text-xs text-gray-500">{role}</p>}
+                                </div>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 font-mono">
+                                  {c.relation_to_project.replace(/_/g, " ")}
+                                </span>
                               </div>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 font-mono">
-                                {c.relation_to_project.replace(/_/g, " ")}
-                              </span>
-                            </div>
-                          ))}
+                            );
+                          })}
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500">No contacts assigned.</p>

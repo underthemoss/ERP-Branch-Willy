@@ -1,6 +1,7 @@
 "use client";
 
 import { graphql } from "@/graphql";
+import { PersonContactType } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
 import { useCreatePersonContactMutation, useListBusinessContactsQuery } from "@/ui/contacts/api";
 import {
@@ -37,7 +38,6 @@ type ContactFormData = {
   name: string;
   phone: string;
   email: string;
-  role: string;
   business: {
     id: string;
     label: string;
@@ -67,7 +67,6 @@ export function CreateContactDialog({
       name: initialData?.name || "",
       phone: initialData?.phone || "",
       email: initialData?.email || "",
-      role: type === "buyer" ? "Customer" : "Vendor",
       business: null,
     },
   });
@@ -79,7 +78,6 @@ export function CreateContactDialog({
         name: initialData.name || "",
         phone: initialData.phone || "",
         email: initialData.email || "",
-        role: type === "buyer" ? "Customer" : "Vendor",
         business: null,
       });
     }
@@ -137,8 +135,8 @@ export function CreateContactDialog({
           name: data.name,
           phone: data.phone,
           email: data.email,
-          role: data.role,
           businessId: data.business.id,
+          personType: PersonContactType.External,
         },
       });
 
@@ -245,24 +243,6 @@ export function CreateContactDialog({
                     required
                     error={!!errors.email}
                     helperText={errors.email?.message}
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <Controller
-                name="role"
-                control={control}
-                rules={{ required: "Role is required" }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Role"
-                    fullWidth
-                    required
-                    error={!!errors.role}
-                    helperText={errors.role?.message}
                   />
                 )}
               />

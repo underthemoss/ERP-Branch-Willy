@@ -211,7 +211,16 @@ export function LocationMetadataForm({ value, onChange }: LocationMetadataFormPr
       {locationType === "ADDRESS" && value?.address && (
         <AddressForm
           value={value.address}
-          onChange={(address) => onChange({ ...value, address })}
+          onChange={(address) =>
+            onChange({
+              ...value,
+              address,
+              // Also set top-level latLng when address has geocoded coordinates
+              latLng: address.latLng
+                ? { lat: address.latLng.lat, lng: address.latLng.lng }
+                : value.latLng,
+            })
+          }
         />
       )}
 

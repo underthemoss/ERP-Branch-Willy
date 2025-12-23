@@ -31,13 +31,14 @@ export const PersonContactFieldsFragment = graphql(`
     name
     phone
     email
-    role
+    personType
     businessId
     resourceMapIds
     updatedAt
     resource_map_entries {
       id
       value
+      tagType
       parent_id
       path
       hierarchy_name
@@ -162,13 +163,14 @@ graphql(`
         name
         phone
         email
-        role
+        personType
         businessId
         resourceMapIds
         updatedAt
         resource_map_entries {
           id
           value
+          tagType
           parent_id
           path
           hierarchy_name
@@ -191,10 +193,15 @@ graphql(`
           name
           phone
           email
-          role
+          personType
           businessId
           resourceMapIds
           updatedAt
+          resource_map_entries {
+            id
+            value
+            tagType
+          }
         }
         ... on BusinessContact {
           __typename
@@ -269,9 +276,14 @@ graphql(`
           name
           phone
           email
-          role
+          personType
           businessId
           profilePicture
+          resource_map_entries {
+            id
+            value
+            tagType
+          }
         }
       }
     }
@@ -319,8 +331,8 @@ graphql(`
     $phone: String
     $email: String!
     $businessId: ID!
-    $role: String!
     $resourceMapIds: [ID!]
+    $personType: PersonContactType
   ) {
     createPersonContact(
       input: {
@@ -329,8 +341,8 @@ graphql(`
         phone: $phone
         email: $email
         businessId: $businessId
-        role: $role
         resourceMapIds: $resourceMapIds
+        personType: $personType
       }
     ) {
       ...PersonContactFields

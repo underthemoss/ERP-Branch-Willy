@@ -38,7 +38,6 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
           name
           email
           phone
-          role
           notes
           createdAt
           updatedAt
@@ -77,7 +76,6 @@ const SALES_ORDER_DETAIL_QUERY = graphql(`
               name
               email
               phone
-              role
               notes
               createdAt
               updatedAt

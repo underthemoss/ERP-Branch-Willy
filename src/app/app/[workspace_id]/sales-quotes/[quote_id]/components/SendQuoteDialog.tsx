@@ -3,6 +3,7 @@
 import { graphql } from "@/graphql";
 import { useSendQuoteMutation, useUpdateQuoteForSendMutation } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import { AlertCircle, Mail, User } from "lucide-react";
 import * as React from "react";
 
@@ -65,9 +66,12 @@ export function SendQuoteDialog({ open, onClose, quote, onSuccess }: SendQuoteDi
     }
 
     // Filter employees with valid, non-empty email addresses
-    const validEmployees = buyerContact.employees.items.filter(
-      (emp: any) => emp?.email && emp.email.trim() !== "",
-    );
+    const validEmployees = buyerContact.employees.items
+      .filter((emp: any) => emp?.email && emp.email.trim() !== "")
+      .map((emp: any) => ({
+        ...emp,
+        role: getRoleFromResourceMapEntries(emp?.resource_map_entries ?? []),
+      }));
 
     // Debug logging
     console.log("[SendQuoteDialog] Business Contact:", buyerContact.name);

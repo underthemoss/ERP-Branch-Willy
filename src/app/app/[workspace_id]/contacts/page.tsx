@@ -1,6 +1,7 @@
 "use client";
 
 import { useListBusinessContactsQuery, useListPersonContactsQuery } from "@/ui/contacts/api";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import {
   ArrowUpDown,
   Building2,
@@ -95,7 +96,21 @@ export default function ContactsPage() {
     const items = businessData?.listContacts?.items ?? [];
     for (const item of items) {
       if (item?.__typename === "BusinessContact") {
-        const contact = item as { id: string; name: string; phone?: string | null; address?: string | null; profilePicture?: string | null; brand?: { name?: string | null; logos?: Array<{ type?: string | null; theme?: string | null; formats?: Array<{ src?: string | null }> | null }> | null } | null };
+        const contact = item as {
+          id: string;
+          name: string;
+          phone?: string | null;
+          address?: string | null;
+          profilePicture?: string | null;
+          brand?: {
+            name?: string | null;
+            logos?: Array<{
+              type?: string | null;
+              theme?: string | null;
+              formats?: Array<{ src?: string | null }> | null;
+            }> | null;
+          } | null;
+        };
         businessRows.push({
           id: contact.id,
           name: contact.name,
@@ -125,14 +140,23 @@ export default function ContactsPage() {
     const personItems = personData?.listContacts?.items ?? [];
     for (const item of personItems) {
       if (item?.__typename === "PersonContact") {
-        const contact = item as { id: string; name: string; phone?: string | null; email?: string | null; role?: string | null; businessId?: string | null; profilePicture?: string | null };
+        const contact = item as {
+          id: string;
+          name: string;
+          phone?: string | null;
+          email?: string | null;
+          businessId?: string | null;
+          profilePicture?: string | null;
+          resource_map_entries?: Array<{ tagType?: string | null; value?: string | null } | null>;
+        };
+        const role = getRoleFromResourceMapEntries(contact.resource_map_entries ?? []);
         personRows.push({
           id: contact.id,
           name: contact.name,
           type: "PERSON",
           phone: contact.phone ?? "",
           email: contact.email ?? "",
-          role: contact.role ?? "",
+          role: role ?? "",
           businessId: contact.businessId ?? "",
           address: "",
           taxId: "",

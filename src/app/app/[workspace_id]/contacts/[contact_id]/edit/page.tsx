@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonContactType, ResourceMapTagType } from "@/graphql/hooks";
+import { useSelectedWorkspace } from "@/providers/WorkspaceProvider";
 import { AddressValidationField } from "@/ui/contacts/AddressValidationField";
 import {
   useGetContactByIdQuery,
@@ -8,7 +10,8 @@ import {
 } from "@/ui/contacts/api";
 import { BusinessNameWithBrandSearch } from "@/ui/contacts/BusinessNameWithBrandSearch";
 import { BusinessSelector } from "@/ui/contacts/BusinessSelector";
-import ResourceMapSearchSelector from "@/ui/resource_map/ResourceMapSearchSelector";
+import { ContactTagsSelector } from "@/ui/contacts/ContactTagsSelector";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import { AlertCircle, ArrowLeft, Building2, Loader2, Save, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -16,6 +19,9 @@ import * as React from "react";
 export default function EditContactPage() {
   const { workspace_id, contact_id } = useParams<{ workspace_id: string; contact_id: string }>();
   const router = useRouter();
+  const workspace = useSelectedWorkspace();
+  const workspaceBusiness = workspace?.orgBusinessContact;
+  const workspaceBusinessId = workspace?.orgBusinessContactId;
 
   const {
     data,
@@ -31,10 +37,11 @@ export default function EditContactPage() {
     name: "",
     phone: "",
     email: "",
-    role: "",
     businessId: "",
     resourceMapIds: [] as string[],
   });
+  const [personType, setPersonType] = React.useState<PersonContactType | null>(null);
+  const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
   const [updateEmployee, { loading: updatingPerson }] = useUpdatePersonContactMutation();
 
   // Business state
@@ -61,13 +68,25 @@ export default function EditContactPage() {
   // Populate form with contact data
   React.useEffect(() => {
     if (data?.getContactById && data.getContactById.__typename === "PersonContact") {
+      const contact = data.getContactById;
+      const resolvedPersonType =
+        contact.personType ??
+        (workspaceBusinessId && contact.businessId === workspaceBusinessId
+          ? PersonContactType.Employee
+          : PersonContactType.External);
+      const resolvedBusinessId =
+        resolvedPersonType === PersonContactType.Employee && workspaceBusinessId
+          ? workspaceBusinessId
+          : (contact.businessId ?? "");
+
+      setPersonType(resolvedPersonType ?? null);
+      setSelectedRole(getRoleFromResourceMapEntries(contact.resource_map_entries ?? []));
       setPersonForm({
-        name: data.getContactById.name ?? "",
-        phone: data.getContactById.phone ?? "",
-        email: data.getContactById.email ?? "",
-        role: data.getContactById.role ?? "",
-        businessId: data.getContactById.businessId ?? "",
-        resourceMapIds: data.getContactById.resourceMapIds ?? [],
+        name: contact.name ?? "",
+        phone: contact.phone ?? "",
+        email: contact.email ?? "",
+        businessId: resolvedBusinessId,
+        resourceMapIds: contact.resourceMapIds ?? [],
       });
     } else if (data?.getContactById && data.getContactById.__typename === "BusinessContact") {
       setBusinessForm({
@@ -93,7 +112,7 @@ export default function EditContactPage() {
         }
       }
     }
-  }, [data]);
+  }, [data, workspaceBusinessId]);
 
   // Handlers for PersonContact
   const handlePersonChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -126,8 +145,20 @@ export default function EditContactPage() {
   const handlePersonSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    if (!personForm.name || !personForm.email || !personForm.role || !personForm.businessId) {
+    const isInternal = personType === PersonContactType.Employee;
+    const resolvedBusinessId =
+      isInternal && workspaceBusinessId ? workspaceBusinessId : personForm.businessId;
+
+    if (!personForm.name || !personForm.email || !resolvedBusinessId) {
       setErrorMsg("Please fill in all required fields.");
+      return;
+    }
+    if (isInternal && !selectedRole) {
+      setErrorMsg("Please select a role tag for internal employees.");
+      return;
+    }
+    if (isInternal && workspaceBusinessId && resolvedBusinessId !== workspaceBusinessId) {
+      setErrorMsg("Internal employees must belong to the workspace business.");
       return;
     }
     try {
@@ -138,8 +169,8 @@ export default function EditContactPage() {
             name: personForm.name,
             phone: personForm.phone || undefined,
             email: personForm.email,
-            role: personForm.role,
-            businessId: personForm.businessId,
+            businessId: resolvedBusinessId,
+            personType: personType ?? undefined,
             resourceMapIds: personForm.resourceMapIds,
           },
         },
@@ -237,6 +268,7 @@ export default function EditContactPage() {
   const contact = data.getContactById;
   const isPerson = contact.__typename === "PersonContact";
   const isBusiness = contact.__typename === "BusinessContact";
+  const isInternalEmployee = personType === PersonContactType.Employee;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -327,43 +359,53 @@ export default function EditContactPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                      Role <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="role"
-                      name="role"
-                      value={personForm.role}
-                      onChange={handlePersonChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="Project Manager"
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Business <span className="text-red-500">*</span>
                     </label>
-                    <BusinessSelector
-                      value={personForm.businessId}
-                      onChange={(businessId) => setPersonForm((prev) => ({ ...prev, businessId }))}
-                      workspaceId={workspace_id}
-                      required
-                    />
+                    {isInternalEmployee ? (
+                      <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {workspaceBusiness?.name || "Workspace Business"}
+                          </p>
+                          <p className="text-xs text-gray-500">Internal employee</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <BusinessSelector
+                        value={personForm.businessId}
+                        onChange={(businessId) =>
+                          setPersonForm((prev) => ({ ...prev, businessId }))
+                        }
+                        workspaceId={workspace_id}
+                        required
+                      />
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Resource Maps
+                      Organization Tags{" "}
+                      {isInternalEmployee && <span className="text-red-500">*</span>}
                     </label>
-                    <ResourceMapSearchSelector
+                    <p className="text-xs text-gray-500 mb-3">
+                      Role is required for internal employees and optional for external contacts.
+                    </p>
+                    <ContactTagsSelector
                       selectedIds={personForm.resourceMapIds}
-                      onSelectionChange={(ids: string[]) =>
+                      onChange={(ids) =>
                         setPersonForm((prev) => ({ ...prev, resourceMapIds: ids }))
                       }
-                      readonly={false}
+                      allowedTypes={[
+                        ResourceMapTagType.Role,
+                        ResourceMapTagType.BusinessUnit,
+                        ResourceMapTagType.Location,
+                      ]}
+                      singleSelectTypes={[ResourceMapTagType.Role]}
+                      onRoleChange={(roleValue) => setSelectedRole(roleValue)}
                     />
                   </div>
                 </div>

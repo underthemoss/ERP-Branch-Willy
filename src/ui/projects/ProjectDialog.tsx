@@ -9,6 +9,7 @@ import {
   useUpdateProjectFromDialogMutation,
 } from "@/graphql/hooks";
 import { useNotification } from "@/providers/NotificationProvider";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import { ProjectSelector } from "@/ui/ProjectSelector";
 import {
   AlertCircle,
@@ -158,7 +159,7 @@ export function ProjectDialog({
               .map((c: any) => ({
                 id: c.contact.id,
                 name: c.contact.name,
-                role: c.contact.role,
+                role: getRoleFromResourceMapEntries(c.contact?.resource_map_entries ?? []),
                 profilePicture: c.contact.profilePicture,
                 relationToProject: c.relation_to_project || "",
               }))

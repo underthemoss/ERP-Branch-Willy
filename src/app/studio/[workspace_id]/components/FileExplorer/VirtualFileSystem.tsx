@@ -2,6 +2,7 @@
 
 import { graphql } from "@/graphql";
 import { useGetProjectsAndContactsQuery, useGetStudioDataQuery } from "@/graphql/hooks";
+import { getRoleFromResourceMapEntries } from "@/ui/contacts/resourceMapRole";
 import React from "react";
 import { FileNode } from "./types";
 
@@ -68,7 +69,11 @@ graphql(`
               id
               name
               email
-              role
+              resource_map_entries {
+                id
+                value
+                tagType
+              }
             }
           }
         }
@@ -239,14 +244,17 @@ function buildContactNodes(contacts: any[]): FileNode[] {
       entityType: "contact",
       entityId: contact.id,
       children: hasEmployees
-        ? employees.map((emp: any) => ({
-            id: `contact-${emp.id}`,
-            name: `${emp.name} (${emp.role || "Employee"})`,
-            type: "entity",
-            entityType: "contact",
-            entityId: emp.id,
-            children: [],
-          }))
+        ? employees.map((emp: any) => {
+            const role = getRoleFromResourceMapEntries(emp?.resource_map_entries ?? []);
+            return {
+              id: `contact-${emp.id}`,
+              name: `${emp.name} (${role || "Employee"})`,
+              type: "entity",
+              entityType: "contact",
+              entityId: emp.id,
+              children: [],
+            };
+          })
         : undefined,
       isLazyLoaded: true, // Employees are already loaded
     };

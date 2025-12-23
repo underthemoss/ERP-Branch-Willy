@@ -93,7 +93,6 @@ const SEED_CREATE_PERSON_CONTACT_MUTATION = graphql(`
       name
       email
       phone
-      role
       notes
       businessId
       workspaceId
@@ -427,7 +426,6 @@ export default function SeedDataComponent({ variant = "card" }: SeedDataComponen
             businessId: tradePartner.id,
             workspaceId: workspace.id,
             phone: "+1 (512) 555-0283",
-            role: "Project Coordinator",
             notes:
               "Project coordinator for Skyline Mechanical, responsible for equipment needs and logistics coordination with general contractors.",
           },
